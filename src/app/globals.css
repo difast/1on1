@@ -1,0 +1,207 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #F7F6F3;
+  color: #1a1a1a;
+  -webkit-font-smoothing: antialiased;
+}
+
+input, textarea, button, select { font-family: inherit; }
+button { cursor: pointer; }
+textarea { resize: vertical; }
+
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D0CEC7; border-radius: 3px; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInScale {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.animate-fade { animation: fadeIn 0.3s ease forwards; }
+.animate-slide { animation: slideUp 0.35s ease forwards; }
+.animate-scale { animation: fadeInScale 0.25s ease forwards; }
+
+.card {
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #E8E6E1;
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.card:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+}
+
+.card-clickable:hover {
+  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+  transform: translateY(-1px);
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  font-weight: 500;
+  font-size: 14px;
+  padding: 11px 18px;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.btn:active { transform: scale(0.97); }
+
+.btn-primary {
+  background: #1a1a1a;
+  color: #fff;
+}
+
+.btn-primary:hover { background: #2d2d2d; }
+
+.btn-purple {
+  background: #7F77DD;
+  color: #fff;
+}
+
+.btn-purple:hover { background: #6B63C9; }
+
+.btn-ghost {
+  background: none;
+  border: 1px solid #E8E6E1;
+  color: #555;
+}
+
+.btn-ghost:hover { background: #F7F6F3; }
+
+.input {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1.5px solid #E8E6E1;
+  border-radius: 12px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  font-family: inherit;
+  background: #fff;
+}
+
+.input:focus {
+  border-color: #7F77DD;
+  box-shadow: 0 0 0 3px rgba(127,119,221,0.12);
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #F0EEE9 25%, #E8E6E1 50%, #F0EEE9 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay-center {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 640px;
+  padding: 24px;
+  animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-center {
+  background: #fff;
+  border-radius: 20px;
+  width: 100%;
+  max-width: 400px;
+  padding: 24px;
+  animation: fadeInScale 0.25s ease;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 99px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid #E8E6E1;
+  color: #555;
+  transition: all 0.15s;
+}
+
+.social-link:hover {
+  background: #F7F6F3;
+  border-color: #D0CEC7;
+}
+
+.toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  z-index: 200;
+  white-space: nowrap;
+  animation: fadeInScale 0.2s ease;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
