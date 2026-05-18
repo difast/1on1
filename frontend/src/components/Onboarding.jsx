@@ -45,7 +45,7 @@ export default function Onboarding({ initialInviteCode = '', onComplete }) {
       localStorage.setItem('smart_user', JSON.stringify(userToStore))
       onComplete(userToStore)
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Произошла ошибка. Попробуйте ещё раз.')
+      setError(err?.response?.data?.detail || err?.message || JSON.stringify(err?.response?.data) || 'Нет ответа от сервера')
     } finally {
       setLoading(false)
     }
