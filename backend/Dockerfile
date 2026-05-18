@@ -2,6 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 ENV PYTHONPATH=/app
+ENV PORT=8000
 
 RUN apt-get update && apt-get install -y \
     build-essential \
