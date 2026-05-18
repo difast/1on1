@@ -275,6 +275,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {tab.label}
             </button>
           ))}
+          <span className="tab" style={{ opacity: 0.4, cursor: 'default', pointerEvents: 'none' }}>
+            Аналитика
+          </span>
         </div>
 
         {/* My Meetings view */}

@@ -121,10 +121,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
       {/* Header — exactly as per .header CSS spec */}
       <header className={`header${scrolled ? ' scrolled' : ''}`}>
-        <span className="logo">Smart <span className="accent">1-on-1</span></span>
+        <span className="logo">OneOn<span className="accent">One</span></span>
 
         <nav className="nav">
-          <span className="nav-link disabled">Аналитика</span>
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
