@@ -51,15 +51,20 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
 
     # Build member list with status
     members_out = []
+    from datetime import datetime, timedelta
     for tm in team.members:
         user = db.query(User).filter(User.id == tm.user_id).first()
         last_meeting = (
             db.query(Meeting)
-            .filter(Meeting.member_id == tm.user_id, Meeting.team_id == team_id)
+            .filter(
+                Meeting.member_id == tm.user_id,
+                Meeting.team_id == team_id,
+                Meeting.status != 'cancelled',
+                Meeting.scheduled_date <= datetime.utcnow(),
+            )
             .order_by(Meeting.scheduled_date.desc())
             .first()
         )
-        from datetime import datetime, timedelta
         color = "green"
         if last_meeting:
             days_since = (datetime.utcnow() - last_meeting.scheduled_date).days

@@ -77,24 +77,38 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
 
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
-  const handleAvatarChange = async (e) => {
+  const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
     if (!file || !currentUser?.id) return
     setUploadingAvatar(true)
-    try {
-      const reader = new FileReader()
-      reader.onload = async (ev) => {
-        const base64 = ev.target.result
-        await updateUser(currentUser.id, { avatar: base64 })
-        const stored = localStorage.getItem('smart_user')
-        const u = stored ? JSON.parse(stored) : {}
-        const merged = { ...u, avatar: base64 }
-        localStorage.setItem('smart_user', JSON.stringify(merged))
-        if (onUserUpdate) onUserUpdate(merged)
-        setUploadingAvatar(false)
+
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const img = new Image()
+      img.onload = async () => {
+        const MAX = 256
+        const ratio = Math.min(MAX / img.width, MAX / img.height, 1)
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.round(img.width * ratio)
+        canvas.height = Math.round(img.height * ratio)
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height)
+        const base64 = canvas.toDataURL('image/jpeg', 0.85)
+        try {
+          await updateUser(currentUser.id, { avatar: base64 })
+          const stored = localStorage.getItem('smart_user')
+          const u = stored ? JSON.parse(stored) : {}
+          const merged = { ...u, avatar: base64 }
+          localStorage.setItem('smart_user', JSON.stringify(merged))
+          if (onUserUpdate) onUserUpdate(merged)
+        } catch {
+          // silent
+        } finally {
+          setUploadingAvatar(false)
+        }
       }
-      reader.readAsDataURL(file)
-    } catch { setUploadingAvatar(false) }
+      img.src = ev.target.result
+    }
+    reader.readAsDataURL(file)
   }
 
   const user = currentUser
