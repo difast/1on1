@@ -8,7 +8,7 @@ export default function Dashboard({ user }) {
   const [teamMembers, setTeamMembers] = useState({})
 
   useEffect(() => {
-    getTeams().then(({ data }) => setTeams(data))
+    getTeams().then(({ data }) => setTeams(data)).catch(() => setTeams([]))
   }, [])
 
   const toggleTeam = async (teamId) => {

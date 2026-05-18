@@ -10,7 +10,7 @@ export default function Layout({ children, currentUser }) {
 
   useEffect(() => {
     if (currentUser?.id) {
-      getUnreadCount(currentUser.id).then(r => setUnreadCount(r.data.unread_count))
+      getUnreadCount(currentUser.id).then(r => setUnreadCount(r.data.unread_count)).catch(() => {})
     }
   }, [currentUser])
 
