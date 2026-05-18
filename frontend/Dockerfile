@@ -1,4 +1,4 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
@@ -7,4 +7,13 @@ RUN npm install
 
 COPY . .
 
-CMD ["npm", "run", "dev", "--", "--host"]
+ARG VITE_API_URL
+ENV VITE_API_URL=$VITE_API_URL
+
+RUN npm run build
+
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g serve
+COPY --from=builder /app/dist ./dist
+CMD ["serve", "-s", "dist", "-p", "3000"]
