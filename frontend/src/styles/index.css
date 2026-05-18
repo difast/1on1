@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* FullCalendar overrides */
+.fc {
+  font-family: inherit !important;
+}
+
+.fc-toolbar-title {
+  font-size: 1.1rem !important;
+  font-weight: 600 !important;
+}
+
+.fc-button {
+  background-color: #4f46e5 !important;
+  border-color: #4f46e5 !important;
+  font-size: 0.875rem !important;
+  padding: 0.4rem 0.75rem !important;
+}
+
+.fc-button:hover {
+  background-color: #4338ca !important;
+  border-color: #4338ca !important;
+}
+
+.fc-event {
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  padding: 2px 4px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+  border-radius: 3px;
+}
