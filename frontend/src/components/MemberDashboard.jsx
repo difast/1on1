@@ -311,7 +311,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   Участники команды
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {team.members.map((m) => (
+                  {[...team.members].sort((a, b) => {
+                    if (!a.last_meeting_date) return -1
+                    if (!b.last_meeting_date) return 1
+                    return new Date(a.last_meeting_date) - new Date(b.last_meeting_date)
+                  }).map((m) => (
                     <div key={m.user_id} className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-3">
                       <div className="relative flex-shrink-0">
                         <div className="w-10 h-10 bg-indigo-400 rounded-full flex items-center justify-center text-white font-bold">

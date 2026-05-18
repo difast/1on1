@@ -13,4 +13,5 @@ class User(Base):
     linkedin = Column(String(255), nullable=True)
     github = Column(String(255), nullable=True)
     calendar_token = Column(Text, nullable=True)
+    avatar = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())

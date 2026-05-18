@@ -75,6 +75,28 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     }
   }
 
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file || !currentUser?.id) return
+    setUploadingAvatar(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async (ev) => {
+        const base64 = ev.target.result
+        await updateUser(currentUser.id, { avatar: base64 })
+        const stored = localStorage.getItem('smart_user')
+        const u = stored ? JSON.parse(stored) : {}
+        const merged = { ...u, avatar: base64 }
+        localStorage.setItem('smart_user', JSON.stringify(merged))
+        if (onUserUpdate) onUserUpdate(merged)
+        setUploadingAvatar(false)
+      }
+      reader.readAsDataURL(file)
+    } catch { setUploadingAvatar(false) }
+  }
+
   const user = currentUser
   const initial = (user?.name || '?').charAt(0).toUpperCase()
 
@@ -143,10 +165,18 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         {/* Left sidebar */}
         <aside className="w-64 fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto z-30">
           <div className="p-5 flex flex-col items-center text-center border-b border-gray-100">
-            {/* Avatar */}
-            <div className="w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-2xl mb-3">
-              {initial}
-            </div>
+            {/* Avatar with upload */}
+            <label className="relative cursor-pointer group mb-3">
+              <div className="w-16 h-16 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
+                {user?.avatar
+                  ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  : initial}
+              </div>
+              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <span className="text-white text-xs">{uploadingAvatar ? '...' : '📷'}</span>
+              </div>
+              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+            </label>
             <p className="font-bold text-gray-900 text-sm leading-tight">{user?.name || '—'}</p>
             {user?.title && (
               <p className="text-xs text-gray-500 mt-0.5">{user.title}</p>

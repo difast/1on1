@@ -17,6 +17,7 @@ class UserOut(BaseModel):
     telegram: Optional[str]
     linkedin: Optional[str]
     github: Optional[str]
+    avatar: Optional[str]
     created_at: datetime
 
     class Config:
@@ -28,3 +29,4 @@ class UserUpdate(BaseModel):
     telegram: Optional[str] = None
     linkedin: Optional[str] = None
     github: Optional[str] = None
+    avatar: Optional[str] = None
