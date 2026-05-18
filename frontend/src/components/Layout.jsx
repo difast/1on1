@@ -1,9 +1,8 @@
-import { Link } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { getUnreadCount, getNotifications, markAllRead } from '../api/client'
 import NotificationBell from './NotificationBell'
 
-export default function Layout({ children, currentUser }) {
+export default function Layout({ children, currentUser, onLogout }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -34,23 +33,24 @@ export default function Layout({ children, currentUser }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             <div className="flex items-center">
-              <Link to="/" className="text-xl font-bold text-indigo-600">
-                Smart 1-on-1
-              </Link>
-              <div className="ml-10 flex space-x-4">
-                <Link to="/" className="text-gray-700 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
-                  Dashboard
-                </Link>
-              </div>
+              <span className="text-xl font-bold text-indigo-600">Smart 1-on-1</span>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
               <NotificationBell
                 count={unreadCount}
                 onClick={toggleNotifications}
               />
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-gray-600 font-medium">
                 {currentUser?.name}
               </div>
+              {onLogout && (
+                <button
+                  onClick={onLogout}
+                  className="text-sm text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Выйти
+                </button>
+              )}
             </div>
           </div>
         </div>

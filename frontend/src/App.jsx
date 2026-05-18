@@ -1,25 +1,39 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
-import Layout from './components/Layout'
-import Dashboard from './components/Dashboard'
-import TeamList from './components/TeamList'
-import MeetingScheduler from './components/MeetingScheduler'
-import TaskBoard from './components/TaskBoard'
+import { useState, useEffect } from 'react'
+import Onboarding from './components/Onboarding'
+import LeadDashboard from './components/LeadDashboard'
+import MemberDashboard from './components/MemberDashboard'
 
 function App() {
-  // For MVP, we simulate a logged-in user
-  const currentUser = { id: 1, name: 'Demo Lead', role: 'team_lead' }
+  const [user, setUser] = useState(() => {
+    try {
+      const stored = localStorage.getItem('smart_user')
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
 
-  return (
-    <Layout currentUser={currentUser}>
-      <Routes>
-        <Route path="/" element={<Dashboard user={currentUser} />} />
-        <Route path="/teams/:teamId" element={<TeamList user={currentUser} />} />
-        <Route path="/schedule/:teamId/:memberId" element={<MeetingScheduler user={currentUser} />} />
-        <Route path="/tasks/:teamId" element={<TaskBoard user={currentUser} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </Layout>
-  )
+  const initialInviteCode = new URLSearchParams(window.location.search).get('join') || ''
+
+  const handleComplete = (newUser) => {
+    localStorage.setItem('smart_user', JSON.stringify(newUser))
+    setUser(newUser)
+  }
+
+  const handleLogout = () => {
+    localStorage.removeItem('smart_user')
+    setUser(null)
+  }
+
+  if (!user) {
+    return <Onboarding initialInviteCode={initialInviteCode} onComplete={handleComplete} />
+  }
+
+  if (user.role === 'team_lead') {
+    return <LeadDashboard user={user} onLogout={handleLogout} />
+  }
+
+  return <MemberDashboard user={user} onLogout={handleLogout} />
 }
 
 export default App
