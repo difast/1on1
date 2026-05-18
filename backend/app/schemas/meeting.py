@@ -33,9 +33,9 @@ class MeetingUpdate(BaseModel):
 
 class MeetingRequest(BaseModel):
     member_id: int
-    team_lead_id: int
+    team_lead_id: Optional[int] = None
     team_id: int
-    proposed_date: datetime
+    scheduled_date: datetime
     topic: Optional[str] = None
 
 class SlotProposal(BaseModel):

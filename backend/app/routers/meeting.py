@@ -78,11 +78,16 @@ def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(g
 
 @router.post("/request", response_model=MeetingOut)
 def request_meeting(data: MeetingRequest, db: Session = Depends(get_db)):
+    team_lead_id = data.team_lead_id
+    if not team_lead_id:
+        team = db.query(Team).filter(Team.id == data.team_id).first()
+        if team:
+            team_lead_id = team.team_lead_id
     meeting = Meeting(
         team_id=data.team_id,
-        team_lead_id=data.team_lead_id,
+        team_lead_id=team_lead_id,
         member_id=data.member_id,
-        scheduled_date=data.proposed_date,
+        scheduled_date=data.scheduled_date,
         status="requested",
         agenda=data.topic,
     )
