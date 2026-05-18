@@ -1,10 +1,7 @@
 import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.database import engine, Base
 from app.routers import user, team, meeting, task, notification, scheduling
-
-Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
 
