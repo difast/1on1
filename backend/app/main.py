@@ -24,6 +24,7 @@ app.include_router(task.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(notification.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(scheduling.router, prefix="/api/scheduling", tags=["scheduling"])
 
+@app.get("/")
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
