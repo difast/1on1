@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask } from '../api/client'
 import Layout from './Layout'
+import UserCard from './UserCard'
 
-export default function LeadDashboard({ user, onLogout }) {
+export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [teams, setTeams] = useState([])
   const [selectedTeamId, setSelectedTeamId] = useState(null)
   const [teamDetail, setTeamDetail] = useState(null)
@@ -14,12 +15,22 @@ export default function LeadDashboard({ user, onLogout }) {
   const [showSchedule, setShowSchedule] = useState(false)
   const [scheduleMember, setScheduleMember] = useState(null)
 
+  // UserCard popup
+  const [userCardMember, setUserCardMember] = useState(null)
+
   // Form state
   const [newTeamName, setNewTeamName] = useState('')
   const [newMember, setNewMember] = useState({ name: '', email: '', title: '', role: 'member' })
   const [scheduleDate, setScheduleDate] = useState('')
   const [formLoading, setFormLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+
+  // Tasks per member: { [user_id]: Task[] }
+  const [memberTasks, setMemberTasks] = useState({})
+  // Expanded task sections: Set of user_ids
+  const [expandedTasks, setExpandedTasks] = useState(new Set())
+  // New task forms: { [user_id]: { title, due_date, loading, open } }
+  const [taskForms, setTaskForms] = useState({})
 
   const loadTeams = useCallback(async () => {
     try {
@@ -63,6 +74,84 @@ export default function LeadDashboard({ user, onLogout }) {
       loadTeamDetail(selectedTeamId)
     }
   }, [selectedTeamId])
+
+  const loadMemberTasks = useCallback(async (memberId, teamId) => {
+    try {
+      const { data } = await getTasks({ assigned_to: memberId, team_id: teamId })
+      setMemberTasks((prev) => ({ ...prev, [memberId]: data || [] }))
+    } catch {
+      setMemberTasks((prev) => ({ ...prev, [memberId]: [] }))
+    }
+  }, [])
+
+  const toggleTasksExpanded = (memberId) => {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev)
+      if (next.has(memberId)) {
+        next.delete(memberId)
+      } else {
+        next.add(memberId)
+        // Load tasks when expanding if not yet loaded
+        if (memberTasks[memberId] === undefined) {
+          loadMemberTasks(memberId, selectedTeamId)
+        }
+      }
+      return next
+    })
+  }
+
+  const handleToggleTask = async (task, memberId) => {
+    try {
+      await updateTask(task.id, { completed: !task.completed })
+      setMemberTasks((prev) => ({
+        ...prev,
+        [memberId]: (prev[memberId] || []).map((t) =>
+          t.id === task.id ? { ...t, completed: !t.completed } : t
+        ),
+      }))
+    } catch {}
+  }
+
+  const openTaskForm = (memberId) => {
+    setTaskForms((prev) => ({
+      ...prev,
+      [memberId]: { title: '', due_date: '', loading: false, open: true },
+    }))
+  }
+
+  const closeTaskForm = (memberId) => {
+    setTaskForms((prev) => ({
+      ...prev,
+      [memberId]: { ...(prev[memberId] || {}), open: false },
+    }))
+  }
+
+  const handleCreateTask = async (e, memberId) => {
+    e.preventDefault()
+    const form = taskForms[memberId] || {}
+    if (!form.title?.trim()) return
+    setTaskForms((prev) => ({ ...prev, [memberId]: { ...prev[memberId], loading: true } }))
+    try {
+      const { data: newTask } = await createTask({
+        title: form.title.trim(),
+        due_date: form.due_date || null,
+        team_id: selectedTeamId,
+        assigned_to: memberId,
+        assigned_by: user.id,
+        meeting_id: null,
+      })
+      setMemberTasks((prev) => ({
+        ...prev,
+        [memberId]: [...(prev[memberId] || []), newTask],
+      }))
+      setTaskForms((prev) => ({
+        ...prev,
+        [memberId]: { title: '', due_date: '', loading: false, open: false },
+      }))
+    } catch {
+      setTaskForms((prev) => ({ ...prev, [memberId]: { ...prev[memberId], loading: false } }))
+    }
+  }
 
   const handleCreateTeam = async (e) => {
     e.preventDefault()
@@ -153,7 +242,7 @@ export default function LeadDashboard({ user, onLogout }) {
   }
 
   return (
-    <Layout currentUser={user} onLogout={onLogout}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -229,49 +318,186 @@ export default function LeadDashboard({ user, onLogout }) {
                 {/* Members grid */}
                 {teamDetail.members && teamDetail.members.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {teamDetail.members.map((member) => (
-                      <div
-                        key={member.user_id}
-                        className={`bg-white rounded-2xl border-2 p-5 ${statusBorder[member.status_color] || 'border-gray-200'}`}
-                      >
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="relative flex-shrink-0">
-                            <div className="w-11 h-11 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                              {(member.user_name || '?').charAt(0).toUpperCase()}
+                    {teamDetail.members.map((member) => {
+                      const tasksExpanded = expandedTasks.has(member.user_id)
+                      const tasks = memberTasks[member.user_id]
+                      const taskForm = taskForms[member.user_id] || {}
+
+                      return (
+                        <div
+                          key={member.user_id}
+                          className={`bg-white rounded-2xl border-2 p-5 ${statusBorder[member.status_color] || 'border-gray-200'}`}
+                        >
+                          {/* Member header */}
+                          <div className="flex items-center gap-3 mb-3">
+                            <div className="relative flex-shrink-0">
+                              <div className="w-11 h-11 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                {(member.user_name || '?').charAt(0).toUpperCase()}
+                              </div>
+                              {member.is_registered && (
+                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
+                              )}
                             </div>
-                            {member.is_registered && (
-                              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-900 truncate">{member.user_name}</p>
+                              <p className="text-xs text-gray-500 truncate">{member.role}</p>
+                            </div>
+                            {/* Info icon button */}
+                            <button
+                              onClick={() => setUserCardMember(member)}
+                              title="Профиль участника"
+                              className="text-gray-400 hover:text-indigo-600 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-indigo-50 transition-colors flex-shrink-0"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                              </svg>
+                            </button>
+                            <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${statusBadge[member.status_color] || 'bg-gray-100 text-gray-600'}`}>
+                              {statusLabel[member.status_color] || '—'}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-gray-500 mb-3">
+                            Последняя встреча:{' '}
+                            <span className="font-medium text-gray-700">
+                              {member.last_meeting_date
+                                ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
+                                : 'Не было'}
+                            </span>
+                          </p>
+
+                          <button
+                            onClick={() => {
+                              setScheduleMember(member)
+                              setShowSchedule(true)
+                            }}
+                            className="w-full bg-indigo-600 text-white text-sm py-2 rounded-xl hover:bg-indigo-700 transition-colors mb-3"
+                          >
+                            Запланировать встречу
+                          </button>
+
+                          {/* Tasks section */}
+                          <div>
+                            <button
+                              onClick={() => toggleTasksExpanded(member.user_id)}
+                              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors w-full text-left"
+                            >
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                                className={`w-3.5 h-3.5 transition-transform ${tasksExpanded ? 'rotate-90' : ''}`}
+                              >
+                                <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                              </svg>
+                              Задачи
+                              {tasks !== undefined && (
+                                <span className="ml-auto bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5 text-xs">
+                                  {tasks.length}
+                                </span>
+                              )}
+                            </button>
+
+                            {tasksExpanded && (
+                              <div className="mt-2 space-y-1.5">
+                                {tasks === undefined && (
+                                  <p className="text-xs text-gray-400 py-1">Загрузка...</p>
+                                )}
+
+                                {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
+                                  <p className="text-xs text-gray-400 py-1">Нет задач</p>
+                                )}
+
+                                {tasks !== undefined && tasks.map((task) => (
+                                  <div key={task.id} className="flex items-start gap-2 py-1">
+                                    <button
+                                      onClick={() => handleToggleTask(task, member.user_id)}
+                                      className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
+                                        task.completed
+                                          ? 'bg-green-500 border-green-500 text-white'
+                                          : 'border-gray-300 hover:border-indigo-500'
+                                      }`}
+                                    >
+                                      {task.completed && (
+                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                      )}
+                                    </button>
+                                    <div className="flex-1 min-w-0">
+                                      <p className={`text-xs leading-snug ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>
+                                        {task.title || task.description}
+                                      </p>
+                                      {task.due_date && (
+                                        <p className={`text-xs mt-0.5 ${task.completed ? 'text-gray-300' : 'text-gray-400'}`}>
+                                          до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+
+                                {/* Inline add task form */}
+                                {taskForm.open ? (
+                                  <form
+                                    onSubmit={(e) => handleCreateTask(e, member.user_id)}
+                                    className="pt-1 space-y-1.5"
+                                  >
+                                    <input
+                                      type="text"
+                                      value={taskForm.title || ''}
+                                      onChange={(e) =>
+                                        setTaskForms((prev) => ({
+                                          ...prev,
+                                          [member.user_id]: { ...prev[member.user_id], title: e.target.value },
+                                        }))
+                                      }
+                                      placeholder="Название задачи"
+                                      autoFocus
+                                      className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                    <input
+                                      type="date"
+                                      value={taskForm.due_date || ''}
+                                      onChange={(e) =>
+                                        setTaskForms((prev) => ({
+                                          ...prev,
+                                          [member.user_id]: { ...prev[member.user_id], due_date: e.target.value },
+                                        }))
+                                      }
+                                      className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    />
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => closeTaskForm(member.user_id)}
+                                        className="flex-1 text-xs border border-gray-200 text-gray-500 py-1 rounded-lg hover:bg-gray-50"
+                                      >
+                                        Отмена
+                                      </button>
+                                      <button
+                                        type="submit"
+                                        disabled={taskForm.loading}
+                                        className="flex-1 text-xs bg-indigo-600 text-white py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
+                                      >
+                                        {taskForm.loading ? '...' : 'Добавить'}
+                                      </button>
+                                    </div>
+                                  </form>
+                                ) : (
+                                  <button
+                                    onClick={() => openTaskForm(member.user_id)}
+                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1 flex items-center gap-1"
+                                  >
+                                    + Добавить задачу
+                                  </button>
+                                )}
+                              </div>
                             )}
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="font-semibold text-gray-900 truncate">{member.user_name}</p>
-                            <p className="text-xs text-gray-500 truncate">{member.role}</p>
-                          </div>
-                          <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${statusBadge[member.status_color] || 'bg-gray-100 text-gray-600'}`}>
-                            {statusLabel[member.status_color] || '—'}
-                          </span>
                         </div>
-
-                        <p className="text-xs text-gray-500 mb-3">
-                          Последняя встреча:{' '}
-                          <span className="font-medium text-gray-700">
-                            {member.last_meeting_date
-                              ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
-                              : 'Не было'}
-                          </span>
-                        </p>
-
-                        <button
-                          onClick={() => {
-                            setScheduleMember(member)
-                            setShowSchedule(true)
-                          }}
-                          className="w-full bg-indigo-600 text-white text-sm py-2 rounded-xl hover:bg-indigo-700 transition-colors"
-                        >
-                          Запланировать встречу
-                        </button>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 ) : (
                   <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
@@ -289,6 +515,11 @@ export default function LeadDashboard({ user, onLogout }) {
           </div>
         )}
       </div>
+
+      {/* UserCard popup */}
+      {userCardMember && (
+        <UserCard user={userCardMember} onClose={() => setUserCardMember(null)} />
+      )}
 
       {/* Modal: Create team */}
       {showCreateTeam && (

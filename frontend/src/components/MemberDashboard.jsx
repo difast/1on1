@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask } from '../api/client'
 import Layout from './Layout'
 
-export default function MemberDashboard({ user, onLogout }) {
+export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
   const [teamId, setTeamId] = useState(() => {
     try {
@@ -189,7 +189,7 @@ export default function MemberDashboard({ user, onLogout }) {
   // Loading state
   if (loadingTeam) {
     return (
-      <Layout currentUser={user} onLogout={onLogout}>
+      <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
         <div className="flex items-center justify-center py-24 text-gray-400">Загрузка...</div>
       </Layout>
     )
@@ -198,7 +198,7 @@ export default function MemberDashboard({ user, onLogout }) {
   // No team: show join form
   if (!team) {
     return (
-      <Layout currentUser={user} onLogout={onLogout}>
+      <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
         <div className="max-w-md mx-auto mt-12">
           <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center shadow-sm">
             <div className="text-5xl mb-4">🔗</div>
@@ -236,7 +236,7 @@ export default function MemberDashboard({ user, onLogout }) {
   }
 
   return (
-    <Layout currentUser={user} onLogout={onLogout}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
       <div className="space-y-6">
         {/* Header */}
         <div>
