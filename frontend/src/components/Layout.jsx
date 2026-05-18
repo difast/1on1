@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getUnreadCount, getNotifications, markAllRead, updateUser } from '../api/client'
 import NotificationBell from './NotificationBell'
 
@@ -6,6 +6,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
+  const [scrolled, setScrolled] = useState(false)
 
   // Profile sidebar edit state
   const [editing, setEditing] = useState(false)
@@ -16,6 +17,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     github: currentUser?.github || '',
   })
   const [savingProfile, setSavingProfile] = useState(false)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -23,7 +25,6 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     }
   }, [currentUser])
 
-  // Sync form when currentUser changes
   useEffect(() => {
     setProfileForm({
       title: currentUser?.title || '',
@@ -32,6 +33,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
       github: currentUser?.github || '',
     })
   }, [currentUser])
+
+  useEffect(() => {
+    const handler = () => setScrolled(window.scrollY > 0)
+    window.addEventListener('scroll', handler, { passive: true })
+    return () => window.removeEventListener('scroll', handler)
+  }, [])
 
   const toggleNotifications = async () => {
     if (!showNotifications) {
@@ -58,8 +65,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         linkedin: profileForm.linkedin.trim() || null,
         github: profileForm.github.trim() || null,
       }
-      const { data: updatedUser } = await updateUser(currentUser.id, payload)
-      // Merge updated fields into localStorage
+      await updateUser(currentUser.id, payload)
       try {
         const stored = localStorage.getItem('smart_user')
         const u = stored ? JSON.parse(stored) : {}
@@ -75,13 +81,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     }
   }
 
-  const [uploadingAvatar, setUploadingAvatar] = useState(false)
-
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
     if (!file || !currentUser?.id) return
     setUploadingAvatar(true)
-
     const reader = new FileReader()
     reader.onload = (ev) => {
       const img = new Image()
@@ -115,58 +118,67 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const initial = (user?.name || '?').charAt(0).toUpperCase()
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Top nav — full width */}
-      <nav className="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-40">
-        <div className="px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <span className="text-xl font-bold text-indigo-600">Smart 1-on-1</span>
-            </div>
-            <div className="flex items-center space-x-3">
-              <NotificationBell
-                count={unreadCount}
-                onClick={toggleNotifications}
-              />
-              <div className="text-sm text-gray-600 font-medium">
-                {user?.name}
-              </div>
-              {onLogout && (
-                <button
-                  onClick={onLogout}
-                  className="text-sm text-gray-500 hover:text-red-600 border border-gray-200 hover:border-red-300 px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  Выйти
-                </button>
-              )}
-            </div>
-          </div>
+    <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
+      {/* Header — exactly as per .header CSS spec */}
+      <header className={`header${scrolled ? ' scrolled' : ''}`}>
+        <span className="logo">Smart <span className="accent">1-on-1</span></span>
+
+        <nav className="nav">
+          <span className="nav-link disabled">Аналитика</span>
+        </nav>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationBell count={unreadCount} onClick={toggleNotifications} />
+          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
+            {user?.name}
+          </span>
+          {onLogout && (
+            <button onClick={onLogout} className="btn btn-ghost btn-sm">
+              Выйти
+            </button>
+          )}
         </div>
-      </nav>
+      </header>
 
       {/* Notification dropdown */}
       {showNotifications && (
-        <div className="fixed right-4 top-16 w-96 bg-white shadow-xl rounded-lg border z-50">
-          <div className="p-4 border-b flex justify-between items-center">
-            <h3 className="font-semibold">Уведомления</h3>
+        <div style={{
+          position: 'fixed', right: 16, top: 68, width: 360,
+          background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
+          border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)',
+          zIndex: 150, overflow: 'hidden', animation: 'popIn 0.2s var(--ease-spring)',
+        }}>
+          <div style={{
+            padding: '14px 18px', borderBottom: '1px solid var(--color-border)',
+            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          }}>
+            <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)' }}>
+              Уведомления
+            </span>
             <button
               onClick={handleMarkAllRead}
-              className="text-sm text-indigo-600 hover:text-indigo-800"
+              style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
             >
               Прочитать все
             </button>
           </div>
-          <div className="max-h-96 overflow-y-auto">
+          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
             {notifications.length === 0 ? (
-              <p className="p-4 text-gray-500 text-center">Нет уведомлений</p>
+              <p style={{ padding: '20px 18px', color: 'var(--color-text-muted)', fontSize: 14, textAlign: 'center' }}>
+                Нет уведомлений
+              </p>
             ) : (
               notifications.map(n => (
                 <div
                   key={n.id}
-                  className={`p-4 border-b hover:bg-gray-50 ${!n.read ? 'bg-indigo-50' : ''}`}
+                  style={{
+                    padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
+                    background: !n.read ? 'var(--blue-50)' : 'transparent',
+                    transition: 'background 0.15s',
+                  }}
                 >
-                  <p className="font-medium text-sm">{n.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">{n.body}</p>
+                  <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
                 </div>
               ))
             )}
@@ -174,120 +186,99 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         </div>
       )}
 
-      {/* Body: sidebar + content */}
-      <div className="flex pt-16 min-h-screen">
-        {/* Left sidebar */}
-        <aside className="w-64 fixed left-0 top-16 bottom-0 bg-white border-r border-gray-200 flex flex-col overflow-y-auto z-30">
-          <div className="p-5 flex flex-col items-center text-center border-b border-gray-100">
-            {/* Avatar with upload */}
-            <label className="relative cursor-pointer group mb-3">
-              <div className="w-16 h-16 rounded-full overflow-hidden bg-indigo-600 flex items-center justify-center text-white font-bold text-2xl">
+      {/* Body: sidebar + main */}
+      <div style={{ display: 'flex' }}>
+        {/* Sidebar */}
+        <aside style={{
+          width: 240,
+          position: 'fixed',
+          top: 58,
+          bottom: 0,
+          left: 0,
+          overflowY: 'auto',
+          background: 'var(--color-surface)',
+          borderRight: '1px solid var(--color-border)',
+          display: 'flex',
+          flexDirection: 'column',
+          zIndex: 90,
+        }}>
+          {/* Profile */}
+          <div style={{
+            padding: '24px 20px 18px',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
+            borderBottom: '1px solid var(--color-border)',
+          }}>
+            <label style={{ position: 'relative', cursor: 'pointer', marginBottom: 12 }} className="group">
+              <div className={`avatar avatar-xl avatar-circle ${user?.avatar ? '' : 'avatar-accent'}`}
+                style={{ width: 64, height: 64, borderRadius: '50%' }}>
                 {user?.avatar
-                  ? <img src={user.avatar} alt="avatar" className="w-full h-full object-cover" />
+                  ? <img src={user.avatar} alt="avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                   : initial}
               </div>
-              <div className="absolute inset-0 rounded-full bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <span className="text-white text-xs">{uploadingAvatar ? '...' : '📷'}</span>
+              <div style={{
+                position: 'absolute', inset: 0, borderRadius: '50%',
+                background: 'rgba(0,0,0,0.4)', opacity: 0,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                transition: 'opacity 0.15s',
+              }}
+                onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                onMouseLeave={e => e.currentTarget.style.opacity = 0}
+              >
+                <span style={{ color: '#fff', fontSize: 16 }}>{uploadingAvatar ? '⏳' : '📷'}</span>
               </div>
-              <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
+              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
             </label>
-            <p className="font-bold text-gray-900 text-sm leading-tight">{user?.name || '—'}</p>
-            {user?.title && (
-              <p className="text-xs text-gray-500 mt-0.5">{user.title}</p>
-            )}
-            {!user?.title && !editing && (
-              <p className="text-xs text-gray-300 mt-0.5 italic">должность не указана</p>
-            )}
+
+            <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
+              {user?.name || '—'}
+            </p>
+            {user?.title
+              ? <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{user.title}</p>
+              : <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3, fontStyle: 'italic' }}>должность не указана</p>
+            }
           </div>
 
           {/* Social links */}
           {!editing && (
-            <div className="px-5 py-4 space-y-2 border-b border-gray-100 flex-1">
-              <SocialLink
-                icon="✈"
-                label="Telegram"
-                value={user?.telegram}
+            <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+              <SocialLink icon="✈" label="Telegram" value={user?.telegram}
                 href={user?.telegram ? `https://t.me/${user.telegram.replace(/^@/, '')}` : null}
                 display={user?.telegram ? `@${user.telegram.replace(/^@/, '')}` : null}
-                placeholder="не указан"
-              />
-              <SocialLink
-                icon="in"
-                label="LinkedIn"
-                value={user?.linkedin}
-                href={user?.linkedin
-                  ? (user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`)
-                  : null}
-                display={user?.linkedin}
-                placeholder="не указан"
-              />
-              <SocialLink
-                icon="<>"
-                label="GitHub"
-                value={user?.github}
+                placeholder="не указан" />
+              <SocialLink icon="in" label="LinkedIn" value={user?.linkedin}
+                href={user?.linkedin ? (user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`) : null}
+                display={user?.linkedin} placeholder="не указан" />
+              <SocialLink icon="⌥" label="GitHub" value={user?.github}
                 href={user?.github ? `https://github.com/${user.github.replace(/^@/, '')}` : null}
-                display={user?.github}
-                placeholder="не указан"
-              />
+                display={user?.github} placeholder="не указан" />
             </div>
           )}
 
           {/* Edit form */}
           {editing && (
-            <form onSubmit={handleSaveProfile} className="px-5 py-4 space-y-3 border-b border-gray-100 flex-1">
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Должность</label>
-                <input
-                  type="text"
-                  value={profileForm.title}
-                  onChange={e => setProfileForm(p => ({ ...p, title: e.target.value }))}
-                  placeholder="Senior Engineer"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">Telegram</label>
-                <input
-                  type="text"
-                  value={profileForm.telegram}
-                  onChange={e => setProfileForm(p => ({ ...p, telegram: e.target.value }))}
-                  placeholder="@username"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">LinkedIn</label>
-                <input
-                  type="text"
-                  value={profileForm.linkedin}
-                  onChange={e => setProfileForm(p => ({ ...p, linkedin: e.target.value }))}
-                  placeholder="username или URL"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-gray-500 mb-1">GitHub</label>
-                <input
-                  type="text"
-                  value={profileForm.github}
-                  onChange={e => setProfileForm(p => ({ ...p, github: e.target.value }))}
-                  placeholder="username"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                />
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => setEditing(false)}
-                  className="flex-1 text-xs border border-gray-200 text-gray-600 py-1.5 rounded-lg hover:bg-gray-50 transition-colors"
-                >
+            <form onSubmit={handleSaveProfile} style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
+              {[
+                { key: 'title', label: 'Должность', placeholder: 'Senior Engineer' },
+                { key: 'telegram', label: 'Telegram', placeholder: '@username' },
+                { key: 'linkedin', label: 'LinkedIn', placeholder: 'username или URL' },
+                { key: 'github', label: 'GitHub', placeholder: 'username' },
+              ].map(f => (
+                <div key={f.key} className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label">{f.label}</label>
+                  <input
+                    type="text"
+                    value={profileForm[f.key]}
+                    onChange={e => setProfileForm(p => ({ ...p, [f.key]: e.target.value }))}
+                    placeholder={f.placeholder}
+                    className="input input-sm"
+                  />
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button type="button" onClick={() => setEditing(false)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
                   Отмена
                 </button>
-                <button
-                  type="submit"
-                  disabled={savingProfile}
-                  className="flex-1 text-xs bg-indigo-600 text-white py-1.5 rounded-lg hover:bg-indigo-700 disabled:opacity-60 transition-colors"
-                >
+                <button type="submit" disabled={savingProfile} className="btn btn-accent btn-sm" style={{ flex: 1 }}>
                   {savingProfile ? '...' : 'Сохранить'}
                 </button>
               </div>
@@ -296,11 +287,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
 
           {/* Edit button */}
           {!editing && (
-            <div className="px-5 py-4">
-              <button
-                onClick={() => setEditing(true)}
-                className="w-full text-sm border border-gray-200 text-gray-600 py-2 rounded-xl hover:bg-gray-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
-              >
+            <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)' }}>
+              <button onClick={() => setEditing(true)} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
                 Редактировать
               </button>
             </div>
@@ -308,7 +296,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         </aside>
 
         {/* Main content */}
-        <main className="ml-64 flex-1 px-6 py-8">
+        <main style={{ marginLeft: 240, flex: 1, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
           {children}
         </main>
       </div>
@@ -318,21 +306,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
 
 function SocialLink({ icon, label, value, href, display, placeholder }) {
   return (
-    <div className="flex items-start gap-2">
-      <span className="text-gray-400 text-xs w-5 flex-shrink-0 mt-0.5 text-center font-mono">{icon}</span>
-      <div className="min-w-0">
-        <p className="text-xs text-gray-400">{label}</p>
+    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+      <span style={{ width: 18, fontSize: 12, color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', flexShrink: 0, marginTop: 1 }}>
+        {icon}
+      </span>
+      <div style={{ minWidth: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+          {label}
+        </p>
         {value && href ? (
-          <a
-            href={href}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs text-indigo-600 hover:underline break-all"
-          >
+          <a href={href} target="_blank" rel="noreferrer"
+            style={{ fontSize: 13, color: 'var(--color-accent)', wordBreak: 'break-all' }}>
             {display || value}
           </a>
         ) : (
-          <p className="text-xs text-gray-300 italic">{placeholder}</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{placeholder}</p>
         )}
       </div>
     </div>

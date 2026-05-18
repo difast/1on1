@@ -10,33 +10,25 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [teamDetail, setTeamDetail] = useState(null)
   const [loadingTeam, setLoadingTeam] = useState(false)
 
-  // My meetings state
   const [myMeetings, setMyMeetings] = useState([])
   const [loadingMeetings, setLoadingMeetings] = useState(false)
   const [usersMap, setUsersMap] = useState({})
   const [meetingAction, setMeetingAction] = useState({})
 
-  // Modals
   const [showCreateTeam, setShowCreateTeam] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [scheduleMember, setScheduleMember] = useState(null)
-
-  // UserCard popup
   const [userCardMember, setUserCardMember] = useState(null)
 
-  // Form state
   const [newTeamName, setNewTeamName] = useState('')
   const [newMember, setNewMember] = useState({ name: '', email: '', title: '', role: 'member' })
   const [scheduleDate, setScheduleDate] = useState('')
   const [formLoading, setFormLoading] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  // Tasks per member: { [user_id]: Task[] }
   const [memberTasks, setMemberTasks] = useState({})
-  // Expanded task sections: Set of user_ids
   const [expandedTasks, setExpandedTasks] = useState(new Set())
-  // New task forms: { [user_id]: { title, due_date, loading, open } }
   const [taskForms, setTaskForms] = useState({})
 
   const loadTeams = useCallback(async () => {
@@ -57,7 +49,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     setLoadingTeam(true)
     try {
       const { data } = await getTeam(teamId)
-      // Sort members: no meeting first, then by last_meeting_date ascending
       const sorted = [...(data.members || [])].sort((a, b) => {
         if (!a.last_meeting_date && !b.last_meeting_date) return 0
         if (!a.last_meeting_date) return -1
@@ -110,15 +101,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     }
   }
 
-  useEffect(() => {
-    loadTeams()
-  }, [user.id])
-
-  useEffect(() => {
-    if (selectedTeamId) {
-      loadTeamDetail(selectedTeamId)
-    }
-  }, [selectedTeamId])
+  useEffect(() => { loadTeams() }, [user.id])
+  useEffect(() => { if (selectedTeamId) loadTeamDetail(selectedTeamId) }, [selectedTeamId])
 
   const loadMemberTasks = useCallback(async (memberId, teamId) => {
     try {
@@ -136,10 +120,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         next.delete(memberId)
       } else {
         next.add(memberId)
-        // Load tasks when expanding if not yet loaded
-        if (memberTasks[memberId] === undefined) {
-          loadMemberTasks(memberId, selectedTeamId)
-        }
+        if (memberTasks[memberId] === undefined) loadMemberTasks(memberId, selectedTeamId)
       }
       return next
     })
@@ -158,17 +139,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   const openTaskForm = (memberId) => {
-    setTaskForms((prev) => ({
-      ...prev,
-      [memberId]: { title: '', due_date: '', loading: false, open: true },
-    }))
+    setTaskForms((prev) => ({ ...prev, [memberId]: { title: '', due_date: '', loading: false, open: true } }))
   }
 
   const closeTaskForm = (memberId) => {
-    setTaskForms((prev) => ({
-      ...prev,
-      [memberId]: { ...(prev[memberId] || {}), open: false },
-    }))
+    setTaskForms((prev) => ({ ...prev, [memberId]: { ...(prev[memberId] || {}), open: false } }))
   }
 
   const handleCreateTask = async (e, memberId) => {
@@ -185,14 +160,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         assigned_by: user.id,
         meeting_id: null,
       })
-      setMemberTasks((prev) => ({
-        ...prev,
-        [memberId]: [...(prev[memberId] || []), newTask],
-      }))
-      setTaskForms((prev) => ({
-        ...prev,
-        [memberId]: { title: '', due_date: '', loading: false, open: false },
-      }))
+      setMemberTasks((prev) => ({ ...prev, [memberId]: [...(prev[memberId] || []), newTask] }))
+      setTaskForms((prev) => ({ ...prev, [memberId]: { title: '', due_date: '', loading: false, open: false } }))
     } catch {
       setTaskForms((prev) => ({ ...prev, [memberId]: { ...prev[memberId], loading: false } }))
     }
@@ -208,11 +177,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setShowCreateTeam(false)
       await loadTeams()
       setSelectedTeamId(data.id)
-    } catch {
-      // silent
-    } finally {
-      setFormLoading(false)
-    }
+    } catch {} finally { setFormLoading(false) }
   }
 
   const handleAddMember = async (e) => {
@@ -230,11 +195,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setNewMember({ name: '', email: '', title: '', role: 'member' })
       setShowAddMember(false)
       await loadTeamDetail(selectedTeamId)
-    } catch {
-      // silent
-    } finally {
-      setFormLoading(false)
-    }
+    } catch {} finally { setFormLoading(false) }
   }
 
   const handleScheduleMeeting = async (e) => {
@@ -253,11 +214,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setShowSchedule(false)
       setScheduleMember(null)
       await loadTeamDetail(selectedTeamId)
-    } catch {
-      // silent
-    } finally {
-      setFormLoading(false)
-    }
+    } catch {} finally { setFormLoading(false) }
   }
 
   const handleCopyInvite = () => {
@@ -268,16 +225,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const statusBorder = {
-    green: 'border-green-400',
-    yellow: 'border-yellow-400',
-    red: 'border-red-400',
+  const statusBorderClass = {
+    green: 'border-status-green',
+    yellow: 'border-status-yellow',
+    red: 'border-status-red',
   }
 
-  const statusBadge = {
-    green: 'bg-green-100 text-green-700',
-    yellow: 'bg-yellow-100 text-yellow-700',
-    red: 'bg-red-100 text-red-700',
+  const statusBadgeClass = {
+    green: 'badge badge-green',
+    yellow: 'badge badge-amber',
+    red: 'badge badge-red',
   }
 
   const statusLabel = {
@@ -288,42 +245,32 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
+      <div style={{ maxWidth: 1100 }}>
+        {/* Page header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
               {activeView === 'teams' ? 'Мои команды' : 'Мои встречи'}
             </h1>
-            <p className="text-sm text-gray-500 mt-0.5">Добро пожаловать, {user.name}</p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           {activeView === 'teams' && (
-            <button
-              onClick={() => setShowCreateTeam(true)}
-              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
-            >
+            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
               + Создать команду
             </button>
           )}
         </div>
 
         {/* View tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+        <div className="tabs" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
             { key: 'teams', label: 'Команды' },
             { key: 'meetings', label: 'Мои встречи' },
-          ].map((tab) => (
+          ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => {
-                setActiveView(tab.key)
-                if (tab.key === 'meetings') loadMyMeetings()
-              }}
-              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                activeView === tab.key
-                  ? 'bg-white text-indigo-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
+              onClick={() => { setActiveView(tab.key); if (tab.key === 'meetings') loadMyMeetings() }}
+              className={`tab${activeView === tab.key ? ' active' : ''}`}
             >
               {tab.label}
             </button>
@@ -343,403 +290,319 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           />
         )}
 
-        {/* Team tabs — only when teams view is active */}
+        {/* Teams view */}
         {activeView === 'teams' && (<>
-        {teams.length > 0 && (
-          <div className="flex gap-2 flex-wrap">
-            {teams.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => setSelectedTeamId(t.id)}
-                className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  selectedTeamId === t.id
-                    ? 'bg-indigo-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-indigo-400'
-                }`}
-              >
-                {t.name}
-              </button>
-            ))}
-          </div>
-        )}
+          {teams.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>
+              {teams.map(t => (
+                <button
+                  key={t.id}
+                  onClick={() => setSelectedTeamId(t.id)}
+                  className={selectedTeamId === t.id ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
+                >
+                  {t.name}
+                </button>
+              ))}
+            </div>
+          )}
 
-        {/* No teams */}
-        {teams.length === 0 && (
-          <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
-            <div className="text-5xl mb-4">👥</div>
-            <h3 className="text-lg font-semibold text-gray-700">Нет команд</h3>
-            <p className="text-sm text-gray-500 mt-1">Создайте первую команду, чтобы начать</p>
-          </div>
-        )}
+          {teams.length === 0 && (
+            <div className="empty-state">
+              <div className="empty-icon">👥</div>
+              <p className="empty-title">Нет команд</p>
+              <p className="empty-desc">Создайте первую команду, чтобы начать</p>
+            </div>
+          )}
 
-        {/* Team detail */}
-        {selectedTeamId && (
-          <div>
-            {loadingTeam ? (
-              <div className="text-center py-12 text-gray-400">Загрузка...</div>
-            ) : teamDetail ? (
-              <div className="space-y-4">
-                {/* Invite code bar */}
-                <div className="bg-indigo-50 border border-indigo-100 rounded-2xl px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
-                  <div>
-                    <p className="text-xs text-indigo-500 font-medium uppercase tracking-wide">Код приглашения</p>
-                    <p className="font-mono text-lg font-bold text-indigo-700 mt-0.5">{teamDetail.invite_code}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={handleCopyInvite}
-                      className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
-                    >
-                      {copied ? '✓ Скопировано!' : 'Скопировать ссылку'}
-                    </button>
-                    <button
-                      onClick={() => setShowAddMember(true)}
-                      className="bg-white border border-indigo-300 text-indigo-600 px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-50 transition-colors"
-                    >
-                      + Добавить участника
-                    </button>
-                  </div>
+          {selectedTeamId && (
+            <div>
+              {loadingTeam ? (
+                <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--color-text-muted)' }}>
+                  <div className="spinner" style={{ margin: '0 auto' }} />
                 </div>
+              ) : teamDetail ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                  {/* Invite banner */}
+                  <div className="invite-banner" onClick={handleCopyInvite}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 'var(--radius-md)',
+                      background: 'var(--color-surface)', display: 'flex', alignItems: 'center',
+                      justifyContent: 'center', fontSize: 20, flexShrink: 0,
+                      boxShadow: 'var(--shadow-sm)', border: '1px solid var(--blue-200)',
+                    }}>🔗</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
+                        Код приглашения
+                      </p>
+                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--blue-700)' }}>
+                        {teamDetail.invite_code}
+                      </p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                      <button
+                        onClick={e => { e.stopPropagation(); handleCopyInvite() }}
+                        className="btn btn-accent btn-sm"
+                      >
+                        {copied ? '✓ Скопировано!' : 'Скопировать ссылку'}
+                      </button>
+                      <button
+                        onClick={e => { e.stopPropagation(); setShowAddMember(true) }}
+                        className="btn btn-accent-ghost btn-sm"
+                      >
+                        + Участника
+                      </button>
+                    </div>
+                  </div>
 
-                {/* Members grid */}
-                {teamDetail.members && teamDetail.members.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {teamDetail.members.map((member) => {
-                      const tasksExpanded = expandedTasks.has(member.user_id)
-                      const tasks = memberTasks[member.user_id]
-                      const taskForm = taskForms[member.user_id] || {}
+                  {/* Members grid */}
+                  {teamDetail.members && teamDetail.members.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                      {teamDetail.members.map((member) => {
+                        const tasksExpanded = expandedTasks.has(member.user_id)
+                        const tasks = memberTasks[member.user_id]
+                        const taskForm = taskForms[member.user_id] || {}
 
-                      return (
-                        <div
-                          key={member.user_id}
-                          className={`bg-white rounded-2xl border-2 p-5 ${statusBorder[member.status_color] || 'border-gray-200'}`}
-                        >
-                          {/* Member header */}
-                          <div className="flex items-center gap-3 mb-3">
-                            <div className="relative flex-shrink-0">
-                              <div className="w-11 h-11 bg-indigo-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                                {(member.user_name || '?').charAt(0).toUpperCase()}
-                              </div>
-                              {member.is_registered && (
-                                <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-900 truncate">{member.user_name}</p>
-                              <p className="text-xs text-gray-500 truncate">{member.role}</p>
-                            </div>
-                            {/* Info icon button */}
-                            <button
-                              onClick={() => setUserCardMember(member)}
-                              title="Профиль участника"
-                              className="text-gray-400 hover:text-indigo-600 w-7 h-7 flex items-center justify-center rounded-lg hover:bg-indigo-50 transition-colors flex-shrink-0"
-                            >
-                              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
-                                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
-                              </svg>
-                            </button>
-                            <span className={`text-xs font-medium px-2 py-1 rounded-full flex-shrink-0 ${statusBadge[member.status_color] || 'bg-gray-100 text-gray-600'}`}>
-                              {statusLabel[member.status_color] || '—'}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-gray-500 mb-3">
-                            Последняя встреча:{' '}
-                            <span className="font-medium text-gray-700">
-                              {member.last_meeting_date
-                                ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
-                                : 'Не было'}
-                            </span>
-                          </p>
-
-                          <button
-                            onClick={() => {
-                              setScheduleMember(member)
-                              setShowSchedule(true)
-                            }}
-                            className="w-full bg-indigo-600 text-white text-sm py-2 rounded-xl hover:bg-indigo-700 transition-colors mb-3"
+                        return (
+                          <div
+                            key={member.user_id}
+                            className={`member-card ${statusBorderClass[member.status_color] || ''}`}
+                            style={{ borderWidth: member.status_color ? 2 : 1 }}
                           >
-                            Запланировать встречу
-                          </button>
-
-                          {/* Tasks section */}
-                          <div>
-                            <button
-                              onClick={() => toggleTasksExpanded(member.user_id)}
-                              className="flex items-center gap-1.5 text-xs font-medium text-gray-500 hover:text-indigo-600 transition-colors w-full text-left"
-                            >
-                              <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                viewBox="0 0 20 20"
-                                fill="currentColor"
-                                className={`w-3.5 h-3.5 transition-transform ${tasksExpanded ? 'rotate-90' : ''}`}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                              <div style={{ position: 'relative', flexShrink: 0 }}>
+                                <div className="avatar avatar-md avatar-accent">
+                                  {(member.user_name || '?').charAt(0).toUpperCase()}
+                                </div>
+                                {member.is_registered && (
+                                  <div style={{
+                                    position: 'absolute', bottom: -1, right: -1,
+                                    width: 11, height: 11, borderRadius: '50%',
+                                    background: 'var(--color-success)', border: '2px solid var(--color-surface)',
+                                  }} />
+                                )}
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {member.user_name}
+                                </p>
+                                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {member.role}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => setUserCardMember(member)}
+                                className="btn-icon"
+                                style={{ width: 28, height: 28, borderRadius: 7, fontSize: 14 }}
+                                title="Профиль"
                               >
-                                <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
-                              </svg>
-                              Задачи
-                              {tasks !== undefined && (
-                                <span className="ml-auto bg-gray-100 text-gray-600 rounded-full px-1.5 py-0.5 text-xs">
-                                  {tasks.length}
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
+                                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
+                                </svg>
+                              </button>
+                              {member.status_color && (
+                                <span className={statusBadgeClass[member.status_color] || 'badge badge-gray'}>
+                                  {statusLabel[member.status_color] || '—'}
                                 </span>
                               )}
+                            </div>
+
+                            <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
+                              Последняя встреча:{' '}
+                              <span style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>
+                                {member.last_meeting_date
+                                  ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
+                                  : 'Не было'}
+                              </span>
+                            </p>
+
+                            <button
+                              onClick={() => { setScheduleMember(member); setShowSchedule(true) }}
+                              className="btn btn-accent btn-sm"
+                              style={{ width: '100%', marginBottom: 12 }}
+                            >
+                              Запланировать встречу
                             </button>
 
-                            {tasksExpanded && (
-                              <div className="mt-2 space-y-1.5">
-                                {tasks === undefined && (
-                                  <p className="text-xs text-gray-400 py-1">Загрузка...</p>
+                            {/* Tasks section */}
+                            <div>
+                              <button
+                                onClick={() => toggleTasksExpanded(member.user_id)}
+                                style={{
+                                  display: 'flex', alignItems: 'center', gap: 6,
+                                  fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)',
+                                  background: 'none', border: 'none', cursor: 'pointer',
+                                  width: '100%', textAlign: 'left', transition: 'color 0.15s',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.color = 'var(--color-accent)'}
+                                onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-secondary)'}
+                              >
+                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                                  style={{ width: 13, height: 13, transition: 'transform 0.2s', transform: tasksExpanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                                  <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                                </svg>
+                                Задачи
+                                {tasks !== undefined && (
+                                  <span className="badge badge-gray" style={{ marginLeft: 'auto', padding: '2px 7px', fontSize: 11 }}>
+                                    {tasks.length}
+                                  </span>
                                 )}
+                              </button>
 
-                                {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
-                                  <p className="text-xs text-gray-400 py-1">Нет задач</p>
-                                )}
-
-                                {tasks !== undefined && tasks.map((task) => (
-                                  <div key={task.id} className="flex items-start gap-2 py-1">
-                                    <button
-                                      onClick={() => handleToggleTask(task, member.user_id)}
-                                      className={`mt-0.5 w-4 h-4 rounded border flex-shrink-0 flex items-center justify-center transition-colors ${
-                                        task.completed
-                                          ? 'bg-green-500 border-green-500 text-white'
-                                          : 'border-gray-300 hover:border-indigo-500'
-                                      }`}
-                                    >
-                                      {task.completed && (
-                                        <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                      )}
-                                    </button>
-                                    <div className="flex-1 min-w-0">
-                                      <p className={`text-xs leading-snug ${task.completed ? 'line-through text-gray-400' : 'text-gray-800'}`}>
-                                        {task.title || task.description}
-                                      </p>
-                                      {task.due_date && (
-                                        <p className={`text-xs mt-0.5 ${task.completed ? 'text-gray-300' : 'text-gray-400'}`}>
-                                          до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                              {tasksExpanded && (
+                                <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                  {tasks === undefined && <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Загрузка...</p>}
+                                  {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
+                                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Нет задач</p>
+                                  )}
+                                  {tasks !== undefined && tasks.map(task => (
+                                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
+                                      <button
+                                        onClick={() => handleToggleTask(task, member.user_id)}
+                                        style={{
+                                          marginTop: 1, width: 16, height: 16, borderRadius: 5, flexShrink: 0,
+                                          border: task.completed ? 'none' : '1.5px solid var(--gray-300)',
+                                          background: task.completed ? 'var(--color-success)' : 'var(--color-surface)',
+                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                          cursor: 'pointer', transition: 'all 0.15s',
+                                        }}
+                                      >
+                                        {task.completed && (
+                                          <svg style={{ width: 10, height: 10 }} fill="none" stroke="#fff" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                          </svg>
+                                        )}
+                                      </button>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{
+                                          fontSize: 12, lineHeight: 1.4,
+                                          color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                                          textDecoration: task.completed ? 'line-through' : 'none',
+                                        }}>
+                                          {task.title || task.description}
                                         </p>
-                                      )}
+                                        {task.due_date && (
+                                          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                                            до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                          </p>
+                                        )}
+                                      </div>
                                     </div>
-                                  </div>
-                                ))}
+                                  ))}
 
-                                {/* Inline add task form */}
-                                {taskForm.open ? (
-                                  <form
-                                    onSubmit={(e) => handleCreateTask(e, member.user_id)}
-                                    className="pt-1 space-y-1.5"
-                                  >
-                                    <input
-                                      type="text"
-                                      value={taskForm.title || ''}
-                                      onChange={(e) =>
-                                        setTaskForms((prev) => ({
-                                          ...prev,
-                                          [member.user_id]: { ...prev[member.user_id], title: e.target.value },
-                                        }))
-                                      }
-                                      placeholder="Название задачи"
-                                      autoFocus
-                                      className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    />
-                                    <input
-                                      type="date"
-                                      value={taskForm.due_date || ''}
-                                      onChange={(e) =>
-                                        setTaskForms((prev) => ({
-                                          ...prev,
-                                          [member.user_id]: { ...prev[member.user_id], due_date: e.target.value },
-                                        }))
-                                      }
-                                      className="w-full border border-gray-200 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    />
-                                    <div className="flex gap-1.5">
-                                      <button
-                                        type="button"
-                                        onClick={() => closeTaskForm(member.user_id)}
-                                        className="flex-1 text-xs border border-gray-200 text-gray-500 py-1 rounded-lg hover:bg-gray-50"
-                                      >
-                                        Отмена
-                                      </button>
-                                      <button
-                                        type="submit"
-                                        disabled={taskForm.loading}
-                                        className="flex-1 text-xs bg-indigo-600 text-white py-1 rounded-lg hover:bg-indigo-700 disabled:opacity-60"
-                                      >
-                                        {taskForm.loading ? '...' : 'Добавить'}
-                                      </button>
-                                    </div>
-                                  </form>
-                                ) : (
-                                  <button
-                                    onClick={() => openTaskForm(member.user_id)}
-                                    className="text-xs text-indigo-600 hover:text-indigo-800 font-medium mt-1 flex items-center gap-1"
-                                  >
-                                    + Добавить задачу
-                                  </button>
-                                )}
-                              </div>
-                            )}
+                                  {taskForm.open ? (
+                                    <form onSubmit={e => handleCreateTask(e, member.user_id)} style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4 }}>
+                                      <input
+                                        type="text"
+                                        value={taskForm.title || ''}
+                                        onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], title: e.target.value } }))}
+                                        placeholder="Название задачи"
+                                        autoFocus
+                                        className="input input-sm"
+                                        style={{ fontSize: 12 }}
+                                      />
+                                      <input
+                                        type="date"
+                                        value={taskForm.due_date || ''}
+                                        onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], due_date: e.target.value } }))}
+                                        className="input input-sm"
+                                        style={{ fontSize: 12 }}
+                                      />
+                                      <div style={{ display: 'flex', gap: 6 }}>
+                                        <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: 12 }}>
+                                          Отмена
+                                        </button>
+                                        <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm" style={{ flex: 1, fontSize: 12 }}>
+                                          {taskForm.loading ? '...' : 'Добавить'}
+                                        </button>
+                                      </div>
+                                    </form>
+                                  ) : (
+                                    <button
+                                      onClick={() => openTaskForm(member.user_id)}
+                                      style={{ fontSize: 12, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginTop: 2 }}
+                                    >
+                                      + Добавить задачу
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
                           </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-10 text-center">
-                    <p className="text-gray-500">В команде пока нет участников</p>
-                    <button
-                      onClick={() => setShowAddMember(true)}
-                      className="mt-3 text-indigo-600 text-sm font-medium hover:underline"
-                    >
-                      + Добавить первого участника
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : null}
-          </div>
-        )}
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="empty-state">
+                      <div className="empty-icon">👤</div>
+                      <p className="empty-title">Нет участников</p>
+                      <p className="empty-desc">Добавьте первого участника в команду</p>
+                      <button onClick={() => setShowAddMember(true)} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>
+                        + Добавить участника
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+            </div>
+          )}
         </>)}
       </div>
 
-      {/* UserCard popup */}
-      {userCardMember && (
-        <UserCard user={userCardMember} onClose={() => setUserCardMember(null)} />
-      )}
+      {userCardMember && <UserCard user={userCardMember} onClose={() => setUserCardMember(null)} />}
 
-      {/* Modal: Create team */}
       {showCreateTeam && (
         <Modal title="Создать команду" onClose={() => setShowCreateTeam(false)}>
-          <form onSubmit={handleCreateTeam} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Название команды</label>
-              <input
-                type="text"
-                value={newTeamName}
-                onChange={(e) => setNewTeamName(e.target.value)}
-                placeholder="Например: Backend Team"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                autoFocus
-              />
+          <form onSubmit={handleCreateTeam}>
+            <div className="form-group">
+              <label className="form-label">Название команды</label>
+              <input type="text" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder="Например: Backend Team" className="input" autoFocus />
             </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowCreateTeam(false)}
-                className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
-              >
-                Отмена
-              </button>
-              <button
-                type="submit"
-                disabled={formLoading}
-                className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {formLoading ? 'Создание...' : 'Создать'}
-              </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+              <button type="button" onClick={() => setShowCreateTeam(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Создание...' : 'Создать'}</button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Modal: Add member */}
       {showAddMember && (
         <Modal title="Добавить участника" onClose={() => setShowAddMember(false)}>
-          <form onSubmit={handleAddMember} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Имя *</label>
-              <input
-                type="text"
-                value={newMember.name}
-                onChange={(e) => setNewMember((p) => ({ ...p, name: e.target.value }))}
-                placeholder="Иван Иванов"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email *</label>
-              <input
-                type="email"
-                value={newMember.email}
-                onChange={(e) => setNewMember((p) => ({ ...p, email: e.target.value }))}
-                placeholder="ivan@company.com"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Должность</label>
-              <input
-                type="text"
-                value={newMember.title}
-                onChange={(e) => setNewMember((p) => ({ ...p, title: e.target.value }))}
-                placeholder="Senior Engineer"
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Роль</label>
-              <select
-                value={newMember.role}
-                onChange={(e) => setNewMember((p) => ({ ...p, role: e.target.value }))}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
+          <form onSubmit={handleAddMember}>
+            {[
+              { key: 'name', label: 'Имя *', placeholder: 'Иван Иванов', type: 'text' },
+              { key: 'email', label: 'Email *', placeholder: 'ivan@company.com', type: 'email' },
+              { key: 'title', label: 'Должность', placeholder: 'Senior Engineer', type: 'text' },
+            ].map(f => (
+              <div key={f.key} className="form-group">
+                <label className="form-label">{f.label}</label>
+                <input type={f.type} value={newMember[f.key]} onChange={e => setNewMember(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} className="input" />
+              </div>
+            ))}
+            <div className="form-group">
+              <label className="form-label">Роль</label>
+              <select value={newMember.role} onChange={e => setNewMember(p => ({ ...p, role: e.target.value }))} className="input">
                 <option value="member">Участник</option>
                 <option value="team_lead">Тимлид</option>
               </select>
             </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => setShowAddMember(false)}
-                className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
-              >
-                Отмена
-              </button>
-              <button
-                type="submit"
-                disabled={formLoading}
-                className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {formLoading ? 'Добавление...' : 'Добавить'}
-              </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+              <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Добавление...' : 'Добавить'}</button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Modal: Schedule meeting */}
       {showSchedule && scheduleMember && (
-        <Modal
-          title={`Встреча с ${scheduleMember.user_name}`}
-          onClose={() => { setShowSchedule(false); setScheduleMember(null) }}
-        >
-          <form onSubmit={handleScheduleMeeting} className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Дата и время</label>
-              <input
-                type="datetime-local"
-                value={scheduleDate}
-                onChange={(e) => setScheduleDate(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                autoFocus
-              />
+        <Modal title={`Встреча с ${scheduleMember.user_name}`} onClose={() => { setShowSchedule(false); setScheduleMember(null) }}>
+          <form onSubmit={handleScheduleMeeting}>
+            <div className="form-group">
+              <label className="form-label">Дата и время</label>
+              <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="input" autoFocus />
             </div>
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={() => { setShowSchedule(false); setScheduleMember(null) }}
-                className="flex-1 border border-gray-300 text-gray-700 py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50"
-              >
-                Отмена
-              </button>
-              <button
-                type="submit"
-                disabled={formLoading}
-                className="flex-1 bg-indigo-600 text-white py-2.5 rounded-xl text-sm font-medium hover:bg-indigo-700 disabled:opacity-60"
-              >
-                {formLoading ? 'Сохранение...' : 'Запланировать'}
-              </button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
+              <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Сохранение...' : 'Запланировать'}</button>
             </div>
           </form>
         </Modal>
@@ -748,79 +611,62 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   )
 }
 
-function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm, onDecline, onReload }) {
+function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm, onDecline }) {
   const now = new Date()
 
   const requests = meetings.filter(m => m.status === 'requested')
   const upcoming = meetings.filter(m =>
-    m.status !== 'requested' &&
-    m.status !== 'cancelled' &&
-    m.status !== 'declined' &&
+    m.status !== 'requested' && m.status !== 'cancelled' && m.status !== 'declined' &&
     new Date(m.scheduled_date) >= now
   ).sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
   const past = meetings.filter(m =>
     (new Date(m.scheduled_date) < now && m.status !== 'requested') ||
-    m.status === 'completed' ||
-    m.status === 'cancelled' ||
-    m.status === 'declined'
+    m.status === 'completed' || m.status === 'cancelled' || m.status === 'declined'
   ).sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
 
   const statusBadge = {
-    scheduled: 'bg-blue-100 text-blue-700',
-    confirmed: 'bg-green-100 text-green-700',
-    completed: 'bg-gray-100 text-gray-600',
-    cancelled: 'bg-red-100 text-red-700',
-    declined: 'bg-red-100 text-red-700',
-    requested: 'bg-yellow-100 text-yellow-700',
+    scheduled: 'badge badge-blue', confirmed: 'badge badge-green', completed: 'badge badge-gray',
+    cancelled: 'badge badge-red', declined: 'badge badge-red', requested: 'badge badge-amber',
   }
   const statusLabel = {
-    scheduled: 'Запланирована',
-    confirmed: 'Подтверждена',
-    completed: 'Завершена',
-    cancelled: 'Отменена',
-    declined: 'Отклонена',
-    requested: 'Запрошена',
+    scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена',
+    cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена',
   }
 
-  if (loading) return <div className="text-center py-16 text-gray-400">Загрузка...</div>
+  if (loading) return (
+    <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+      <div className="spinner" />
+    </div>
+  )
 
   const MeetingRow = ({ m, showActions }) => {
-    const member = usersMap[m.member_id]
-    const memberName = member?.name || `Участник #${m.member_id}`
-    const loading = meetingAction[m.id]
+    const memberName = usersMap[m.member_id]?.name || `Участник #${m.member_id}`
+    const busy = meetingAction[m.id]
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4">
-        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-center">
-          <span className="text-xs font-bold text-indigo-600 leading-tight">
+      <div className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 48, height: 48, borderRadius: 'var(--radius-md)',
+          background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+        }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
             {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
           </span>
-          <span className="text-xs text-indigo-400">
+          <span style={{ fontSize: 11, color: 'var(--blue-400)' }}>
             {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
           </span>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="font-medium text-gray-900 text-sm">{memberName}</p>
-          {m.agenda && <p className="text-xs text-gray-500 mt-0.5 truncate">{m.agenda}</p>}
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
+          {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
         </div>
-        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${statusBadge[m.status] || 'bg-gray-100 text-gray-600'}`}>
+        <span className={statusBadge[m.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
           {statusLabel[m.status] || m.status}
         </span>
         {showActions && (
-          <div className="flex gap-2 flex-shrink-0">
-            <button
-              onClick={() => onConfirm(m.id)}
-              disabled={loading}
-              className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              Принять
-            </button>
-            <button
-              onClick={() => onDecline(m.id)}
-              disabled={loading}
-              className="text-xs border border-red-300 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50"
-            >
-              Отклонить
-            </button>
+          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <button onClick={() => onConfirm(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
+            <button onClick={() => onDecline(m.id)} disabled={busy} className="btn btn-danger btn-sm">Отклонить</button>
           </div>
         )}
       </div>
@@ -828,41 +674,39 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
   }
 
   return (
-    <div className="space-y-6">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       {requests.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-            Запросы на встречу
-            <span className="ml-2 bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full font-medium">{requests.length}</span>
-          </h3>
-          <div className="space-y-3">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <p className="label">Запросы на встречу</p>
+            <span className="badge badge-amber">{requests.length}</span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {requests.map(m => <MeetingRow key={m.id} m={m} showActions />)}
           </div>
         </div>
       )}
-
       {upcoming.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Предстоящие</h3>
-          <div className="space-y-3">
+          <p className="label" style={{ marginBottom: 12 }}>Предстоящие</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {upcoming.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
           </div>
         </div>
       )}
-
       {past.length > 0 && (
         <div>
-          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Прошедшие</h3>
-          <div className="space-y-3">
+          <p className="label" style={{ marginBottom: 12 }}>Прошедшие</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {past.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
           </div>
         </div>
       )}
-
       {meetings.length === 0 && (
-        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
-          <div className="text-5xl mb-4">📅</div>
-          <p className="text-gray-500">Встреч пока нет</p>
+        <div className="empty-state">
+          <div className="empty-icon">📅</div>
+          <p className="empty-title">Встреч пока нет</p>
+          <p className="empty-desc">Встречи появятся здесь после их планирования</p>
         </div>
       )}
     </div>
@@ -871,15 +715,13 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
 
 function Modal({ title, onClose, children }) {
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md">
-        <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
-          <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">
-            ×
-          </button>
+    <div className="overlay-center" onClick={e => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <h3 className="modal-title">{title}</h3>
+          <button onClick={onClose} className="modal-close">×</button>
         </div>
-        <div className="p-6">{children}</div>
+        {children}
       </div>
     </div>
   )
