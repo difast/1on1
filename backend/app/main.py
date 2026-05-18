@@ -1,6 +1,9 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import text
+from app.database import get_db
 from app.routers import user, team, meeting, task, notification, scheduling
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
@@ -28,3 +31,9 @@ app.include_router(scheduling.router, prefix="/api/scheduling", tags=["schedulin
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
+
+@app.post("/api/dev/reset-db", include_in_schema=False)
+def reset_db(db: Session = Depends(get_db)):
+    db.execute(text("TRUNCATE notifications, tasks, meetings, team_members, teams, users RESTART IDENTITY CASCADE"))
+    db.commit()
+    return {"ok": True}

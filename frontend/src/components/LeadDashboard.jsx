@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
+  const [activeView, setActiveView] = useState('teams')
   const [teams, setTeams] = useState([])
   const [selectedTeamId, setSelectedTeamId] = useState(null)
   const [teamDetail, setTeamDetail] = useState(null)
   const [loadingTeam, setLoadingTeam] = useState(false)
+
+  // My meetings state
+  const [myMeetings, setMyMeetings] = useState([])
+  const [loadingMeetings, setLoadingMeetings] = useState(false)
+  const [usersMap, setUsersMap] = useState({})
+  const [meetingAction, setMeetingAction] = useState({})
 
   // Modals
   const [showCreateTeam, setShowCreateTeam] = useState(false)
@@ -64,6 +71,44 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setLoadingTeam(false)
     }
   }, [])
+
+  const loadMyMeetings = useCallback(async () => {
+    setLoadingMeetings(true)
+    try {
+      const [{ data: meetings }, { data: users }] = await Promise.all([
+        getMeetings({ team_lead_id: user.id }),
+        getUsers(),
+      ])
+      setMyMeetings(meetings || [])
+      const map = {}
+      for (const u of (users || [])) map[u.id] = u
+      setUsersMap(map)
+    } catch {
+      setMyMeetings([])
+    } finally {
+      setLoadingMeetings(false)
+    }
+  }, [user.id])
+
+  const handleConfirmMeeting = async (meetingId) => {
+    setMeetingAction(prev => ({ ...prev, [meetingId]: true }))
+    try {
+      await confirmMeeting(meetingId)
+      setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, status: 'confirmed' } : m))
+    } catch {} finally {
+      setMeetingAction(prev => ({ ...prev, [meetingId]: false }))
+    }
+  }
+
+  const handleDeclineMeeting = async (meetingId) => {
+    setMeetingAction(prev => ({ ...prev, [meetingId]: true }))
+    try {
+      await declineMeeting(meetingId)
+      setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, status: 'declined' } : m))
+    } catch {} finally {
+      setMeetingAction(prev => ({ ...prev, [meetingId]: false }))
+    }
+  }
 
   useEffect(() => {
     loadTeams()
@@ -247,18 +292,59 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Мои команды</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              {activeView === 'teams' ? 'Мои команды' : 'Мои встречи'}
+            </h1>
             <p className="text-sm text-gray-500 mt-0.5">Добро пожаловать, {user.name}</p>
           </div>
-          <button
-            onClick={() => setShowCreateTeam(true)}
-            className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
-          >
-            + Создать команду
-          </button>
+          {activeView === 'teams' && (
+            <button
+              onClick={() => setShowCreateTeam(true)}
+              className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-medium hover:bg-indigo-700 transition-colors"
+            >
+              + Создать команду
+            </button>
+          )}
         </div>
 
-        {/* Team tabs */}
+        {/* View tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit">
+          {[
+            { key: 'teams', label: 'Команды' },
+            { key: 'meetings', label: 'Мои встречи' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => {
+                setActiveView(tab.key)
+                if (tab.key === 'meetings') loadMyMeetings()
+              }}
+              className={`px-5 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeView === tab.key
+                  ? 'bg-white text-indigo-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* My Meetings view */}
+        {activeView === 'meetings' && (
+          <MyMeetingsView
+            meetings={myMeetings}
+            loading={loadingMeetings}
+            usersMap={usersMap}
+            meetingAction={meetingAction}
+            onConfirm={handleConfirmMeeting}
+            onDecline={handleDeclineMeeting}
+            onReload={loadMyMeetings}
+          />
+        )}
+
+        {/* Team tabs — only when teams view is active */}
+        {activeView === 'teams' && (<>
         {teams.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {teams.map((t) => (
@@ -514,6 +600,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             ) : null}
           </div>
         )}
+        </>)}
       </div>
 
       {/* UserCard popup */}
@@ -658,6 +745,127 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
+  )
+}
+
+function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm, onDecline, onReload }) {
+  const now = new Date()
+
+  const requests = meetings.filter(m => m.status === 'requested')
+  const upcoming = meetings.filter(m =>
+    m.status !== 'requested' &&
+    m.status !== 'cancelled' &&
+    m.status !== 'declined' &&
+    new Date(m.scheduled_date) >= now
+  ).sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
+  const past = meetings.filter(m =>
+    (new Date(m.scheduled_date) < now && m.status !== 'requested') ||
+    m.status === 'completed' ||
+    m.status === 'cancelled' ||
+    m.status === 'declined'
+  ).sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
+
+  const statusBadge = {
+    scheduled: 'bg-blue-100 text-blue-700',
+    confirmed: 'bg-green-100 text-green-700',
+    completed: 'bg-gray-100 text-gray-600',
+    cancelled: 'bg-red-100 text-red-700',
+    declined: 'bg-red-100 text-red-700',
+    requested: 'bg-yellow-100 text-yellow-700',
+  }
+  const statusLabel = {
+    scheduled: 'Запланирована',
+    confirmed: 'Подтверждена',
+    completed: 'Завершена',
+    cancelled: 'Отменена',
+    declined: 'Отклонена',
+    requested: 'Запрошена',
+  }
+
+  if (loading) return <div className="text-center py-16 text-gray-400">Загрузка...</div>
+
+  const MeetingRow = ({ m, showActions }) => {
+    const member = usersMap[m.member_id]
+    const memberName = member?.name || `Участник #${m.member_id}`
+    const loading = meetingAction[m.id]
+    return (
+      <div className="bg-white rounded-2xl border border-gray-200 p-4 flex items-center gap-4">
+        <div className="w-12 h-12 bg-indigo-50 rounded-xl flex flex-col items-center justify-center flex-shrink-0 text-center">
+          <span className="text-xs font-bold text-indigo-600 leading-tight">
+            {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+          </span>
+          <span className="text-xs text-indigo-400">
+            {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+          </span>
+        </div>
+        <div className="flex-1 min-w-0">
+          <p className="font-medium text-gray-900 text-sm">{memberName}</p>
+          {m.agenda && <p className="text-xs text-gray-500 mt-0.5 truncate">{m.agenda}</p>}
+        </div>
+        <span className={`text-xs font-medium px-2.5 py-1 rounded-full flex-shrink-0 ${statusBadge[m.status] || 'bg-gray-100 text-gray-600'}`}>
+          {statusLabel[m.status] || m.status}
+        </span>
+        {showActions && (
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => onConfirm(m.id)}
+              disabled={loading}
+              className="text-xs bg-green-600 text-white px-3 py-1.5 rounded-lg hover:bg-green-700 disabled:opacity-50"
+            >
+              Принять
+            </button>
+            <button
+              onClick={() => onDecline(m.id)}
+              disabled={loading}
+              className="text-xs border border-red-300 text-red-600 px-3 py-1.5 rounded-lg hover:bg-red-50 disabled:opacity-50"
+            >
+              Отклонить
+            </button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {requests.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+            Запросы на встречу
+            <span className="ml-2 bg-yellow-100 text-yellow-700 text-xs px-2 py-0.5 rounded-full font-medium">{requests.length}</span>
+          </h3>
+          <div className="space-y-3">
+            {requests.map(m => <MeetingRow key={m.id} m={m} showActions />)}
+          </div>
+        </div>
+      )}
+
+      {upcoming.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Предстоящие</h3>
+          <div className="space-y-3">
+            {upcoming.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
+          </div>
+        </div>
+      )}
+
+      {past.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">Прошедшие</h3>
+          <div className="space-y-3">
+            {past.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
+          </div>
+        </div>
+      )}
+
+      {meetings.length === 0 && (
+        <div className="bg-white rounded-2xl border border-dashed border-gray-300 p-12 text-center">
+          <div className="text-5xl mb-4">📅</div>
+          <p className="text-gray-500">Встреч пока нет</p>
+        </div>
+      )}
+    </div>
   )
 }
 
