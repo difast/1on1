@@ -25,15 +25,19 @@ function App() {
     setUser(null)
   }
 
+  const handleUserUpdate = (updatedUser) => {
+    setUser(updatedUser)
+  }
+
   if (!user) {
     return <Onboarding initialInviteCode={initialInviteCode} onComplete={handleComplete} />
   }
 
   if (user.role === 'team_lead') {
-    return <LeadDashboard user={user} onLogout={handleLogout} />
+    return <LeadDashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
   }
 
-  return <MemberDashboard user={user} onLogout={handleLogout} />
+  return <MemberDashboard user={user} onLogout={handleLogout} onUserUpdate={handleUserUpdate} />
 }
 
 export default App
