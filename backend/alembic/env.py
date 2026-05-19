@@ -12,11 +12,17 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 
+_SUPABASE_URL = "postgresql://postgres:Assassins2552ass@db.gxhmgwfgbouuvmdnswel.supabase.co:5432/postgres?sslmode=require"
+
+
 def _get_url():
-    url = os.environ.get("DATABASE_URL") or config.get_main_option("sqlalchemy.url")
+    url = os.environ.get("DATABASE_URL", "")
+    # Ignore Railway's internal PostgreSQL — only accept Supabase
+    if "supabase.co" not in url:
+        return _SUPABASE_URL
     if url.startswith("postgres://"):
         url = url.replace("postgres://", "postgresql://", 1)
-    if "supabase.co" in url and "sslmode" not in url:
+    if "sslmode" not in url:
         sep = "&" if "?" in url else "?"
         url += sep + "sslmode=require"
     return url
