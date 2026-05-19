@@ -50,4 +50,8 @@ export const markRead = (id) => api.post(`/notifications/${id}/read`)
 export const markAllRead = (userId) =>
   api.post('/notifications/read-all', null, { params: { user_id: userId } })
 
+// Analytics
+export const getLeadAnalytics = (userId) => api.get(`/analytics/lead/${userId}`)
+export const getMemberAnalytics = (userId) => api.get(`/analytics/member/${userId}`)
+
 export default api

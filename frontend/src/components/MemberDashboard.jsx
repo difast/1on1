@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask } from '../api/client'
 import Layout from './Layout'
+import MemberAnalytics from './MemberAnalytics'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -199,6 +200,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'overview', label: 'Обзор' },
             { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
+            { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
@@ -374,6 +376,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
         )}
+
+        {/* Tab: Analytics */}
+        {activeTab === 'analytics' && <MemberAnalytics user={user} />}
       </div>
 
       {/* Modal: Request meeting */}

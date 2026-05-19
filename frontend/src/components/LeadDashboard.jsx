@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
+import LeadAnalytics from './LeadAnalytics'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -250,7 +251,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
-              {activeView === 'teams' ? 'Мои команды' : 'Мои встречи'}
+              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : 'Аналитика'}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
@@ -266,6 +267,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           {[
             { key: 'teams', label: 'Команды' },
             { key: 'meetings', label: 'Мои встречи' },
+            { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
             <button
               key={tab.key}
@@ -275,10 +277,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {tab.label}
             </button>
           ))}
-          <span className="tab" style={{ opacity: 0.4, cursor: 'default', pointerEvents: 'none' }}>
-            Аналитика
-          </span>
         </div>
+
+        {/* Analytics view */}
+        {activeView === 'analytics' && <LeadAnalytics user={user} />}
 
         {/* My Meetings view */}
         {activeView === 'meetings' && (

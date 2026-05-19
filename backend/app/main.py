@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
-from app.routers import user, team, meeting, task, notification, scheduling
+from app.routers import user, team, meeting, task, notification, scheduling, analytics
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
 
@@ -26,6 +26,7 @@ app.include_router(meeting.router, prefix="/api/meetings", tags=["meetings"])
 app.include_router(task.router, prefix="/api/tasks", tags=["tasks"])
 app.include_router(notification.router, prefix="/api/notifications", tags=["notifications"])
 app.include_router(scheduling.router, prefix="/api/scheduling", tags=["scheduling"])
+app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"])
 
 @app.get("/")
 @app.get("/api/health")
