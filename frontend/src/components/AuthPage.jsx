@@ -35,7 +35,7 @@ export default function AuthPage() {
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return }
     if (password.length < 6) { setError('Пароль минимум 6 символов'); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({ email, password })
+    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
     if (error) setError(translateError(error.message))
     else setMode('check_email')
     setLoading(false)
