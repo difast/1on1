@@ -1,32 +1,31 @@
-import os
+import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
-_SUPABASE_URL = "postgresql://postgres:Assassins2552ass@db.gxhmgwfgbouuvmdnswel.supabase.co:5432/postgres?sslmode=require"
+logger = logging.getLogger(__name__)
 
-def _build_url():
-    url = os.environ.get("DATABASE_URL", "")
-    # Ignore Railway's internal PostgreSQL — only accept Supabase
-    if "supabase.co" not in url:
-        return _SUPABASE_URL
-    if url.startswith("postgres://"):
-        url = url.replace("postgres://", "postgresql://", 1)
-    if "sslmode" not in url:
-        url += "?sslmode=require"
-    return url
+# Always use Supabase. Railway injects DATABASE_URL pointing to its own
+# internal PostgreSQL which we no longer use — ignore it entirely.
+_DB_URL = (
+    "postgresql://postgres:Assassins2552ass"
+    "@db.gxhmgwfgbouuvmdnswel.supabase.co:5432/postgres"
+    "?sslmode=require"
+)
 
-_db_url = _build_url()
+logger.info("DB → %s", _DB_URL.split("@")[1])  # log host only, no password
 
 engine = create_engine(
-    _db_url,
+    _DB_URL,
     pool_pre_ping=True,
     pool_recycle=300,
     connect_args={"connect_timeout": 10},
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
+
 class Base(DeclarativeBase):
     pass
+
 
 def get_db():
     db = SessionLocal()
