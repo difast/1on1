@@ -13,6 +13,7 @@ const api = axios.create({
 export const createUser = (data) => api.post('/users/', data)
 export const getUsers = () => api.get('/users/')
 export const getUser = (id) => api.get(`/users/${id}`)
+export const getUserByEmail = (email) => api.get(`/users/by-email/${encodeURIComponent(email)}`)
 export const updateUser = (id, data) => api.patch(`/users/${id}`, data)
 
 // Teams

@@ -7,6 +7,13 @@ from app.schemas.user import UserCreate, UserOut, UserUpdate
 
 router = APIRouter()
 
+@router.get("/by-email/{email}", response_model=UserOut)
+def get_user_by_email(email: str, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == email).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
 @router.post("/", response_model=UserOut)
 def create_user(data: UserCreate, db: Session = Depends(get_db)):
     existing = db.query(User).filter(User.email == data.email).first()
