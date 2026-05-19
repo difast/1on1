@@ -23,6 +23,9 @@ class TeamMemberOut(BaseModel):
     user_email: str
     user_title: Optional[str]
     user_avatar_url: Optional[str] = None
+    telegram: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
     role: str
     cadence_days: int
     last_meeting_date: Optional[datetime] = None

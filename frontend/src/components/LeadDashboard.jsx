@@ -360,9 +360,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   </div>
 
                   {/* Members grid */}
-                  {teamDetail.members && teamDetail.members.length > 0 ? (
+                  {teamDetail.members && teamDetail.members.filter(m => m.user_id !== user.id).length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-                      {teamDetail.members.map((member) => {
+                      {teamDetail.members.filter(m => m.user_id !== user.id).map((member) => {
                         const tasksExpanded = expandedTasks.has(member.user_id)
                         const tasks = memberTasks[member.user_id]
                         const taskForm = taskForms[member.user_id] || {}

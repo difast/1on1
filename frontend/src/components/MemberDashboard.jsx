@@ -258,7 +258,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Участники команды</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
-                  {[...team.members].sort((a, b) => {
+                  {[...team.members].filter(m => m.user_id !== user.id).sort((a, b) => {
                     if (!a.last_meeting_date) return -1
                     if (!b.last_meeting_date) return 1
                     return new Date(a.last_meeting_date) - new Date(b.last_meeting_date)
