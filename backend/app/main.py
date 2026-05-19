@@ -31,16 +31,20 @@ app.include_router(analytics.router, prefix="/api/analytics", tags=["analytics"]
 @app.get("/")
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
+    from app.database import _DB_URL
+    db_host = _DB_URL.split("@")[1].split("?")[0]
+    error = None
     try:
         db.execute(text("SELECT 1"))
         db_ok = True
     except Exception as e:
         db_ok = False
-    from app.database import _DB_URL
+        error = str(e)
     return {
         "status": "ok" if db_ok else "db_error",
-        "db": _DB_URL.split("@")[1].split("?")[0],
+        "db": db_host,
         "db_ok": db_ok,
+        "error": error,
     }
 
 @app.post("/api/dev/reset-db", include_in_schema=False)
