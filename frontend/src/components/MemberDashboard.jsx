@@ -212,10 +212,14 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* Team lead card */}
-            {team.team_lead_id && (
+            {team.team_lead_id && (() => {
+              const leadMember = (team.members || []).find(m => m.user_id === team.team_lead_id)
+              return (
               <div className="card card-accent" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
-                <div className="avatar avatar-xl avatar-accent">
-                  {(team.team_lead_name || '?').charAt(0).toUpperCase()}
+                <div className={`avatar avatar-xl ${leadMember?.user_avatar_url ? '' : 'avatar-accent'}`}>
+                  {leadMember?.user_avatar_url
+                    ? <img src={leadMember.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : (team.team_lead_name || '?').charAt(0).toUpperCase()}
                 </div>
                 <div style={{ flex: 1 }}>
                   <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
@@ -234,7 +238,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   Запросить встречу
                 </button>
               </div>
-            )}
+              )
+            })()}
 
             {/* Upcoming meetings preview */}
             {upcomingMeetings.length > 0 && (
@@ -260,8 +265,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   }).map(m => (
                     <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <div className="avatar avatar-sm avatar-accent">
-                          {(m.user_name || '?').charAt(0).toUpperCase()}
+                        <div className={`avatar avatar-sm ${m.user_avatar_url ? '' : 'avatar-accent'}`}>
+                          {m.user_avatar_url
+                            ? <img src={m.user_avatar_url} alt={m.user_name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                            : (m.user_name || '?').charAt(0).toUpperCase()}
                         </div>
                         {m.is_registered && (
                           <div style={{

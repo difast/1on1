@@ -375,8 +375,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                               <div style={{ position: 'relative', flexShrink: 0 }}>
-                                <div className="avatar avatar-md avatar-accent">
-                                  {(member.user_name || '?').charAt(0).toUpperCase()}
+                                <div className={`avatar avatar-md ${member.user_avatar_url ? '' : 'avatar-accent'}`}>
+                                  {member.user_avatar_url
+                                    ? <img src={member.user_avatar_url} alt={member.user_name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    : (member.user_name || '?').charAt(0).toUpperCase()}
                                 </div>
                                 {member.is_registered && (
                                   <div style={{
