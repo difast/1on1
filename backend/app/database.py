@@ -1,22 +1,14 @@
-import socket
 import logging
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 
 logger = logging.getLogger(__name__)
 
-# Railway doesn't support IPv6. Supabase resolves to IPv6 by default.
-# Force all DNS lookups to return IPv4 only.
-_orig_getaddrinfo = socket.getaddrinfo
-def _ipv4_getaddrinfo(host, port, family=0, *args, **kwargs):
-    return _orig_getaddrinfo(host, port, socket.AF_INET, *args, **kwargs)
-socket.getaddrinfo = _ipv4_getaddrinfo
-
-# Always use Supabase. Railway auto-injects DATABASE_URL from its own
-# internal PostgreSQL — we ignore it entirely.
+# Direct Supabase connection (db.*.supabase.co) is IPv6-only — Railway
+# doesn't support IPv6. Use the Supabase connection pooler which is IPv4.
 _DB_URL = (
-    "postgresql://postgres:Assassins2552ass"
-    "@db.gxhmgwfgbouuvmdnswel.supabase.co:5432/postgres"
+    "postgresql://postgres.gxhmgwfgbouuvmdnswel:Assassins2552ass"
+    "@aws-1-ap-southeast-2.pooler.supabase.com:6543/postgres"
     "?sslmode=require"
 )
 
