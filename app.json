@@ -37,14 +37,7 @@
           "faceIDPermission": "Allow OneOnOne to use Face ID for authentication."
         }
       ],
-      [
-        "expo-build-properties",
-        {
-          "android": {
-            "gradleWrapperVersion": "8.13"
-          }
-        }
-      ]
+      "./plugins/withGradle813"
     ],
     "experiments": {
       "typedRoutes": true
