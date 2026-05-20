@@ -1,14 +1,25 @@
+import { supabase } from './supabase';
+
 const BASE =
   (process.env.EXPO_PUBLIC_API_URL || 'https://web-production-2a1c4.up.railway.app') + '/api';
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const authHeader = session?.access_token
+    ? { Authorization: `Bearer ${session.access_token}` }
+    : {};
+
   const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options?.headers ?? {}) },
+    headers: { 'Content-Type': 'application/json', ...authHeader, ...(options?.headers ?? {}) },
     ...options,
   });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Network error' }));
-    throw { response: { data: err, status: res.status } };
+    const body = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+    // FastAPI returns detail as string or array of validation errors
+    const detail = Array.isArray(body?.detail)
+      ? body.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+      : (body?.detail ?? body?.message ?? `HTTP ${res.status}`);
+    throw { response: { data: body, status: res.status, detail } };
   }
   return res.json();
 }

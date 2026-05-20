@@ -60,7 +60,7 @@ export default function OnboardingScreen() {
       setCreatedUser(newUser);
       setStep(3);
     } catch (err: any) {
-      setError(err?.response?.data?.detail || 'Ошибка сервера');
+      setError(err?.response?.detail ?? err?.response?.data?.detail ?? err?.message ?? 'Ошибка сервера');
     } finally {
       setLoading(false);
     }
