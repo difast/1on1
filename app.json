@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F8F9FC"
       },
-      "package": "com.oneonone.app",
-      "edgeToEdgeEnabled": true
+      "package": "com.oneonone.app"
     },
     "web": {
       "bundler": "metro",
