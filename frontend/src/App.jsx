@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { supabase } from './lib/supabase'
 import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
@@ -10,6 +10,8 @@ function App() {
   const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(false)
+  const inactivityTimer = useRef(null)
+  const INACTIVITY_LIMIT = 5 * 60 * 60 * 1000 // 5 hours
 
   const loadAppUser = async (email) => {
     try {
@@ -38,9 +40,26 @@ function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleLogout = async () => {
+  const handleLogout = useCallback(async () => {
+    clearTimeout(inactivityTimer.current)
     await supabase.auth.signOut()
-  }
+  }, [])
+
+  const resetInactivityTimer = useCallback(() => {
+    clearTimeout(inactivityTimer.current)
+    inactivityTimer.current = setTimeout(() => handleLogout(), INACTIVITY_LIMIT)
+  }, [handleLogout, INACTIVITY_LIMIT])
+
+  useEffect(() => {
+    if (!authUser) return
+    const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
+    events.forEach(e => window.addEventListener(e, resetInactivityTimer, { passive: true }))
+    resetInactivityTimer()
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetInactivityTimer))
+      clearTimeout(inactivityTimer.current)
+    }
+  }, [authUser, resetInactivityTimer])
 
   const handleOnboardingComplete = (user) => {
     setAppUser(user)
