@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl, SafeAreaView, Alert,
@@ -63,7 +63,7 @@ export default function LeadTeamsScreen() {
   const [copied, setCopied] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = ['50%', '85%'];
+  const snapPoints = useMemo(() => ['50%', '85%'], []);
 
   const openSheet = (type: SheetType) => {
     setSheetType(type);
