@@ -9,7 +9,7 @@ import { getUserByEmail } from './api/client'
 function App() {
   const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
   const loadAppUser = async (email) => {
     try {
@@ -24,20 +24,6 @@ function App() {
   }
 
   useEffect(() => {
-    const timeout = setTimeout(() => setLoading(false), 3000)
-
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      clearTimeout(timeout)
-      if (session?.user) {
-        setAuthUser(session.user)
-        await loadAppUser(session.user.email)
-      }
-      setLoading(false)
-    }).catch(() => {
-      clearTimeout(timeout)
-      setLoading(false)
-    })
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
         setAuthUser(session.user)
@@ -64,17 +50,6 @@ function App() {
   const handleUserUpdate = (updatedUser) => {
     setAppUser(updatedUser)
     localStorage.setItem('smart_user', JSON.stringify(updatedUser))
-  }
-
-  if (loading) {
-    return (
-      <div style={{
-        minHeight: '100vh', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', background: 'var(--color-bg)',
-      }}>
-        <div className="spinner" />
-      </div>
-    )
   }
 
   if (!authUser) return <AuthPage />
