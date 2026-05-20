@@ -24,11 +24,17 @@ function App() {
   }
 
   useEffect(() => {
+    const timeout = setTimeout(() => setLoading(false), 3000)
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout)
       if (session?.user) {
         setAuthUser(session.user)
         await loadAppUser(session.user.email)
       }
+      setLoading(false)
+    }).catch(() => {
+      clearTimeout(timeout)
       setLoading(false)
     })
 
