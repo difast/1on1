@@ -7,6 +7,9 @@ class UserCreate(BaseModel):
     email: str
     role: str = "member"
     title: Optional[str] = None
+    telegram: Optional[str] = None
+    linkedin: Optional[str] = None
+    github: Optional[str] = None
 
 class UserOut(BaseModel):
     id: int
