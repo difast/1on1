@@ -40,6 +40,12 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "69071943-c55a-4a87-9bf4-92fda7e75220"
+      }
+    },
+    "owner": "pyatakovvv"
   }
 }
