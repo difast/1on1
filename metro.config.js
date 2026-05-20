@@ -12,7 +12,11 @@ config.resolver = config.resolver || {};
 const originalResolveRequest = config.resolver.resolveRequest;
 
 config.resolver.resolveRequest = (context, moduleName, platform) => {
-  if (moduleName.startsWith('@opentelemetry/')) {
+  if (
+    moduleName.startsWith('@opentelemetry/') ||
+    moduleName === 'node:async_hooks' ||
+    moduleName === 'async_hooks'
+  ) {
     return { type: 'sourceFile', filePath: OTEL_STUB };
   }
   if (originalResolveRequest) {
