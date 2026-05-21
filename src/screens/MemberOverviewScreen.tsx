@@ -72,7 +72,7 @@ export default function MemberOverviewScreen() {
       await joinTeam({ invite_code: joinCode.trim(), user_id: user!.id });
       await findTeam();
     } catch (err: any) {
-      setJoinError(err?.response?.data?.detail || 'Не удалось присоединиться. Проверьте код.');
+      setJoinError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Не удалось присоединиться. Проверьте код.');
     } finally { setJoinLoading(false); }
   };
 

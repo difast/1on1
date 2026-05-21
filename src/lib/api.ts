@@ -9,19 +9,32 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
     ? { Authorization: `Bearer ${session.access_token}` }
     : {};
 
-  const res = await fetch(`${BASE}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...authHeader, ...(options?.headers ?? {}) },
-    ...options,
-  });
-  if (!res.ok) {
-    const body = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-    // FastAPI returns detail as string or array of validation errors
-    const detail = Array.isArray(body?.detail)
-      ? body.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
-      : (body?.detail ?? body?.message ?? `HTTP ${res.status}`);
-    throw { response: { data: body, status: res.status, detail } };
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 15000);
+
+  try {
+    const res = await fetch(`${BASE}${path}`, {
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json', ...authHeader, ...(options?.headers ?? {}) },
+      ...options,
+    });
+    clearTimeout(timer);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      // FastAPI returns detail as string or array of validation errors
+      const detail = Array.isArray(body?.detail)
+        ? body.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
+        : (body?.detail ?? body?.message ?? `HTTP ${res.status}`);
+      throw { response: { data: body, status: res.status, detail } };
+    }
+    return res.json();
+  } catch (err: any) {
+    clearTimeout(timer);
+    if (err.name === 'AbortError') {
+      throw { response: { detail: 'Превышено время ожидания', status: 0 } };
+    }
+    throw err;
   }
-  return res.json();
 }
 
 // Users
