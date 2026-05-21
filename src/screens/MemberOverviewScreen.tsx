@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, SafeAreaView, TextInput,
+  RefreshControl, TextInput,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getTeams, getTeam, joinTeam, getMeetings } from '../lib/api';
 import { colors } from '../constants/colors';

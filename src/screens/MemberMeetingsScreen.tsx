@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, SafeAreaView,
+  RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useAuth } from '../context/auth';
 import { getMeetings, requestMeeting, getTeams, getTeam } from '../lib/api';
@@ -23,7 +24,7 @@ export default function MemberMeetingsScreen() {
   const [formLoading, setFormLoading] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
-  const snapPoints = ['45%', '75%'];
+  const snapPoints = useMemo(() => ['45%', '75%'], []);
 
   const findTeamId = useCallback(async () => {
     try {

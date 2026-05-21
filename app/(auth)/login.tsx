@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/context/auth';
@@ -50,7 +51,7 @@ export default function LoginScreen() {
 
   if (mode === 'check_email') {
     return (
-      <View style={[styles.root, styles.center]}>
+      <SafeAreaView style={[styles.root, styles.center]}>
         <Text style={styles.emailIcon}>📬</Text>
         <Text style={styles.emailTitle}>Проверьте почту</Text>
         <Text style={styles.emailDesc}>Мы отправили письмо на</Text>
@@ -61,11 +62,12 @@ export default function LoginScreen() {
         <TouchableOpacity style={styles.btn} onPress={() => setMode('login')}>
           <Text style={styles.btnText}>Войти</Text>
         </TouchableOpacity>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
+    <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -160,6 +162,7 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

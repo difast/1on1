@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, SafeAreaView, RefreshControl,
+  View, Text, StyleSheet, ScrollView, RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getLeadAnalytics } from '../lib/api';
 import { colors } from '../constants/colors';
