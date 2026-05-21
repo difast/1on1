@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../lib/supabase';
-import { getUserByEmail, joinTeam } from '../lib/api';
+import { getUserByEmail, joinTeam, createTeam } from '../lib/api';
 
 export interface AppUser {
   id: number;
@@ -27,6 +27,7 @@ interface AuthContextType {
   setUser: (user: AppUser | null) => void;
   setActiveRole: (role: Role) => Promise<void>;
   addSecondaryRole: (inviteCode: string) => Promise<void>;
+  addTeamLeadRole: (teamName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -39,6 +40,7 @@ const AuthContext = createContext<AuthContextType>({
   setUser: () => {},
   setActiveRole: async () => {},
   addSecondaryRole: async () => {},
+  addTeamLeadRole: async () => {},
   signOut: async () => {},
 });
 
@@ -115,6 +117,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setActiveRole(newRole);
   };
 
+  const addTeamLeadRole = async (teamName: string) => {
+    if (!user) throw new Error('No user');
+    await createTeam({ name: teamName.trim(), team_lead_id: user.id });
+    setHasBothRoles(true);
+    await AsyncStorage.setItem(BOTH_ROLES_KEY, 'true');
+    await setActiveRole('team_lead');
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUserState(null);
@@ -127,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, loading, activeRole, hasBothRoles,
-      setUser, setActiveRole, addSecondaryRole, signOut,
+      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, signOut,
     }}>
       {children}
     </AuthContext.Provider>

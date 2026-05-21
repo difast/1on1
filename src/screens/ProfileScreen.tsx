@@ -11,7 +11,7 @@ import { colors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 
 export default function ProfileScreen() {
-  const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole } = useAuth();
+  const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -25,6 +25,7 @@ export default function ProfileScreen() {
 
   const [showAddRole, setShowAddRole] = useState(false);
   const [inviteCode, setInviteCode] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
   const [addRoleLoading, setAddRoleLoading] = useState(false);
   const [addRoleError, setAddRoleError] = useState('');
 
@@ -83,14 +84,20 @@ export default function ProfileScreen() {
   };
 
   const handleAddRole = async () => {
-    if (!inviteCode.trim()) return;
     setAddRoleLoading(true); setAddRoleError('');
     try {
-      await addSecondaryRole(inviteCode.trim());
+      if (currentRole === 'member') {
+        if (!newTeamName.trim()) { setAddRoleError('Введите название команды'); setAddRoleLoading(false); return; }
+        await addTeamLeadRole(newTeamName.trim());
+      } else {
+        if (!inviteCode.trim()) { setAddRoleError('Введите код приглашения'); setAddRoleLoading(false); return; }
+        await addSecondaryRole(inviteCode.trim());
+      }
       setShowAddRole(false);
       setInviteCode('');
+      setNewTeamName('');
     } catch (err: any) {
-      setAddRoleError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Не удалось присоединиться. Проверьте код.');
+      setAddRoleError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Ошибка. Проверьте данные и повторите.');
     } finally { setAddRoleLoading(false); }
   };
 
@@ -150,27 +157,57 @@ export default function ProfileScreen() {
 
           {showAddRole && !hasBothRoles && (
             <View style={{ marginTop: 14 }}>
-              <Text style={styles.fieldLabel}>Код приглашения</Text>
-              <TextInput
-                style={styles.input}
-                value={inviteCode}
-                onChangeText={v => setInviteCode(v.toUpperCase())}
-                placeholder="ABC123"
-                placeholderTextColor={colors.textMuted}
-                autoCapitalize="characters"
-              />
-              {addRoleError ? (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorText}>{addRoleError}</Text>
-                </View>
-              ) : null}
-              <TouchableOpacity
-                style={[styles.saveBtn, addRoleLoading && styles.btnDisabled]}
-                onPress={handleAddRole}
-                disabled={addRoleLoading}
-              >
-                <Text style={styles.saveBtnText}>{addRoleLoading ? 'Присоединение...' : 'Присоединиться'}</Text>
-              </TouchableOpacity>
+              {currentRole === 'member' ? (
+                <>
+                  <Text style={styles.addRoleHeader}>Добавить роль Тимлида</Text>
+                  <Text style={styles.fieldLabel}>Название команды</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={newTeamName}
+                    onChangeText={setNewTeamName}
+                    placeholder="Например: Backend Team"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="words"
+                  />
+                  {addRoleError ? (
+                    <View style={styles.errorBox}>
+                      <Text style={styles.errorText}>{addRoleError}</Text>
+                    </View>
+                  ) : null}
+                  <TouchableOpacity
+                    style={[styles.saveBtn, addRoleLoading && styles.btnDisabled]}
+                    onPress={handleAddRole}
+                    disabled={addRoleLoading}
+                  >
+                    <Text style={styles.saveBtnText}>{addRoleLoading ? 'Создание...' : 'Создать команду'}</Text>
+                  </TouchableOpacity>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.addRoleHeader}>Добавить роль Участника</Text>
+                  <Text style={styles.fieldLabel}>Код приглашения</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={inviteCode}
+                    onChangeText={v => setInviteCode(v.toUpperCase())}
+                    placeholder="ABC123"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="characters"
+                  />
+                  {addRoleError ? (
+                    <View style={styles.errorBox}>
+                      <Text style={styles.errorText}>{addRoleError}</Text>
+                    </View>
+                  ) : null}
+                  <TouchableOpacity
+                    style={[styles.saveBtn, addRoleLoading && styles.btnDisabled]}
+                    onPress={handleAddRole}
+                    disabled={addRoleLoading}
+                  >
+                    <Text style={styles.saveBtnText}>{addRoleLoading ? 'Присоединение...' : 'Присоединиться'}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
             </View>
           )}
         </View>
@@ -299,6 +336,7 @@ const styles = StyleSheet.create({
   editRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
 
   sectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  addRoleHeader: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 },
   roleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
   roleValue: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
   switchBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surface2 },

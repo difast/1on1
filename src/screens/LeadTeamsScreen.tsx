@@ -8,8 +8,8 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorho
 import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '../context/auth';
 import {
-  getTeams, getTeam, createTeam, createUser,
-  addMember, createMeeting, getTasks, createTask, updateTask,
+  getTeams, getTeam, createTeam,
+  addMember, createMeeting, getTasks, createTask, updateTask, getUserByEmail,
 } from '../lib/api';
 import { colors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
@@ -54,9 +54,8 @@ export default function LeadTeamsScreen() {
 
   // Form state
   const [newTeamName, setNewTeamName] = useState('');
-  const [newMemberName, setNewMemberName] = useState('');
   const [newMemberEmail, setNewMemberEmail] = useState('');
-  const [newMemberTitle, setNewMemberTitle] = useState('');
+  const [addMemberError, setAddMemberError] = useState('');
   const [scheduleDate, setScheduleDate] = useState('');
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDue, setNewTaskDue] = useState('');
@@ -164,15 +163,19 @@ export default function LeadTeamsScreen() {
   };
 
   const handleAddMember = async () => {
-    if (!newMemberName.trim() || !newMemberEmail.trim()) return;
+    if (!newMemberEmail.trim()) return;
     setFormLoading(true);
+    setAddMemberError('');
     try {
-      const u = await createUser({ name: newMemberName.trim(), email: newMemberEmail.trim(), title: newMemberTitle.trim() || undefined, role: 'member' }) as any;
-      await addMember(selectedTeamId!, u.id, 'member');
-      setNewMemberName(''); setNewMemberEmail(''); setNewMemberTitle('');
+      const found = await getUserByEmail(newMemberEmail.trim()) as any;
+      await addMember(selectedTeamId!, found.id, 'member');
+      setNewMemberEmail('');
       closeSheet();
       await loadTeamDetail(selectedTeamId!);
-    } catch {} finally { setFormLoading(false); }
+    } catch (err: any) {
+      const detail = err?.response?.detail ?? err?.response?.data?.detail ?? 'Пользователь не найден или уже в команде';
+      setAddMemberError(detail);
+    } finally { setFormLoading(false); }
   };
 
   const handleScheduleMeeting = async () => {
@@ -420,24 +423,22 @@ export default function LeadTeamsScreen() {
           {sheetType === 'addMember' && (
             <>
               <Text style={styles.sheetTitle}>Добавить участника</Text>
-              {[
-                { label: 'Имя *', value: newMemberName, setter: setNewMemberName, placeholder: 'Иван Иванов' },
-                { label: 'Email *', value: newMemberEmail, setter: setNewMemberEmail, placeholder: 'ivan@company.com', type: 'email' },
-                { label: 'Должность', value: newMemberTitle, setter: setNewMemberTitle, placeholder: 'Senior Engineer' },
-              ].map(f => (
-                <View key={f.label} style={{ marginBottom: 14 }}>
-                  <Text style={styles.sheetLabel}>{f.label}</Text>
-                  <BottomSheetTextInput
-                    style={styles.sheetInput}
-                    value={f.value}
-                    onChangeText={f.setter}
-                    placeholder={f.placeholder}
-                    placeholderTextColor={colors.textMuted}
-                    keyboardType={f.type === 'email' ? 'email-address' : 'default'}
-                    autoCapitalize="none"
-                  />
+              <Text style={styles.sheetLabel}>Email *</Text>
+              <BottomSheetTextInput
+                style={styles.sheetInput}
+                value={newMemberEmail}
+                onChangeText={setNewMemberEmail}
+                placeholder="ivan@company.com"
+                placeholderTextColor={colors.textMuted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+              <Text style={styles.sheetHint}>Участник должен быть зарегистрирован в приложении</Text>
+              {addMemberError ? (
+                <View style={styles.sheetErrorBox}>
+                  <Text style={styles.sheetErrorText}>{addMemberError}</Text>
                 </View>
-              ))}
+              ) : null}
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
                   <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
@@ -659,6 +660,16 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     marginBottom: 14,
   },
+  sheetHint: { fontSize: 12, color: colors.textMuted, marginBottom: 12, marginTop: -8 },
+  sheetErrorBox: {
+    backgroundColor: colors.dangerBg,
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  sheetErrorText: { fontSize: 14, color: colors.danger },
   sheetRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   sheetBtn: {
     backgroundColor: colors.accent,

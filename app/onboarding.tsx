@@ -27,6 +27,7 @@ export default function OnboardingScreen() {
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [joinWarning, setJoinWarning] = useState('');
 
   // Step 3 photo
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
@@ -55,7 +56,11 @@ export default function OnboardingScreen() {
       const newUser = await createUser(payload) as any;
 
       if (role === 'member' && inviteCode.trim()) {
-        try { await joinTeam({ invite_code: inviteCode.trim(), user_id: newUser.id }); } catch {}
+        try {
+          await joinTeam({ invite_code: inviteCode.trim(), user_id: newUser.id });
+        } catch {
+          setJoinWarning('Код приглашения неверный — вступите в команду позже через Профиль.');
+        }
       }
 
       setCreatedUser(newUser);
@@ -100,9 +105,9 @@ export default function OnboardingScreen() {
     }
   };
 
-  const finish = async (u: any) => {
+  const finish = (u: any) => {
     setUser(u);
-    if (u?.role) await setActiveRole(u.role);
+    if (u?.role) setActiveRole(u.role); // fire and forget - state update is synchronous, AsyncStorage save is background
     router.replace('/(tabs)');
   };
 
@@ -216,6 +221,12 @@ export default function OnboardingScreen() {
           <View style={[styles.card, { width: '100%', maxWidth: 400, alignItems: 'center' }]}>
             <Text style={styles.stepHeader}>Фото профиля</Text>
             <Text style={styles.stepSub}>Помогает коллегам узнать вас. Можно пропустить.</Text>
+
+            {joinWarning ? (
+              <View style={[styles.warningBox, { width: '100%' }]}>
+                <Text style={styles.warningText}>{joinWarning}</Text>
+              </View>
+            ) : null}
 
             <TouchableOpacity onPress={pickPhoto} style={styles.avatarWrap}>
               {avatarUri ? (
@@ -331,6 +342,16 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   errorText: { fontSize: 14, color: colors.danger },
+
+  warningBox: {
+    backgroundColor: colors.warningBg,
+    borderWidth: 1,
+    borderColor: '#FCD34D',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
+  },
+  warningText: { fontSize: 14, color: colors.warning },
 
   btn: {
     backgroundColor: colors.accent,
