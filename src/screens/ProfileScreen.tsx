@@ -11,7 +11,7 @@ import { colors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 
 export default function ProfileScreen() {
-  const { user, setUser, signOut } = useAuth();
+  const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole } = useAuth();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -22,6 +22,11 @@ export default function ProfileScreen() {
   });
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
+  const [showAddRole, setShowAddRole] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [addRoleLoading, setAddRoleLoading] = useState(false);
+  const [addRoleError, setAddRoleError] = useState('');
 
   const handleSave = async () => {
     if (!user) return;
@@ -77,9 +82,28 @@ export default function ProfileScreen() {
     );
   };
 
+  const handleAddRole = async () => {
+    if (!inviteCode.trim()) return;
+    setAddRoleLoading(true); setAddRoleError('');
+    try {
+      await addSecondaryRole(inviteCode.trim());
+      setShowAddRole(false);
+      setInviteCode('');
+    } catch (err: any) {
+      setAddRoleError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Не удалось присоединиться. Проверьте код.');
+    } finally { setAddRoleLoading(false); }
+  };
+
+  const handleSwitchRole = async () => {
+    const nextRole: 'team_lead' | 'member' = (activeRole ?? user?.role) === 'team_lead' ? 'member' : 'team_lead';
+    await setActiveRole(nextRole);
+  };
+
   if (!user) return null;
 
-  const roleLabel = user.role === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник команды';
+  const currentRole = activeRole ?? user.role;
+  const roleLabel = currentRole === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник команды';
+  const otherRoleLabel = currentRole === 'team_lead' ? '🧑‍💻 Участник команды' : '👔 Тимлид';
 
   return (
     <SafeAreaView style={styles.root}>
@@ -106,6 +130,49 @@ export default function ProfileScreen() {
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.role}>{roleLabel}</Text>
           <Text style={styles.email}>{user.email}</Text>
+        </View>
+
+        {/* Role management */}
+        <View style={styles.card}>
+          <Text style={styles.sectionLabel}>Роль</Text>
+          <View style={styles.roleRow}>
+            <Text style={styles.roleValue}>{roleLabel}</Text>
+            {hasBothRoles ? (
+              <TouchableOpacity style={styles.switchBtn} onPress={handleSwitchRole}>
+                <Text style={styles.switchBtnText}>Переключить на {otherRoleLabel}</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.switchBtn} onPress={() => { setShowAddRole(v => !v); setAddRoleError(''); }}>
+                <Text style={styles.switchBtnText}>{showAddRole ? 'Отмена' : '+ Добавить роль'}</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+
+          {showAddRole && !hasBothRoles && (
+            <View style={{ marginTop: 14 }}>
+              <Text style={styles.fieldLabel}>Код приглашения</Text>
+              <TextInput
+                style={styles.input}
+                value={inviteCode}
+                onChangeText={v => setInviteCode(v.toUpperCase())}
+                placeholder="ABC123"
+                placeholderTextColor={colors.textMuted}
+                autoCapitalize="characters"
+              />
+              {addRoleError ? (
+                <View style={styles.errorBox}>
+                  <Text style={styles.errorText}>{addRoleError}</Text>
+                </View>
+              ) : null}
+              <TouchableOpacity
+                style={[styles.saveBtn, addRoleLoading && styles.btnDisabled]}
+                onPress={handleAddRole}
+                disabled={addRoleLoading}
+              >
+                <Text style={styles.saveBtnText}>{addRoleLoading ? 'Присоединение...' : 'Присоединиться'}</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
 
         {/* Info / Edit */}
@@ -230,6 +297,18 @@ const styles = StyleSheet.create({
     fontSize: 15, color: colors.textPrimary, backgroundColor: colors.surface,
   },
   editRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
+
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  roleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
+  roleValue: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
+  switchBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surface2 },
+  switchBtnText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
+
+  errorBox: {
+    backgroundColor: colors.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
+    borderRadius: 10, padding: 12, marginBottom: 12,
+  },
+  errorText: { fontSize: 14, color: colors.danger },
   cancelBtn: {
     borderWidth: 1, borderColor: colors.border, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center',

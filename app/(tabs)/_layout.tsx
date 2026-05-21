@@ -6,7 +6,7 @@ import { colors } from '../../src/constants/colors';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function TabsLayout() {
-  const { session, user, loading } = useAuth();
+  const { session, user, loading, activeRole } = useAuth();
 
   if (loading) {
     return (
@@ -19,7 +19,7 @@ export default function TabsLayout() {
   if (!session) return <Redirect href="/(auth)/login" />;
   if (!user?.role) return <Redirect href="/onboarding" />;
 
-  const isLead = user.role === 'team_lead';
+  const isLead = (activeRole ?? user.role) === 'team_lead';
 
   return (
     <Tabs

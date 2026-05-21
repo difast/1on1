@@ -11,7 +11,7 @@ import { createUser, joinTeam, updateUser } from '../src/lib/api';
 import { colors } from '../src/constants/colors';
 
 export default function OnboardingScreen() {
-  const { session, user, setUser } = useAuth();
+  const { session, user, setUser, setActiveRole } = useAuth();
   const router = useRouter();
 
   const [step, setStep] = useState(1);
@@ -100,8 +100,9 @@ export default function OnboardingScreen() {
     }
   };
 
-  const finish = (u: any) => {
+  const finish = async (u: any) => {
     setUser(u);
+    if (u?.role) await setActiveRole(u.role);
     router.replace('/(tabs)');
   };
 

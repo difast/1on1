@@ -4,7 +4,7 @@ import LeadAnalyticsScreen from '../../src/screens/LeadAnalyticsScreen';
 import MemberAnalyticsScreen from '../../src/screens/MemberAnalyticsScreen';
 
 export default function AnalyticsTab() {
-  const { user } = useAuth();
-  if (user?.role === 'team_lead') return <LeadAnalyticsScreen />;
+  const { user, activeRole } = useAuth();
+  if ((activeRole ?? user?.role) === 'team_lead') return <LeadAnalyticsScreen />;
   return <MemberAnalyticsScreen />;
 }

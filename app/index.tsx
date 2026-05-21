@@ -4,7 +4,7 @@ import { useAuth } from '../src/context/auth';
 import { colors } from '../src/constants/colors';
 
 export default function Index() {
-  const { session, user, loading } = useAuth();
+  const { session, user, loading, activeRole, hasBothRoles } = useAuth();
 
   if (loading) {
     return (
@@ -16,5 +16,6 @@ export default function Index() {
 
   if (!session) return <Redirect href="/(auth)/login" />;
   if (!user?.role) return <Redirect href="/onboarding" />;
+  if (hasBothRoles && !activeRole) return <Redirect href="/role-select" />;
   return <Redirect href="/(tabs)" />;
 }

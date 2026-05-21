@@ -4,7 +4,7 @@ import LeadMeetingsScreen from '../../src/screens/LeadMeetingsScreen';
 import MemberMeetingsScreen from '../../src/screens/MemberMeetingsScreen';
 
 export default function MeetingsTab() {
-  const { user } = useAuth();
-  if (user?.role === 'team_lead') return <LeadMeetingsScreen />;
+  const { user, activeRole } = useAuth();
+  if ((activeRole ?? user?.role) === 'team_lead') return <LeadMeetingsScreen />;
   return <MemberMeetingsScreen />;
 }
