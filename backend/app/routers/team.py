@@ -142,6 +142,18 @@ def join_team(data: JoinByCode, db: Session = Depends(get_db)):
         is_registered=True,
     )
 
+@router.post("/{team_id}/regenerate-invite")
+def regenerate_invite_code(team_id: int, db: Session = Depends(get_db)):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    team.invite_code = generate_invite_code()
+    db.commit()
+    db.refresh(team)
+
+    return {"invite_code": team.invite_code}
+
 @router.post("/{team_id}/members", response_model=TeamMemberOut)
 def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Session = Depends(get_db)):
     team = db.query(Team).filter(Team.id == team_id).first()
