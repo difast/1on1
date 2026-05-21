@@ -56,6 +56,8 @@ export const joinTeam = (data: unknown) =>
   req('/teams/join', { method: 'POST', body: JSON.stringify(data) });
 export const addMember = (teamId: number, userId: number, role: string) =>
   req(`/teams/${teamId}/members?user_id=${userId}&role=${role}`, { method: 'POST' });
+export const regenerateInviteCode = (teamId: number) =>
+  req(`/teams/${teamId}/regenerate-invite`, { method: 'POST' });
 
 // Meetings
 export const createMeeting = (data: unknown) =>

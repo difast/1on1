@@ -10,6 +10,7 @@ import { useAuth } from '../context/auth';
 import {
   getTeams, getTeam, createTeam,
   addMember, createMeeting, getTasks, createTask, updateTask, getUserByEmail,
+  regenerateInviteCode,
 } from '../lib/api';
 import { colors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
@@ -61,6 +62,7 @@ export default function LeadTeamsScreen() {
   const [newTaskDue, setNewTaskDue] = useState('');
   const [formLoading, setFormLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [regenerating, setRegenerating] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%', '85%'], []);
@@ -114,6 +116,15 @@ export default function LeadTeamsScreen() {
     await Clipboard.setStringAsync(teamDetail.invite_code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleRegenerateCode = async () => {
+    if (!selectedTeamId) return;
+    setRegenerating(true);
+    try {
+      const result = await regenerateInviteCode(selectedTeamId) as any;
+      setTeamDetail((prev: any) => ({ ...prev, invite_code: result.invite_code }));
+    } catch {} finally { setRegenerating(false); }
   };
 
   const loadMemberTasks = async (memberId: number) => {
@@ -272,6 +283,13 @@ export default function LeadTeamsScreen() {
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.addMemberBtn} onPress={() => openSheet('addMember')}>
                   <Text style={styles.addMemberBtnText}>+ Участника</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.newCodeBtn, regenerating && styles.btnDisabled]}
+                  onPress={handleRegenerateCode}
+                  disabled={regenerating}
+                >
+                  <Text style={styles.newCodeBtnText}>{regenerating ? '...' : '🔄 Новый код'}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -603,6 +621,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   addMemberBtnText: { fontSize: 12, fontWeight: '600', color: colors.accent },
+  newCodeBtn: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+  },
+  newCodeBtnText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
 
   memberCard: {
     backgroundColor: colors.surface,

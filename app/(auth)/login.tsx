@@ -32,21 +32,33 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     setError('');
+    if (!email.trim()) { setError('Введите email'); return; }
     setLoading(true);
-    const { error: err } = await supabase.auth.signInWithPassword({ email, password });
-    if (err) setError(translateError(err.message));
-    setLoading(false);
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
+      if (err) setError(translateError(err.message));
+    } catch {
+      setError('Ошибка сети. Проверьте подключение.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRegister = async () => {
     setError('');
+    if (!email.trim()) { setError('Введите email'); return; }
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
     if (password.length < 6) { setError('Пароль минимум 6 символов'); return; }
     setLoading(true);
-    const { error: err } = await supabase.auth.signUp({ email, password });
-    if (err) setError(translateError(err.message));
-    else setMode('check_email');
-    setLoading(false);
+    try {
+      const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
+      if (err) setError(translateError(err.message));
+      else setMode('check_email');
+    } catch {
+      setError('Ошибка сети. Проверьте подключение.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (mode === 'check_email') {
@@ -128,19 +140,19 @@ export default function LoginScreen() {
             />
           </View>
 
-          {mode === 'register' && (
-            <View style={styles.field}>
-              <Text style={styles.label}>Повторите пароль</Text>
-              <TextInput
-                style={styles.input}
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                placeholder="••••••••"
-                placeholderTextColor={colors.textMuted}
-                secureTextEntry
-              />
-            </View>
-          )}
+          {/* Всегда рендерим поле, но прячем в режиме входа — карточка не прыгает */}
+          <View style={[styles.field, mode !== 'register' && styles.fieldHidden]}
+            pointerEvents={mode !== 'register' ? 'none' : 'auto'}>
+            <Text style={styles.label}>Повторите пароль</Text>
+            <TextInput
+              style={styles.input}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+            />
+          </View>
 
           {error ? (
             <View style={styles.errorBox}>
@@ -211,8 +223,9 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 2,
   },
-  tabText: { fontSize: 14, fontWeight: '500', color: colors.textMuted },
+  tabText: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
   tabTextActive: { color: colors.textPrimary },
+  fieldHidden: { opacity: 0, marginBottom: 0 },
 
   field: { marginBottom: 14 },
   label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
