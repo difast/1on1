@@ -33,3 +33,4 @@ class UserUpdate(BaseModel):
     linkedin: Optional[str] = None
     github: Optional[str] = None
     avatar: Optional[str] = None
+    push_token: Optional[str] = None
