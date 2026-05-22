@@ -5,13 +5,14 @@ from datetime import datetime
 from app.database import get_db
 from app.models.meeting import Meeting
 from app.models.team import Team, TeamMember
+from app.models.user import User
 from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, MeetingRequest
+from app.services.notification_service import NotificationService
 
 router = APIRouter()
 
 @router.post("/", response_model=MeetingOut)
 def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
-    # Get context from last meeting
     last_meeting = (
         db.query(Meeting)
         .filter(
@@ -37,6 +38,12 @@ def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
     db.add(meeting)
     db.commit()
     db.refresh(meeting)
+
+    lead = db.query(User).filter(User.id == data.team_lead_id).first()
+    lead_name = lead.name if lead else "Тимлид"
+    when = meeting.scheduled_date.strftime("%d.%m %H:%M") if meeting.scheduled_date else ""
+    NotificationService(db).meeting_scheduled(data.member_id, meeting.id, lead_name, when)
+
     return meeting
 
 @router.get("/", response_model=List[MeetingOut])
@@ -94,6 +101,12 @@ def request_meeting(data: MeetingRequest, db: Session = Depends(get_db)):
     db.add(meeting)
     db.commit()
     db.refresh(meeting)
+
+    member = db.query(User).filter(User.id == data.member_id).first()
+    member_name = member.name if member else "Участник"
+    if team_lead_id:
+        NotificationService(db).meeting_requested(team_lead_id, member_name, meeting.id)
+
     return meeting
 
 @router.post("/{meeting_id}/confirm", response_model=MeetingOut)
@@ -104,6 +117,12 @@ def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
     meeting.status = "confirmed"
     db.commit()
     db.refresh(meeting)
+
+    lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
+    lead_name = lead.name if lead else "Тимлид"
+    when = meeting.scheduled_date.strftime("%d.%m %H:%M") if meeting.scheduled_date else ""
+    NotificationService(db).meeting_confirmed(meeting.member_id, lead_name, meeting.id, when)
+
     return meeting
 
 @router.post("/{meeting_id}/decline", response_model=MeetingOut)
@@ -114,4 +133,9 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
     meeting.status = "declined"
     db.commit()
     db.refresh(meeting)
+
+    lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
+    lead_name = lead.name if lead else "Тимлид"
+    NotificationService(db).meeting_declined(meeting.member_id, lead_name, meeting.id)
+
     return meeting
