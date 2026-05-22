@@ -12,7 +12,7 @@ import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 
 export default function ProfileScreen() {
-  const { colors } = useTheme();
+  const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
 
@@ -119,9 +119,14 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Профиль</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-          <Text style={styles.logoutBtnText}>Выйти</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <TouchableOpacity style={styles.iconBtn} onPress={toggleTheme}>
+            <Text style={styles.iconBtnText}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+            <Text style={styles.logoutBtnText}>Выйти</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -289,6 +294,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  iconBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' },
+  iconBtnText: { fontSize: 16 },
   logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: c.border },
   logoutBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   content: { padding: 16, gap: 16, paddingBottom: 40 },

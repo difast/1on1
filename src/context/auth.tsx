@@ -62,11 +62,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const loadUser = async (email: string) => {
-    const [savedActiveRole, hasBoth] = await Promise.all([
+    const [savedActiveRole, hasBoth, cached] = await Promise.all([
       AsyncStorage.getItem(ACTIVE_ROLE_KEY),
       AsyncStorage.getItem(BOTH_ROLES_KEY),
+      AsyncStorage.getItem(USER_CACHE_KEY),
     ]);
     setHasBothRoles(hasBoth === 'true');
+
+    // Restore from cache immediately — prevents onboarding flash on slow network
+    if (cached) {
+      try {
+        const u: AppUser = JSON.parse(cached);
+        setUserState(u);
+        setActiveRoleState((savedActiveRole as Role) ?? u.role);
+      } catch {}
+    }
 
     try {
       const data = (await getUserByEmail(email)) as AppUser;
@@ -74,17 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
       setActiveRoleState((savedActiveRole as Role) ?? data.role);
     } catch {
-      // API unavailable — fall back to cached user so onboarding is not re-shown
-      const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
-      if (cached) {
-        try {
-          const u: AppUser = JSON.parse(cached);
-          setUserState(u);
-          setActiveRoleState((savedActiveRole as Role) ?? u.role);
-        } catch { setUserState(null); }
-      } else {
-        setUserState(null);
-      }
+      if (!cached) setUserState(null);
     }
   };
 

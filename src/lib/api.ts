@@ -102,3 +102,13 @@ export const getLeadAnalytics = (userId: number) =>
   req(`/analytics/lead/${userId}`);
 export const getMemberAnalytics = (userId: number) =>
   req(`/analytics/member/${userId}`);
+
+// Notes
+export const getNotes = (userId: number) =>
+  req<any[]>(`/notes/?user_id=${userId}`);
+export const createNote = (data: { user_id: number; content: string; meeting_id?: number }) =>
+  req<any>('/notes/', { method: 'POST', body: JSON.stringify(data) });
+export const updateNote = (id: number, data: { content: string }) =>
+  req<any>(`/notes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteNote = (id: number) =>
+  req<any>(`/notes/${id}`, { method: 'DELETE' });

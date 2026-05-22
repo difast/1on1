@@ -51,6 +51,7 @@ export default function LeadTeamsScreen() {
 
   const [memberTasks, setMemberTasks] = useState<Record<number, any[]>>({});
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
+  const [memberSearch, setMemberSearch] = useState('');
 
   const [sheetType, setSheetType] = useState<SheetType>(null);
   const [scheduleMember, setScheduleMember] = useState<any>(null);
@@ -230,15 +231,28 @@ export default function LeadTeamsScreen() {
     } catch {} finally { setFormLoading(false); }
   };
 
-  const members = (teamDetail?.members || []).filter((m: any) => m.user_id !== user?.id);
+  const allMembers = (teamDetail?.members || []).filter((m: any) => m.user_id !== user?.id);
+  const members = memberSearch.trim()
+    ? allMembers.filter((m: any) => (m.user_name || '').toLowerCase().includes(memberSearch.toLowerCase()))
+    : allMembers;
 
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои команды</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
-          <Text style={styles.addBtnText}>+ Создать</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
+          {allMembers.length > 0 && (
+            <TouchableOpacity
+              style={[styles.iconSearchBtn, memberSearch.length > 0 && styles.iconSearchBtnActive]}
+              onPress={() => setMemberSearch(s => s.length > 0 ? '' : ' ')}
+            >
+              <Text style={{ fontSize: 16 }}>🔍</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
+            <Text style={styles.addBtnText}>+ Создать</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -297,8 +311,19 @@ export default function LeadTeamsScreen() {
               </View>
             </TouchableOpacity>
 
+            {/* Members search */}
+            {allMembers.length > 0 && (
+              <TextInput
+                style={styles.memberSearchInput}
+                value={memberSearch.trim() ? memberSearch : ''}
+                onChangeText={setMemberSearch}
+                placeholder="🔍 Поиск участников..."
+                placeholderTextColor={colors.textMuted}
+              />
+            )}
+
             {/* Members */}
-            {members.length === 0 ? (
+            {allMembers.length === 0 ? (
               <EmptyState
                 icon="👤"
                 title="Нет участников"
@@ -308,6 +333,10 @@ export default function LeadTeamsScreen() {
                   <Text style={styles.addBtnText}>+ Добавить участника</Text>
                 </TouchableOpacity>
               </EmptyState>
+            ) : members.length === 0 ? (
+              <View style={{ padding: 16, alignItems: 'center' }}>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Участники не найдены</Text>
+              </View>
             ) : (
               members.map((member: any) => {
                 const tasksExpanded = expandedTasks.has(member.user_id);
@@ -551,6 +580,18 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingBottom: 8,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  iconSearchBtn: {
+    width: 36, height: 36, borderRadius: 8,
+    borderWidth: 1, borderColor: c.border,
+    backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center',
+  },
+  iconSearchBtnActive: { backgroundColor: c.accentLight, borderColor: c.accent },
+  memberSearchInput: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 9,
+    fontSize: 14, color: c.textPrimary, backgroundColor: c.surface,
+    marginBottom: 8,
+  },
   addBtn: {
     backgroundColor: c.accent,
     borderRadius: 8,
