@@ -1,10 +1,11 @@
 import { Redirect } from 'expo-router';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../src/context/auth';
-import { colors } from '../src/constants/colors';
+import { useTheme } from '../src/context/theme';
 
 export default function Index() {
   const { session, user, loading, activeRole, hasBothRoles } = useAuth();
+  const { colors } = useTheme();
 
   if (loading) {
     return (

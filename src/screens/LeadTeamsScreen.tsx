@@ -12,7 +12,8 @@ import {
   addMember, createMeeting, getTasks, createTask, updateTask, getUserByEmail,
   regenerateInviteCode,
 } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
@@ -39,6 +40,8 @@ const STATUS_BADGE_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
 type SheetType = 'createTeam' | 'addMember' | 'scheduleMeeting' | 'addTask' | null;
 
 export default function LeadTeamsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
   const [teams, setTeams] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);
@@ -537,8 +540,8 @@ export default function LeadTeamsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -547,9 +550,9 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 8,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
   addBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 8,
@@ -563,19 +566,19 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
-  teamTabActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  teamTabText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  teamTabActive: { backgroundColor: c.accent, borderColor: c.accent },
+  teamTabText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   teamTabTextActive: { color: '#fff' },
 
   inviteBanner: {
-    backgroundColor: colors.blue50,
+    backgroundColor: c.blue50,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.blue200,
+    borderColor: c.blue200,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -584,16 +587,16 @@ const styles = StyleSheet.create({
   inviteIcon: {
     width: 44, height: 44,
     borderRadius: 10,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.blue200,
+    borderColor: c.blue200,
   },
   inviteLabel: {
     fontSize: 10,
     fontWeight: '700',
-    color: colors.blue600,
+    color: c.blue600,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 2,
@@ -601,11 +604,11 @@ const styles = StyleSheet.create({
   inviteCode: {
     fontSize: 18,
     fontWeight: '700',
-    color: colors.blue700,
+    color: c.blue700,
     fontVariant: ['tabular-nums'],
   },
   copyBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
@@ -614,26 +617,26 @@ const styles = StyleSheet.create({
   copyBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
   addMemberBtn: {
     borderWidth: 1,
-    borderColor: colors.accent,
+    borderColor: c.accent,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
     alignItems: 'center',
   },
-  addMemberBtnText: { fontSize: 12, fontWeight: '600', color: colors.accent },
+  addMemberBtnText: { fontSize: 12, fontWeight: '600', color: c.accent },
   newCodeBtn: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 5,
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
-  newCodeBtnText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
+  newCodeBtnText: { fontSize: 12, fontWeight: '500', color: c.textSecondary },
 
   memberCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 14,
     padding: 16,
   },
@@ -643,11 +646,11 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
-  memberName: { fontSize: 14, fontWeight: '600', color: colors.textPrimary },
-  memberRole: { fontSize: 12, color: colors.textMuted },
-  lastMeeting: { fontSize: 12, color: colors.textSecondary, marginBottom: 12 },
+  memberName: { fontSize: 14, fontWeight: '600', color: c.textPrimary },
+  memberRole: { fontSize: 12, color: c.textMuted },
+  lastMeeting: { fontSize: 12, color: c.textSecondary, marginBottom: 12 },
   scheduleBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
@@ -655,52 +658,52 @@ const styles = StyleSheet.create({
   },
   scheduleBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   tasksToggle: { paddingVertical: 4 },
-  tasksToggleText: { fontSize: 13, fontWeight: '600', color: colors.textSecondary },
-  tasksLoading: { fontSize: 12, color: colors.textMuted, paddingVertical: 4 },
+  tasksToggleText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
+  tasksLoading: { fontSize: 12, color: c.textMuted, paddingVertical: 4 },
   tasksList: { marginTop: 8, gap: 6 },
   taskRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 2 },
   checkbox: {
     width: 18, height: 18, borderRadius: 5,
-    borderWidth: 1.5, borderColor: colors.gray300,
-    backgroundColor: colors.surface,
+    borderWidth: 1.5, borderColor: c.gray300,
+    backgroundColor: c.surface,
     alignItems: 'center', justifyContent: 'center',
     marginTop: 2,
   },
-  checkboxDone: { backgroundColor: colors.success, borderColor: colors.success },
+  checkboxDone: { backgroundColor: c.success, borderColor: c.success },
   checkmark: { fontSize: 11, color: '#fff', fontWeight: '700' },
-  taskTitle: { fontSize: 13, color: colors.textPrimary, lineHeight: 18 },
-  taskDone: { textDecorationLine: 'line-through', color: colors.textMuted },
-  taskDue: { fontSize: 11, color: colors.textMuted, marginTop: 1 },
-  addTaskBtn: { fontSize: 13, color: colors.accent, fontWeight: '500', paddingVertical: 4 },
+  taskTitle: { fontSize: 13, color: c.textPrimary, lineHeight: 18 },
+  taskDone: { textDecorationLine: 'line-through', color: c.textMuted },
+  taskDue: { fontSize: 11, color: c.textMuted, marginTop: 1 },
+  addTaskBtn: { fontSize: 13, color: c.accent, fontWeight: '500', paddingVertical: 4 },
 
   // Sheet
   sheetContent: { padding: 20, gap: 4, paddingBottom: 40 },
-  sheetTitle: { fontSize: 18, fontWeight: '700', color: colors.textPrimary, marginBottom: 16 },
-  sheetLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  sheetTitle: { fontSize: 18, fontWeight: '700', color: c.textPrimary, marginBottom: 16 },
+  sheetLabel: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 6 },
   sheetInput: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
+    color: c.textPrimary,
+    backgroundColor: c.surface,
     marginBottom: 14,
   },
-  sheetHint: { fontSize: 12, color: colors.textMuted, marginBottom: 12, marginTop: -8 },
+  sheetHint: { fontSize: 12, color: c.textMuted, marginBottom: 12, marginTop: -8 },
   sheetErrorBox: {
-    backgroundColor: colors.dangerBg,
+    backgroundColor: c.dangerBg,
     borderWidth: 1,
     borderColor: '#FCA5A5',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  sheetErrorText: { fontSize: 14, color: colors.danger },
+  sheetErrorText: { fontSize: 14, color: c.danger },
   sheetRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
   sheetBtn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -708,12 +711,12 @@ const styles = StyleSheet.create({
   sheetBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
   sheetBtnSecondary: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
-  sheetBtnSecondaryText: { fontSize: 15, fontWeight: '500', color: colors.textSecondary },
+  sheetBtnSecondaryText: { fontSize: 15, fontWeight: '500', color: c.textSecondary },
   btnDisabled: { opacity: 0.6 },
 });

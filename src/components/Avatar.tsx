@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 
 interface AvatarProps {
   name?: string;
@@ -8,7 +9,9 @@ interface AvatarProps {
   size?: number;
 }
 
-export function Avatar({ name, imageUrl, size = 40 }: AvatarProps) {
+export function Avatar({
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]); name, imageUrl, size = 40 }: AvatarProps) {
   const initial = (name || '?').charAt(0).toUpperCase();
   const fontSize = size * 0.4;
 
@@ -32,17 +35,17 @@ export function Avatar({ name, imageUrl, size = 40 }: AvatarProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     overflow: 'hidden',
     alignItems: 'center',
     justifyContent: 'center',
   },
   fallback: {
-    backgroundColor: colors.accentLight,
+    backgroundColor: c.accentLight,
   },
   initial: {
-    color: colors.accent,
+    color: c.accent,
     fontWeight: '700',
   },
 });

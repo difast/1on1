@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, Image,
@@ -7,10 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/auth';
 import { updateUser } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 
 export default function ProfileScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
 
   const [editing, setEditing] = useState(false);
@@ -279,15 +282,15 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
-  logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: colors.border },
-  logoutBtnText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: c.border },
+  logoutBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   content: { padding: 16, gap: 16, paddingBottom: 40 },
 
   avatarSection: { alignItems: 'center', paddingVertical: 16 },
@@ -296,64 +299,64 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 0, right: 0,
     width: 28, height: 28, borderRadius: 14,
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 2, borderColor: colors.bg,
+    borderWidth: 2, borderColor: c.bg,
   },
   avatarOverlayText: { fontSize: 12 },
-  name: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginTop: 12 },
-  role: { fontSize: 14, color: colors.textSecondary, marginTop: 4 },
-  email: { fontSize: 13, color: colors.textMuted, marginTop: 4 },
+  name: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginTop: 12 },
+  role: { fontSize: 14, color: c.textSecondary, marginTop: 4 },
+  email: { fontSize: 13, color: c.textMuted, marginTop: 4 },
 
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 20,
     gap: 14,
   },
   infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
   infoIcon: { fontSize: 16, marginTop: 2 },
-  infoLabel: { fontSize: 11, fontWeight: '600', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  infoValue: { fontSize: 14, color: colors.textPrimary },
-  infoEmpty: { color: colors.textMuted, fontStyle: 'italic' },
+  infoLabel: { fontSize: 11, fontWeight: '600', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  infoValue: { fontSize: 14, color: c.textPrimary },
+  infoEmpty: { color: c.textMuted, fontStyle: 'italic' },
 
   editBtn: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center', marginTop: 4,
-    backgroundColor: colors.surface2,
+    backgroundColor: c.surface2,
   },
-  editBtnText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  editBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
 
   field: { marginBottom: 4 },
-  fieldLabel: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  fieldLabel: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 6 },
   input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary, backgroundColor: colors.surface,
+    fontSize: 15, color: c.textPrimary, backgroundColor: c.surface,
   },
   editRow: { flexDirection: 'row', gap: 10, marginTop: 4 },
 
-  sectionLabel: { fontSize: 11, fontWeight: '700', color: colors.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
-  addRoleHeader: { fontSize: 14, fontWeight: '600', color: colors.textPrimary, marginBottom: 12 },
+  sectionLabel: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 10 },
+  addRoleHeader: { fontSize: 14, fontWeight: '600', color: c.textPrimary, marginBottom: 12 },
   roleRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' },
-  roleValue: { fontSize: 15, fontWeight: '600', color: colors.textPrimary },
-  switchBtn: { borderWidth: 1, borderColor: colors.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: colors.surface2 },
-  switchBtnText: { fontSize: 12, fontWeight: '500', color: colors.textSecondary },
+  roleValue: { fontSize: 15, fontWeight: '600', color: c.textPrimary },
+  switchBtn: { borderWidth: 1, borderColor: c.border, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6, backgroundColor: c.surface2 },
+  switchBtnText: { fontSize: 12, fontWeight: '500', color: c.textSecondary },
 
   errorBox: {
-    backgroundColor: colors.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
+    backgroundColor: c.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
     borderRadius: 10, padding: 12, marginBottom: 12,
   },
-  errorText: { fontSize: 14, color: colors.danger },
+  errorText: { fontSize: 14, color: c.danger },
   cancelBtn: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center',
   },
-  cancelBtnText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  cancelBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   saveBtn: {
-    backgroundColor: colors.accent, borderRadius: 10,
+    backgroundColor: c.accent, borderRadius: 10,
     paddingVertical: 12, alignItems: 'center',
   },
   saveBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },

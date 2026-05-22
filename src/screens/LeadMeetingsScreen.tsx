@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl,
@@ -6,12 +6,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getMeetings, getUsers, confirmMeeting, declineMeeting } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 
 export default function LeadMeetingsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
   const [meetings, setMeetings] = useState<any[]>([]);
   const [usersMap, setUsersMap] = useState<Record<number, any>>({});
@@ -151,32 +154,32 @@ export default function LeadMeetingsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
   content: { padding: 16, gap: 20, paddingBottom: 32 },
   section: { gap: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '700',
-    color: colors.textMuted,
+    color: c.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 4,
   },
   badge: {
-    backgroundColor: colors.warningBg,
+    backgroundColor: c.warningBg,
     borderRadius: 10,
     paddingHorizontal: 7,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 11, fontWeight: '700', color: colors.warning },
+  badgeText: { fontSize: 11, fontWeight: '700', color: c.warning },
   actionRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
   confirmBtn: {
     flex: 1,
-    backgroundColor: colors.success,
+    backgroundColor: c.success,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
@@ -184,13 +187,13 @@ const styles = StyleSheet.create({
   confirmBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   declineBtn: {
     flex: 1,
-    backgroundColor: colors.dangerBg,
+    backgroundColor: c.dangerBg,
     borderRadius: 8,
     paddingVertical: 10,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: colors.danger,
+    borderColor: c.danger,
   },
-  declineBtnText: { fontSize: 14, fontWeight: '600', color: colors.danger },
+  declineBtnText: { fontSize: 14, fontWeight: '600', color: c.danger },
   btnDisabled: { opacity: 0.6 },
 });

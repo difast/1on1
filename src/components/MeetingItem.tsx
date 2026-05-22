@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StatusBadge } from './StatusBadge';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 
 const STATUS_LABEL: Record<string, string> = {
   scheduled: 'Запланирована',
@@ -27,7 +28,9 @@ interface MeetingItemProps {
   right?: React.ReactNode;
 }
 
-export function MeetingItem({ meeting, subtitle, right }: MeetingItemProps) {
+export function MeetingItem({
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]); meeting, subtitle, right }: MeetingItemProps) {
   const date = new Date(meeting.scheduled_date);
   const dayMonth = date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -65,24 +68,24 @@ export function MeetingItem({ meeting, subtitle, right }: MeetingItemProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     padding: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
   dateBadge: {
     width: 52,
     height: 52,
     borderRadius: 10,
-    backgroundColor: colors.blue50,
+    backgroundColor: c.blue50,
     borderWidth: 1,
-    borderColor: colors.blue200,
+    borderColor: c.blue200,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -90,12 +93,12 @@ const styles = StyleSheet.create({
   dateDay: {
     fontSize: 11,
     fontWeight: '700',
-    color: colors.accent,
+    color: c.accent,
     lineHeight: 14,
   },
   dateTime: {
     fontSize: 10,
-    color: colors.blue400,
+    color: c.blue400,
     marginTop: 2,
   },
   body: {
@@ -105,11 +108,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '500',
-    color: colors.textPrimary,
+    color: c.textPrimary,
   },
   topic: {
     fontSize: 12,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     marginTop: 2,
   },
   right: {

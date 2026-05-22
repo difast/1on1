@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getMemberAnalytics } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 
 export default function MemberAnalyticsScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -83,37 +86,37 @@ function StatCard({ label, value, accent }: any) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
   content: { padding: 16, gap: 16, paddingBottom: 32 },
-  noData: { textAlign: 'center', color: colors.textMuted, fontSize: 14, paddingTop: 48 },
+  noData: { textAlign: 'center', color: c.textMuted, fontSize: 14, paddingTop: 48 },
   statsRow: { flexDirection: 'row', gap: 10 },
   statCard: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 14,
     alignItems: 'center',
   },
-  statValue: { fontSize: 26, fontWeight: '700', color: colors.textPrimary, marginBottom: 4 },
+  statValue: { fontSize: 26, fontWeight: '700', color: c.textPrimary, marginBottom: 4 },
   statLabel: {
-    fontSize: 10, fontWeight: '600', color: colors.textMuted,
+    fontSize: 10, fontWeight: '600', color: c.textMuted,
     textAlign: 'center', textTransform: 'uppercase', letterSpacing: 0.4,
   },
   infoCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 16,
   },
   infoLabel: {
-    fontSize: 11, fontWeight: '700', color: colors.textMuted,
+    fontSize: 11, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4,
   },
-  infoValue: { fontSize: 16, fontWeight: '600', color: colors.textPrimary },
+  infoValue: { fontSize: 16, fontWeight: '600', color: c.textPrimary },
 });

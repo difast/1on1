@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Image, Alert,
@@ -8,9 +8,12 @@ import { Redirect, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../src/context/auth';
 import { createUser, joinTeam, updateUser } from '../src/lib/api';
-import { colors } from '../src/constants/colors';
+import { useTheme } from '../src/context/theme';
+import type { AppColors } from '../src/constants/colors';
 
 export default function OnboardingScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { session, user, setUser, setActiveRole } = useAuth();
   const router = useRouter();
 
@@ -270,91 +273,91 @@ export default function OnboardingScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   root: {
     flexGrow: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 16,
   },
   logoWrap: { alignItems: 'center', marginBottom: 8 },
-  logo: { fontSize: 24, fontWeight: '700', color: colors.textPrimary },
-  logoAccent: { color: colors.accent },
+  logo: { fontSize: 24, fontWeight: '700', color: c.textPrimary },
+  logoAccent: { color: c.accent },
 
   stepTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: c.textPrimary,
     textAlign: 'center',
     marginBottom: 16,
   },
 
   roleCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 20,
     marginBottom: 12,
   },
   roleIcon: { fontSize: 28, marginBottom: 8 },
-  roleTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginBottom: 4 },
-  roleDesc: { fontSize: 14, color: colors.textSecondary },
+  roleTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginBottom: 4 },
+  roleDesc: { fontSize: 14, color: c.textSecondary },
 
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 24,
   },
   backBtn: { marginBottom: 14 },
-  backBtnText: { fontSize: 14, color: colors.textSecondary },
+  backBtnText: { fontSize: 14, color: c.textSecondary },
   stepHeader: {
     fontSize: 17,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: c.textPrimary,
     marginBottom: 4,
   },
-  stepSub: { fontSize: 13, color: colors.textSecondary, marginBottom: 18 },
+  stepSub: { fontSize: 13, color: c.textSecondary, marginBottom: 18 },
 
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
+    color: c.textPrimary,
+    backgroundColor: c.surface,
   },
 
   errorBox: {
-    backgroundColor: colors.dangerBg,
+    backgroundColor: c.dangerBg,
     borderWidth: 1,
     borderColor: '#FCA5A5',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  errorText: { fontSize: 14, color: colors.danger },
+  errorText: { fontSize: 14, color: c.danger },
 
   warningBox: {
-    backgroundColor: colors.warningBg,
+    backgroundColor: c.warningBg,
     borderWidth: 1,
     borderColor: '#FCD34D',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  warningText: { fontSize: 14, color: colors.warning },
+  warningText: { fontSize: 14, color: c.warning },
 
   btn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -365,15 +368,15 @@ const styles = StyleSheet.create({
 
   btnSecondary: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 10,
     paddingVertical: 10,
     paddingHorizontal: 20,
     alignItems: 'center',
     marginTop: 12,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
   },
-  btnSecondaryText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  btnSecondaryText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
 
   btnGhost: {
     borderRadius: 10,
@@ -381,17 +384,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 4,
   },
-  btnGhostText: { fontSize: 14, fontWeight: '500', color: colors.textSecondary },
+  btnGhostText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
 
   avatarWrap: { marginVertical: 16 },
   avatarImg: { width: 96, height: 96, borderRadius: 48 },
   avatarPlaceholder: {
     width: 96, height: 96, borderRadius: 48,
-    backgroundColor: colors.accentLight,
+    backgroundColor: c.accentLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  avatarInitial: { fontSize: 36, fontWeight: '700', color: colors.accent },
+  avatarInitial: { fontSize: 36, fontWeight: '700', color: c.accent },
 
   row: { flexDirection: 'row', gap: 10, marginTop: 20 },
 });

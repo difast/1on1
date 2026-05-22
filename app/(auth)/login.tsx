@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, Alert,
@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/context/auth';
-import { colors } from '../../src/constants/colors';
+import { useTheme } from '../../src/context/theme';
+import type { AppColors } from '../../src/constants/colors';
 
 type Mode = 'login' | 'register' | 'check_email';
 
@@ -20,6 +21,8 @@ function translateError(msg: string): string {
 }
 
 export default function LoginScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { session } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
@@ -178,33 +181,33 @@ export default function LoginScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   root: {
     flexGrow: 1,
-    backgroundColor: colors.bg,
+    backgroundColor: c.bg,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
   center: { flex: 1 },
   logoWrap: { alignItems: 'center', marginBottom: 28 },
-  logo: { fontSize: 26, fontWeight: '700', color: colors.textPrimary },
-  logoAccent: { color: colors.accent },
-  logoSub: { fontSize: 14, color: colors.textMuted, marginTop: 6 },
+  logo: { fontSize: 26, fontWeight: '700', color: c.textPrimary },
+  logoAccent: { color: c.accent },
+  logoSub: { fontSize: 14, color: c.textMuted, marginTop: 6 },
 
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     padding: 24,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
   },
 
   tabs: {
     flexDirection: 'row',
-    backgroundColor: colors.surface2,
+    backgroundColor: c.surface2,
     borderRadius: 10,
     padding: 4,
     marginBottom: 20,
@@ -216,42 +219,42 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
   },
-  tabText: { fontSize: 13, fontWeight: '500', color: colors.textMuted },
-  tabTextActive: { color: colors.textPrimary },
+  tabText: { fontSize: 13, fontWeight: '500', color: c.textMuted },
+  tabTextActive: { color: c.textPrimary },
   fieldHidden: { opacity: 0, marginBottom: 0 },
 
   field: { marginBottom: 14 },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 6 },
   input: {
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     borderRadius: 10,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
+    color: c.textPrimary,
+    backgroundColor: c.surface,
   },
 
   errorBox: {
-    backgroundColor: colors.dangerBg,
+    backgroundColor: c.dangerBg,
     borderWidth: 1,
     borderColor: '#FCA5A5',
     borderRadius: 10,
     padding: 12,
     marginBottom: 12,
   },
-  errorText: { fontSize: 14, color: colors.danger },
+  errorText: { fontSize: 14, color: c.danger },
 
   btn: {
-    backgroundColor: colors.accent,
+    backgroundColor: c.accent,
     borderRadius: 10,
     paddingVertical: 14,
     alignItems: 'center',
@@ -261,8 +264,8 @@ const styles = StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 
   emailIcon: { fontSize: 48, marginBottom: 16 },
-  emailTitle: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
-  emailDesc: { fontSize: 14, color: colors.textSecondary },
-  emailAddress: { fontSize: 15, fontWeight: '600', color: colors.accent, marginVertical: 4 },
-  emailHint: { fontSize: 13, color: colors.textMuted, textAlign: 'center', marginBottom: 24, paddingHorizontal: 16 },
+  emailTitle: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginBottom: 8 },
+  emailDesc: { fontSize: 14, color: c.textSecondary },
+  emailAddress: { fontSize: 15, fontWeight: '600', color: c.accent, marginVertical: 4 },
+  emailHint: { fontSize: 13, color: c.textMuted, textAlign: 'center', marginBottom: 24, paddingHorizontal: 16 },
 });

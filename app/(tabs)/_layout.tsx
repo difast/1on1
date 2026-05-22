@@ -2,11 +2,12 @@ import React from 'react';
 import { Tabs, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/auth';
-import { colors } from '../../src/constants/colors';
+import { useTheme } from '../../src/context/theme';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function TabsLayout() {
   const { session, user, loading, activeRole } = useAuth();
+  const { colors } = useTheme();
 
   if (loading) {
     return (

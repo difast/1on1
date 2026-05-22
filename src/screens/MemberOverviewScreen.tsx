@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, TextInput,
@@ -6,13 +6,16 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getTeams, getTeam, joinTeam, getMeetings } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 
 export default function MemberOverviewScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
   const [team, setTeam] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -181,76 +184,76 @@ export default function MemberOverviewScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
-  headerSub: { fontSize: 14, color: colors.textSecondary, marginTop: 2 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  headerSub: { fontSize: 14, color: c.textSecondary, marginTop: 2 },
   content: { padding: 16, gap: 20, paddingBottom: 32 },
 
   leadCard: {
-    backgroundColor: colors.blue50,
+    backgroundColor: c.blue50,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: colors.blue200,
+    borderColor: c.blue200,
     padding: 18,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
   },
-  leadLabel: { fontSize: 11, fontWeight: '700', color: colors.accent, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
-  leadName: { fontSize: 17, fontWeight: '600', color: colors.textPrimary },
-  leadTitle: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
+  leadLabel: { fontSize: 11, fontWeight: '700', color: c.accent, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
+  leadName: { fontSize: 17, fontWeight: '600', color: c.textPrimary },
+  leadTitle: { fontSize: 13, color: c.textSecondary, marginTop: 2 },
 
   section: { gap: 8 },
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: colors.textMuted,
+    fontSize: 12, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4,
   },
 
   membersGrid: { gap: 8 },
   memberChip: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  memberName: { fontSize: 13, fontWeight: '500', color: colors.textPrimary },
-  memberRole: { fontSize: 11, color: colors.textMuted },
+  memberName: { fontSize: 13, fontWeight: '500', color: c.textPrimary },
+  memberRole: { fontSize: 11, color: c.textMuted },
 
   // Join form
   joinContainer: {
     flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24,
   },
   joinIcon: { fontSize: 48, marginBottom: 12 },
-  joinTitle: { fontSize: 20, fontWeight: '700', color: colors.textPrimary, marginBottom: 6 },
-  joinDesc: { fontSize: 14, color: colors.textSecondary, textAlign: 'center', marginBottom: 24 },
+  joinTitle: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginBottom: 6 },
+  joinDesc: { fontSize: 14, color: c.textSecondary, textAlign: 'center', marginBottom: 24 },
   joinForm: {
     width: '100%', maxWidth: 360,
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 20,
   },
-  label: { fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginBottom: 6 },
   input: {
-    borderWidth: 1, borderColor: colors.border, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
     paddingHorizontal: 14, paddingVertical: 12,
-    fontSize: 15, color: colors.textPrimary,
-    backgroundColor: colors.surface, marginBottom: 14,
+    fontSize: 15, color: c.textPrimary,
+    backgroundColor: c.surface, marginBottom: 14,
   },
   errorBox: {
-    backgroundColor: colors.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
+    backgroundColor: c.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
     borderRadius: 10, padding: 12, marginBottom: 12,
   },
-  errorText: { fontSize: 14, color: colors.danger },
+  errorText: { fontSize: 14, color: c.danger },
   joinBtn: {
-    backgroundColor: colors.accent, borderRadius: 10,
+    backgroundColor: c.accent, borderRadius: 10,
     paddingVertical: 14, alignItems: 'center',
   },
   joinBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },

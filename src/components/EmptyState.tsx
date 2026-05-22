@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 
 interface EmptyStateProps {
   icon: string;
@@ -9,7 +10,9 @@ interface EmptyStateProps {
   children?: React.ReactNode;
 }
 
-export function EmptyState({ icon, title, description, children }: EmptyStateProps) {
+export function EmptyState({
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]); icon, title, description, children }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>
@@ -20,7 +23,7 @@ export function EmptyState({ icon, title, description, children }: EmptyStatePro
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   container: {
     alignItems: 'center',
     paddingVertical: 48,
@@ -33,13 +36,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: c.textPrimary,
     marginBottom: 6,
     textAlign: 'center',
   },
   desc: {
     fontSize: 14,
-    color: colors.textSecondary,
+    color: c.textSecondary,
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl,
@@ -6,11 +6,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
 import { getTasks, updateTask } from '../lib/api';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 
 export default function MemberTasksScreen() {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -106,25 +109,25 @@ function TaskRow({ task, onToggle }: { task: any; onToggle: () => void }) {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   header: {
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
     flexDirection: 'row', alignItems: 'baseline', gap: 10,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: colors.textPrimary },
-  headerSub: { fontSize: 13, color: colors.textSecondary },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  headerSub: { fontSize: 13, color: c.textSecondary },
   content: { padding: 16, gap: 20, paddingBottom: 32 },
   section: { gap: 8 },
   sectionTitle: {
-    fontSize: 12, fontWeight: '700', color: colors.textMuted,
+    fontSize: 12, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4,
   },
   taskCard: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 14,
     flexDirection: 'row',
     alignItems: 'center',
@@ -132,15 +135,15 @@ const styles = StyleSheet.create({
   },
   checkbox: {
     width: 22, height: 22, borderRadius: 7,
-    borderWidth: 2, borderColor: colors.gray300,
-    backgroundColor: colors.surface,
+    borderWidth: 2, borderColor: c.gray300,
+    backgroundColor: c.surface,
     alignItems: 'center', justifyContent: 'center',
     flexShrink: 0,
   },
-  checkboxDone: { backgroundColor: colors.success, borderColor: colors.success },
+  checkboxDone: { backgroundColor: c.success, borderColor: c.success },
   checkmark: { fontSize: 13, color: '#fff', fontWeight: '700' },
-  taskTitle: { fontSize: 14, fontWeight: '500', color: colors.textPrimary },
-  taskDone: { textDecorationLine: 'line-through', color: colors.textMuted },
-  taskDesc: { fontSize: 12, color: colors.textSecondary, marginTop: 2 },
-  taskDue: { fontSize: 12, color: colors.textMuted, flexShrink: 0 },
+  taskTitle: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
+  taskDone: { textDecorationLine: 'line-through', color: c.textMuted },
+  taskDesc: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+  taskDue: { fontSize: 12, color: c.textMuted, flexShrink: 0 },
 });

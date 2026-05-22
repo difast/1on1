@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { colors } from '../constants/colors';
+import { useTheme } from '../context/theme';
+import type { AppColors } from '../constants/colors';
 
 type Variant = 'blue' | 'green' | 'amber' | 'red' | 'gray';
 
@@ -17,7 +18,9 @@ interface StatusBadgeProps {
   variant: Variant;
 }
 
-export function StatusBadge({ label, variant }: StatusBadgeProps) {
+export function StatusBadge({
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]); label, variant }: StatusBadgeProps) {
   const { bg, text } = CONFIG[variant] ?? CONFIG.gray;
   return (
     <View style={[styles.badge, { backgroundColor: bg }]}>
@@ -26,7 +29,7 @@ export function StatusBadge({ label, variant }: StatusBadgeProps) {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: AppColors) => StyleSheet.create({
   badge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
