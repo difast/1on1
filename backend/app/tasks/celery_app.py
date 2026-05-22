@@ -17,11 +17,15 @@ celery_app.conf.update(
     beat_schedule={
         "send-meeting-reminders": {
             "task": "app.tasks.reminders.send_meeting_reminders",
-            "schedule": crontab(hour=8, minute=0),  # Daily at 8 AM
+            "schedule": crontab(hour=8, minute=0),
+        },
+        "send-hourly-meeting-reminders": {
+            "task": "app.tasks.reminders.send_hourly_meeting_reminders",
+            "schedule": crontab(minute=0),  # every hour
         },
         "check-overdue-meetings": {
             "task": "app.tasks.reminders.check_overdue_meetings",
-            "schedule": crontab(hour=9, minute=0),  # Daily at 9 AM
+            "schedule": crontab(hour=9, minute=0),
         },
     },
 )
