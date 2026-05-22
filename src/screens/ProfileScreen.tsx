@@ -119,14 +119,9 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Профиль</Text>
-        <View style={styles.headerRight}>
-          <TouchableOpacity style={styles.iconBtn} onPress={toggleTheme}>
-            <Text style={styles.iconBtnText}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
-            <Text style={styles.logoutBtnText}>Выйти</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+          <Text style={styles.logoutBtnText}>Выйти</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -241,11 +236,19 @@ export default function ProfileScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)}>
-                <Text style={styles.editBtnText}>Редактировать</Text>
+                <Text style={styles.editBtnText}>⚙️ Настройки</Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
+              {/* Theme toggle */}
+              <View style={styles.themeRow}>
+                <Text style={styles.fieldLabel}>Тема приложения</Text>
+                <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
+                  <Text style={styles.themeToggleText}>{isDark ? '☀️  Светлая' : '🌙  Тёмная'}</Text>
+                </TouchableOpacity>
+              </View>
+
               {[
                 { key: 'title', label: 'Должность', placeholder: 'Senior Engineer' },
                 { key: 'telegram', label: 'Telegram', placeholder: '@username' },
@@ -294,9 +297,13 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
-  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  iconBtn: { width: 36, height: 36, borderRadius: 10, borderWidth: 1, borderColor: c.border, backgroundColor: c.surface2, alignItems: 'center', justifyContent: 'center' },
-  iconBtnText: { fontSize: 16 },
+  themeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  themeToggle: {
+    backgroundColor: c.accentLight, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 7,
+    borderWidth: 1, borderColor: c.accent,
+  },
+  themeToggleText: { fontSize: 13, fontWeight: '600', color: c.accent },
   logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: c.border },
   logoutBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   content: { padding: 16, gap: 16, paddingBottom: 40 },

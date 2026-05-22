@@ -10,7 +10,7 @@ import { useAuth } from '../context/auth';
 import {
   getTeams, getTeam, createTeam,
   addMember, createMeeting, getTasks, createTask, updateTask, getUserByEmail,
-  regenerateInviteCode,
+  regenerateInviteCode, getNotes, createNote, deleteNote,
 } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -52,6 +52,10 @@ export default function LeadTeamsScreen() {
   const [memberTasks, setMemberTasks] = useState<Record<number, any[]>>({});
   const [expandedTasks, setExpandedTasks] = useState<Set<number>>(new Set());
   const [memberSearch, setMemberSearch] = useState('');
+  const [notes, setNotes] = useState<any[]>([]);
+  const [showNoteForm, setShowNoteForm] = useState(false);
+  const [noteText, setNoteText] = useState('');
+  const [noteLoading, setNoteLoading] = useState(false);
 
   const [sheetType, setSheetType] = useState<SheetType>(null);
   const [scheduleMember, setScheduleMember] = useState<any>(null);
@@ -105,12 +109,37 @@ export default function LeadTeamsScreen() {
     finally { setLoadingTeam(false); }
   }, []);
 
-  useEffect(() => { loadTeams(); }, [user?.id]);
+  const loadNotes = useCallback(async () => {
+    if (!user) return;
+    try { setNotes((await getNotes(user.id)) || []); } catch {}
+  }, [user]);
+
+  const handleCreateNote = async () => {
+    if (!noteText.trim() || !user) return;
+    setNoteLoading(true);
+    try {
+      const note = await createNote({ user_id: user.id, content: noteText.trim() });
+      setNotes(prev => [note, ...prev]);
+      setNoteText(''); setShowNoteForm(false);
+    } catch { Alert.alert('Ошибка', 'Не удалось создать заметку'); }
+    finally { setNoteLoading(false); }
+  };
+
+  const handleDeleteNote = (id: number) => {
+    Alert.alert('Удалить заметку?', undefined, [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Удалить', style: 'destructive', onPress: async () => {
+        try { await deleteNote(id); setNotes(prev => prev.filter(n => n.id !== id)); } catch {}
+      }},
+    ]);
+  };
+
+  useEffect(() => { loadTeams(); loadNotes(); }, [user?.id]);
   useEffect(() => { if (selectedTeamId) loadTeamDetail(selectedTeamId); }, [selectedTeamId]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadTeams();
+    await Promise.all([loadTeams(), loadNotes()]);
     if (selectedTeamId) await loadTeamDetail(selectedTeamId);
     setRefreshing(false);
   };
@@ -240,19 +269,9 @@ export default function LeadTeamsScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои команды</Text>
-        <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
-          {allMembers.length > 0 && (
-            <TouchableOpacity
-              style={[styles.iconSearchBtn, memberSearch.length > 0 && styles.iconSearchBtnActive]}
-              onPress={() => setMemberSearch(s => s.length > 0 ? '' : ' ')}
-            >
-              <Text style={{ fontSize: 16 }}>🔍</Text>
-            </TouchableOpacity>
-          )}
-          <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
-            <Text style={styles.addBtnText}>+ Создать</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
+          <Text style={styles.addBtnText}>+ Создать</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -260,6 +279,50 @@ export default function LeadTeamsScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        {/* Notes section */}
+        <View style={styles.notesSection}>
+          <View style={styles.notesSectionHeader}>
+            <Text style={styles.notesSectionTitle}>📝 Мои заметки</Text>
+            <TouchableOpacity onPress={() => setShowNoteForm(s => !s)}>
+              <Text style={styles.notesAddLink}>{showNoteForm ? 'Закрыть' : '+ Добавить'}</Text>
+            </TouchableOpacity>
+          </View>
+          {showNoteForm && (
+            <View style={styles.noteForm}>
+              <TextInput
+                style={styles.noteInput}
+                value={noteText}
+                onChangeText={setNoteText}
+                placeholder="Введите заметку..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                autoFocus
+              />
+              <View style={{ flexDirection: 'row', gap: 8 }}>
+                <TouchableOpacity style={styles.noteCancelBtn} onPress={() => { setShowNoteForm(false); setNoteText(''); }}>
+                  <Text style={styles.noteCancelText}>Отмена</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.noteSaveBtn, (!noteText.trim() || noteLoading) && { opacity: 0.5 }]}
+                  onPress={handleCreateNote} disabled={!noteText.trim() || noteLoading}
+                >
+                  <Text style={styles.noteSaveText}>{noteLoading ? '...' : 'Сохранить'}</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+          {notes.length === 0 && !showNoteForm ? (
+            <Text style={styles.notesEmpty}>Нет заметок. Нажмите «+ Добавить»</Text>
+          ) : (
+            notes.slice(0, 5).map(n => (
+              <TouchableOpacity key={n.id} style={styles.noteCard} onLongPress={() => handleDeleteNote(n.id)} activeOpacity={0.8}>
+                <Text style={styles.noteContent} numberOfLines={2}>{n.content}</Text>
+                <Text style={styles.noteDate}>{new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</Text>
+              </TouchableOpacity>
+            ))
+          )}
+        </View>
+
         {/* Team tabs */}
         {teams.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.teamTabs}>
@@ -311,16 +374,14 @@ export default function LeadTeamsScreen() {
               </View>
             </TouchableOpacity>
 
-            {/* Members search */}
-            {allMembers.length > 0 && (
-              <TextInput
-                style={styles.memberSearchInput}
-                value={memberSearch.trim() ? memberSearch : ''}
-                onChangeText={setMemberSearch}
-                placeholder="🔍 Поиск участников..."
-                placeholderTextColor={colors.textMuted}
-              />
-            )}
+            {/* Members search — always visible when team is selected */}
+            <TextInput
+              style={styles.memberSearchInput}
+              value={memberSearch}
+              onChangeText={setMemberSearch}
+              placeholder="🔍 Поиск участников..."
+              placeholderTextColor={colors.textMuted}
+            />
 
             {/* Members */}
             {allMembers.length === 0 ? (
@@ -592,6 +653,36 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 14, color: c.textPrimary, backgroundColor: c.surface,
     marginBottom: 8,
   },
+  notesSection: { gap: 8 },
+  notesSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  notesSectionTitle: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
+  notesAddLink: { fontSize: 13, fontWeight: '600', color: c.accent },
+  notesEmpty: { fontSize: 13, color: c.textMuted, fontStyle: 'italic', paddingVertical: 8 },
+  noteForm: {
+    backgroundColor: c.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: c.border, padding: 12, gap: 8,
+  },
+  noteInput: {
+    fontSize: 15, color: c.textPrimary,
+    minHeight: 72, textAlignVertical: 'top',
+  },
+  noteCancelBtn: {
+    flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    paddingVertical: 9, alignItems: 'center', backgroundColor: c.surface2,
+  },
+  noteCancelText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
+  noteSaveBtn: {
+    flex: 1, backgroundColor: c.accent, borderRadius: 8,
+    paddingVertical: 9, alignItems: 'center',
+  },
+  noteSaveText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  noteCard: {
+    backgroundColor: c.surface, borderRadius: 10,
+    borderWidth: 1, borderColor: c.border,
+    padding: 12, flexDirection: 'row', justifyContent: 'space-between', gap: 8,
+  },
+  noteContent: { flex: 1, fontSize: 14, color: c.textPrimary, lineHeight: 20 },
+  noteDate: { fontSize: 11, color: c.textMuted, flexShrink: 0, marginTop: 2 },
   addBtn: {
     backgroundColor: c.accent,
     borderRadius: 8,
