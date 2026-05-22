@@ -26,6 +26,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [tasks, setTasks] = useState([])
 
+  const [expandedNotes, setExpandedNotes] = useState(new Set())
+  const [noteDrafts, setNoteDrafts] = useState({})
+
+  const noteKey = (meetingId) => `member_notes_${user.id}_${meetingId}`
+
   const saveTeamId = (id) => {
     setTeamId(id)
     try {
@@ -113,6 +118,32 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     try {
       await updateTask(task.id, { completed: !task.completed })
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t))
+    } catch {}
+  }
+
+  const handleToggleNote = (meetingId) => {
+    setExpandedNotes(prev => {
+      const next = new Set(prev)
+      if (next.has(meetingId)) {
+        next.delete(meetingId)
+      } else {
+        next.add(meetingId)
+        if (noteDrafts[meetingId] === undefined) {
+          try {
+            const saved = localStorage.getItem(noteKey(meetingId))
+            setNoteDrafts(d => ({ ...d, [meetingId]: saved || '' }))
+          } catch {
+            setNoteDrafts(d => ({ ...d, [meetingId]: '' }))
+          }
+        }
+      }
+      return next
+    })
+  }
+
+  const handleSaveNote = (meetingId) => {
+    try {
+      localStorage.setItem(noteKey(meetingId), noteDrafts[meetingId] || '')
     } catch {}
   }
 
@@ -305,7 +336,20 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Предстоящие</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {upcomingMeetings.map(m => <MeetingCard key={m.id} meeting={m} statusBadge={statusBadge} statusLabel={statusLabel} />)}
+                  {upcomingMeetings.map(m => (
+                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                      <MeetingCard meeting={m} statusBadge={statusBadge} statusLabel={statusLabel} />
+                      {m.agenda && (
+                        <div style={{
+                          marginTop: 6, padding: '10px 14px',
+                          background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
+                          borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--blue-700)',
+                        }}>
+                          <span style={{ fontWeight: 600 }}>Повестка: </span>{m.agenda}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -314,7 +358,63 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Прошедшие</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {pastMeetings.map(m => <MeetingCard key={m.id} meeting={m} statusBadge={statusBadge} statusLabel={statusLabel} />)}
+                  {pastMeetings.map(m => {
+                    const isExpanded = expandedNotes.has(m.id)
+                    const draft = noteDrafts[m.id] ?? ''
+                    const savedNote = (() => { try { return localStorage.getItem(noteKey(m.id)) } catch { return null } })()
+                    return (
+                      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{
+                            width: 48, height: 48, borderRadius: 'var(--radius-md)',
+                            background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+                            alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+                          }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
+                              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                            </span>
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
+                              {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
+                            </p>
+                            {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{m.topic}</p>}
+                          </div>
+                          <span className={statusBadge[m.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
+                            {statusLabel[m.status] || m.status}
+                          </span>
+                          <button
+                            onClick={() => handleToggleNote(m.id)}
+                            style={{
+                              fontSize: 12, fontWeight: 600, background: 'none', border: 'none',
+                              cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                              flexShrink: 0, padding: '4px 6px',
+                            }}
+                          >
+                            {isExpanded ? '▾ Мои заметки' : '▸ Мои заметки'}{savedNote ? '●' : ''}
+                          </button>
+                        </div>
+                        {isExpanded && (
+                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
+                            <textarea
+                              value={draft}
+                              onChange={e => setNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                              placeholder="Личные заметки к встрече..."
+                              className="input"
+                              style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
+                            />
+                            <button
+                              onClick={() => handleSaveNote(m.id)}
+                              className="btn btn-accent btn-sm"
+                              style={{ marginTop: 6 }}
+                            >
+                              Сохранить
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               </div>
             )}
