@@ -23,6 +23,8 @@ export const getTeam = (id) => api.get(`/teams/${id}`)
 export const joinTeam = (data) => api.post('/teams/join', data)
 export const addMember = (teamId, userId, role) =>
   api.post(`/teams/${teamId}/members`, null, { params: { user_id: userId, role } })
+export const regenerateInviteCode = (teamId) =>
+  api.post(`/teams/${teamId}/regenerate-invite`)
 
 // Meetings
 export const createMeeting = (data) => api.post('/meetings/', data)
