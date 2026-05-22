@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
@@ -25,12 +25,18 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [newTeamName, setNewTeamName] = useState('')
   const [newMember, setNewMember] = useState({ name: '', email: '', title: '', role: 'member' })
   const [scheduleDate, setScheduleDate] = useState('')
+  const [scheduleAgenda, setScheduleAgenda] = useState('')
   const [formLoading, setFormLoading] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [regenerating, setRegenerating] = useState(false)
 
   const [memberTasks, setMemberTasks] = useState({})
   const [expandedTasks, setExpandedTasks] = useState(new Set())
   const [taskForms, setTaskForms] = useState({})
+
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const [meetingNotes, setMeetingNotes] = useState({})
 
   const loadTeams = useCallback(async () => {
     try {
@@ -99,6 +105,28 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, status: 'declined' } : m))
     } catch {} finally {
       setMeetingAction(prev => ({ ...prev, [meetingId]: false }))
+    }
+  }
+
+  const handleToggleMeetingNote = (meeting) => {
+    const id = meeting.id
+    setMeetingNotes(prev => {
+      const cur = prev[id]
+      if (cur?.expanded) return { ...prev, [id]: { ...cur, expanded: false } }
+      return { ...prev, [id]: { expanded: true, draft: cur?.draft ?? (meeting.notes || ''), saving: false } }
+    })
+  }
+
+  const handleSaveMeetingNote = async (meetingId) => {
+    const note = meetingNotes[meetingId]
+    if (!note) return
+    setMeetingNotes(prev => ({ ...prev, [meetingId]: { ...prev[meetingId], saving: true } }))
+    try {
+      await updateMeeting(meetingId, { notes: note.draft })
+      setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, notes: note.draft } : m))
+      setMeetingNotes(prev => ({ ...prev, [meetingId]: { ...prev[meetingId], saving: false } }))
+    } catch {
+      setMeetingNotes(prev => ({ ...prev, [meetingId]: { ...prev[meetingId], saving: false } }))
     }
   }
 
@@ -210,8 +238,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         member_id: scheduleMember.user_id,
         scheduled_date: scheduleDate,
         status: 'scheduled',
+        agenda: scheduleAgenda.trim() || undefined,
       })
       setScheduleDate('')
+      setScheduleAgenda('')
       setShowSchedule(false)
       setScheduleMember(null)
       await loadTeamDetail(selectedTeamId)
@@ -224,6 +254,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     navigator.clipboard.writeText(link).catch(() => {})
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  const handleRegenerateCode = async (e) => {
+    e.stopPropagation()
+    if (!selectedTeamId) return
+    setRegenerating(true)
+    try {
+      const { data } = await regenerateInviteCode(selectedTeamId)
+      setTeamDetail(prev => prev ? { ...prev, invite_code: data.invite_code } : prev)
+    } catch {} finally { setRegenerating(false) }
   }
 
   const statusBorderClass = {
@@ -243,6 +283,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     yellow: 'Скоро',
     red: 'Просрочено',
   }
+
+  const filteredMembers = teamDetail?.members?.filter(m => {
+    if (m.user_id === user.id) return false
+    if (!searchQuery.trim()) return true
+    const q = searchQuery.toLowerCase()
+    return (
+      (m.user_name || '').toLowerCase().includes(q) ||
+      (m.user_email || '').toLowerCase().includes(q)
+    )
+  }) || []
 
   return (
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
@@ -292,6 +342,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             onConfirm={handleConfirmMeeting}
             onDecline={handleDeclineMeeting}
             onReload={loadMyMeetings}
+            meetingNotes={meetingNotes}
+            onToggleNote={handleToggleMeetingNote}
+            onNoteChange={(id, val) => setMeetingNotes(prev => ({ ...prev, [id]: { ...prev[id], draft: val } }))}
+            onSaveNote={handleSaveMeetingNote}
           />
         )}
 
@@ -351,6 +405,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         {copied ? '✓ Скопировано!' : 'Скопировать ссылку'}
                       </button>
                       <button
+                        onClick={handleRegenerateCode}
+                        className="btn btn-secondary btn-sm"
+                        disabled={regenerating}
+                        title="Сгенерировать новый код"
+                      >
+                        {regenerating ? '...' : '🔄 Новый код'}
+                      </button>
+                      <button
                         onClick={e => { e.stopPropagation(); setShowAddMember(true) }}
                         className="btn btn-accent-ghost btn-sm"
                       >
@@ -359,10 +421,22 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     </div>
                   </div>
 
+                  {/* Search */}
+                  {teamDetail.members && teamDetail.members.filter(m => m.user_id !== user.id).length > 0 && (
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                      placeholder="Поиск участников по имени или email..."
+                      className="input"
+                      style={{ maxWidth: 360 }}
+                    />
+                  )}
+
                   {/* Members grid */}
-                  {teamDetail.members && teamDetail.members.filter(m => m.user_id !== user.id).length > 0 ? (
+                  {filteredMembers.length > 0 ? (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
-                      {teamDetail.members.filter(m => m.user_id !== user.id).map((member) => {
+                      {filteredMembers.map((member) => {
                         const tasksExpanded = expandedTasks.has(member.user_id)
                         const tasks = memberTasks[member.user_id]
                         const taskForm = taskForms[member.user_id] || {}
@@ -541,11 +615,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon">👤</div>
-                      <p className="empty-title">Нет участников</p>
-                      <p className="empty-desc">Добавьте первого участника в команду</p>
-                      <button onClick={() => setShowAddMember(true)} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>
-                        + Добавить участника
-                      </button>
+                      <p className="empty-title">{searchQuery ? 'Участники не найдены' : 'Нет участников'}</p>
+                      <p className="empty-desc">{searchQuery ? 'Попробуйте изменить запрос' : 'Добавьте первого участника в команду'}</p>
+                      {!searchQuery && (
+                        <button onClick={() => setShowAddMember(true)} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>
+                          + Добавить участника
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>
@@ -607,6 +683,18 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <label className="form-label">Дата и время</label>
               <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="input" autoFocus />
             </div>
+            <div className="form-group">
+              <label className="form-label">
+                Повестка <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(необязательно)</span>
+              </label>
+              <textarea
+                value={scheduleAgenda}
+                onChange={e => setScheduleAgenda(e.target.value)}
+                placeholder="Темы для обсуждения..."
+                className="input"
+                style={{ resize: 'none', minHeight: 80 }}
+              />
+            </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
               <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Сохранение...' : 'Запланировать'}</button>
@@ -618,7 +706,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   )
 }
 
-function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm, onDecline }) {
+function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm, onDecline, meetingNotes, onToggleNote, onNoteChange, onSaveNote }) {
   const now = new Date()
 
   const requests = meetings.filter(m => m.status === 'requested')
@@ -646,34 +734,68 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
     </div>
   )
 
-  const MeetingRow = ({ m, showActions }) => {
+  const MeetingRow = ({ m, showActions, showNotes }) => {
     const memberName = usersMap[m.member_id]?.name || `Участник #${m.member_id}`
     const busy = meetingAction[m.id]
+    const noteState = meetingNotes?.[m.id]
     return (
-      <div className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{
-          width: 48, height: 48, borderRadius: 'var(--radius-md)',
-          background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-          alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-        }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-            {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+      <div className="meeting-item" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div style={{
+            width: 48, height: 48, borderRadius: 'var(--radius-md)',
+            background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+          }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
+              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+            </span>
+            <span style={{ fontSize: 11, color: 'var(--blue-400)' }}>
+              {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
+            {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
+          </div>
+          <span className={statusBadge[m.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
+            {statusLabel[m.status] || m.status}
           </span>
-          <span style={{ fontSize: 11, color: 'var(--blue-400)' }}>
-            {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-          </span>
+          {showActions && (
+            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+              <button onClick={() => onConfirm(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
+              <button onClick={() => onDecline(m.id)} disabled={busy} className="btn btn-danger btn-sm">Отклонить</button>
+            </div>
+          )}
+          {showNotes && (
+            <button
+              onClick={() => onToggleNote(m)}
+              style={{
+                fontSize: 12, fontWeight: 600, background: 'none', border: 'none',
+                cursor: 'pointer', color: noteState?.expanded ? 'var(--color-accent)' : 'var(--color-text-secondary)',
+                flexShrink: 0, padding: '4px 6px',
+              }}
+            >
+              {noteState?.expanded ? '▾ Заметки' : '▸ Заметки'}{m.notes ? '●' : ''}
+            </button>
+          )}
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
-          {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
-        </div>
-        <span className={statusBadge[m.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
-          {statusLabel[m.status] || m.status}
-        </span>
-        {showActions && (
-          <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-            <button onClick={() => onConfirm(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
-            <button onClick={() => onDecline(m.id)} disabled={busy} className="btn btn-danger btn-sm">Отклонить</button>
+        {showNotes && noteState?.expanded && (
+          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
+            <textarea
+              value={noteState.draft}
+              onChange={e => onNoteChange(m.id, e.target.value)}
+              placeholder="Заметки к встрече..."
+              className="input"
+              style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
+            />
+            <button
+              onClick={() => onSaveNote(m.id)}
+              disabled={noteState.saving}
+              className="btn btn-accent btn-sm"
+              style={{ marginTop: 6 }}
+            >
+              {noteState.saving ? 'Сохранение...' : 'Сохранить'}
+            </button>
           </div>
         )}
       </div>
@@ -689,7 +811,7 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
             <span className="badge badge-amber">{requests.length}</span>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {requests.map(m => <MeetingRow key={m.id} m={m} showActions />)}
+            {requests.map(m => <MeetingRow key={m.id} m={m} showActions showNotes={false} />)}
           </div>
         </div>
       )}
@@ -697,7 +819,7 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
         <div>
           <p className="label" style={{ marginBottom: 12 }}>Предстоящие</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {upcoming.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
+            {upcoming.map(m => <MeetingRow key={m.id} m={m} showActions={false} showNotes={false} />)}
           </div>
         </div>
       )}
@@ -705,7 +827,7 @@ function MyMeetingsView({ meetings, loading, usersMap, meetingAction, onConfirm,
         <div>
           <p className="label" style={{ marginBottom: 12 }}>Прошедшие</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {past.map(m => <MeetingRow key={m.id} m={m} showActions={false} />)}
+            {past.map(m => <MeetingRow key={m.id} m={m} showActions={false} showNotes />)}
           </div>
         </div>
       )}
