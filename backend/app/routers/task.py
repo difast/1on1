@@ -4,7 +4,9 @@ from typing import List, Optional
 from datetime import datetime
 from app.database import get_db
 from app.models.task import Task
+from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
+from app.tasks.reminders import send_new_task_notification
 
 router = APIRouter()
 
@@ -14,6 +16,10 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
     db.add(task)
     db.commit()
     db.refresh(task)
+    if task.assigned_to and task.assigned_by:
+        assignor = db.query(User).filter(User.id == task.assigned_by).first()
+        assignor_name = assignor.name if assignor else "Тимлид"
+        send_new_task_notification.delay(task.assigned_to, task.title or task.description or "Задача", assignor_name, task.id)
     return task
 
 @router.get("/", response_model=List[TaskOut])
