@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 
-export function Spinner({
+export function Spinner({ size = 'large' }: { size?: 'small' | 'large' }) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]); size = 'large' }: { size?: 'small' | 'large' }) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.center}>
       <ActivityIndicator size={size} color={colors.accent} />

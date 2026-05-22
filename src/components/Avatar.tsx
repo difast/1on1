@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -9,9 +9,9 @@ interface AvatarProps {
   size?: number;
 }
 
-export function Avatar({
+export function Avatar({ name, imageUrl, size = 40 }: AvatarProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]); name, imageUrl, size = 40 }: AvatarProps) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const initial = (name || '?').charAt(0).toUpperCase();
   const fontSize = size * 0.4;
 

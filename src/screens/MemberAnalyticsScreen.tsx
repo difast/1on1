@@ -78,6 +78,8 @@ export default function MemberAnalyticsScreen() {
 }
 
 function StatCard({ label, value, accent }: any) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.statCard}>
       <Text style={[styles.statValue, accent && { color: colors.accent }]}>{value}</Text>

@@ -96,6 +96,8 @@ export default function LeadAnalyticsScreen() {
 }
 
 function StatCard({ label, value, accent, danger }: any) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.statCard}>
       <Text style={[
@@ -111,6 +113,8 @@ function StatCard({ label, value, accent, danger }: any) {
 }
 
 function BarChart({ data }: { data: any[] }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const max = Math.max(...data.map((d: any) => d.count ?? 0), 1);
   return (
     <View style={styles.chart}>

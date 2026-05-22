@@ -19,11 +19,6 @@ import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 
-const STATUS_BORDER: Record<string, string> = {
-  green: colors.statusGreenBorder,
-  yellow: colors.statusYellowBorder,
-  red: colors.statusRedBorder,
-};
 
 const STATUS_BADGE_LABEL: Record<string, string> = {
   green: 'В порядке',
@@ -42,6 +37,11 @@ type SheetType = 'createTeam' | 'addMember' | 'scheduleMeeting' | 'addTask' | nu
 export default function LeadTeamsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const STATUS_BORDER: Record<string, string> = {
+    green: colors.statusGreenBorder,
+    yellow: colors.statusYellowBorder,
+    red: colors.statusRedBorder,
+  };
   const { user } = useAuth();
   const [teams, setTeams] = useState<any[]>([]);
   const [selectedTeamId, setSelectedTeamId] = useState<number | null>(null);

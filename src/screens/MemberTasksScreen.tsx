@@ -89,6 +89,8 @@ export default function MemberTasksScreen() {
 }
 
 function TaskRow({ task, onToggle }: { task: any; onToggle: () => void }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <TouchableOpacity style={styles.taskCard} onPress={onToggle} activeOpacity={0.7}>
       <View style={[styles.checkbox, task.completed && styles.checkboxDone]}>

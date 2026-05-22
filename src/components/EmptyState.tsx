@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -10,9 +10,9 @@ interface EmptyStateProps {
   children?: React.ReactNode;
 }
 
-export function EmptyState({
+export function EmptyState({ icon, title, description, children }: EmptyStateProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]); icon, title, description, children }: EmptyStateProps) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.container}>
       <Text style={styles.icon}>{icon}</Text>

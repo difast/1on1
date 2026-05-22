@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { StatusBadge } from './StatusBadge';
 import { useTheme } from '../context/theme';
@@ -28,9 +28,9 @@ interface MeetingItemProps {
   right?: React.ReactNode;
 }
 
-export function MeetingItem({
+export function MeetingItem({ meeting, subtitle, right }: MeetingItemProps) {
   const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]); meeting, subtitle, right }: MeetingItemProps) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const date = new Date(meeting.scheduled_date);
   const dayMonth = date.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
   const time = date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
