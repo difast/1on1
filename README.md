@@ -1,151 +1,67 @@
-# OneOnOne v2
+# 1on1 — монорепо
 
-## Быстрый старт
+```
+1on1/
+├── mobile/       Expo React Native (iOS / Android)
+└── smartweb/
+    ├── backend/  FastAPI + SQLAlchemy  →  Railway PostgreSQL
+    └── frontend/ React + Vite          →  Supabase (REST, anon key)
+```
 
-### 1. Установка
+## Архитектура баз данных
+
+| Слой | База | Доступ |
+|------|------|--------|
+| `smartweb/backend` | **Railway PostgreSQL** | SQLAlchemy (`DATABASE_URL`) |
+| `smartweb/frontend` | **Supabase** | браузер напрямую (anon key, RLS) |
+| `mobile` | Supabase Auth | `@supabase/supabase-js` |
+
+### Railway PostgreSQL
+Основная бизнес-база. Бэкенд читает только её — никаких прямых запросов к Supabase.
+
+Таблицы: `users`, `teams`, `team_members`, `meetings`, `tasks`, `notes`, `notifications`
+
+### Supabase
+Данные, к которым фронтенд обращается напрямую из браузера, минуя бэкенд:
+
+| Таблица | Назначение | RLS |
+|---------|-----------|-----|
+| `leads` | Лиды с лендинга (имя, email, компания, источник) | INSERT anon, SELECT authenticated |
+| `meeting_templates` | Шаблоны повесток для 1-on-1 | SELECT anon |
+
+Мобильное приложение использует Supabase только для аутентификации (email/password через `supabase.auth`).
+
+## Запуск
+
+### Backend
 ```bash
+cd smartweb/backend
+cp .env.example .env          # прописать DATABASE_URL
+pip install -r requirements.txt
+alembic upgrade head
+uvicorn app.main:app --reload
+```
+
+### Frontend
+```bash
+cd smartweb/frontend
+cp .env.example .env          # прописать Supabase ключи
 npm install
-```
-
-### 2. .env
-```
-NEXT_PUBLIC_SUPABASE_URL="https://xxx.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="xxx"
-```
-
-### 3. SQL в Supabase → SQL Editor → New query
-
-```sql
--- Профили пользователей
-create table profiles (
-  id uuid references auth.users(id) on delete cascade primary key,
-  email text,
-  name text,
-  role text default 'teamlead', -- teamlead | member
-  job_title text,
-  telegram text,
-  linkedin text,
-  github text,
-  created_at timestamptz default now()
-);
-
--- Команды
-create table teams (
-  id uuid default gen_random_uuid() primary key,
-  owner_id uuid references auth.users(id) on delete cascade not null,
-  name text not null,
-  created_at timestamptz default now()
-);
-
--- Участники команды
-create table members (
-  id uuid default gen_random_uuid() primary key,
-  team_id uuid references teams(id) on delete cascade not null,
-  user_id uuid references auth.users(id) on delete set null,
-  name text not null,
-  role text,
-  avatar_color text default '#7F77DD',
-  created_at timestamptz default now()
-);
-
--- Встречи
-create table meetings (
-  id uuid default gen_random_uuid() primary key,
-  member_id uuid references members(id) on delete cascade not null,
-  date date default current_date,
-  scheduled_at timestamptz,
-  mood text default 'neutral',
-  notes text,
-  created_at timestamptz default now()
-);
-
--- Задачи
-create table tasks (
-  id uuid default gen_random_uuid() primary key,
-  member_id uuid references members(id) on delete cascade not null,
-  text text not null,
-  done boolean default false,
-  due_date date,
-  created_at timestamptz default now()
-);
-
--- Коды приглашений
-create table invite_codes (
-  id uuid default gen_random_uuid() primary key,
-  team_id uuid references teams(id) on delete cascade not null,
-  code text unique not null,
-  active boolean default true,
-  created_at timestamptz default now()
-);
-
--- Запросы на встречу от участников
-create table meeting_requests (
-  id uuid default gen_random_uuid() primary key,
-  member_id uuid references members(id) on delete cascade not null,
-  proposed_date timestamptz not null,
-  message text,
-  status text default 'pending', -- pending | approved | declined
-  created_at timestamptz default now()
-);
-
--- RLS
-alter table profiles enable row level security;
-alter table teams enable row level security;
-alter table members enable row level security;
-alter table meetings enable row level security;
-alter table tasks enable row level security;
-alter table invite_codes enable row level security;
-alter table meeting_requests enable row level security;
-
--- Policies
-create policy "own profile" on profiles for all using (id = auth.uid());
-create policy "own teams" on teams for all using (owner_id = auth.uid());
-
-create policy "team members" on members for all using (
-  team_id in (select id from teams where owner_id = auth.uid())
-  or user_id = auth.uid()
-);
-
-create policy "team meetings" on meetings for all using (
-  member_id in (
-    select m.id from members m
-    join teams t on t.id = m.team_id
-    where t.owner_id = auth.uid() or m.user_id = auth.uid()
-  )
-);
-
-create policy "team tasks" on tasks for all using (
-  member_id in (
-    select m.id from members m
-    join teams t on t.id = m.team_id
-    where t.owner_id = auth.uid() or m.user_id = auth.uid()
-  )
-);
-
-create policy "invite codes public read" on invite_codes for select using (true);
-create policy "invite codes owner write" on invite_codes for all using (
-  team_id in (select id from teams where owner_id = auth.uid())
-);
-
-create policy "meeting requests" on meeting_requests for all using (
-  member_id in (
-    select m.id from members m
-    join teams t on t.id = m.team_id
-    where t.owner_id = auth.uid() or m.user_id = auth.uid()
-  )
-);
-```
-
-### 4. Запуск
-```bash
 npm run dev
 ```
 
-## Роли
-- **Тимлид** — создаёт команды, записывает встречи, добавляет задачи, видит аналитику
-- **Участник** — видит свои встречи и задачи, запрашивает встречи, видит карточку тимлида
+### Mobile
+```bash
+cd mobile
+cp .env.example .env          # прописать Supabase + API URL
+npm install
+npx expo start
+```
 
-## Поток приглашения
-1. Тимлид нажимает "Пригласить участника" → копирует ссылку
-2. Отправляет ссылку в Telegram: `https://твой-домен.com/join/КОД`
-3. Участник переходит → регистрируется → выбирает роль "Участник" → попадает в команду
+## Git-история
+
+Репозитории объединены с сохранением истории:
+- `mobile/` ← `difast/MOBILE-1o1`
+- `smartweb/` ← `difast/Smart-1on1`
+
+История обоих доступна через `git log --all`.

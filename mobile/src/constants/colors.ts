@@ -1,0 +1,98 @@
+export const lightColors = {
+  blue50: '#F0F5FF',
+  blue100: '#E0EAFF',
+  blue200: '#C4D6FF',
+  blue300: '#93B4FD',
+  blue400: '#5B8EF8',
+  blue500: '#3B6EF0',
+  blue600: '#2554D4',
+  blue700: '#1D3FAA',
+
+  gray0: '#FFFFFF',
+  gray50: '#F8F9FC',
+  gray100: '#F1F3F8',
+  gray200: '#E4E7EF',
+  gray300: '#CDD2E0',
+  gray400: '#9AA3B8',
+  gray500: '#6B7590',
+  gray600: '#4A5268',
+  gray700: '#323849',
+  gray800: '#1E2333',
+  gray900: '#111827',
+
+  bg: '#F8F9FC',
+  surface: '#FFFFFF',
+  surface2: '#F1F3F8',
+  border: '#E4E7EF',
+  textPrimary: '#1E2333',
+  textSecondary: '#6B7590',
+  textMuted: '#9AA3B8',
+  accent: '#3B6EF0',
+  accentLight: '#E0EAFF',
+
+  success: '#16A34A',
+  successBg: '#F0FDF4',
+  warning: '#B45309',
+  warningBg: '#FFFBEB',
+  danger: '#DC2626',
+  dangerBg: '#FEF2F2',
+
+  statusGreen: '#16A34A',
+  statusGreenBorder: '#86EFAC',
+  statusYellow: '#D97706',
+  statusYellowBorder: '#FCD34D',
+  statusRed: '#DC2626',
+  statusRedBorder: '#FCA5A5',
+};
+
+export const darkColors = {
+  blue50: '#1A2744',
+  blue100: '#1D3060',
+  blue200: '#254080',
+  blue300: '#3B60C0',
+  blue400: '#4F78E8',
+  blue500: '#6090FF',
+  blue600: '#7AABFF',
+  blue700: '#93C0FF',
+
+  gray0: '#0A0D14',
+  gray50: '#0F1117',
+  gray100: '#141720',
+  gray200: '#1A1F2E',
+  gray300: '#232839',
+  gray400: '#2D3348',
+  gray500: '#3D4560',
+  gray600: '#5A6380',
+  gray700: '#8A94AD',
+  gray800: '#C8D0E4',
+  gray900: '#E8ECF4',
+
+  bg: '#0F1117',
+  surface: '#1A1F2E',
+  surface2: '#232839',
+  border: '#2D3348',
+  textPrimary: '#E8ECF4',
+  textSecondary: '#8A94AD',
+  textMuted: '#5A6380',
+  accent: '#6090FF',
+  accentLight: '#1A2744',
+
+  success: '#22C55E',
+  successBg: '#0F2A1A',
+  warning: '#F59E0B',
+  warningBg: '#1A1200',
+  danger: '#F87171',
+  dangerBg: '#2A0F0F',
+
+  statusGreen: '#22C55E',
+  statusGreenBorder: '#166534',
+  statusYellow: '#F59E0B',
+  statusYellowBorder: '#78350F',
+  statusRed: '#F87171',
+  statusRedBorder: '#7F1D1D',
+};
+
+export type AppColors = typeof lightColors;
+
+// Backward compat
+export const colors = lightColors;
