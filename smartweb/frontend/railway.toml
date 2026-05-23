@@ -3,6 +3,6 @@ builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "nginx -g 'daemon off;'"
+startCommand = "/bin/sh -c \"envsubst '$PORT' < /etc/nginx/conf.d/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'\""
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 3
