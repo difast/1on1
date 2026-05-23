@@ -32,8 +32,7 @@ app.include_router(note.router, prefix="/api/notes", tags=["notes"])
 @app.get("/")
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
-    from app.database import _DB_URL
-    db_host = _DB_URL.split("@")[1].split("?")[0]
+    db_host = os.environ.get("DATABASE_URL", "").split("@")[-1].split("?")[0]
     error = None
     try:
         db.execute(text("SELECT 1"))
