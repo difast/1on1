@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useAuth } from '../context/auth';
-import { getMeetings, requestMeeting, getTeams, getTeam } from '../lib/api';
+import { getMeetings, requestMeeting, getMemberTeam } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
@@ -33,16 +33,8 @@ export default function MemberMeetingsScreen() {
 
   const findTeamId = useCallback(async () => {
     try {
-      const allTeams = await getTeams() as any[];
-      for (const t of allTeams) {
-        try {
-          const detail = await getTeam(t.id) as any;
-          if ((detail.members || []).some((m: any) => m.user_id === user!.id)) {
-            setTeamId(t.id);
-            return;
-          }
-        } catch {}
-      }
+      const detail = await getMemberTeam(user!.id) as any;
+      setTeamId(detail.id);
     } catch {}
   }, [user]);
 

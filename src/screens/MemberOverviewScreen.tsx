@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getTeams, getTeam, joinTeam, getMeetings, getNotes, createNote, deleteNote } from '../lib/api';
+import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, deleteNote } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
@@ -38,17 +38,13 @@ export default function MemberOverviewScreen() {
 
   const findTeam = useCallback(async () => {
     try {
-      const allTeams = await getTeams() as any[];
-      for (const t of allTeams) {
-        try {
-          const detail = await getTeam(t.id) as any;
-          const isMember = (detail.members || []).some((m: any) => m.user_id === user!.id);
-          if (isMember) { setTeam(detail); return; }
-        } catch {}
-      }
+      const detail = await getMemberTeam(user!.id) as any;
+      setTeam(detail);
+    } catch {
       setTeam(null);
-    } catch { setTeam(null); }
-    finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
   const loadMeetings = useCallback(async () => {

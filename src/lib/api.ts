@@ -52,6 +52,7 @@ export const createTeam = (data: unknown) =>
   req('/teams/', { method: 'POST', body: JSON.stringify(data) });
 export const getTeams = () => req<any[]>('/teams/');
 export const getTeam = (id: number) => req(`/teams/${id}`);
+export const getMemberTeam = (userId: number) => req<any>(`/teams/by-member/${userId}`);
 export const joinTeam = (data: unknown) =>
   req('/teams/join', { method: 'POST', body: JSON.stringify(data) });
 export const addMember = (teamId: number, userId: number, role: string) =>
