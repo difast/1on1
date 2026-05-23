@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, deleteNote } from '../lib/api';
+import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, updateNote, deleteNote } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
@@ -22,6 +22,12 @@ export default function MemberOverviewScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([]);
   const [lastMeeting, setLastMeeting] = useState<any>(null);
+  const [pastMeetings, setPastMeetings] = useState<any[]>([]);
+
+  // Meeting notes
+  const [expandedMeetingNote, setExpandedMeetingNote] = useState<number | null>(null);
+  const [meetingNoteDrafts, setMeetingNoteDrafts] = useState<Record<number, string>>({});
+  const [savingNote, setSavingNote] = useState<Record<number, boolean>>({});
 
   const [joinCode, setJoinCode] = useState('');
   const [joinLoading, setJoinLoading] = useState(false);
@@ -62,14 +68,20 @@ export default function MemberOverviewScreen() {
         .filter((m: any) => new Date(m.scheduled_date) < now || m.status === 'completed')
         .sort((a: any, b: any) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
       setLastMeeting(past[0] ?? null);
+      setPastMeetings(past);
     } catch {}
   }, [user]);
 
   const loadNotes = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await getNotes(user.id);
+      const data = await getNotes(user.id) as any[];
       setNotes(data || []);
+      const drafts: Record<number, string> = {};
+      for (const n of (data || [])) {
+        if (n.meeting_id) drafts[n.meeting_id] = n.content;
+      }
+      setMeetingNoteDrafts(drafts);
     } catch {}
   }, [user]);
 
@@ -123,6 +135,27 @@ export default function MemberOverviewScreen() {
         },
       },
     ]);
+  };
+
+  const handleSaveMeetingNote = async (meetingId: number) => {
+    const content = (meetingNoteDrafts[meetingId] ?? '').trim();
+    if (!content || !user) return;
+    setSavingNote(prev => ({ ...prev, [meetingId]: true }));
+    try {
+      const existing = notes.find((n: any) => n.meeting_id === meetingId);
+      if (existing) {
+        await updateNote(existing.id, { content });
+        setNotes(prev => prev.map((n: any) => n.id === existing.id ? { ...n, content } : n));
+      } else {
+        const note = await createNote({ user_id: user.id, content, meeting_id: meetingId }) as any;
+        setNotes(prev => [...prev, note]);
+      }
+      setExpandedMeetingNote(null);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось сохранить заметку');
+    } finally {
+      setSavingNote(prev => ({ ...prev, [meetingId]: false }));
+    }
   };
 
   if (loading) return <Spinner />;
@@ -246,10 +279,72 @@ export default function MemberOverviewScreen() {
           </View>
         )}
 
+        {/* Meeting notes */}
+        {pastMeetings.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Заметки по встречам</Text>
+            {pastMeetings.slice(0, 8).map((m: any) => {
+              const hasNote = notes.some((n: any) => n.meeting_id === m.id);
+              const isOpen = expandedMeetingNote === m.id;
+              const draft = meetingNoteDrafts[m.id] ?? '';
+              const saving = savingNote[m.id] ?? false;
+              return (
+                <View key={m.id} style={styles.meetingNoteCard}>
+                  <TouchableOpacity
+                    style={styles.meetingNoteHeader}
+                    onPress={() => setExpandedMeetingNote(isOpen ? null : m.id)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={styles.meetingNoteDateBox}>
+                      <Text style={styles.meetingNoteDateDay}>
+                        {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.meetingNoteTitle} numberOfLines={1}>
+                        {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { weekday: 'short', day: '2-digit', month: 'long' })}
+                      </Text>
+                      {m.topic ? <Text style={styles.meetingNoteSub} numberOfLines={1}>{m.topic}</Text> : null}
+                    </View>
+                    <Text style={styles.meetingNoteToggle}>
+                      {hasNote ? '● ' : ''}{isOpen ? '▾' : '▸'}
+                    </Text>
+                  </TouchableOpacity>
+                  {isOpen && (
+                    <View style={styles.meetingNoteEditor}>
+                      <TextInput
+                        style={styles.meetingNoteInput}
+                        value={draft}
+                        onChangeText={v => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: v }))}
+                        placeholder="Добавьте заметку по встрече..."
+                        placeholderTextColor={colors.textMuted}
+                        multiline
+                        autoFocus
+                      />
+                      <View style={styles.noteFormRow}>
+                        <TouchableOpacity style={styles.cancelBtn} onPress={() => setExpandedMeetingNote(null)}>
+                          <Text style={styles.cancelBtnText}>Закрыть</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[styles.saveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
+                          onPress={() => handleSaveMeetingNote(m.id)}
+                          disabled={!draft.trim() || saving}
+                        >
+                          <Text style={styles.saveBtnText}>{saving ? '...' : 'Сохранить'}</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  )}
+                </View>
+              );
+            })}
+          </View>
+        )}
+
         {/* Notes section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Мои заметки</Text>
+            <Text style={styles.sectionTitle}>Общие заметки</Text>
             <TouchableOpacity onPress={() => setShowNoteForm(s => !s)}>
               <Text style={styles.addLink}>{showNoteForm ? 'Закрыть' : '+ Добавить'}</Text>
             </TouchableOpacity>
@@ -377,6 +472,29 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.6,
   },
   addLink: { fontSize: 13, fontWeight: '600', color: c.accent },
+  meetingNoteCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
+  },
+  meetingNoteHeader: {
+    flexDirection: 'row', alignItems: 'center', gap: 10, padding: 12,
+  },
+  meetingNoteDateBox: {
+    width: 38, height: 38, borderRadius: 8, backgroundColor: c.blue50,
+    borderWidth: 1, borderColor: c.blue200, alignItems: 'center', justifyContent: 'center',
+  },
+  meetingNoteDateDay: { fontSize: 10, fontWeight: '700', color: c.accent, textAlign: 'center' },
+  meetingNoteTitle: { fontSize: 13, fontWeight: '500', color: c.textPrimary },
+  meetingNoteSub: { fontSize: 11, color: c.textSecondary, marginTop: 1 },
+  meetingNoteToggle: { fontSize: 13, color: c.textMuted, flexShrink: 0 },
+  meetingNoteEditor: {
+    borderTopWidth: 1, borderTopColor: c.border,
+    padding: 12, gap: 10,
+  },
+  meetingNoteInput: {
+    fontSize: 14, color: c.textPrimary, minHeight: 70,
+    textAlignVertical: 'top', borderWidth: 1, borderColor: c.border,
+    borderRadius: 8, padding: 10, backgroundColor: c.bg,
+  },
   lastMeetingCard: {
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1,
     borderColor: '#bbf7d0', padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center',
