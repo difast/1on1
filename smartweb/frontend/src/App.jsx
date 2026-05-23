@@ -11,6 +11,12 @@ function App() {
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const inactivityTimer = useRef(null)
+
+  // Apply dark theme on first render (before user loads); Layout will
+  // override with the user's personal preference once they are known.
+  useEffect(() => {
+    document.documentElement.classList.add('dark')
+  }, [])
   const INACTIVITY_LIMIT = 5 * 60 * 60 * 1000 // 5 hours
 
   const loadAppUser = async (email) => {
