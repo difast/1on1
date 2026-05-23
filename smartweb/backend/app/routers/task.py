@@ -16,10 +16,13 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
     db.add(task)
     db.commit()
     db.refresh(task)
-    if task.assigned_to and task.assigned_by:
-        assignor = db.query(User).filter(User.id == task.assigned_by).first()
-        assignor_name = assignor.name if assignor else "Тимлид"
-        send_new_task_notification.delay(task.assigned_to, task.title or task.description or "Задача", assignor_name, task.id)
+    if task.assigned_to and task.assigned_by and task.assigned_to != task.assigned_by:
+        try:
+            assignor = db.query(User).filter(User.id == task.assigned_by).first()
+            assignor_name = assignor.name if assignor else "Тимлид"
+            send_new_task_notification.delay(task.assigned_to, task.title or task.description or "Задача", assignor_name, task.id)
+        except Exception:
+            pass
     return task
 
 @router.get("/", response_model=List[TaskOut])

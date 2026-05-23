@@ -1,13 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask, getNotes, createNote, updateNote, deleteNote } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
-
-// Member can set: in_progress, blocked, review — only lead marks done
-const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'in_progress', done: 'in_progress' }
-const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
-const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
+import TaskStatusSelect from './TaskStatusSelect'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -29,6 +25,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [meetingLoading, setMeetingLoading] = useState(false)
 
   const [tasks, setTasks] = useState([])
+  const [selfTaskForm, setSelfTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
 
   // Notes state
   const [notes, setNotes] = useState([])
@@ -123,13 +120,35 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     } catch {} finally { setMeetingLoading(false) }
   }
 
-  // Task status cycling
-  const handleCycleTaskStatus = async (task) => {
-    const nextStatus = STATUS_CYCLE[task.status || 'in_progress'] || 'in_progress'
-    const completed = nextStatus === 'done'
+  // Task status update
+  const handleUpdateTaskStatus = async (task, newStatus) => {
     try {
-      await updateTask(task.id, { status: nextStatus, completed })
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus, completed } : t))
+      await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t))
+    } catch {}
+  }
+
+  const handleCreateSelfTask = async (e) => {
+    e.preventDefault()
+    if (!selfTaskForm.title.trim()) return
+    setSelfTaskForm(f => ({ ...f, loading: true }))
+    try {
+      const { data } = await createTask({
+        title: selfTaskForm.title.trim(),
+        due_date: selfTaskForm.due_date || null,
+        team_id: null,
+        assigned_to: user.id,
+        assigned_by: user.id,
+      })
+      setTasks(prev => [data, ...prev])
+      setSelfTaskForm({ title: '', due_date: '', open: false, loading: false })
+    } catch { setSelfTaskForm(f => ({ ...f, loading: false })) }
+  }
+
+  const handleDeleteTask = async (taskId) => {
+    try {
+      await deleteTask(taskId)
+      setTasks(prev => prev.filter(t => t.id !== taskId))
     } catch {}
   }
 
@@ -431,7 +450,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         <textarea
                           value={draft}
                           onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
-                          placeholder="Личные заметки к встрече..."
+                          placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
                           className="input"
                           style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
                         />
@@ -445,6 +464,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         </button>
                       </div>
                     )}
+                    {!isExpanded && hasNote && (() => {
+                      const noteContent = notes.find(n => n.meeting_id === m.id)?.content || ''
+                      const lines = noteContent.split('\n').filter(l => l.trim())
+                      return lines.length > 0 ? (
+                        <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                          {lines.map((line, i) => (
+                            <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
+                          ))}
+                        </ul>
+                      ) : null
+                    })()}
                   </div>
                 )
               }}
@@ -461,17 +491,48 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Tasks */}
         {activeTab === 'tasks' && (
-          <div>
+          <div style={{ maxWidth: 700 }}>
+            {/* Self-task form */}
+            {selfTaskForm.open ? (
+              <form onSubmit={handleCreateSelfTask} className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <input
+                  type="text"
+                  value={selfTaskForm.title}
+                  onChange={e => setSelfTaskForm(f => ({ ...f, title: e.target.value }))}
+                  placeholder="Название задачи"
+                  autoFocus
+                  className="input"
+                />
+                <input
+                  type="date"
+                  value={selfTaskForm.due_date}
+                  onChange={e => setSelfTaskForm(f => ({ ...f, due_date: e.target.value }))}
+                  className="input input-sm"
+                  style={{ maxWidth: 200 }}
+                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button type="button" onClick={() => setSelfTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">Отмена</button>
+                  <button type="submit" disabled={selfTaskForm.loading} className="btn btn-accent btn-sm">
+                    {selfTaskForm.loading ? '...' : 'Добавить'}
+                  </button>
+                </div>
+              </form>
+            ) : (
+              <div style={{ marginBottom: 16 }}>
+                <button onClick={() => setSelfTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">+ Добавить задачу</button>
+              </div>
+            )}
+
             {tasks.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon">✅</div>
                 <p className="empty-title">Нет задач</p>
-                <p className="empty-desc">Задачи появятся после встреч с тимлидом</p>
+                <p className="empty-desc">Создайте задачу или дождитесь задач от тимлида</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {tasks.map(task => {
-                  const status = task.status || 'in_progress'
+                  const isSelf = task.assigned_by === user.id
                   return (
                     <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -482,25 +543,26 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         }}>
                           {task.title || task.description}
                         </p>
-                        {task.description && task.title && (
-                          <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {task.description}
+                        {task.due_date && (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                            до {new Date(task.due_date).toLocaleDateString('ru-RU')}
                           </p>
                         )}
                       </div>
-                      {task.due_date && (
-                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', flexShrink: 0 }}>
-                          {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                        </span>
+                      <TaskStatusSelect
+                        status={task.status || 'in_progress'}
+                        onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)}
+                        canMarkDone={false}
+                      />
+                      {isSelf && (
+                        <button
+                          onClick={() => handleDeleteTask(task.id)}
+                          style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                          onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                          title="Удалить"
+                        >✕</button>
                       )}
-                      <button
-                        onClick={() => handleCycleTaskStatus(task)}
-                        className={`badge ${STATUS_CLS[status] || 'badge-blue'}`}
-                        style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', transition: 'opacity 0.15s' }}
-                        title="Нажмите чтобы изменить статус"
-                      >
-                        {STATUS_LABEL[status] || status}
-                      </button>
                     </div>
                   )
                 })}
@@ -511,56 +573,91 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Notes */}
         {activeTab === 'notes' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-            {/* Add note */}
-            <div className="card" style={{ padding: 20 }}>
-              <p className="label" style={{ marginBottom: 10 }}>Новая заметка</p>
-              <textarea
-                value={newNoteText}
-                onChange={e => setNewNoteText(e.target.value)}
-                placeholder="Запишите мысль, идею или наблюдение..."
-                className="input"
-                style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
-                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
-              />
-              <button
-                onClick={handleCreateNote}
-                disabled={noteLoading || !newNoteText.trim()}
-                className="btn btn-accent btn-sm"
-                style={{ marginTop: 10 }}
-              >
-                {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
-              </button>
+          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* General notes */}
+            <div>
+              <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
+              <div className="card" style={{ padding: 20, marginBottom: 10 }}>
+                <textarea
+                  value={newNoteText}
+                  onChange={e => setNewNoteText(e.target.value)}
+                  placeholder="Запишите мысль, идею или наблюдение..."
+                  className="input"
+                  style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
+                />
+                <button
+                  onClick={handleCreateNote}
+                  disabled={noteLoading || !newNoteText.trim()}
+                  className="btn btn-accent btn-sm"
+                  style={{ marginTop: 10 }}
+                >
+                  {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+                </button>
+              </div>
+              {freeNotes.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {freeNotes.map(note => (
+                    <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                          {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                        title="Удалить"
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '20px 0' }}>
+                  <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                </div>
+              )}
             </div>
 
-            {/* Free-form notes list */}
-            {freeNotes.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {freeNotes.map(note => (
-                  <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
-                        {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                      title="Удалить"
-                    >✕</button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">📝</div>
-                <p className="empty-title">Нет заметок</p>
-                <p className="empty-desc">Записывайте мысли и наблюдения прямо здесь</p>
-              </div>
-            )}
+            {/* Meeting notes */}
+            <div>
+              <p className="label" style={{ marginBottom: 12 }}>Заметки по встречам</p>
+              {notes.filter(n => n.meeting_id).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {notes.filter(n => n.meeting_id).map(note => {
+                    const meeting = meetings.find(m => m.id === note.meeting_id)
+                    const noteLines = (note.content || '').split('\n').filter(l => l.trim())
+                    return (
+                      <div key={note.id} className="card" style={{ padding: '14px 18px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: noteLines.length > 0 ? 8 : 0 }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                            {meeting ? new Date(meeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long' }) : 'Встреча'}
+                          </span>
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                            {new Date(note.created_at).toLocaleDateString('ru-RU')}
+                          </span>
+                        </div>
+                        {noteLines.length > 0 && (
+                          <ul style={{ paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {noteLines.map((line, i) => (
+                              <li key={i} style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.5 }}>{line}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '20px 0' }}>
+                  <p className="empty-title" style={{ fontSize: 14 }}>Нет заметок по встречам</p>
+                  <p className="empty-desc">Добавляйте заметки к прошедшим встречам во вкладке «Встречи»</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
