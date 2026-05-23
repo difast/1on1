@@ -51,10 +51,21 @@ def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db)):
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
-    if data.completed and not task.completed:
-        task.completed_at = datetime.utcnow()
+    updates = data.model_dump(exclude_unset=True)
 
-    for key, value in data.model_dump(exclude_unset=True).items():
+    if 'status' in updates:
+        if updates['status'] == 'done':
+            updates['completed'] = True
+            if not task.completed:
+                task.completed_at = datetime.utcnow()
+        else:
+            updates['completed'] = False
+    elif 'completed' in updates:
+        if updates['completed'] and not task.completed:
+            task.completed_at = datetime.utcnow()
+        updates['status'] = 'done' if updates['completed'] else 'in_progress'
+
+    for key, value in updates.items():
         setattr(task, key, value)
     db.commit()
     db.refresh(task)

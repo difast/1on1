@@ -22,6 +22,7 @@ class TaskOut(BaseModel):
     due_date: Optional[datetime]
     completed: bool
     completed_at: Optional[datetime]
+    status: str
     created_at: datetime
 
     class Config:
@@ -32,3 +33,4 @@ class TaskUpdate(BaseModel):
     description: Optional[str] = None
     due_date: Optional[datetime] = None
     completed: Optional[bool] = None
+    status: Optional[str] = None
