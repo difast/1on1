@@ -58,7 +58,6 @@ export default function TabsLayout() {
         name="tasks"
         options={{
           title: 'Задачи',
-          href: isLead ? null : undefined,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="checkbox-outline" size={size} color={color} />
           ),
