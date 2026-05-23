@@ -9,7 +9,7 @@ import * as Clipboard from 'expo-clipboard';
 import { useAuth } from '../context/auth';
 import {
   getTeams, getTeam, createTeam,
-  addMember, createMeeting, getTasks, createTask, updateTask, getUserByEmail,
+  addMember, createMeeting, getTasks, createTask, getUserByEmail,
   regenerateInviteCode, getNotes, createNote, deleteNote,
 } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -181,17 +181,6 @@ export default function LeadTeamsScreen() {
     });
   };
 
-  const handleToggleTask = async (task: any, memberId: number) => {
-    try {
-      await updateTask(task.id, { completed: !task.completed });
-      setMemberTasks(prev => ({
-        ...prev,
-        [memberId]: (prev[memberId] || []).map(t =>
-          t.id === task.id ? { ...t, completed: !t.completed } : t
-        ),
-      }));
-    } catch {}
-  };
 
   // Form handlers
   const handleCreateTeam = async () => {
@@ -456,27 +445,33 @@ export default function LeadTeamsScreen() {
                     {tasksExpanded && (
                       <View style={styles.tasksList}>
                         {tasks === undefined && <Text style={styles.tasksLoading}>Загрузка...</Text>}
-                        {tasks?.map((task: any) => (
-                          <TouchableOpacity
-                            key={task.id}
-                            style={styles.taskRow}
-                            onPress={() => handleToggleTask(task, member.user_id)}
-                          >
-                            <View style={[styles.checkbox, task.completed && styles.checkboxDone]}>
-                              {task.completed && <Text style={styles.checkmark}>✓</Text>}
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={[styles.taskTitle, task.completed && styles.taskDone]}>
-                                {task.title || task.description}
-                              </Text>
-                              {task.due_date && (
-                                <Text style={styles.taskDue}>
-                                  до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                        {tasks?.map((task: any) => {
+                          const st: string = task.status ?? (task.completed ? 'done' : 'in_progress');
+                          const TASK_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+                            in_progress: { label: 'В работе', color: colors.warning, bg: colors.warningBg },
+                            blocked: { label: 'Блок', color: colors.danger, bg: colors.dangerBg },
+                            review: { label: 'Ревью', color: colors.accent, bg: colors.accentLight },
+                            done: { label: '✓', color: colors.success, bg: colors.successBg },
+                          };
+                          const stCfg = TASK_STATUS[st] ?? TASK_STATUS.in_progress;
+                          return (
+                            <View key={task.id} style={styles.taskRow}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={[styles.taskTitle, st === 'done' && styles.taskDone]}>
+                                  {task.title || task.description}
                                 </Text>
-                              )}
+                                {task.due_date && (
+                                  <Text style={styles.taskDue}>
+                                    до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                  </Text>
+                                )}
+                              </View>
+                              <View style={[styles.taskStatusBadge, { backgroundColor: stCfg.bg, borderColor: stCfg.color }]}>
+                                <Text style={[styles.taskStatusText, { color: stCfg.color }]}>{stCfg.label}</Text>
+                              </View>
                             </View>
-                          </TouchableOpacity>
-                        ))}
+                          );
+                        })}
                         <TouchableOpacity
                           onPress={() => { setTaskMember(member); openSheet('addTask'); }}
                         >
@@ -793,19 +788,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   tasksToggleText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
   tasksLoading: { fontSize: 12, color: c.textMuted, paddingVertical: 4 },
   tasksList: { marginTop: 8, gap: 6 },
-  taskRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, paddingVertical: 2 },
-  checkbox: {
-    width: 18, height: 18, borderRadius: 5,
-    borderWidth: 1.5, borderColor: c.gray300,
-    backgroundColor: c.surface,
-    alignItems: 'center', justifyContent: 'center',
-    marginTop: 2,
-  },
-  checkboxDone: { backgroundColor: c.success, borderColor: c.success },
-  checkmark: { fontSize: 11, color: '#fff', fontWeight: '700' },
+  taskRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 2 },
   taskTitle: { fontSize: 13, color: c.textPrimary, lineHeight: 18 },
   taskDone: { textDecorationLine: 'line-through', color: c.textMuted },
   taskDue: { fontSize: 11, color: c.textMuted, marginTop: 1 },
+  taskStatusBadge: { borderWidth: 1, borderRadius: 6, paddingHorizontal: 7, paddingVertical: 3, flexShrink: 0 },
+  taskStatusText: { fontSize: 11, fontWeight: '600' },
   addTaskBtn: { fontSize: 13, color: c.accent, fontWeight: '500', paddingVertical: 4 },
 
   // Sheet

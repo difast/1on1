@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../src/context/auth';
-import { colors } from '../src/constants/colors';
+import { useTheme } from '../src/context/theme';
+import type { AppColors } from '../src/constants/colors';
 
 export default function RoleSelectScreen() {
   const { setActiveRole, signOut } = useAuth();
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
 
   const choose = async (role: 'team_lead' | 'member') => {
@@ -42,17 +45,17 @@ export default function RoleSelectScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg },
+const makeStyles = (c: AppColors) => StyleSheet.create({
+  root: { flex: 1, backgroundColor: c.bg },
   inner: { flex: 1, padding: 24, justifyContent: 'center' },
-  title: { fontSize: 24, fontWeight: '700', color: colors.textPrimary, marginBottom: 8 },
-  sub: { fontSize: 14, color: colors.textSecondary, marginBottom: 32, lineHeight: 20 },
+  title: { fontSize: 24, fontWeight: '700', color: c.textPrimary, marginBottom: 8 },
+  sub: { fontSize: 14, color: c.textSecondary, marginBottom: 32, lineHeight: 20 },
 
   card: {
-    backgroundColor: colors.surface,
+    backgroundColor: c.surface,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: c.border,
     padding: 20,
     flexDirection: 'row',
     alignItems: 'center',
@@ -60,10 +63,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   cardIcon: { fontSize: 28 },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: colors.textPrimary, marginBottom: 4 },
-  cardDesc: { fontSize: 13, color: colors.textSecondary },
-  arrow: { fontSize: 22, color: colors.textMuted, fontWeight: '300' },
+  cardTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginBottom: 4 },
+  cardDesc: { fontSize: 13, color: c.textSecondary },
+  arrow: { fontSize: 22, color: c.textMuted, fontWeight: '300' },
 
   signOutBtn: { marginTop: 24, alignItems: 'center', paddingVertical: 12 },
-  signOutText: { fontSize: 14, color: colors.textMuted },
+  signOutText: { fontSize: 14, color: c.textMuted },
 });

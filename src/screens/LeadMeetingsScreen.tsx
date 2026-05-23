@@ -11,6 +11,7 @@ import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { WeekCalendar } from '../components/WeekCalendar';
 
 export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
@@ -21,6 +22,7 @@ export default function LeadMeetingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
+  const [calendarView, setCalendarView] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -79,6 +81,24 @@ export default function LeadMeetingsScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои встречи</Text>
+        <View style={styles.viewToggle}>
+          <TouchableOpacity
+            style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
+            onPress={() => setCalendarView(false)}
+          >
+            <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>
+              Список
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
+            onPress={() => setCalendarView(true)}
+          >
+            <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>
+              Неделя
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -89,65 +109,74 @@ export default function LeadMeetingsScreen() {
           <EmptyState icon="📅" title="Встреч пока нет" description="Встречи появятся после планирования" />
         )}
 
-        {requests.length > 0 && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Запросы на встречу</Text>
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>{requests.length}</Text>
-              </View>
-            </View>
-            {requests.map(m => (
-              <View key={m.id} style={{ gap: 8 }}>
-                <MeetingItem
-                  meeting={m}
-                  subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
-                />
-                <View style={styles.actionRow}>
-                  <TouchableOpacity
-                    style={[styles.confirmBtn, actionLoading[m.id] && styles.btnDisabled]}
-                    onPress={() => handleConfirm(m.id)}
-                    disabled={actionLoading[m.id]}
-                  >
-                    <Text style={styles.confirmBtnText}>Принять</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.declineBtn, actionLoading[m.id] && styles.btnDisabled]}
-                    onPress={() => handleDecline(m.id)}
-                    disabled={actionLoading[m.id]}
-                  >
-                    <Text style={styles.declineBtnText}>Отклонить</Text>
-                  </TouchableOpacity>
+        {calendarView ? (
+          <WeekCalendar
+            meetings={meetings}
+            subtitleFn={m => usersMap[m.member_id]?.name ?? null}
+          />
+        ) : (
+          <>
+            {requests.length > 0 && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <Text style={styles.sectionTitle}>Запросы на встречу</Text>
+                  <View style={styles.badge}>
+                    <Text style={styles.badgeText}>{requests.length}</Text>
+                  </View>
                 </View>
+                {requests.map(m => (
+                  <View key={m.id} style={{ gap: 8 }}>
+                    <MeetingItem
+                      meeting={m}
+                      subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
+                    />
+                    <View style={styles.actionRow}>
+                      <TouchableOpacity
+                        style={[styles.confirmBtn, actionLoading[m.id] && styles.btnDisabled]}
+                        onPress={() => handleConfirm(m.id)}
+                        disabled={actionLoading[m.id]}
+                      >
+                        <Text style={styles.confirmBtnText}>Принять</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.declineBtn, actionLoading[m.id] && styles.btnDisabled]}
+                        onPress={() => handleDecline(m.id)}
+                        disabled={actionLoading[m.id]}
+                      >
+                        <Text style={styles.declineBtnText}>Отклонить</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                ))}
               </View>
-            ))}
-          </View>
-        )}
+            )}
 
-        {upcoming.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Предстоящие</Text>
-            {upcoming.map(m => (
-              <MeetingItem
-                key={m.id}
-                meeting={m}
-                subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
-              />
-            ))}
-          </View>
-        )}
+            {upcoming.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Предстоящие</Text>
+                {upcoming.map(m => (
+                  <MeetingItem
+                    key={m.id}
+                    meeting={m}
+                    subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
+                  />
+                ))}
+              </View>
+            )}
 
-        {past.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Прошедшие</Text>
-            {past.map(m => (
-              <MeetingItem
-                key={m.id}
-                meeting={m}
-                subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
-              />
-            ))}
-          </View>
+            {past.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Прошедшие</Text>
+                {past.map(m => (
+                  <MeetingItem
+                    key={m.id}
+                    meeting={m}
+                    subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
+                  />
+                ))}
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -156,43 +185,34 @@ export default function LeadMeetingsScreen() {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  header: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
+  },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  viewToggle: {
+    flexDirection: 'row', borderRadius: 8, borderWidth: 1,
+    borderColor: c.border, overflow: 'hidden', backgroundColor: c.surface,
+  },
+  toggleBtn: { paddingHorizontal: 10, paddingVertical: 6 },
+  toggleBtnActive: { backgroundColor: c.accent },
+  toggleBtnText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  toggleBtnTextActive: { color: '#fff' },
   content: { padding: 16, gap: 20, paddingBottom: 32 },
   section: { gap: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   sectionTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: c.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-    marginBottom: 4,
+    fontSize: 12, fontWeight: '700', color: c.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4,
   },
-  badge: {
-    backgroundColor: c.warningBg,
-    borderRadius: 10,
-    paddingHorizontal: 7,
-    paddingVertical: 2,
-  },
+  badge: { backgroundColor: c.warningBg, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 2 },
   badgeText: { fontSize: 11, fontWeight: '700', color: c.warning },
   actionRow: { flexDirection: 'row', gap: 8, paddingHorizontal: 4 },
-  confirmBtn: {
-    flex: 1,
-    backgroundColor: c.success,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
+  confirmBtn: { flex: 1, backgroundColor: c.success, borderRadius: 8, paddingVertical: 10, alignItems: 'center' },
   confirmBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   declineBtn: {
-    flex: 1,
-    backgroundColor: c.dangerBg,
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: c.danger,
+    flex: 1, backgroundColor: c.dangerBg, borderRadius: 8,
+    paddingVertical: 10, alignItems: 'center', borderWidth: 1, borderColor: c.danger,
   },
   declineBtnText: { fontSize: 14, fontWeight: '600', color: c.danger },
   btnDisabled: { opacity: 0.6 },

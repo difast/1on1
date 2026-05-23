@@ -75,16 +75,6 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleLogout = () => {
-    Alert.alert(
-      'Выйти',
-      'Вы уверены что хотите выйти?',
-      [
-        { text: 'Отмена', style: 'cancel' },
-        { text: 'Выйти', style: 'destructive', onPress: signOut },
-      ]
-    );
-  };
 
   const handleAddRole = async () => {
     setAddRoleLoading(true); setAddRoleError('');
@@ -119,7 +109,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Профиль</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
+        <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
           <Text style={styles.logoutBtnText}>Выйти</Text>
         </TouchableOpacity>
       </View>

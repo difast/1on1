@@ -74,7 +74,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const u: AppUser = JSON.parse(cached);
         setUserState(u);
-        setActiveRoleState((savedActiveRole as Role) ?? u.role);
+        if (savedActiveRole) {
+          setActiveRoleState(savedActiveRole as Role);
+        } else if (hasBoth !== 'true') {
+          // Single-role user: use their role directly
+          setActiveRoleState(u.role);
+        }
+        // hasBothRoles + no savedActiveRole → leave null so role-select shows
       } catch {}
     }
 
@@ -82,7 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = (await getUserByEmail(email)) as AppUser;
       setUserState(data);
       AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
-      setActiveRoleState((savedActiveRole as Role) ?? data.role);
+      if (savedActiveRole) {
+        setActiveRoleState(savedActiveRole as Role);
+      } else if (hasBoth !== 'true') {
+        setActiveRoleState(data.role);
+      }
     } catch {
       if (!cached) setUserState(null);
     }
@@ -130,8 +140,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserState(null);
     setSession(null);
     setActiveRoleState(null);
-    // Clear active role on logout so role selection appears on next login
-    await AsyncStorage.removeItem(ACTIVE_ROLE_KEY);
+    setHasBothRoles(false);
+    await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY]);
   };
 
   return (

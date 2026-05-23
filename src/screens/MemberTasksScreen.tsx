@@ -11,6 +11,22 @@ import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 
+type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
+
+const STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
+
+const STATUS_CONFIG: Record<TaskStatus, { label: string; short: string }> = {
+  in_progress: { label: 'В работе', short: 'В работе' },
+  blocked: { label: 'Заблокировано', short: 'Блок' },
+  review: { label: 'На ревью', short: 'Ревью' },
+  done: { label: 'Выполнено', short: '✓' },
+};
+
+function getTaskStatus(task: any): TaskStatus {
+  if (task.status && STATUSES.includes(task.status)) return task.status as TaskStatus;
+  return task.completed ? 'done' : 'in_progress';
+}
+
 export default function MemberTasksScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -35,17 +51,21 @@ export default function MemberTasksScreen() {
     setRefreshing(false);
   };
 
-  const toggle = async (task: any) => {
+  const cycleStatus = async (task: any) => {
+    const current = getTaskStatus(task);
+    const idx = STATUSES.indexOf(current);
+    const next = STATUSES[(idx + 1) % STATUSES.length];
+    const completed = next === 'done';
     try {
-      await updateTask(task.id, { completed: !task.completed });
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t));
+      await updateTask(task.id, { status: next, completed });
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
     } catch {}
   };
 
   if (loading) return <Spinner />;
 
-  const pending = tasks.filter(t => !t.completed);
-  const done = tasks.filter(t => t.completed);
+  const active = tasks.filter(t => getTaskStatus(t) !== 'done');
+  const done = tasks.filter(t => getTaskStatus(t) === 'done');
 
   return (
     <SafeAreaView style={styles.root}>
@@ -53,7 +73,7 @@ export default function MemberTasksScreen() {
         <Text style={styles.headerTitle}>Задачи</Text>
         {tasks.length > 0 && (
           <Text style={styles.headerSub}>
-            {pending.length} из {tasks.length} выполнено
+            {done.length} из {tasks.length} готово
           </Text>
         )}
       </View>
@@ -66,11 +86,11 @@ export default function MemberTasksScreen() {
           <EmptyState icon="✅" title="Нет задач" description="Задачи появятся после встреч с тимлидом" />
         )}
 
-        {pending.length > 0 && (
+        {active.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Активные</Text>
-            {pending.map(task => (
-              <TaskRow key={task.id} task={task} onToggle={() => toggle(task)} />
+            {active.map(task => (
+              <TaskRow key={task.id} task={task} onCycle={() => cycleStatus(task)} colors={colors} />
             ))}
           </View>
         )}
@@ -79,7 +99,7 @@ export default function MemberTasksScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Выполненные</Text>
             {done.map(task => (
-              <TaskRow key={task.id} task={task} onToggle={() => toggle(task)} />
+              <TaskRow key={task.id} task={task} onCycle={() => cycleStatus(task)} colors={colors} />
             ))}
           </View>
         )}
@@ -88,25 +108,39 @@ export default function MemberTasksScreen() {
   );
 }
 
-function TaskRow({ task, onToggle }: { task: any; onToggle: () => void }) {
-  const { colors } = useTheme();
+function TaskRow({ task, onCycle, colors }: { task: any; onCycle: () => void; colors: AppColors }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const status = getTaskStatus(task);
+  const cfg = STATUS_CONFIG[status];
+
+  const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
+    in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
+    blocked: { bg: colors.dangerBg, border: colors.danger, text: colors.danger },
+    review: { bg: colors.accentLight, border: colors.accent, text: colors.accent },
+    done: { bg: colors.successBg, border: colors.success, text: colors.success },
+  };
+  const sc = statusColors[status];
+
   return (
-    <TouchableOpacity style={styles.taskCard} onPress={onToggle} activeOpacity={0.7}>
-      <View style={[styles.checkbox, task.completed && styles.checkboxDone]}>
-        {task.completed && <Text style={styles.checkmark}>✓</Text>}
-      </View>
+    <TouchableOpacity style={styles.taskCard} onPress={onCycle} activeOpacity={0.7}>
       <View style={{ flex: 1 }}>
-        <Text style={[styles.taskTitle, task.completed && styles.taskDone]}>
+        <Text style={[styles.taskTitle, status === 'done' && styles.taskDone]}>
           {task.title || task.description}
         </Text>
         {task.description && task.title && (
           <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
         )}
+        {task.due_date && (
+          <Text style={styles.taskDue}>{new Date(task.due_date).toLocaleDateString('ru-RU')}</Text>
+        )}
       </View>
-      {task.due_date && (
-        <Text style={styles.taskDue}>{new Date(task.due_date).toLocaleDateString('ru-RU')}</Text>
-      )}
+      <TouchableOpacity
+        style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
+        onPress={onCycle}
+        activeOpacity={0.7}
+      >
+        <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 }
@@ -135,17 +169,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  checkbox: {
-    width: 22, height: 22, borderRadius: 7,
-    borderWidth: 2, borderColor: c.gray300,
-    backgroundColor: c.surface,
-    alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  },
-  checkboxDone: { backgroundColor: c.success, borderColor: c.success },
-  checkmark: { fontSize: 13, color: '#fff', fontWeight: '700' },
   taskTitle: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
   taskDone: { textDecorationLine: 'line-through', color: c.textMuted },
   taskDesc: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
-  taskDue: { fontSize: 12, color: c.textMuted, flexShrink: 0 },
+  taskDue: { fontSize: 11, color: c.textMuted, marginTop: 4 },
+  statusBadge: {
+    borderWidth: 1, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 5,
+    flexShrink: 0,
+  },
+  statusBadgeText: { fontSize: 12, fontWeight: '600' },
 });

@@ -12,6 +12,7 @@ import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { WeekCalendar } from '../components/WeekCalendar';
 
 export default function MemberMeetingsScreen() {
   const { colors } = useTheme();
@@ -21,6 +22,7 @@ export default function MemberMeetingsScreen() {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [calendarView, setCalendarView] = useState(false);
 
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTopic, setMeetingTopic] = useState('');
@@ -93,12 +95,32 @@ export default function MemberMeetingsScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Встречи</Text>
-        <TouchableOpacity
-          style={styles.requestBtn}
-          onPress={() => bottomSheetRef.current?.expand()}
-        >
-          <Text style={styles.requestBtnText}>+ Запросить</Text>
-        </TouchableOpacity>
+        <View style={styles.headerRight}>
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
+              onPress={() => setCalendarView(false)}
+            >
+              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>
+                Список
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
+              onPress={() => setCalendarView(true)}
+            >
+              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>
+                Неделя
+              </Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity
+            style={styles.requestBtn}
+            onPress={() => bottomSheetRef.current?.expand()}
+          >
+            <Text style={styles.requestBtnText}>+ Запросить</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
@@ -109,18 +131,24 @@ export default function MemberMeetingsScreen() {
           <EmptyState icon="📅" title="Нет встреч" description="Запросите первую встречу с тимлидом" />
         )}
 
-        {upcoming.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Предстоящие</Text>
-            {upcoming.map(m => <MeetingItem key={m.id} meeting={m} />)}
-          </View>
-        )}
+        {calendarView ? (
+          <WeekCalendar meetings={meetings} />
+        ) : (
+          <>
+            {upcoming.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Предстоящие</Text>
+                {upcoming.map(m => <MeetingItem key={m.id} meeting={m} />)}
+              </View>
+            )}
 
-        {past.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Прошедшие</Text>
-            {past.map(m => <MeetingItem key={m.id} meeting={m} />)}
-          </View>
+            {past.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Прошедшие</Text>
+                {past.map(m => <MeetingItem key={m.id} meeting={m} />)}
+              </View>
+            )}
+          </>
         )}
       </ScrollView>
 
@@ -183,6 +211,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  viewToggle: {
+    flexDirection: 'row', borderRadius: 8, borderWidth: 1,
+    borderColor: c.border, overflow: 'hidden', backgroundColor: c.surface,
+  },
+  toggleBtn: { paddingHorizontal: 10, paddingVertical: 6 },
+  toggleBtnActive: { backgroundColor: c.accent },
+  toggleBtnText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  toggleBtnTextActive: { color: '#fff' },
   requestBtn: {
     backgroundColor: c.accent, borderRadius: 8,
     paddingHorizontal: 14, paddingVertical: 8,
