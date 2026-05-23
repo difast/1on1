@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getUnreadCount, getNotifications, markAllRead, updateUser } from '../api/client'
+import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate }) {
@@ -7,6 +8,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [scrolled, setScrolled] = useState(false)
+
+  // User menu dropdown
+  const [showUserMenu, setShowUserMenu] = useState(false)
+  const userMenuRef = useRef(null)
+
+  // Dark theme
+  const [isDark, setIsDark] = useState(() => localStorage.getItem('web_theme') === 'dark')
+
+  // Password change modal
+  const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pwdNew, setPwdNew] = useState('')
+  const [pwdConfirm, setPwdConfirm] = useState('')
+  const [pwdError, setPwdError] = useState('')
+  const [pwdSuccess, setPwdSuccess] = useState('')
+  const [pwdLoading, setPwdLoading] = useState(false)
 
   // Profile sidebar edit state
   const [editing, setEditing] = useState(false)
@@ -39,6 +55,43 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     window.addEventListener('scroll', handler, { passive: true })
     return () => window.removeEventListener('scroll', handler)
   }, [])
+
+  useEffect(() => {
+    if (isDark) document.documentElement.classList.add('dark')
+    else document.documentElement.classList.remove('dark')
+  }, [isDark])
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setShowUserMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const toggleDark = () => {
+    const next = !isDark
+    setIsDark(next)
+    localStorage.setItem('web_theme', next ? 'dark' : 'light')
+    setShowUserMenu(false)
+  }
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault()
+    if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return }
+    if (pwdNew.length < 6) { setPwdError('Пароль должен быть не менее 6 символов'); return }
+    setPwdLoading(true)
+    setPwdError('')
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwdNew })
+      if (error) { setPwdError(error.message); return }
+      setPwdSuccess('Пароль успешно изменён')
+      setPwdNew(''); setPwdConfirm('')
+      setTimeout(() => { setShowPasswordModal(false); setPwdSuccess('') }, 1500)
+    } catch { setPwdError('Произошла ошибка') } finally { setPwdLoading(false) }
+  }
 
   const toggleNotifications = async () => {
     if (!showNotifications) {
@@ -128,16 +181,90 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <NotificationBell count={unreadCount} onClick={toggleNotifications} />
-          <span style={{ fontSize: 14, fontWeight: 500, color: 'var(--color-text-secondary)' }}>
-            {user?.name}
-          </span>
-          {onLogout && (
-            <button onClick={onLogout} className="btn btn-ghost btn-sm">
-              Выйти
+          <div ref={userMenuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setShowUserMenu(v => !v)}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 14, fontWeight: 500, color: 'var(--color-text-secondary)',
+                padding: '6px 10px', borderRadius: 'var(--radius-sm)',
+                border: '1px solid transparent', background: 'none', cursor: 'pointer',
+                transition: 'all 150ms',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'var(--gray-100)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
+            >
+              {user?.name}
+              <span style={{ fontSize: 9, opacity: 0.5, marginLeft: 2 }}>▾</span>
             </button>
-          )}
+
+            {showUserMenu && (
+              <div style={{
+                position: 'absolute', right: 0, top: 'calc(100% + 6px)', minWidth: 210,
+                background: 'var(--color-surface)', border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
+                overflow: 'hidden', animation: 'popIn 0.18s var(--ease-spring)', zIndex: 200,
+              }}>
+                <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
+                  🔑 Сменить пароль
+                </MenuItemBtn>
+                <MenuItemBtn onClick={toggleDark}>
+                  {isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема'}
+                </MenuItemBtn>
+                <MenuItemBtn onClick={() => setShowUserMenu(false)}>
+                  ❓ Помощь
+                </MenuItemBtn>
+                <div style={{ height: 1, background: 'var(--color-border)', margin: '3px 0' }} />
+                <MenuItemBtn danger onClick={() => { setShowUserMenu(false); onLogout?.() }}>
+                  🚪 Выйти
+                </MenuItemBtn>
+              </div>
+            )}
+          </div>
         </div>
       </header>
+
+      {/* Password change modal */}
+      {showPasswordModal && (
+        <div className="overlay-center" onClick={() => setShowPasswordModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <span className="modal-title">Сменить пароль</span>
+              <button className="modal-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+            </div>
+            {pwdSuccess ? (
+              <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
+                ✓ {pwdSuccess}
+              </p>
+            ) : (
+              <form onSubmit={handleChangePassword}>
+                <div className="form-group">
+                  <label className="form-label">Новый пароль</label>
+                  <input
+                    type="password" className="input" value={pwdNew}
+                    onChange={e => setPwdNew(e.target.value)}
+                    required minLength={6} placeholder="Минимум 6 символов"
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Подтвердите пароль</label>
+                  <input
+                    type="password" className="input" value={pwdConfirm}
+                    onChange={e => setPwdConfirm(e.target.value)}
+                    required minLength={6} placeholder="Повторите пароль"
+                  />
+                </div>
+                {pwdError && (
+                  <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{pwdError}</p>
+                )}
+                <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={pwdLoading}>
+                  {pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Notification dropdown */}
       {showNotifications && (
@@ -300,6 +427,26 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         </main>
       </div>
     </div>
+  )
+}
+
+function MenuItemBtn({ children, onClick, danger }) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        width: '100%', textAlign: 'left', padding: '10px 16px',
+        fontSize: 14, fontWeight: 500,
+        color: danger ? 'var(--color-danger)' : 'var(--color-text-primary)',
+        background: 'none', border: 'none', cursor: 'pointer',
+        display: 'flex', alignItems: 'center', gap: 10,
+        transition: 'background 120ms',
+      }}
+      onMouseEnter={e => e.currentTarget.style.background = danger ? 'var(--color-danger-bg)' : 'var(--gray-100)'}
+      onMouseLeave={e => e.currentTarget.style.background = 'none'}
+    >
+      {children}
+    </button>
   )
 }
 
