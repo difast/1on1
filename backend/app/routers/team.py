@@ -1,7 +1,9 @@
 import secrets
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
+from sqlalchemy import func as sqlfunc
 from typing import List
+from datetime import datetime
 from app.database import get_db
 from app.models.team import Team, TeamMember
 from app.models.user import User
@@ -10,64 +12,42 @@ from app.schemas.team import TeamCreate, TeamOut, TeamDetailOut, TeamMemberOut, 
 
 router = APIRouter()
 
+
 def generate_invite_code():
     return secrets.token_urlsafe(8)
 
-@router.post("/", response_model=TeamOut)
-def create_team(data: TeamCreate, db: Session = Depends(get_db)):
-    team_lead = db.query(User).filter(User.id == data.team_lead_id).first()
-    if not team_lead:
-        raise HTTPException(status_code=404, detail="Team lead not found")
 
-    team = Team(
-        name=data.name,
-        invite_code=generate_invite_code(),
-        team_lead_id=data.team_lead_id,
-    )
-    db.add(team)
-    db.flush()
+def build_team_detail(team: Team, team_id: int, db: Session) -> TeamDetailOut:
+    """Build TeamDetailOut using batch queries instead of per-member queries."""
+    member_user_ids = [tm.user_id for tm in team.members]
 
-    # Add team lead as member
-    member = TeamMember(
-        team_id=team.id,
-        user_id=data.team_lead_id,
-        role="lead",
-        cadence_days=14,
-    )
-    db.add(member)
-    db.commit()
-    db.refresh(team)
-    return team
+    # Batch-load all users in one query
+    users_map = {
+        u.id: u
+        for u in db.query(User).filter(User.id.in_(member_user_ids)).all()
+    } if member_user_ids else {}
 
-@router.get("/", response_model=List[TeamOut])
-def list_teams(db: Session = Depends(get_db)):
-    return db.query(Team).all()
-
-@router.get("/{team_id}", response_model=TeamDetailOut)
-def get_team(team_id: int, db: Session = Depends(get_db)):
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        raise HTTPException(status_code=404, detail="Team not found")
-
-    # Build member list with status
-    members_out = []
-    from datetime import datetime, timedelta
-    for tm in team.members:
-        user = db.query(User).filter(User.id == tm.user_id).first()
-        last_meeting = (
-            db.query(Meeting)
-            .filter(
-                Meeting.member_id == tm.user_id,
-                Meeting.team_id == team_id,
-                Meeting.status != 'cancelled',
-                Meeting.scheduled_date <= datetime.utcnow(),
-            )
-            .order_by(Meeting.scheduled_date.desc())
-            .first()
+    # Batch-load last meeting date per member in one query
+    last_meeting_rows = (
+        db.query(Meeting.member_id, sqlfunc.max(Meeting.scheduled_date).label("last_date"))
+        .filter(
+            Meeting.team_id == team_id,
+            Meeting.status != "cancelled",
+            Meeting.scheduled_date <= datetime.utcnow(),
         )
+        .group_by(Meeting.member_id)
+        .all()
+    )
+    last_meeting_map = {row.member_id: row.last_date for row in last_meeting_rows}
+
+    members_out = []
+    for tm in team.members:
+        user = users_map.get(tm.user_id)
+        last_date = last_meeting_map.get(tm.user_id)
+
         color = "green"
-        if last_meeting:
-            days_since = (datetime.utcnow() - last_meeting.scheduled_date).days
+        if last_date:
+            days_since = (datetime.utcnow() - last_date).days
             if days_since > tm.cadence_days * 2:
                 color = "red"
             elif days_since > tm.cadence_days:
@@ -87,7 +67,7 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
             github=user.github if user else None,
             role=tm.role,
             cadence_days=tm.cadence_days,
-            last_meeting_date=last_meeting.scheduled_date if last_meeting else None,
+            last_meeting_date=last_date,
             status_color=color,
             is_registered=user is not None,
         ))
@@ -100,6 +80,65 @@ def get_team(team_id: int, db: Session = Depends(get_db)):
         created_at=team.created_at,
         members=members_out,
     )
+
+
+@router.post("/", response_model=TeamOut)
+def create_team(data: TeamCreate, db: Session = Depends(get_db)):
+    team_lead = db.query(User).filter(User.id == data.team_lead_id).first()
+    if not team_lead:
+        raise HTTPException(status_code=404, detail="Team lead not found")
+
+    team = Team(
+        name=data.name,
+        invite_code=generate_invite_code(),
+        team_lead_id=data.team_lead_id,
+    )
+    db.add(team)
+    db.flush()
+
+    member = TeamMember(
+        team_id=team.id,
+        user_id=data.team_lead_id,
+        role="lead",
+        cadence_days=14,
+    )
+    db.add(member)
+    db.commit()
+    db.refresh(team)
+    return team
+
+
+@router.get("/", response_model=List[TeamOut])
+def list_teams(db: Session = Depends(get_db)):
+    return db.query(Team).all()
+
+
+# Must come before /{team_id} to avoid route conflict
+@router.get("/by-member/{user_id}", response_model=TeamDetailOut)
+def get_team_for_member(user_id: int, db: Session = Depends(get_db)):
+    """Return the team detail for a regular member (non-lead role)."""
+    membership = (
+        db.query(TeamMember)
+        .filter(TeamMember.user_id == user_id, TeamMember.role != "lead")
+        .first()
+    )
+    if not membership:
+        raise HTTPException(status_code=404, detail="Not a member of any team")
+
+    team = db.query(Team).filter(Team.id == membership.team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+
+    return build_team_detail(team, team.id, db)
+
+
+@router.get("/{team_id}", response_model=TeamDetailOut)
+def get_team(team_id: int, db: Session = Depends(get_db)):
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    return build_team_detail(team, team_id, db)
+
 
 @router.post("/join", response_model=TeamMemberOut)
 def join_team(data: JoinByCode, db: Session = Depends(get_db)):
@@ -142,6 +181,7 @@ def join_team(data: JoinByCode, db: Session = Depends(get_db)):
         is_registered=True,
     )
 
+
 @router.post("/{team_id}/regenerate-invite")
 def regenerate_invite_code(team_id: int, db: Session = Depends(get_db)):
     team = db.query(Team).filter(Team.id == team_id).first()
@@ -151,8 +191,8 @@ def regenerate_invite_code(team_id: int, db: Session = Depends(get_db)):
     team.invite_code = generate_invite_code()
     db.commit()
     db.refresh(team)
-
     return {"invite_code": team.invite_code}
+
 
 @router.post("/{team_id}/members", response_model=TeamMemberOut)
 def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Session = Depends(get_db)):
