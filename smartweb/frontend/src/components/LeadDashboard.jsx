@@ -345,7 +345,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   const statusBorderClass = { green: 'border-status-green', yellow: 'border-status-yellow', red: 'border-status-red' }
   const statusBadgeClass = { green: 'badge badge-green', yellow: 'badge badge-amber', red: 'badge badge-red' }
-  const statusLabel = { green: 'В порядке', yellow: 'Скоро', red: 'Просрочено' }
+  const statusLabel = { green: 'В порядке', yellow: 'Скоро', red: 'Нет встречи' }
 
   const filteredMembers = teamDetail?.members?.filter(m => {
     if (m.user_id === user.id) return false
@@ -651,11 +651,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         }}>
                           {task.title || task.description}
                         </p>
-                        {task.due_date && (
-                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                            до {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                          </p>
-                        )}
+                        {task.due_date && (() => {
+                          const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                          return (
+                            <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                              {overdue ? '⚠ Просрочено · ' : 'до '}
+                              {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                            </p>
+                          )
+                        })()}
                       </div>
                       <TaskStatusSelect
                         status={task.status || 'in_progress'}
@@ -726,11 +730,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     }}>
                                       {task.title || task.description}
                                     </p>
-                                    {task.due_date && (
-                                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                                        до {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                                      </p>
-                                    )}
+                                    {task.due_date && (() => {
+                                      const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                                      return (
+                                        <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                          {overdue ? '⚠ Просрочено · ' : 'до '}
+                                          {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                        </p>
+                                      )
+                                    })()}
                                   </div>
                                   <TaskStatusSelect
                                     status={task.status || 'in_progress'}
@@ -1041,11 +1049,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                           }}>
                                             {task.title || task.description}
                                           </p>
-                                          {task.due_date && (
-                                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                                              до {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                                            </p>
-                                          )}
+                                          {task.due_date && (() => {
+                                            const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                                            return (
+                                              <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                                {overdue ? '⚠ Просрочено · ' : 'до '}
+                                                {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                              </p>
+                                            )
+                                          })()}
                                         </div>
                                         <button
                                           onClick={() => handleCycleTask(task, member.user_id)}

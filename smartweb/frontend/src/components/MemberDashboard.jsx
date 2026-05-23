@@ -578,11 +578,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         }}>
                           {task.title || task.description}
                         </p>
-                        {task.due_date && (
-                          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                            до {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                          </p>
-                        )}
+                        {task.due_date && (() => {
+                          const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                          return (
+                            <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                              {overdue ? '⚠ Просрочено · ' : 'до '}
+                              {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                            </p>
+                          )
+                        })()}
                       </div>
                       <TaskStatusSelect
                         status={task.status || 'in_progress'}
