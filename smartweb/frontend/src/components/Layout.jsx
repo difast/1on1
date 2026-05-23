@@ -13,8 +13,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef(null)
 
-  // Dark theme
-  const [isDark, setIsDark] = useState(() => localStorage.getItem('web_theme') === 'dark')
+  // Dark theme — per-user preference; defaults to dark when no preference stored
+  const themeKey = (id) => `web_theme_${id}`
+  const [isDark, setIsDark] = useState(() => {
+    if (!currentUser?.id) return true
+    const saved = localStorage.getItem(themeKey(currentUser.id))
+    return saved !== null ? saved === 'dark' : true
+  })
 
   // Password change modal
   const [showPasswordModal, setShowPasswordModal] = useState(false)
@@ -56,6 +61,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
     return () => window.removeEventListener('scroll', handler)
   }, [])
 
+  // When the active user changes, load their personal theme preference
+  useEffect(() => {
+    if (!currentUser?.id) return
+    const saved = localStorage.getItem(themeKey(currentUser.id))
+    setIsDark(saved !== null ? saved === 'dark' : true)
+  }, [currentUser?.id])
+
   useEffect(() => {
     if (isDark) document.documentElement.classList.add('dark')
     else document.documentElement.classList.remove('dark')
@@ -74,7 +86,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const toggleDark = () => {
     const next = !isDark
     setIsDark(next)
-    localStorage.setItem('web_theme', next ? 'dark' : 'light')
+    if (currentUser?.id) localStorage.setItem(themeKey(currentUser.id), next ? 'dark' : 'light')
     setShowUserMenu(false)
   }
 
