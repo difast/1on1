@@ -77,6 +77,44 @@
   --header-height: 58px;
 }
 
+/* Dark theme overrides */
+.dark {
+  --color-bg:           #0F1117;
+  --color-surface:      #1A1D27;
+  --color-surface-2:    #232736;
+  --color-border:       #2D3145;
+  --color-border-light: rgba(255,255,255,0.06);
+  --color-text-primary:   #F0F2F8;
+  --color-text-secondary: #9AA3B8;
+  --color-text-muted:     #6B7590;
+  --color-accent:       #5B8EF8;
+  --color-accent-light: #1A2240;
+  --color-accent-hover: #3B6EF0;
+
+  --blue-50:  #111827;
+  --blue-100: #1A2744;
+  --blue-200: #1D3060;
+  --gray-50:  #141720;
+  --gray-100: #1E2230;
+  --gray-200: #2D3145;
+  --gray-300: #3D4260;
+  --gray-400: #6B7590;
+  --gray-700: #C4CAE0;
+  --gray-900: #F0F2F8;
+
+  --color-success-bg: #052E16;
+  --color-warning-bg: #1C1407;
+  --color-danger-bg:  #1A0F0F;
+
+  --shadow-sm:  0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-md:  0 4px 16px rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.2);
+  --shadow-lg:  0 12px 40px rgba(0,0,0,0.5), 0 4px 8px rgba(0,0,0,0.2);
+}
+
+.dark .header {
+  background: rgba(26,29,39,0.92);
+}
+
 body {
   font-family: var(--font-sans);
   font-size: 15px;
