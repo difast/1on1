@@ -2,9 +2,11 @@ import { useState, useEffect, useCallback } from 'react'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask, getNotes, createNote, updateNote, deleteNote } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
+import MeetingCalendar from './MeetingCalendar'
 
-const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'done', done: 'in_progress' }
-const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'Ревью', done: 'Готово' }
+// Member can set: in_progress, blocked, review — only lead marks done
+const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'in_progress', done: 'in_progress' }
+const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
 const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
@@ -306,7 +308,29 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 <p className="label" style={{ marginBottom: 12 }}>Ближайшие встречи</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {upcomingMeetings.slice(0, 2).map(m => (
-                    <MeetingCard key={m.id} meeting={m} statusBadge={statusBadge} statusLabel={statusLabel} />
+                    <div key={m.id} className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
+                        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
+                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
+                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
+                          {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
+                      </div>
+                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
+                        {statusLabel[m.status] || m.status}
+                      </span>
+                    </div>
                   ))}
                 </div>
               </div>
@@ -350,105 +374,83 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
           </div>
         )}
 
-        {/* Tab: Meetings */}
+        {/* Tab: Meetings — calendar view */}
         {activeTab === 'meetings' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <div style={{ maxWidth: 700 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
               <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
                 + Запросить встречу
               </button>
             </div>
-
-            {upcomingMeetings.length > 0 && (
-              <div>
-                <p className="label" style={{ marginBottom: 12 }}>Предстоящие</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {upcomingMeetings.map(m => (
-                    <div key={m.id} style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                      <MeetingCard meeting={m} statusBadge={statusBadge} statusLabel={statusLabel} />
-                      {m.agenda && (
-                        <div style={{
-                          marginTop: 6, padding: '10px 14px',
-                          background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
-                          borderRadius: 'var(--radius-md)', fontSize: 13, color: 'var(--blue-700)',
-                        }}>
-                          <span style={{ fontWeight: 600 }}>Повестка: </span>{m.agenda}
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {pastMeetings.length > 0 && (
-              <div>
-                <p className="label" style={{ marginBottom: 12 }}>Прошедшие</p>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {pastMeetings.map(m => {
-                    const isExpanded = expandedMeetingNotes.has(m.id)
-                    const draft = meetingNoteDrafts[m.id] ?? ''
-                    const hasNote = notes.some(n => n.meeting_id === m.id)
-                    return (
-                      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                          <div style={{
-                            width: 48, height: 48, borderRadius: 'var(--radius-md)',
-                            background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-                          }}>
-                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-                              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
-                            </span>
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
-                              {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
-                            </p>
-                            {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{m.topic}</p>}
-                          </div>
-                          <span className={statusBadge[m.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
-                            {statusLabel[m.status] || m.status}
-                          </span>
-                          <button
-                            onClick={() => toggleMeetingNote(m.id)}
-                            style={{
-                              fontSize: 12, fontWeight: 600, background: 'none', border: 'none',
-                              cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)',
-                              flexShrink: 0, padding: '4px 6px',
-                            }}
-                          >
-                            {isExpanded ? '▾ Заметки' : '▸ Заметки'}{hasNote ? '●' : ''}
-                          </button>
-                        </div>
-                        {isExpanded && (
-                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                            <textarea
-                              value={draft}
-                              onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
-                              placeholder="Личные заметки к встрече..."
-                              className="input"
-                              style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
-                            />
-                            <button
-                              onClick={() => handleSaveMeetingNote(m.id)}
-                              disabled={savingMeetingNote[m.id]}
-                              className="btn btn-accent btn-sm"
-                              style={{ marginTop: 6 }}
-                            >
-                              {savingMeetingNote[m.id] ? 'Сохранение...' : 'Сохранить'}
-                            </button>
-                          </div>
+            <MeetingCalendar
+              meetings={meetings}
+              renderCard={(m) => {
+                const isPast = new Date(m.scheduled_date) < new Date()
+                const isExpanded = expandedMeetingNotes.has(m.id)
+                const draft = meetingNoteDrafts[m.id] ?? ''
+                const hasNote = notes.some(n => n.meeting_id === m.id)
+                return (
+                  <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
+                        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
+                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                        </span>
+                        <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
+                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
+                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { weekday: 'long' })}
+                        </p>
+                        {(m.topic || m.agenda) && (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {m.topic || m.agenda}
+                          </p>
                         )}
                       </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-
+                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
+                        {statusLabel[m.status] || m.status}
+                      </span>
+                      {isPast && (
+                        <button
+                          onClick={() => toggleMeetingNote(m.id)}
+                          style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
+                        >
+                          {isExpanded ? '▾ Заметки' : '▸ Заметки'}{hasNote ? ' ●' : ''}
+                        </button>
+                      )}
+                    </div>
+                    {isExpanded && (
+                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
+                        <textarea
+                          value={draft}
+                          onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                          placeholder="Личные заметки к встрече..."
+                          className="input"
+                          style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
+                        />
+                        <button
+                          onClick={() => handleSaveMeetingNote(m.id)}
+                          disabled={savingMeetingNote[m.id]}
+                          className="btn btn-accent btn-sm"
+                          style={{ marginTop: 6 }}
+                        >
+                          {savingMeetingNote[m.id] ? 'Сохранение...' : 'Сохранить'}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              }}
+            />
             {meetings.length === 0 && (
-              <div className="empty-state">
+              <div className="empty-state" style={{ marginTop: 16 }}>
                 <div className="empty-icon">📅</div>
                 <p className="empty-title">Нет встреч</p>
                 <p className="empty-desc">Запросите первую встречу с тимлидом</p>
@@ -593,31 +595,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
-  )
-}
-
-function MeetingCard({ meeting, statusBadge, statusLabel }) {
-  return (
-    <div className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-      <div style={{
-        width: 48, height: 48, borderRadius: 'var(--radius-md)',
-        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-      }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-          {new Date(meeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
-        </span>
-      </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
-          {new Date(meeting.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
-        </p>
-        {meeting.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{meeting.topic}</p>}
-      </div>
-      <span className={statusBadge[meeting.status] || 'badge badge-gray'} style={{ flexShrink: 0 }}>
-        {statusLabel[meeting.status] || meeting.status}
-      </span>
-    </div>
   )
 }
 

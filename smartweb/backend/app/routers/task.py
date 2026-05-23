@@ -25,6 +25,7 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
 @router.get("/", response_model=List[TaskOut])
 def list_tasks(
     assigned_to: Optional[int] = Query(None),
+    assigned_by: Optional[int] = Query(None),
     team_id: Optional[int] = Query(None),
     completed: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
@@ -32,6 +33,8 @@ def list_tasks(
     query = db.query(Task)
     if assigned_to:
         query = query.filter(Task.assigned_to == assigned_to)
+    if assigned_by:
+        query = query.filter(Task.assigned_by == assigned_by)
     if team_id:
         query = query.filter(Task.team_id == team_id)
     if completed is not None:
