@@ -57,4 +57,10 @@ export const markAllRead = (userId) =>
 export const getLeadAnalytics = (userId) => api.get(`/analytics/lead/${userId}`)
 export const getMemberAnalytics = (userId) => api.get(`/analytics/member/${userId}`)
 
+// Notes
+export const getNotes = (userId) => api.get('/notes/', { params: { user_id: userId } })
+export const createNote = (data) => api.post('/notes/', data)
+export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
+export const deleteNote = (id) => api.delete(`/notes/${id}`)
+
 export default api
