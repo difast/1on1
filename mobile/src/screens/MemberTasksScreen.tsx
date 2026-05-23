@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl,
+  RefreshControl, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getTasks, updateTask } from '../lib/api';
+import { getTasks, createTask, updateTask, deleteTask } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
@@ -13,18 +13,27 @@ import { Spinner } from '../components/Spinner';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
-const STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
+// Member can cycle through these — only lead can mark done
+const MEMBER_CYCLE: TaskStatus[] = ['in_progress', 'blocked', 'review'];
+const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; short: string }> = {
   in_progress: { label: 'В работе', short: 'В работе' },
-  blocked: { label: 'Заблокировано', short: 'Блок' },
+  blocked: { label: 'Блокер', short: 'Блок' },
   review: { label: 'На ревью', short: 'Ревью' },
-  done: { label: 'Выполнено', short: '✓' },
+  done: { label: 'Готово', short: '✓' },
 };
 
 function getTaskStatus(task: any): TaskStatus {
-  if (task.status && STATUSES.includes(task.status)) return task.status as TaskStatus;
+  if (task.status && ALL_STATUSES.includes(task.status)) return task.status as TaskStatus;
   return task.completed ? 'done' : 'in_progress';
+}
+
+function isOverdue(task: any): boolean {
+  if (!task.due_date || getTaskStatus(task) === 'done') return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return new Date(task.due_date) < today;
 }
 
 export default function MemberTasksScreen() {
@@ -34,6 +43,12 @@ export default function MemberTasksScreen() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Self-task form
+  const [showForm, setShowForm] = useState(false);
+  const [formTitle, setFormTitle] = useState('');
+  const [formDue, setFormDue] = useState('');
+  const [formLoading, setFormLoading] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -53,13 +68,48 @@ export default function MemberTasksScreen() {
 
   const cycleStatus = async (task: any) => {
     const current = getTaskStatus(task);
-    const idx = STATUSES.indexOf(current);
-    const next = STATUSES[(idx + 1) % STATUSES.length];
-    const completed = next === 'done';
+    // Don't cycle 'done' tasks (lead-only)
+    if (current === 'done') return;
+    const idx = MEMBER_CYCLE.indexOf(current);
+    const next = MEMBER_CYCLE[(idx + 1) % MEMBER_CYCLE.length];
     try {
-      await updateTask(task.id, { status: next, completed });
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
+      await updateTask(task.id, { status: next, completed: false });
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed: false } : t));
     } catch {}
+  };
+
+  const handleCreateTask = async () => {
+    if (!formTitle.trim()) return;
+    setFormLoading(true);
+    try {
+      const task = await createTask({
+        title: formTitle.trim(),
+        due_date: formDue.trim() || null,
+        assigned_to: user!.id,
+        assigned_by: user!.id,
+        team_id: null,
+      }) as any;
+      setTasks(prev => [task, ...prev]);
+      setFormTitle('');
+      setFormDue('');
+      setShowForm(false);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось создать задачу');
+    } finally { setFormLoading(false); }
+  };
+
+  const handleDelete = (taskId: number) => {
+    Alert.alert('Удалить задачу?', undefined, [
+      { text: 'Отмена', style: 'cancel' },
+      {
+        text: 'Удалить', style: 'destructive', onPress: async () => {
+          try {
+            await deleteTask(taskId);
+            setTasks(prev => prev.filter(t => t.id !== taskId));
+          } catch {}
+        },
+      },
+    ]);
   };
 
   if (loading) return <Spinner />;
@@ -70,27 +120,77 @@ export default function MemberTasksScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Задачи</Text>
-        {tasks.length > 0 && (
-          <Text style={styles.headerSub}>
-            {done.length} из {tasks.length} готово
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Задачи</Text>
+          {tasks.length > 0 && (
+            <Text style={styles.headerSub}>{done.length} из {tasks.length} готово</Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.addBtn, showForm && styles.addBtnActive]}
+          onPress={() => setShowForm(s => !s)}
+        >
+          <Text style={[styles.addBtnText, showForm && styles.addBtnTextActive]}>
+            {showForm ? '✕' : '+ Задача'}
           </Text>
-        )}
+        </TouchableOpacity>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
-        {tasks.length === 0 && (
-          <EmptyState icon="✅" title="Нет задач" description="Задачи появятся после встреч с тимлидом" />
+        {/* Self-task creation form */}
+        {showForm && (
+          <View style={styles.formCard}>
+            <TextInput
+              style={styles.formInput}
+              value={formTitle}
+              onChangeText={setFormTitle}
+              placeholder="Название задачи"
+              placeholderTextColor={colors.textMuted}
+              autoFocus
+            />
+            <TextInput
+              style={styles.formInput}
+              value={formDue}
+              onChangeText={setFormDue}
+              placeholder="Срок: ГГГГ-ММ-ДД (необязательно)"
+              placeholderTextColor={colors.textMuted}
+            />
+            <View style={styles.formRow}>
+              <TouchableOpacity
+                style={styles.formBtnSecondary}
+                onPress={() => { setShowForm(false); setFormTitle(''); setFormDue(''); }}
+              >
+                <Text style={styles.formBtnSecondaryText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.formBtnPrimary, formLoading && styles.btnDisabled]}
+                onPress={handleCreateTask}
+                disabled={formLoading}
+              >
+                <Text style={styles.formBtnPrimaryText}>{formLoading ? '...' : 'Добавить'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
+        {tasks.length === 0 && !showForm && (
+          <EmptyState icon="✅" title="Нет задач" description="Создайте личную задачу или ждите от тимлида" />
         )}
 
         {active.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Активные</Text>
             {active.map(task => (
-              <TaskRow key={task.id} task={task} onCycle={() => cycleStatus(task)} colors={colors} />
+              <TaskRow
+                key={task.id}
+                task={task}
+                onCycle={() => cycleStatus(task)}
+                onDelete={task.assigned_by === user!.id ? () => handleDelete(task.id) : undefined}
+                colors={colors}
+              />
             ))}
           </View>
         )}
@@ -99,7 +199,12 @@ export default function MemberTasksScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Выполненные</Text>
             {done.map(task => (
-              <TaskRow key={task.id} task={task} onCycle={() => cycleStatus(task)} colors={colors} />
+              <TaskRow
+                key={task.id}
+                task={task}
+                onCycle={() => cycleStatus(task)}
+                colors={colors}
+              />
             ))}
           </View>
         )}
@@ -108,10 +213,18 @@ export default function MemberTasksScreen() {
   );
 }
 
-function TaskRow({ task, onCycle, colors }: { task: any; onCycle: () => void; colors: AppColors }) {
+function TaskRow({
+  task, onCycle, onDelete, colors,
+}: {
+  task: any;
+  onCycle: () => void;
+  onDelete?: () => void;
+  colors: AppColors;
+}) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const status = getTaskStatus(task);
   const cfg = STATUS_CONFIG[status];
+  const overdue = isOverdue(task);
 
   const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
     in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
@@ -122,7 +235,7 @@ function TaskRow({ task, onCycle, colors }: { task: any; onCycle: () => void; co
   const sc = statusColors[status];
 
   return (
-    <TouchableOpacity style={styles.taskCard} onPress={onCycle} activeOpacity={0.7}>
+    <View style={styles.taskCard}>
       <View style={{ flex: 1 }}>
         <Text style={[styles.taskTitle, status === 'done' && styles.taskDone]}>
           {task.title || task.description}
@@ -131,17 +244,25 @@ function TaskRow({ task, onCycle, colors }: { task: any; onCycle: () => void; co
           <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
         )}
         {task.due_date && (
-          <Text style={styles.taskDue}>{new Date(task.due_date).toLocaleDateString('ru-RU')}</Text>
+          <Text style={[styles.taskDue, overdue && styles.taskOverdue]}>
+            {overdue ? `⚠ Просрочено · ` : 'до '}
+            {new Date(task.due_date).toLocaleDateString('ru-RU')}
+          </Text>
         )}
       </View>
       <TouchableOpacity
         style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
-        onPress={onCycle}
-        activeOpacity={0.7}
+        onPress={status !== 'done' ? onCycle : undefined}
+        activeOpacity={status !== 'done' ? 0.7 : 1}
       >
         <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
       </TouchableOpacity>
-    </TouchableOpacity>
+      {onDelete && (
+        <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
+          <Text style={styles.deleteBtnText}>✕</Text>
+        </TouchableOpacity>
+      )}
+    </View>
   );
 }
 
@@ -149,34 +270,56 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
   header: {
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8,
-    flexDirection: 'row', alignItems: 'baseline', gap: 10,
+    flexDirection: 'row', alignItems: 'center', gap: 10,
   },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
-  headerSub: { fontSize: 13, color: c.textSecondary },
+  headerSub: { fontSize: 13, color: c.textSecondary, marginTop: 2 },
+  addBtn: {
+    borderWidth: 1, borderColor: c.accent, borderRadius: 20,
+    paddingHorizontal: 14, paddingVertical: 6,
+  },
+  addBtnActive: { backgroundColor: c.accentLight },
+  addBtnText: { fontSize: 13, fontWeight: '600', color: c.accent },
+  addBtnTextActive: { color: c.accent },
   content: { padding: 16, gap: 20, paddingBottom: 32 },
+  formCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,
+    padding: 14, gap: 10,
+  },
+  formInput: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    padding: 10, fontSize: 14, color: c.textPrimary, backgroundColor: c.bg,
+  },
+  formRow: { flexDirection: 'row', gap: 8 },
+  formBtnSecondary: {
+    flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  formBtnSecondaryText: { fontSize: 14, fontWeight: '600', color: c.textSecondary },
+  formBtnPrimary: {
+    flex: 1, backgroundColor: c.accent, borderRadius: 8,
+    paddingVertical: 10, alignItems: 'center',
+  },
+  formBtnPrimaryText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  btnDisabled: { opacity: 0.6 },
   section: { gap: 8 },
   sectionTitle: {
     fontSize: 12, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 4,
   },
   taskCard: {
-    backgroundColor: c.surface,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: c.border,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,
+    padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
   },
   taskTitle: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
   taskDone: { textDecorationLine: 'line-through', color: c.textMuted },
   taskDesc: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
   taskDue: { fontSize: 11, color: c.textMuted, marginTop: 4 },
+  taskOverdue: { color: c.danger, fontWeight: '600' },
   statusBadge: {
-    borderWidth: 1, borderRadius: 8,
-    paddingHorizontal: 10, paddingVertical: 5,
-    flexShrink: 0,
+    borderWidth: 1, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5, flexShrink: 0,
   },
   statusBadgeText: { fontSize: 12, fontWeight: '600' },
+  deleteBtn: { padding: 6 },
+  deleteBtnText: { fontSize: 14, color: c.textMuted },
 });

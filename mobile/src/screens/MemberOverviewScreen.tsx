@@ -21,6 +21,7 @@ export default function MemberOverviewScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [upcomingMeetings, setUpcomingMeetings] = useState<any[]>([]);
+  const [lastMeeting, setLastMeeting] = useState<any>(null);
 
   const [joinCode, setJoinCode] = useState('');
   const [joinLoading, setJoinLoading] = useState(false);
@@ -57,6 +58,10 @@ export default function MemberOverviewScreen() {
           .sort((a: any, b: any) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime())
           .slice(0, 3)
       );
+      const past = (data || [])
+        .filter((m: any) => new Date(m.scheduled_date) < now || m.status === 'completed')
+        .sort((a: any, b: any) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+      setLastMeeting(past[0] ?? null);
     } catch {}
   }, [user]);
 
@@ -216,6 +221,31 @@ export default function MemberOverviewScreen() {
           </View>
         )}
 
+        {/* Last meeting with lead */}
+        {lastMeeting && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Последняя встреча с тимлидом</Text>
+            <View style={styles.lastMeetingCard}>
+              <View style={styles.lastMeetingDate}>
+                <Text style={styles.lastMeetingDay}>
+                  {new Date(lastMeeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                </Text>
+                <Text style={styles.lastMeetingTime}>
+                  {new Date(lastMeeting.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                </Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.lastMeetingLabel}>
+                  {new Date(lastMeeting.scheduled_date).toLocaleDateString('ru-RU', { weekday: 'long', day: '2-digit', month: 'long' })}
+                </Text>
+                {lastMeeting.topic ? (
+                  <Text style={styles.lastMeetingTopic} numberOfLines={1}>{lastMeeting.topic}</Text>
+                ) : null}
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Notes section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
@@ -347,6 +377,18 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     textTransform: 'uppercase', letterSpacing: 0.6,
   },
   addLink: { fontSize: 13, fontWeight: '600', color: c.accent },
+  lastMeetingCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1,
+    borderColor: '#bbf7d0', padding: 14, flexDirection: 'row', gap: 12, alignItems: 'center',
+  },
+  lastMeetingDate: {
+    width: 44, height: 44, borderRadius: 10, backgroundColor: '#f0fdf4',
+    borderWidth: 1, borderColor: '#bbf7d0', alignItems: 'center', justifyContent: 'center',
+  },
+  lastMeetingDay: { fontSize: 11, fontWeight: '700', color: '#16a34a', lineHeight: 14 },
+  lastMeetingTime: { fontSize: 10, color: '#86efac' },
+  lastMeetingLabel: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
+  lastMeetingTopic: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
 
   // Note form
   noteForm: {

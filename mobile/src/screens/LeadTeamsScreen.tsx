@@ -23,7 +23,7 @@ import { Spinner } from '../components/Spinner';
 const STATUS_BADGE_LABEL: Record<string, string> = {
   green: 'В порядке',
   yellow: 'Скоро',
-  red: 'Просрочено',
+  red: 'Нет встречи',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
@@ -454,6 +454,8 @@ export default function LeadTeamsScreen() {
                             done: { label: '✓', color: colors.success, bg: colors.successBg },
                           };
                           const stCfg = TASK_STATUS[st] ?? TASK_STATUS.in_progress;
+                          const today = new Date(); today.setHours(0,0,0,0);
+                          const overdue = task.due_date && st !== 'done' && new Date(task.due_date) < today;
                           return (
                             <View key={task.id} style={styles.taskRow}>
                               <View style={{ flex: 1 }}>
@@ -461,8 +463,9 @@ export default function LeadTeamsScreen() {
                                   {task.title || task.description}
                                 </Text>
                                 {task.due_date && (
-                                  <Text style={styles.taskDue}>
-                                    до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                  <Text style={[styles.taskDue, overdue && { color: colors.danger, fontWeight: '600' }]}>
+                                    {overdue ? `⚠ Просрочено · ` : 'до '}
+                                    {new Date(task.due_date).toLocaleDateString('ru-RU')}
                                   </Text>
                                 )}
                               </View>
