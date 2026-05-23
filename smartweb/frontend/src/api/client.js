@@ -41,6 +41,7 @@ export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
 // Tasks
 export const createTask = (data) => api.post('/tasks/', data)
 export const getTasks = (params) => api.get('/tasks/', { params })
+export const getMyLeadTasks = (userId) => api.get('/tasks/', { params: { assigned_to: userId, assigned_by: userId } })
 export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data)
 export const deleteTask = (id) => api.delete(`/tasks/${id}`)
 

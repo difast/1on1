@@ -94,6 +94,8 @@ def get_lead_analytics(user_id: int, db: Session = Depends(get_db)):
         member_stats_list = []
 
         for tm in members_rows:
+            if tm.user_id == user_id:
+                continue  # skip the lead themselves
             user = db.query(User).filter(User.id == tm.user_id).first()
             if not user:
                 continue

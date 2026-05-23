@@ -4,7 +4,7 @@ from datetime import datetime
 
 class TaskCreate(BaseModel):
     meeting_id: Optional[int] = None
-    team_id: int
+    team_id: Optional[int] = None
     assigned_to: int
     assigned_by: int
     title: str
@@ -14,7 +14,7 @@ class TaskCreate(BaseModel):
 class TaskOut(BaseModel):
     id: int
     meeting_id: Optional[int]
-    team_id: int
+    team_id: Optional[int]
     assigned_to: int
     assigned_by: int
     title: str
