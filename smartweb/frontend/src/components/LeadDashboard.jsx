@@ -1,8 +1,12 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
+
+const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'done', done: 'in_progress' }
+const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'Ревью', done: 'Готово' }
+const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -37,6 +41,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [searchQuery, setSearchQuery] = useState('')
 
   const [meetingNotes, setMeetingNotes] = useState({})
+
+  // Notes state
+  const [notes, setNotes] = useState([])
+  const [newNoteText, setNewNoteText] = useState('')
+  const [noteLoading, setNoteLoading] = useState(false)
 
   const loadTeams = useCallback(async () => {
     try {
@@ -130,7 +139,39 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     }
   }
 
-  useEffect(() => { loadTeams() }, [user.id])
+  const loadNotes = useCallback(async () => {
+    try { const { data } = await getNotes(user.id); setNotes(data || []) }
+    catch { setNotes([]) }
+  }, [user.id])
+
+  const handleCreateNote = async () => {
+    if (!newNoteText.trim()) return
+    setNoteLoading(true)
+    try {
+      const { data } = await createNote({ user_id: user.id, content: newNoteText.trim() })
+      setNotes(prev => [data, ...prev])
+      setNewNoteText('')
+    } catch {} finally { setNoteLoading(false) }
+  }
+
+  const handleDeleteNote = async (noteId) => {
+    try { await deleteNote(noteId); setNotes(prev => prev.filter(n => n.id !== noteId)) }
+    catch {}
+  }
+
+  const handleCycleTask = async (task, memberId) => {
+    const nextStatus = STATUS_CYCLE[task.status || 'in_progress'] || 'in_progress'
+    const completed = nextStatus === 'done'
+    try {
+      await updateTask(task.id, { status: nextStatus, completed })
+      setMemberTasks(prev => ({
+        ...prev,
+        [memberId]: (prev[memberId] || []).map(t => t.id === task.id ? { ...t, status: nextStatus, completed } : t),
+      }))
+    } catch {}
+  }
+
+  useEffect(() => { loadTeams(); loadNotes() }, [user.id])
   useEffect(() => { if (selectedTeamId) loadTeamDetail(selectedTeamId) }, [selectedTeamId])
 
   const loadMemberTasks = useCallback(async (memberId, teamId) => {
@@ -317,6 +358,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           {[
             { key: 'teams', label: 'Команды' },
             { key: 'meetings', label: 'Мои встречи' },
+            { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
             <button
@@ -325,12 +367,67 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               className={`tab${activeView === tab.key ? ' active' : ''}`}
             >
               {tab.label}
+              {tab.key === 'notes' && notes.length > 0 && (
+                <span className="badge badge-blue" style={{ marginLeft: 6, padding: '1px 6px', fontSize: 11 }}>{notes.length}</span>
+              )}
             </button>
           ))}
         </div>
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics user={user} />}
+
+        {/* Notes view */}
+        {activeView === 'notes' && (
+          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="card" style={{ padding: 20 }}>
+              <p className="label" style={{ marginBottom: 10 }}>Новая заметка</p>
+              <textarea
+                value={newNoteText}
+                onChange={e => setNewNoteText(e.target.value)}
+                placeholder="Запишите мысль, наблюдение или идею..."
+                className="input"
+                style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
+              />
+              <button
+                onClick={handleCreateNote}
+                disabled={noteLoading || !newNoteText.trim()}
+                className="btn btn-accent btn-sm"
+                style={{ marginTop: 10 }}
+              >
+                {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+              </button>
+            </div>
+            {notes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {notes.map(note => (
+                  <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                        {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteNote(note.id)}
+                      style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                      title="Удалить"
+                    >✕</button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">📝</div>
+                <p className="empty-title">Нет заметок</p>
+                <p className="empty-desc">Записывайте наблюдения по команде и отдельным участникам</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* My Meetings view */}
         {activeView === 'meetings' && (
@@ -535,40 +632,35 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                   {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
                                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Нет задач</p>
                                   )}
-                                  {tasks !== undefined && tasks.map(task => (
-                                    <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
-                                      <button
-                                        onClick={() => handleToggleTask(task, member.user_id)}
-                                        style={{
-                                          marginTop: 1, width: 16, height: 16, borderRadius: 5, flexShrink: 0,
-                                          border: task.completed ? 'none' : '1.5px solid var(--gray-300)',
-                                          background: task.completed ? 'var(--color-success)' : 'var(--color-surface)',
-                                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                          cursor: 'pointer', transition: 'all 0.15s',
-                                        }}
-                                      >
-                                        {task.completed && (
-                                          <svg style={{ width: 10, height: 10 }} fill="none" stroke="#fff" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                                          </svg>
-                                        )}
-                                      </button>
-                                      <div style={{ flex: 1, minWidth: 0 }}>
-                                        <p style={{
-                                          fontSize: 12, lineHeight: 1.4,
-                                          color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                                          textDecoration: task.completed ? 'line-through' : 'none',
-                                        }}>
-                                          {task.title || task.description}
-                                        </p>
-                                        {task.due_date && (
-                                          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
-                                            до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                  {tasks !== undefined && tasks.map(task => {
+                                    const st = task.status || 'in_progress'
+                                    return (
+                                      <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                          <p style={{
+                                            fontSize: 12, lineHeight: 1.4,
+                                            color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                                            textDecoration: task.completed ? 'line-through' : 'none',
+                                          }}>
+                                            {task.title || task.description}
                                           </p>
-                                        )}
+                                          {task.due_date && (
+                                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                                              до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                            </p>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() => handleCycleTask(task, member.user_id)}
+                                          className={`badge ${STATUS_CLS[st] || 'badge-blue'}`}
+                                          style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', fontSize: 10, padding: '2px 7px' }}
+                                          title="Нажмите чтобы изменить статус"
+                                        >
+                                          {STATUS_LABEL[st] || st}
+                                        </button>
                                       </div>
-                                    </div>
-                                  ))}
+                                    )
+                                  })}
 
                                   {taskForm.open ? (
                                     <form onSubmit={e => handleCreateTask(e, member.user_id)} style={{ display: 'flex', flexDirection: 'column', gap: 6, paddingTop: 4 }}>

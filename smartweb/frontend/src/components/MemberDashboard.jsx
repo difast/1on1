@@ -1,15 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, updateTask, getNotes, createNote, updateNote, deleteNote } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
+
+const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'done', done: 'in_progress' }
+const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'Ревью', done: 'Готово' }
+const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
   const [teamId, setTeamId] = useState(() => {
-    try {
-      const stored = localStorage.getItem('smart_user')
-      return stored ? JSON.parse(stored).teamId || null : null
-    } catch { return null }
+    try { const s = localStorage.getItem('smart_user'); return s ? JSON.parse(s).teamId || null : null }
+    catch { return null }
   })
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
@@ -26,16 +28,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [tasks, setTasks] = useState([])
 
-  const [expandedNotes, setExpandedNotes] = useState(new Set())
-  const [noteDrafts, setNoteDrafts] = useState({})
-
-  const noteKey = (meetingId) => `member_notes_${user.id}_${meetingId}`
+  // Notes state
+  const [notes, setNotes] = useState([])
+  const [newNoteText, setNewNoteText] = useState('')
+  const [noteLoading, setNoteLoading] = useState(false)
+  const [expandedMeetingNotes, setExpandedMeetingNotes] = useState(new Set())
+  const [meetingNoteDrafts, setMeetingNoteDrafts] = useState({})
+  const [savingMeetingNote, setSavingMeetingNote] = useState({})
 
   const saveTeamId = (id) => {
     setTeamId(id)
     try {
-      const stored = localStorage.getItem('smart_user')
-      const u = stored ? JSON.parse(stored) : {}
+      const s = localStorage.getItem('smart_user')
+      const u = s ? JSON.parse(s) : {}
       localStorage.setItem('smart_user', JSON.stringify({ ...u, teamId: id }))
     } catch {}
   }
@@ -43,10 +48,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const loadTeam = useCallback(async (id) => {
     if (!id) return
     setLoadingTeam(true)
-    try {
-      const { data } = await getTeam(id)
-      setTeam(data)
-    } catch { setTeam(null) } finally { setLoadingTeam(false) }
+    try { const { data } = await getTeam(id); setTeam(data) }
+    catch { setTeam(null) } finally { setLoadingTeam(false) }
   }, [])
 
   const findUserTeam = useCallback(async () => {
@@ -56,8 +59,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       for (const t of allTeams) {
         try {
           const { data: detail } = await getTeam(t.id)
-          const isMember = (detail.members || []).some(m => m.user_id === user.id)
-          if (isMember) { saveTeamId(t.id); setTeam(detail); setLoadingTeam(false); return }
+          if ((detail.members || []).some(m => m.user_id === user.id)) {
+            saveTeamId(t.id); setTeam(detail); setLoadingTeam(false); return
+          }
         } catch {}
       }
       setTeam(null); setLoadingTeam(false)
@@ -66,27 +70,30 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const loadMeetings = useCallback(async () => {
     if (!teamId) return
-    try {
-      const { data } = await getMeetings({ member_id: user.id })
-      setMeetings(data || [])
-    } catch { setMeetings([]) }
+    try { const { data } = await getMeetings({ member_id: user.id }); setMeetings(data || []) }
+    catch { setMeetings([]) }
   }, [teamId, user.id])
 
   const loadTasks = useCallback(async () => {
-    try {
-      const { data } = await getTasks({ assigned_to: user.id })
-      setTasks(data || [])
-    } catch { setTasks([]) }
+    try { const { data } = await getTasks({ assigned_to: user.id }); setTasks(data || []) }
+    catch { setTasks([]) }
   }, [user.id])
 
-  useEffect(() => {
-    if (teamId) loadTeam(teamId)
-    else findUserTeam()
-  }, [])
+  const loadNotes = useCallback(async () => {
+    try {
+      const { data } = await getNotes(user.id)
+      setNotes(data || [])
+      // Populate meeting note drafts from loaded notes
+      const drafts = {}
+      for (const n of (data || [])) {
+        if (n.meeting_id) drafts[n.meeting_id] = n.content
+      }
+      setMeetingNoteDrafts(drafts)
+    } catch { setNotes([]) }
+  }, [user.id])
 
-  useEffect(() => {
-    if (team) { loadMeetings(); loadTasks() }
-  }, [team])
+  useEffect(() => { if (teamId) loadTeam(teamId); else findUserTeam() }, [])
+  useEffect(() => { if (team) { loadMeetings(); loadTasks(); loadNotes() } }, [team])
 
   const handleJoin = async (e) => {
     e.preventDefault()
@@ -114,36 +121,56 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     } catch {} finally { setMeetingLoading(false) }
   }
 
-  const handleToggleTask = async (task) => {
+  // Task status cycling
+  const handleCycleTaskStatus = async (task) => {
+    const nextStatus = STATUS_CYCLE[task.status || 'in_progress'] || 'in_progress'
+    const completed = nextStatus === 'done'
     try {
-      await updateTask(task.id, { completed: !task.completed })
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, completed: !t.completed } : t))
+      await updateTask(task.id, { status: nextStatus, completed })
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: nextStatus, completed } : t))
     } catch {}
   }
 
-  const handleToggleNote = (meetingId) => {
-    setExpandedNotes(prev => {
+  // Meeting notes via API
+  const toggleMeetingNote = (meetingId) => {
+    setExpandedMeetingNotes(prev => {
       const next = new Set(prev)
-      if (next.has(meetingId)) {
-        next.delete(meetingId)
-      } else {
-        next.add(meetingId)
-        if (noteDrafts[meetingId] === undefined) {
-          try {
-            const saved = localStorage.getItem(noteKey(meetingId))
-            setNoteDrafts(d => ({ ...d, [meetingId]: saved || '' }))
-          } catch {
-            setNoteDrafts(d => ({ ...d, [meetingId]: '' }))
-          }
-        }
-      }
+      next.has(meetingId) ? next.delete(meetingId) : next.add(meetingId)
       return next
     })
   }
 
-  const handleSaveNote = (meetingId) => {
+  const handleSaveMeetingNote = async (meetingId) => {
+    const content = meetingNoteDrafts[meetingId] || ''
+    if (!content.trim()) return
+    setSavingMeetingNote(prev => ({ ...prev, [meetingId]: true }))
     try {
-      localStorage.setItem(noteKey(meetingId), noteDrafts[meetingId] || '')
+      const existing = notes.find(n => n.meeting_id === meetingId)
+      if (existing) {
+        await updateNote(existing.id, { content })
+        setNotes(prev => prev.map(n => n.id === existing.id ? { ...n, content } : n))
+      } else {
+        const { data: newNote } = await createNote({ user_id: user.id, content, meeting_id: meetingId })
+        setNotes(prev => [newNote, ...prev])
+      }
+    } catch {} finally { setSavingMeetingNote(prev => ({ ...prev, [meetingId]: false })) }
+  }
+
+  // Free-form notes
+  const handleCreateNote = async () => {
+    if (!newNoteText.trim()) return
+    setNoteLoading(true)
+    try {
+      const { data } = await createNote({ user_id: user.id, content: newNoteText.trim() })
+      setNotes(prev => [data, ...prev])
+      setNewNoteText('')
+    } catch {} finally { setNoteLoading(false) }
+  }
+
+  const handleDeleteNote = async (noteId) => {
+    try {
+      await deleteNote(noteId)
+      setNotes(prev => prev.filter(n => n.id !== noteId))
     } catch {}
   }
 
@@ -155,14 +182,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     .filter(m => new Date(m.scheduled_date) < now || m.status === 'completed')
     .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
 
+  const freeNotes = notes.filter(n => !n.meeting_id)
+
   const statusBadge = {
-    scheduled: 'badge badge-blue',
-    completed: 'badge badge-green',
-    cancelled: 'badge badge-red',
-    requested: 'badge badge-amber',
+    scheduled: 'badge badge-blue', completed: 'badge badge-green',
+    cancelled: 'badge badge-red', requested: 'badge badge-amber', confirmed: 'badge badge-green',
   }
   const statusLabel = {
-    scheduled: 'Запланирована', completed: 'Завершена', cancelled: 'Отменена', requested: 'Запрошена',
+    scheduled: 'Запланирована', completed: 'Завершена',
+    cancelled: 'Отменена', requested: 'Запрошена', confirmed: 'Подтверждена',
   }
 
   if (loadingTeam) {
@@ -219,22 +247,24 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   return (
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
       <div style={{ maxWidth: 900 }}>
-        {/* Page header */}
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
         </div>
 
-        {/* Tabs */}
         <div className="tabs" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
             { key: 'overview', label: 'Обзор' },
             { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
+            { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
+              {tab.key === 'notes' && freeNotes.length > 0 && (
+                <span className="badge badge-blue" style={{ marginLeft: 6, padding: '1px 6px', fontSize: 11 }}>{freeNotes.length}</span>
+              )}
             </button>
           ))}
         </div>
@@ -242,37 +272,35 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {/* Tab: Overview */}
         {activeTab === 'overview' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            {/* Team lead card */}
             {team.team_lead_id && (() => {
-              const leadMember = (team.members || []).find(m => m.user_id === team.team_lead_id)
+              const lead = (team.members || []).find(m => m.user_id === team.team_lead_id)
               return (
-              <div className="card card-accent" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
-                <div className={`avatar avatar-xl ${leadMember?.user_avatar_url ? '' : 'avatar-accent'}`}>
-                  {leadMember?.user_avatar_url
-                    ? <img src={leadMember.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                    : (team.team_lead_name || '?').charAt(0).toUpperCase()}
+                <div className="card card-accent" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
+                  <div className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}>
+                    {lead?.user_avatar_url
+                      ? <img src={lead.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      : (team.team_lead_name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
+                    <p style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)' }}>
+                      {team.team_lead_name || 'Тимлид'}
+                    </p>
+                    {team.team_lead_title && (
+                      <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{team.team_lead_title}</p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => { setActiveTab('meetings'); setShowRequestMeeting(true) }}
+                    className="btn btn-accent btn-sm"
+                    style={{ flexShrink: 0 }}
+                  >
+                    Запросить встречу
+                  </button>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
-                  <p style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)' }}>
-                    {team.team_lead_name || 'Тимлид'}
-                  </p>
-                  {team.team_lead_title && (
-                    <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{team.team_lead_title}</p>
-                  )}
-                </div>
-                <button
-                  onClick={() => { setActiveTab('meetings'); setShowRequestMeeting(true) }}
-                  className="btn btn-accent btn-sm"
-                  style={{ flexShrink: 0 }}
-                >
-                  Запросить встречу
-                </button>
-              </div>
               )
             })()}
 
-            {/* Upcoming meetings preview */}
             {upcomingMeetings.length > 0 && (
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Ближайшие встречи</p>
@@ -284,7 +312,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               </div>
             )}
 
-            {/* Team members */}
             {team.members && team.members.length > 0 && (
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Участники команды</p>
@@ -359,9 +386,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 <p className="label" style={{ marginBottom: 12 }}>Прошедшие</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {pastMeetings.map(m => {
-                    const isExpanded = expandedNotes.has(m.id)
-                    const draft = noteDrafts[m.id] ?? ''
-                    const savedNote = (() => { try { return localStorage.getItem(noteKey(m.id)) } catch { return null } })()
+                    const isExpanded = expandedMeetingNotes.has(m.id)
+                    const draft = meetingNoteDrafts[m.id] ?? ''
+                    const hasNote = notes.some(n => n.meeting_id === m.id)
                     return (
                       <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -384,31 +411,32 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             {statusLabel[m.status] || m.status}
                           </span>
                           <button
-                            onClick={() => handleToggleNote(m.id)}
+                            onClick={() => toggleMeetingNote(m.id)}
                             style={{
                               fontSize: 12, fontWeight: 600, background: 'none', border: 'none',
                               cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)',
                               flexShrink: 0, padding: '4px 6px',
                             }}
                           >
-                            {isExpanded ? '▾ Мои заметки' : '▸ Мои заметки'}{savedNote ? '●' : ''}
+                            {isExpanded ? '▾ Заметки' : '▸ Заметки'}{hasNote ? '●' : ''}
                           </button>
                         </div>
                         {isExpanded && (
                           <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
                             <textarea
                               value={draft}
-                              onChange={e => setNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                              onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
                               placeholder="Личные заметки к встрече..."
                               className="input"
                               style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
                             />
                             <button
-                              onClick={() => handleSaveNote(m.id)}
+                              onClick={() => handleSaveMeetingNote(m.id)}
+                              disabled={savingMeetingNote[m.id]}
                               className="btn btn-accent btn-sm"
                               style={{ marginTop: 6 }}
                             >
-                              Сохранить
+                              {savingMeetingNote[m.id] ? 'Сохранение...' : 'Сохранить'}
                             </button>
                           </div>
                         )}
@@ -440,45 +468,95 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {tasks.map(task => (
-                  <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                    <button
-                      onClick={() => handleToggleTask(task)}
-                      style={{
-                        width: 22, height: 22, borderRadius: 7, flexShrink: 0,
-                        border: task.completed ? 'none' : '2px solid var(--gray-300)',
-                        background: task.completed ? 'var(--color-success)' : 'var(--color-surface)',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer', transition: 'all 0.2s var(--ease-spring)',
-                      }}
-                    >
-                      {task.completed && (
-                        <svg style={{ width: 12, height: 12 }} fill="none" stroke="#fff" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
-                    </button>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{
-                        fontWeight: 500, fontSize: 14,
-                        color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                        textDecoration: task.completed ? 'line-through' : 'none',
-                      }}>
-                        {task.title || task.description}
-                      </p>
-                      {task.description && task.title && (
-                        <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                          {task.description}
+                {tasks.map(task => {
+                  const status = task.status || 'in_progress'
+                  return (
+                    <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{
+                          fontWeight: 500, fontSize: 14,
+                          color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                        }}>
+                          {task.title || task.description}
                         </p>
+                        {task.description && task.title && (
+                          <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {task.description}
+                          </p>
+                        )}
+                      </div>
+                      {task.due_date && (
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', flexShrink: 0 }}>
+                          {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                        </span>
                       )}
+                      <button
+                        onClick={() => handleCycleTaskStatus(task)}
+                        className={`badge ${STATUS_CLS[status] || 'badge-blue'}`}
+                        style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', transition: 'opacity 0.15s' }}
+                        title="Нажмите чтобы изменить статус"
+                      >
+                        {STATUS_LABEL[status] || status}
+                      </button>
                     </div>
-                    {task.due_date && (
-                      <span style={{ fontSize: 12, color: 'var(--color-text-muted)', flexShrink: 0 }}>
-                        {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                      </span>
-                    )}
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab: Notes */}
+        {activeTab === 'notes' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {/* Add note */}
+            <div className="card" style={{ padding: 20 }}>
+              <p className="label" style={{ marginBottom: 10 }}>Новая заметка</p>
+              <textarea
+                value={newNoteText}
+                onChange={e => setNewNoteText(e.target.value)}
+                placeholder="Запишите мысль, идею или наблюдение..."
+                className="input"
+                style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
+                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
+              />
+              <button
+                onClick={handleCreateNote}
+                disabled={noteLoading || !newNoteText.trim()}
+                className="btn btn-accent btn-sm"
+                style={{ marginTop: 10 }}
+              >
+                {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+              </button>
+            </div>
+
+            {/* Free-form notes list */}
+            {freeNotes.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {freeNotes.map(note => (
+                  <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                        {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteNote(note.id)}
+                      style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                      onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                      onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                      title="Удалить"
+                    >✕</button>
                   </div>
                 ))}
+              </div>
+            ) : (
+              <div className="empty-state">
+                <div className="empty-icon">📝</div>
+                <p className="empty-title">Нет заметок</p>
+                <p className="empty-desc">Записывайте мысли и наблюдения прямо здесь</p>
               </div>
             )}
           </div>
@@ -488,7 +566,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
       </div>
 
-      {/* Modal: Request meeting */}
       {showRequestMeeting && (
         <Modal title="Запросить встречу" onClose={() => setShowRequestMeeting(false)}>
           <form onSubmit={handleRequestMeeting}>
@@ -503,8 +580,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               <textarea
                 value={meetingTopic} onChange={e => setMeetingTopic(e.target.value)}
                 placeholder="О чём хотите поговорить?"
-                className="input"
-                style={{ resize: 'none', minHeight: 80 }}
+                className="input" style={{ resize: 'none', minHeight: 80 }}
               />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
