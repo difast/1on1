@@ -4,10 +4,7 @@ import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
-
-const STATUS_CYCLE = { in_progress: 'blocked', blocked: 'review', review: 'done', done: 'in_progress' }
-const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'Ревью', done: 'Готово' }
-const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
+import TaskStatusSelect from './TaskStatusSelect'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -51,6 +48,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   // Lead personal tasks
   const [myTasks, setMyTasks] = useState([])
   const [myTaskForm, setMyTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
+
+  // Tasks sub-tab: 'mine' | 'members'
+  const [tasksSubTab, setTasksSubTab] = useState('mine')
+
+  // Analytics force-refresh key
+  const [analyticsKey, setAnalyticsKey] = useState(0)
+
+  // Meeting notes expanded in notes tab
+  const [notesMeetingExpanded, setNotesMeetingExpanded] = useState(new Set())
 
   const loadTeams = useCallback(async () => {
     try {
@@ -401,7 +407,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <textarea
               value={noteState.draft}
               onChange={e => setMeetingNotes(prev => ({ ...prev, [m.id]: { ...prev[m.id], draft: e.target.value } }))}
-              placeholder="Заметки к встрече..."
+              placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
               className="input"
               style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
             />
@@ -410,6 +416,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </button>
           </div>
         )}
+        {!noteState?.expanded && m.notes && (() => {
+          const lines = m.notes.split('\n').filter(l => l.trim())
+          return lines.length > 0 ? (
+            <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {lines.map((line, i) => (
+                <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
+              ))}
+            </ul>
+          ) : null
+        })()}
       </div>
     )
   }
@@ -434,11 +450,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               + Создать команду
             </button>
           )}
-          {activeView === 'tasks' && (
-            <button onClick={() => setMyTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">
-              + Задача
-            </button>
-          )}
         </div>
 
         {/* View tabs */}
@@ -452,7 +463,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => { setActiveView(tab.key); if (tab.key === 'meetings') loadMyMeetings() }}
+              onClick={() => {
+              setActiveView(tab.key)
+              if (tab.key === 'meetings') loadMyMeetings()
+              if (tab.key === 'analytics') setAnalyticsKey(k => k + 1)
+            }}
               className={`tab${activeView === tab.key ? ' active' : ''}`}
             >
               {tab.label}
@@ -467,103 +482,165 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </div>
 
         {/* Analytics view */}
-        {activeView === 'analytics' && <LeadAnalytics user={user} />}
+        {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}
 
         {/* Notes view */}
         {activeView === 'notes' && (
-          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="card" style={{ padding: 20 }}>
-              <p className="label" style={{ marginBottom: 10 }}>Новая заметка</p>
-              <textarea
-                value={newNoteText}
-                onChange={e => setNewNoteText(e.target.value)}
-                placeholder="Запишите мысль, наблюдение или идею..."
-                className="input"
-                style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
-                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
-              />
-              <button
-                onClick={handleCreateNote}
-                disabled={noteLoading || !newNoteText.trim()}
-                className="btn btn-accent btn-sm"
-                style={{ marginTop: 10 }}
-              >
-                {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
-              </button>
-            </div>
-            {notes.length > 0 ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {notes.map(note => (
-                  <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
-                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
-                        {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                      </p>
+          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {/* General notes */}
+            <div>
+              <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
+              <div className="card" style={{ padding: 20, marginBottom: 10 }}>
+                <textarea
+                  value={newNoteText}
+                  onChange={e => setNewNoteText(e.target.value)}
+                  placeholder="Запишите мысль, наблюдение или идею..."
+                  className="input"
+                  style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
+                />
+                <button
+                  onClick={handleCreateNote}
+                  disabled={noteLoading || !newNoteText.trim()}
+                  className="btn btn-accent btn-sm"
+                  style={{ marginTop: 10 }}
+                >
+                  {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+                </button>
+              </div>
+              {notes.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {notes.map(note => (
+                    <div key={note.id} className="card" style={{ padding: '16px 18px', display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{note.content}</p>
+                        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                          {new Date(note.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteNote(note.id)}
+                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                        onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                        onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                        title="Удалить"
+                      >✕</button>
                     </div>
-                    <button
-                      onClick={() => handleDeleteNote(note.id)}
-                      style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
-                      onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
-                      onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                      title="Удалить"
-                    >✕</button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="empty-state">
-                <div className="empty-icon">📝</div>
-                <p className="empty-title">Нет заметок</p>
-                <p className="empty-desc">Записывайте наблюдения по команде и отдельным участникам</p>
-              </div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '20px 0' }}>
+                  <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                </div>
+              )}
+            </div>
+
+            {/* Meeting notes */}
+            <div>
+              <p className="label" style={{ marginBottom: 12 }}>Заметки по встречам</p>
+              {myMeetings.filter(m => m.notes).length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {myMeetings.filter(m => m.notes).map(m => {
+                    const memberName = usersMap[m.member_id]?.name || `Участник #${m.member_id}`
+                    const isExpanded = notesMeetingExpanded.has(m.id)
+                    const noteLines = (m.notes || '').split('\n').filter(l => l.trim())
+                    return (
+                      <div key={m.id} className="card" style={{ padding: '14px 18px' }}>
+                        <button
+                          onClick={() => setNotesMeetingExpanded(prev => {
+                            const next = new Set(prev)
+                            next.has(m.id) ? next.delete(m.id) : next.add(m.id)
+                            return next
+                          })}
+                          style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', padding: 0 }}
+                        >
+                          <span style={{ fontSize: 13, color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-muted)', width: 12 }}>{isExpanded ? '▾' : '▸'}</span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{memberName}</span>
+                            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 8 }}>
+                              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                            </span>
+                          </div>
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{noteLines.length} стр.</span>
+                        </button>
+                        {isExpanded && (
+                          <ul style={{ marginTop: 10, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {noteLines.map((line, i) => (
+                              <li key={i} style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.5 }}>{line}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              ) : (
+                <div className="empty-state" style={{ padding: '20px 0' }}>
+                  <p className="empty-title" style={{ fontSize: 14 }}>Нет заметок по встречам</p>
+                  <p className="empty-desc">Добавляйте заметки к прошедшим встречам во вкладке «Мои встречи»</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Personal tasks view */}
+        {/* Tasks view */}
         {activeView === 'tasks' && (
           <div style={{ maxWidth: 700 }}>
-            {myTaskForm.open && (
-              <form onSubmit={handleCreateMyTask} className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                <input
-                  type="text"
-                  value={myTaskForm.title}
-                  onChange={e => setMyTaskForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="Название задачи"
-                  autoFocus
-                  className="input"
-                />
-                <input
-                  type="date"
-                  value={myTaskForm.due_date}
-                  onChange={e => setMyTaskForm(f => ({ ...f, due_date: e.target.value }))}
-                  className="input input-sm"
-                  style={{ maxWidth: 200 }}
-                />
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setMyTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">Отмена</button>
-                  <button type="submit" disabled={myTaskForm.loading} className="btn btn-accent btn-sm">
-                    {myTaskForm.loading ? '...' : 'Добавить'}
-                  </button>
-                </div>
-              </form>
-            )}
+            {/* Sub-tabs */}
+            <div className="tabs" style={{ width: 'fit-content', marginBottom: 20 }}>
+              <button onClick={() => setTasksSubTab('mine')} className={`tab${tasksSubTab === 'mine' ? ' active' : ''}`}>
+                Мои задачи
+                {myTasks.filter(t => !t.completed).length > 0 && (
+                  <span className="badge badge-blue" style={{ marginLeft: 6, padding: '1px 6px', fontSize: 11 }}>{myTasks.filter(t => !t.completed).length}</span>
+                )}
+              </button>
+              <button onClick={() => setTasksSubTab('members')} className={`tab${tasksSubTab === 'members' ? ' active' : ''}`}>
+                Задачи участников
+              </button>
+            </div>
 
-            {myTasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">✅</div>
-                <p className="empty-title">Нет задач</p>
-                <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
-                <button onClick={() => setMyTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>
-                  + Добавить задачу
-                </button>
-              </div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {myTasks.map(task => {
-                  const status = task.status || 'in_progress'
-                  return (
+            {/* My tasks sub-tab */}
+            {tasksSubTab === 'mine' && (<>
+              {myTaskForm.open && (
+                <form onSubmit={handleCreateMyTask} className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <input
+                    type="text"
+                    value={myTaskForm.title}
+                    onChange={e => setMyTaskForm(f => ({ ...f, title: e.target.value }))}
+                    placeholder="Название задачи"
+                    autoFocus
+                    className="input"
+                  />
+                  <input
+                    type="date"
+                    value={myTaskForm.due_date}
+                    onChange={e => setMyTaskForm(f => ({ ...f, due_date: e.target.value }))}
+                    className="input input-sm"
+                    style={{ maxWidth: 200 }}
+                  />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" onClick={() => setMyTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">Отмена</button>
+                    <button type="submit" disabled={myTaskForm.loading} className="btn btn-accent btn-sm">
+                      {myTaskForm.loading ? '...' : 'Добавить'}
+                    </button>
+                  </div>
+                </form>
+              )}
+              {!myTaskForm.open && (
+                <div style={{ marginBottom: 12 }}>
+                  <button onClick={() => setMyTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">+ Задача</button>
+                </div>
+              )}
+              {myTasks.length === 0 ? (
+                <div className="empty-state">
+                  <div className="empty-icon">✅</div>
+                  <p className="empty-title">Нет задач</p>
+                  <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {myTasks.map(task => (
                     <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{
@@ -579,14 +656,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           </p>
                         )}
                       </div>
-                      <button
-                        onClick={() => handleCycleMyTask(task)}
-                        className={`badge ${STATUS_CLS[status] || 'badge-blue'}`}
-                        style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', transition: 'opacity 0.15s' }}
-                        title="Нажмите чтобы изменить статус"
-                      >
-                        {STATUS_LABEL[status] || status}
-                      </button>
+                      <TaskStatusSelect
+                        status={task.status || 'in_progress'}
+                        onChange={async (newStatus) => {
+                          try {
+                            await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                            setMyTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t))
+                          } catch {}
+                        }}
+                        canMarkDone={true}
+                      />
                       <button
                         onClick={() => handleDeleteMyTask(task.id)}
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
@@ -595,8 +674,127 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         title="Удалить"
                       >✕</button>
                     </div>
-                  )
-                })}
+                  ))}
+                </div>
+              )}
+            </>)}
+
+            {/* Member tasks sub-tab */}
+            {tasksSubTab === 'members' && (
+              <div>
+                {teams.length === 0 ? (
+                  <div className="empty-state">
+                    <div className="empty-icon">👥</div>
+                    <p className="empty-title">Нет команд</p>
+                    <p className="empty-desc">Создайте команду, чтобы видеть задачи участников</p>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
+                      const tasks = memberTasks[member.user_id]
+                      const taskForm = taskForms[member.user_id] || {}
+                      const expanded = expandedTasks.has(member.user_id)
+                      return (
+                        <div key={member.user_id}>
+                          <button
+                            onClick={() => toggleTasksExpanded(member.user_id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', padding: '8px 0', marginBottom: 8 }}
+                          >
+                            <div className={`avatar avatar-sm avatar-accent`} style={{ flexShrink: 0 }}>
+                              {(member.user_name || '?').charAt(0).toUpperCase()}
+                            </div>
+                            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', flex: 1 }}>{member.user_name}</span>
+                            {tasks !== undefined && (
+                              <span className="badge badge-gray" style={{ fontSize: 11 }}>{tasks.length}</span>
+                            )}
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
+                              style={{ width: 14, height: 14, color: 'var(--color-text-muted)', transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
+                              <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                            </svg>
+                          </button>
+                          {expanded && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 4 }}>
+                              {tasks === undefined && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Загрузка...</p>}
+                              {tasks !== undefined && tasks.map(task => (
+                                <div key={task.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <p style={{
+                                      fontWeight: 500, fontSize: 13,
+                                      color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                                      textDecoration: task.completed ? 'line-through' : 'none',
+                                    }}>
+                                      {task.title || task.description}
+                                    </p>
+                                    {task.due_date && (
+                                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                                        до {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <TaskStatusSelect
+                                    status={task.status || 'in_progress'}
+                                    onChange={async (newStatus) => {
+                                      try {
+                                        await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                        setMemberTasks(prev => ({
+                                          ...prev,
+                                          [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                            t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
+                                          ),
+                                        }))
+                                      } catch {}
+                                    }}
+                                    canMarkDone={true}
+                                  />
+                                </div>
+                              ))}
+                              {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
+                                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '4px 0' }}>Нет задач</p>
+                              )}
+                              {taskForm.open ? (
+                                <form onSubmit={e => handleCreateTask(e, member.user_id)} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
+                                  <input
+                                    type="text"
+                                    value={taskForm.title || ''}
+                                    onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], title: e.target.value } }))}
+                                    placeholder="Название задачи"
+                                    autoFocus
+                                    className="input input-sm"
+                                  />
+                                  <input
+                                    type="date"
+                                    value={taskForm.due_date || ''}
+                                    onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], due_date: e.target.value } }))}
+                                    className="input input-sm"
+                                    style={{ maxWidth: 180 }}
+                                  />
+                                  <div style={{ display: 'flex', gap: 8 }}>
+                                    <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm">Отмена</button>
+                                    <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm">{taskForm.loading ? '...' : 'Добавить'}</button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <button
+                                  onClick={() => openTaskForm(member.user_id)}
+                                  style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 0' }}
+                                >
+                                  + Добавить задачу
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                    {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
+                      <div className="empty-state">
+                        <div className="empty-icon">👤</div>
+                        <p className="empty-title">Нет участников</p>
+                        <p className="empty-desc">Добавьте участников в команду</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

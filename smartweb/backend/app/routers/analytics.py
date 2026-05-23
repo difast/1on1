@@ -12,7 +12,7 @@ MOOD_ORDER = {"great": 4, "good": 3, "neutral": 2, "bad": 1}
 MOOD_EMOJI = {"great": "😊", "good": "🙂", "neutral": "😐", "bad": "😔"}
 
 
-def _member_stats(user_id: int, user_name: str, role: str, meetings: list, tasks: list, now: datetime):
+def _member_stats(user_id: int, user_name: str, role: str, meetings: list, tasks: list, now: datetime, user_created_at=None):
     sorted_mtgs = sorted(meetings, key=lambda m: m.scheduled_date, reverse=True)
     thirty_ago = now - timedelta(days=30)
     ninety_ago = now - timedelta(days=90)
@@ -38,7 +38,9 @@ def _member_stats(user_id: int, user_name: str, role: str, meetings: list, tasks
     mood_seq = [m.mood for m in sorted_mtgs[:6] if m.mood]
 
     flags = []
-    if days_since is None or days_since >= 14:
+    # Only flag "no meeting in 14 days" if the user registered more than 14 days ago
+    days_since_reg = (now - user_created_at).days if user_created_at else 14
+    if days_since_reg >= 14 and (days_since is None or days_since >= 14):
         flags.append("no_meeting_14_days")
     moods_val = [MOOD_ORDER.get(m, 0) for m in mood_seq[:3]]
     if len(moods_val) == 3 and moods_val[0] < moods_val[1] < moods_val[2]:
@@ -105,7 +107,7 @@ def get_lead_analytics(user_id: int, db: Session = Depends(get_db)):
                 Task.team_id == team.id,
             ).all()
             member_stats_list.append(
-                _member_stats(tm.user_id, user.name, tm.role or "member", m_meetings, m_tasks, now)
+                _member_stats(tm.user_id, user.name, tm.role or "member", m_meetings, m_tasks, now, user.created_at)
             )
 
         # Team-level average interval
@@ -176,9 +178,6 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
 
     meetings_90 = [m for m in meetings if m.scheduled_date >= ninety_ago]
 
-    # Lead-initiated = scheduled/confirmed/completed; member-initiated = was requested
-    # We detect member-initiated by original status — no perfect signal, use "requested" meetings
-    # as proxy if they still carry that status, otherwise treat scheduled as lead-initiated
     lead_init = sum(1 for m in meetings_90 if m.status in ("scheduled", "confirmed", "completed"))
     member_init = sum(1 for m in meetings_90 if m.status == "requested")
 
