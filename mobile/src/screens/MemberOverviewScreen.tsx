@@ -42,6 +42,9 @@ export default function MemberOverviewScreen() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [noteLoading, setNoteLoading] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [editNoteLoading, setEditNoteLoading] = useState(false);
 
   const findTeam = useCallback(async () => {
     try {
@@ -121,6 +124,19 @@ export default function MemberOverviewScreen() {
     } catch {
       Alert.alert('Ошибка', 'Не удалось создать заметку');
     } finally { setNoteLoading(false); }
+  };
+
+  const handleEditNote = (n: any) => { setEditingNoteId(n.id); setEditNoteText(n.content); };
+
+  const handleSaveEditNote = async () => {
+    if (!editNoteText.trim() || !editingNoteId) return;
+    setEditNoteLoading(true);
+    try {
+      await updateNote(editingNoteId, { content: editNoteText.trim() });
+      setNotes(prev => prev.map((n: any) => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
+      setEditingNoteId(null);
+    } catch { Alert.alert('Ошибка', 'Не удалось сохранить'); }
+    finally { setEditNoteLoading(false); }
   };
 
   const handleDeleteNote = (noteId: number) => {
@@ -376,23 +392,46 @@ export default function MemberOverviewScreen() {
             </View>
           )}
 
-          {notes.length === 0 && !showNoteForm ? (
+          {notes.filter((n: any) => !n.meeting_id).length === 0 && !showNoteForm ? (
             <View style={styles.notesEmpty}>
               <Text style={styles.notesEmptyText}>Заметок нет. Нажмите «+ Добавить»</Text>
             </View>
           ) : (
-            notes.slice(0, 5).map(n => (
-              <TouchableOpacity
-                key={n.id}
-                style={styles.noteCard}
-                onLongPress={() => handleDeleteNote(n.id)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.noteContent} numberOfLines={2}>{n.content}</Text>
-                <Text style={styles.noteDate}>
-                  {new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
-                </Text>
-              </TouchableOpacity>
+            notes.filter((n: any) => !n.meeting_id).slice(0, 5).map((n: any) => (
+              editingNoteId === n.id ? (
+                <View key={n.id} style={styles.noteForm}>
+                  <TextInput
+                    style={styles.noteInput}
+                    value={editNoteText}
+                    onChangeText={setEditNoteText}
+                    multiline autoFocus
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <View style={styles.noteFormRow}>
+                    <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditingNoteId(null)}>
+                      <Text style={styles.cancelBtnText}>Отмена</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.saveBtn, (!editNoteText.trim() || editNoteLoading) && styles.btnDisabled]}
+                      onPress={handleSaveEditNote} disabled={!editNoteText.trim() || editNoteLoading}
+                    >
+                      <Text style={styles.saveBtnText}>{editNoteLoading ? '...' : 'Сохранить'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  key={n.id} style={styles.noteCard}
+                  onPress={() => handleEditNote(n)}
+                  onLongPress={() => handleDeleteNote(n.id)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.noteContent} numberOfLines={2}>{n.content}</Text>
+                  <Text style={styles.noteDate}>
+                    {new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}
+                  </Text>
+                </TouchableOpacity>
+              )
             ))
           )}
         </View>
