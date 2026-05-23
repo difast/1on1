@@ -5,6 +5,7 @@ import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
+import QuickWidget from './QuickWidget'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -829,6 +830,20 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         {/* Teams view */}
+        <QuickWidget
+          nextMeeting={myMeetings
+            .filter(m => new Date(m.scheduled_date) >= new Date() && m.status !== 'cancelled')
+            .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))[0] || null}
+          nextTask={myTasks.filter(t => t.status !== 'done').sort((a, b) => {
+            if (!a.due_date && !b.due_date) return 0
+            if (!a.due_date) return 1
+            if (!b.due_date) return -1
+            return new Date(a.due_date) - new Date(b.due_date)
+          })[0] || null}
+          onGoMeetings={() => { setActiveView('meetings'); loadMyMeetings() }}
+          onGoTasks={() => setActiveView('tasks')}
+        />
+
         {activeView === 'teams' && (<>
           {teams.length > 0 && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 20 }}>

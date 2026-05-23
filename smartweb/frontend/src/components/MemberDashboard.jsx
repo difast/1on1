@@ -4,6 +4,7 @@ import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
+import QuickWidget from './QuickWidget'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -355,6 +356,40 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               </div>
             )}
 
+            {pastMeetings.length > 0 && (
+              <div>
+                <p className="label" style={{ marginBottom: 12 }}>Последняя встреча с тимлидом</p>
+                {(() => {
+                  const m = pastMeetings[0]
+                  return (
+                    <div className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                      <div style={{
+                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
+                        background: '#f0fdf4', display: 'flex', flexDirection: 'column',
+                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #bbf7d0',
+                      }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)', lineHeight: 1.2 }}>
+                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#86efac' }}>
+                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
+                          {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', day: '2-digit', month: 'long' })}
+                        </p>
+                        {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
+                      </div>
+                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
+                        {statusLabel[m.status] || m.status}
+                      </span>
+                    </div>
+                  )
+                })()}
+              </div>
+            )}
+
             {team.members && team.members.length > 0 && (
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Участники команды</p>
@@ -664,6 +699,18 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {/* Tab: Analytics */}
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
       </div>
+
+      <QuickWidget
+        nextMeeting={upcomingMeetings[0] || null}
+        nextTask={tasks.filter(t => t.status !== 'done').sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0
+          if (!a.due_date) return 1
+          if (!b.due_date) return -1
+          return new Date(a.due_date) - new Date(b.due_date)
+        })[0] || null}
+        onGoMeetings={() => setActiveTab('meetings')}
+        onGoTasks={() => setActiveTab('tasks')}
+      />
 
       {showRequestMeeting && (
         <Modal title="Запросить встречу" onClose={() => setShowRequestMeeting(false)}>
