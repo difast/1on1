@@ -1078,13 +1078,26 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                               </span>
                             </p>
 
-                            <button
-                              onClick={() => { setScheduleMember(member); setShowSchedule(true) }}
-                              className="btn btn-accent btn-sm"
-                              style={{ width: '100%', marginBottom: 12 }}
-                            >
-                              Запланировать встречу
-                            </button>
+                            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+                              <button
+                                onClick={() => { setScheduleMember(member); setShowSchedule(true) }}
+                                className="btn btn-accent btn-sm"
+                                style={{ flex: 1 }}
+                              >
+                                Запланировать
+                              </button>
+                              <button
+                                onClick={() => {
+                                  const room = `1on1-${user.id}-${member.user_id}-${Date.now().toString(36)}`
+                                  window.open(`https://meet.jit.si/${room}`, '_blank')
+                                }}
+                                className="btn btn-secondary btn-sm"
+                                style={{ flexShrink: 0, fontWeight: 600 }}
+                                title={`Созвон с ${member.user_name}`}
+                              >
+                                📹 Созвон
+                              </button>
+                            </div>
 
                             {/* Tasks section */}
                             <div>
