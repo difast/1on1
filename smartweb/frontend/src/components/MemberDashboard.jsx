@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
@@ -35,6 +35,16 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [expandedMeetingNotes, setExpandedMeetingNotes] = useState(new Set())
   const [meetingNoteDrafts, setMeetingNoteDrafts] = useState({})
   const [savingMeetingNote, setSavingMeetingNote] = useState({})
+  const [callLoading, setCallLoading] = useState({})
+
+  const handleStartCall = async (meetingId) => {
+    setCallLoading(prev => ({ ...prev, [meetingId]: true }))
+    try {
+      const { data } = await startCall(meetingId, user.id)
+      window.open(`${data.room_url}?t=${data.token}`, '_blank')
+    } catch { alert('Не удалось начать созвон') }
+    finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
+  }
 
   const saveTeamId = (id) => {
     setTeamId(id)
@@ -328,28 +338,37 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 <p className="label" style={{ marginBottom: 12 }}>Ближайшие встречи</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {upcomingMeetings.slice(0, 2).map(m => (
-                    <div key={m.id} className="meeting-item" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{
-                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
-                        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-                      }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                    <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{
+                          width: 46, height: 46, borderRadius: 'var(--radius-md)',
+                          background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
+                          alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
+                        }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
+                            {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                          </span>
+                          <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
+                            {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
+                            {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                          {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
+                        </div>
+                        <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
+                          {statusLabel[m.status] || m.status}
                         </span>
-                        <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
+                        <button
+                          onClick={() => handleStartCall(m.id)}
+                          disabled={callLoading[m.id]}
+                          style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
+                        >
+                          {callLoading[m.id] ? '...' : '📹 Созвон'}
+                        </button>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
-                          {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                        {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
-                      </div>
-                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                        {statusLabel[m.status] || m.status}
-                      </span>
                     </div>
                   ))}
                 </div>

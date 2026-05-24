@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
@@ -18,6 +18,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [loadingMeetings, setLoadingMeetings] = useState(false)
   const [usersMap, setUsersMap] = useState({})
   const [meetingAction, setMeetingAction] = useState({})
+  const [callLoading, setCallLoading] = useState({})
+
+  const handleStartCall = async (meetingId) => {
+    setCallLoading(prev => ({ ...prev, [meetingId]: true }))
+    try {
+      const { data } = await startCall(meetingId, user.id)
+      window.open(`${data.room_url}?t=${data.token}`, '_blank')
+    } catch { alert('Не удалось начать созвон') }
+    finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
+  }
 
   const [showCreateTeam, setShowCreateTeam] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
@@ -400,6 +410,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: noteState?.expanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
             >
               {noteState?.expanded ? '▾ Заметки' : '▸ Заметки'}{m.notes ? ' ●' : ''}
+            </button>
+          )}
+          {!isPast && !isRequest && (
+            <button
+              onClick={() => handleStartCall(m.id)}
+              disabled={callLoading[m.id]}
+              style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
+            >
+              {callLoading[m.id] ? '...' : '📹 Созвон'}
             </button>
           )}
         </div>

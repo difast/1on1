@@ -42,10 +42,11 @@ async def daily_webhook(request: Request, db: Session = Depends(get_db)):
             db.commit()
 
             anthropic_key = os.getenv("ANTHROPIC_API_KEY")
+            ai_base = os.getenv("ANTHROPIC_BASE_URL", "https://api.aitunnel.ru")
             if anthropic_key and transcript_text:
                 with httpx.Client(timeout=60) as client:
                     r = client.post(
-                        "https://api.anthropic.com/v1/messages",
+                        f"{ai_base}/v1/messages",
                         headers={
                             "x-api-key": anthropic_key,
                             "anthropic-version": "2023-06-01",
