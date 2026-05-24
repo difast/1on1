@@ -17,22 +17,41 @@ router = APIRouter()
 class StartCallBody(BaseModel):
     lead_id: int
     team_id: int
-    member_ids: List[int]  # empty = all members were pre-filtered by caller
+    member_ids: List[int]
+    is_group: bool = False
 
 
 @router.post("/start-call")
 def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db)):
+    from datetime import datetime
     room_name = f"1on1-{body.team_id}-{uuid.uuid4().hex[:8]}"
     room_url = f"https://meet.jit.si/{room_name}"
 
     lead = db.query(User).filter(User.id == body.lead_id).first()
     caller_name = lead.name if lead else "Тимлид"
 
+    meeting_id = None
+    if not body.is_group and len(body.member_ids) == 1:
+        meeting = Meeting(
+            team_id=body.team_id,
+            team_lead_id=body.lead_id,
+            member_id=body.member_ids[0],
+            scheduled_date=datetime.utcnow(),
+            status="in_progress",
+            agenda="Быстрый созвон",
+            jitsi_room_url=room_url,
+            jitsi_room_name=room_name,
+        )
+        db.add(meeting)
+        db.commit()
+        db.refresh(meeting)
+        meeting_id = meeting.id
+
     notif_service = NotificationService(db)
     for member_id in body.member_ids:
         notif_service.call_started(member_id, caller_name, room_url)
 
-    return {"room_url": room_url, "room_name": room_name}
+    return {"room_url": room_url, "room_name": room_name, "meeting_id": meeting_id}
 
 
 # ─── Transcript + AI analysis (background) ───────────────────────────────────

@@ -97,16 +97,44 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   // Spontaneous call modal
   const [showStartCall, setShowStartCall] = useState(false)
   const [callModalLoading, setCallModalLoading] = useState(false)
+  const [callStep, setCallStep] = useState('type') // 'type' | 'members' | 'done'
+  const [callResult, setCallResult] = useState(null) // { room_url, room_name }
+  const [roomUrlCopied, setRoomUrlCopied] = useState(false)
+  const [memberCallLoading, setMemberCallLoading] = useState({})
 
-  const handleStartSpontaneousCall = async (memberIds) => {
+  const openCallModal = () => {
+    setCallStep('type')
+    setCallResult(null)
+    setRoomUrlCopied(false)
+    setShowStartCall(true)
+  }
+
+  const handleStartSpontaneousCall = async (memberIds, isGroup = false) => {
     if (!selectedTeamId || memberIds.length === 0) return
     setCallModalLoading(true)
     try {
-      const { data } = await startSpontaneousCall({ lead_id: user.id, team_id: selectedTeamId, member_ids: memberIds })
-      setShowStartCall(false)
+      const { data } = await startSpontaneousCall({
+        lead_id: user.id, team_id: selectedTeamId, member_ids: memberIds, is_group: isGroup,
+      })
+      setCallResult(data)
+      setCallStep('done')
       window.open(data.room_url, '_blank')
+      loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setCallModalLoading(false) }
+  }
+
+  const handleMemberCardCall = async (memberId) => {
+    if (!selectedTeamId) return
+    setMemberCallLoading(prev => ({ ...prev, [memberId]: true }))
+    try {
+      const { data } = await startSpontaneousCall({
+        lead_id: user.id, team_id: selectedTeamId, member_ids: [memberId], is_group: false,
+      })
+      window.open(data.room_url, '_blank')
+      loadMyMeetings()
+    } catch { alert('Не удалось создать созвон') }
+    finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
 
   // Meeting notes expanded in notes tab
@@ -544,7 +572,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           {activeView === 'teams' && (
             <div style={{ display: 'flex', gap: 8 }}>
               {selectedTeamId && (
-                <button onClick={() => setShowStartCall(true)} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
                   📹 Созвон
                 </button>
               )}
@@ -1109,15 +1137,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 Запланировать
                               </button>
                               <button
-                                onClick={() => {
-                                  const room = `1on1-${user.id}-${member.user_id}-${Date.now().toString(36)}`
-                                  window.open(`https://meet.jit.si/${room}`, '_blank')
-                                }}
+                                onClick={() => handleMemberCardCall(member.user_id)}
+                                disabled={memberCallLoading[member.user_id]}
                                 className="btn btn-secondary btn-sm"
                                 style={{ flexShrink: 0, fontWeight: 600 }}
                                 title={`Созвон с ${member.user_name}`}
                               >
-                                📹 Созвон
+                                {memberCallLoading[member.user_id] ? '...' : '📹 Созвон'}
                               </button>
                             </div>
 
@@ -1250,51 +1276,131 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       {userCardMember && <UserCard user={userCardMember} onClose={() => setUserCardMember(null)} />}
 
       {showStartCall && (
-        <Modal title="Начать созвон" onClose={() => setShowStartCall(false)}>
-          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
-            Участники получат уведомление со ссылкой для входа.
-          </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {teamDetail?.members?.filter(m => m.user_id !== user.id).length > 1 && (
+        <Modal
+          title={callStep === 'done' ? 'Созвон начат' : 'Начать созвон'}
+          onClose={() => { setShowStartCall(false); setCallStep('type'); setCallResult(null); setRoomUrlCopied(false) }}
+        >
+          {/* Step 1: choose type */}
+          {callStep === 'type' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>
+                Выберите тип созвона:
+              </p>
               <button
                 onClick={() => {
                   const all = (teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => m.user_id)
-                  handleStartSpontaneousCall(all)
+                  if (all.length === 0) return alert('Нет участников в команде')
+                  handleStartSpontaneousCall(all, true)
                 }}
                 disabled={callModalLoading}
-                className="btn btn-accent btn-sm"
-                style={{ justifyContent: 'flex-start', gap: 10 }}
+                className="btn btn-accent"
+                style={{ justifyContent: 'flex-start', gap: 12, padding: '14px 16px' }}
               >
-                <span>👥</span> Вся команда
-              </button>
-            )}
-            {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => (
-              <button
-                key={member.user_id}
-                onClick={() => handleStartSpontaneousCall([member.user_id])}
-                disabled={callModalLoading}
-                className="btn btn-secondary btn-sm"
-                style={{ justifyContent: 'flex-start', gap: 10 }}
-              >
-                <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0, width: 24, height: 24, fontSize: 11 }}>
-                  {(member.user_name || '?').charAt(0).toUpperCase()}
+                <span style={{ fontSize: 22 }}>👥</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>Общий созвон</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Вся команда получит приглашение</div>
                 </div>
-                {member.user_name}
-                {member.user_title && (
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{member.user_title}</span>
-                )}
               </button>
-            ))}
-            {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-              <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>
-                Нет участников в команде
+              <button
+                onClick={() => setCallStep('members')}
+                disabled={callModalLoading}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', gap: 12, padding: '14px 16px' }}
+              >
+                <span style={{ fontSize: 22 }}>👤</span>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>Индивидуальный</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Выбрать конкретного участника</div>
+                </div>
+              </button>
+              {callModalLoading && (
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center' }}>
+                  Создаём комнату и отправляем уведомления...
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Step 2: pick member */}
+          {callStep === 'members' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={() => setCallStep('type')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'left', padding: 0, marginBottom: 4 }}
+              >
+                ← Назад
+              </button>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
+                Выберите участника:
               </p>
-            )}
-          </div>
-          {callModalLoading && (
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 12, textAlign: 'center' }}>
-              Создаём комнату и отправляем уведомления...
-            </p>
+              {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => (
+                <button
+                  key={member.user_id}
+                  onClick={() => handleStartSpontaneousCall([member.user_id], false)}
+                  disabled={callModalLoading}
+                  className="btn btn-secondary btn-sm"
+                  style={{ justifyContent: 'flex-start', gap: 10 }}
+                >
+                  <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0, width: 28, height: 28, fontSize: 12 }}>
+                    {(member.user_name || '?').charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ textAlign: 'left' }}>
+                    <div style={{ fontWeight: 600 }}>{member.user_name}</div>
+                    {member.user_title && <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{member.user_title}</div>}
+                  </div>
+                </button>
+              ))}
+              {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
+                <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>
+                  Нет участников в команде
+                </p>
+              )}
+              {callModalLoading && (
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 4 }}>
+                  Создаём комнату и отправляем уведомления...
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Step 3: done — show invite link */}
+          {callStep === 'done' && callResult && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ textAlign: 'center', fontSize: 40 }}>🎉</div>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', margin: 0 }}>
+                Комната создана! Участники получили уведомления.
+              </p>
+              <div style={{
+                background: 'var(--color-bg-secondary)',
+                borderRadius: 8, padding: '10px 14px',
+                border: '1px solid var(--color-border)',
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>Ссылка-приглашение:</div>
+                <div style={{
+                  fontSize: 13, color: 'var(--color-accent)', wordBreak: 'break-all',
+                  fontFamily: 'monospace',
+                }}>
+                  {callResult.room_url}
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(callResult.room_url).then(() => setRoomUrlCopied(true))
+                }}
+                className={roomUrlCopied ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
+                style={{ gap: 8 }}
+              >
+                {roomUrlCopied ? '✓ Скопировано!' : '📋 Копировать ссылку'}
+              </button>
+              <button
+                onClick={() => window.open(callResult.room_url, '_blank')}
+                className="btn btn-accent btn-sm"
+                style={{ gap: 8 }}
+              >
+                📹 Открыть созвон
+              </button>
+            </div>
           )}
         </Modal>
       )}
