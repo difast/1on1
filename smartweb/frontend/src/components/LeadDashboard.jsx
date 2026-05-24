@@ -1,5 +1,5 @@
-import { useState, useEffect, useCallback } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall } from '../api/client'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
@@ -19,14 +19,42 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [usersMap, setUsersMap] = useState({})
   const [meetingAction, setMeetingAction] = useState({})
   const [callLoading, setCallLoading] = useState({})
+  const [uploadLoading, setUploadLoading] = useState({})
+  const [uploadDone, setUploadDone] = useState({})
+  const fileInputRefs = useRef({})
 
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      window.open(`${data.room_url}?t=${data.token}`, '_blank')
+      window.open(data.room_url, '_blank')
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
+  }
+
+  const handleUploadRecording = async (meetingId, file) => {
+    if (!file) return
+    setUploadLoading(prev => ({ ...prev, [meetingId]: true }))
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      await uploadRecording(meetingId, formData)
+      setUploadDone(prev => ({ ...prev, [meetingId]: true }))
+      // Poll for AI summary every 12s (background task ~1-2 min)
+      const poll = async (attempts = 0) => {
+        if (attempts > 15) return
+        setTimeout(async () => {
+          try {
+            const { data } = await getTranscript(meetingId)
+            if (data.ai_summary) {
+              setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, ai_summary: data.ai_summary, call_transcript: data.transcript } : m))
+            } else { poll(attempts + 1) }
+          } catch {}
+        }, 12000)
+      }
+      poll()
+    } catch { alert('Не удалось загрузить запись') }
+    finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
   const [showCreateTeam, setShowCreateTeam] = useState(false)
@@ -412,6 +440,33 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {noteState?.expanded ? '▾ Заметки' : '▸ Заметки'}{m.notes ? ' ●' : ''}
             </button>
           )}
+          {isPast && !isRequest && !m.ai_summary && (
+            <>
+              <input
+                ref={el => fileInputRefs.current[m.id] = el}
+                type="file"
+                accept="audio/*,video/*"
+                style={{ display: 'none' }}
+                onChange={e => { if (e.target.files[0]) handleUploadRecording(m.id, e.target.files[0]) }}
+              />
+              <button
+                onClick={() => fileInputRefs.current[m.id]?.click()}
+                disabled={uploadLoading[m.id] || uploadDone[m.id]}
+                title="Загрузить запись созвона для AI-анализа"
+                style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
+              >
+                {uploadLoading[m.id] ? '⏳ Загрузка...' : uploadDone[m.id] ? '✓ Анализирую...' : '🎙 Запись'}
+              </button>
+            </>
+          )}
+          {isPast && !isRequest && m.ai_summary && (
+            <span
+              title={m.ai_summary}
+              style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}
+            >
+              ✨ AI
+            </span>
+          )}
           {!isPast && !isRequest && (
             <button
               onClick={() => handleStartCall(m.id)}
@@ -446,6 +501,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </ul>
           ) : null
         })()}
+        {m.ai_summary && (
+          <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--blue-50)', borderRadius: 8, border: '1px solid var(--blue-200)', borderLeft: '3px solid var(--color-accent)' }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>✨ AI Резюме</p>
+            <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.7, margin: 0 }}>{m.ai_summary}</p>
+          </div>
+        )}
       </div>
     )
   }

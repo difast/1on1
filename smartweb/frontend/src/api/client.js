@@ -36,6 +36,10 @@ export const confirmMeeting = (id) => api.post(`/meetings/${id}/confirm`)
 export const declineMeeting = (id) => api.post(`/meetings/${id}/decline`)
 export const startCall = (meetingId, userId) =>
   api.post(`/meetings/${meetingId}/start-call`, null, { params: { user_id: userId } })
+export const uploadRecording = (meetingId, formData) =>
+  api.post(`/video/meetings/${meetingId}/upload-recording`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
+export const getTranscript = (meetingId) =>
+  api.get(`/video/meetings/${meetingId}/transcript`)
 
 // Scheduling
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
