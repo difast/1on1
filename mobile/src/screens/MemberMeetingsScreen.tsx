@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl,
+  RefreshControl, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { useAuth } from '../context/auth';
-import { getMeetings, requestMeeting, getMemberTeam } from '../lib/api';
+import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
@@ -28,6 +28,12 @@ export default function MemberMeetingsScreen() {
   const [meetingTopic, setMeetingTopic] = useState('');
   const [formLoading, setFormLoading] = useState(false);
 
+  // Meeting notes
+  const [notes, setNotes] = useState<any[]>([]);
+  const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
+  const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
+  const [savingNote, setSavingNote] = useState<Record<number, boolean>>({});
+
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['45%', '75%'], []);
 
@@ -46,14 +52,48 @@ export default function MemberMeetingsScreen() {
     finally { setLoading(false); }
   }, [user]);
 
+  const loadNotes = useCallback(async () => {
+    try {
+      const data = await getNotes(user!.id) as any[];
+      setNotes(data || []);
+      const drafts: Record<number, string> = {};
+      for (const n of (data || [])) {
+        if (n.meeting_id) drafts[n.meeting_id] = n.content;
+      }
+      setNoteDrafts(drafts);
+    } catch {}
+  }, [user]);
+
   useEffect(() => {
     findTeamId();
     loadMeetings();
+    loadNotes();
   }, [user?.id]);
+
+  const handleSaveNote = async (meetingId: number) => {
+    const content = (noteDrafts[meetingId] ?? '').trim();
+    if (!content || !user) return;
+    setSavingNote(prev => ({ ...prev, [meetingId]: true }));
+    try {
+      const existing = notes.find((n: any) => n.meeting_id === meetingId);
+      if (existing) {
+        await updateNote(existing.id, { content });
+        setNotes(prev => prev.map((n: any) => n.id === existing.id ? { ...n, content } : n));
+      } else {
+        const note = await createNote({ user_id: user.id, content, meeting_id: meetingId }) as any;
+        setNotes(prev => [...prev, note]);
+      }
+      setExpandedNoteId(null);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось сохранить заметку');
+    } finally {
+      setSavingNote(prev => ({ ...prev, [meetingId]: false }));
+    }
+  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadMeetings();
+    await Promise.all([loadMeetings(), loadNotes()]);
     setRefreshing(false);
   };
 
@@ -137,7 +177,48 @@ export default function MemberMeetingsScreen() {
             {past.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Прошедшие</Text>
-                {past.map(m => <MeetingItem key={m.id} meeting={m} />)}
+                {past.map(m => {
+                  const hasNote = notes.some((n: any) => n.meeting_id === m.id);
+                  const isOpen = expandedNoteId === m.id;
+                  const draft = noteDrafts[m.id] ?? '';
+                  const saving = savingNote[m.id] ?? false;
+                  return (
+                    <View key={m.id} style={styles.pastCard}>
+                      <MeetingItem meeting={m} />
+                      <TouchableOpacity
+                        style={styles.noteToggleBtn}
+                        onPress={() => setExpandedNoteId(isOpen ? null : m.id)}
+                      >
+                        <Text style={[styles.noteToggleText, hasNote && styles.noteToggleActive]}>
+                          {hasNote ? '● ' : ''}{isOpen ? '▾ Заметки' : '▸ Заметки'}
+                        </Text>
+                      </TouchableOpacity>
+                      {isOpen && (
+                        <View style={styles.noteEditor}>
+                          <TextInput
+                            style={styles.noteInput}
+                            value={draft}
+                            onChangeText={v => setNoteDrafts(prev => ({ ...prev, [m.id]: v }))}
+                            placeholder="Добавьте заметку по встрече..."
+                            placeholderTextColor={colors.textMuted}
+                            multiline autoFocus
+                          />
+                          <View style={styles.noteEditorRow}>
+                            <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setExpandedNoteId(null)}>
+                              <Text style={styles.noteCancelText}>Закрыть</Text>
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.noteSaveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
+                              onPress={() => handleSaveNote(m.id)} disabled={!draft.trim() || saving}
+                            >
+                              <Text style={styles.noteSaveText}>{saving ? '...' : 'Сохранить'}</Text>
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      )}
+                    </View>
+                  );
+                })}
               </View>
             )}
           </>
@@ -244,4 +325,23 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   sheetBtnSecondaryText: { fontSize: 15, fontWeight: '500', color: c.textSecondary },
   btnDisabled: { opacity: 0.6 },
+  pastCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
+  },
+  noteToggleBtn: { paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border },
+  noteToggleText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
+  noteToggleActive: { color: c.accent },
+  noteEditor: { borderTopWidth: 1, borderTopColor: c.border, padding: 12, gap: 10 },
+  noteInput: {
+    fontSize: 14, color: c.textPrimary, minHeight: 70, textAlignVertical: 'top',
+    borderWidth: 1, borderColor: c.border, borderRadius: 8, padding: 10, backgroundColor: c.bg,
+  },
+  noteEditorRow: { flexDirection: 'row', gap: 8 },
+  noteCancelBtn: {
+    flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    paddingVertical: 9, alignItems: 'center', backgroundColor: c.surface2 ?? c.surface,
+  },
+  noteCancelText: { fontSize: 13, fontWeight: '500', color: c.textSecondary },
+  noteSaveBtn: { flex: 1, backgroundColor: c.accent, borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
+  noteSaveText: { fontSize: 13, fontWeight: '600', color: '#fff' },
 });

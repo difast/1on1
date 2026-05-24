@@ -10,7 +10,7 @@ import { useAuth } from '../context/auth';
 import {
   getTeams, getTeam, createTeam,
   addMember, createMeeting, getTasks, createTask, getUserByEmail,
-  regenerateInviteCode, getNotes, createNote, deleteNote,
+  regenerateInviteCode, getNotes, createNote, updateNote, deleteNote,
 } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -56,6 +56,9 @@ export default function LeadTeamsScreen() {
   const [showNoteForm, setShowNoteForm] = useState(false);
   const [noteText, setNoteText] = useState('');
   const [noteLoading, setNoteLoading] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [editNoteLoading, setEditNoteLoading] = useState(false);
 
   const [sheetType, setSheetType] = useState<SheetType>(null);
   const [scheduleMember, setScheduleMember] = useState<any>(null);
@@ -132,6 +135,22 @@ export default function LeadTeamsScreen() {
         try { await deleteNote(id); setNotes(prev => prev.filter(n => n.id !== id)); } catch {}
       }},
     ]);
+  };
+
+  const handleEditNote = (n: any) => {
+    setEditingNoteId(n.id);
+    setEditNoteText(n.content);
+  };
+
+  const handleSaveEditNote = async () => {
+    if (!editNoteText.trim() || !editingNoteId) return;
+    setEditNoteLoading(true);
+    try {
+      await updateNote(editingNoteId, { content: editNoteText.trim() });
+      setNotes(prev => prev.map(n => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
+      setEditingNoteId(null);
+    } catch { Alert.alert('Ошибка', 'Не удалось сохранить'); }
+    finally { setEditNoteLoading(false); }
   };
 
   useEffect(() => { loadTeams(); loadNotes(); }, [user?.id]);
@@ -303,11 +322,37 @@ export default function LeadTeamsScreen() {
           {notes.length === 0 && !showNoteForm ? (
             <Text style={styles.notesEmpty}>Нет заметок. Нажмите «+ Добавить»</Text>
           ) : (
-            notes.slice(0, 5).map(n => (
-              <TouchableOpacity key={n.id} style={styles.noteCard} onLongPress={() => handleDeleteNote(n.id)} activeOpacity={0.8}>
-                <Text style={styles.noteContent} numberOfLines={2}>{n.content}</Text>
-                <Text style={styles.noteDate}>{new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</Text>
-              </TouchableOpacity>
+            notes.filter((n: any) => !n.meeting_id).slice(0, 5).map(n => (
+              editingNoteId === n.id ? (
+                <View key={n.id} style={styles.noteForm}>
+                  <TextInput
+                    style={styles.noteInput}
+                    value={editNoteText}
+                    onChangeText={setEditNoteText}
+                    multiline autoFocus
+                    placeholderTextColor={colors.textMuted}
+                  />
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setEditingNoteId(null)}>
+                      <Text style={styles.noteCancelText}>Отмена</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.noteSaveBtn, (!editNoteText.trim() || editNoteLoading) && { opacity: 0.5 }]}
+                      onPress={handleSaveEditNote} disabled={!editNoteText.trim() || editNoteLoading}
+                    >
+                      <Text style={styles.noteSaveText}>{editNoteLoading ? '...' : 'Сохранить'}</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity key={n.id} style={styles.noteCard}
+                  onPress={() => handleEditNote(n)}
+                  onLongPress={() => handleDeleteNote(n.id)} activeOpacity={0.8}
+                >
+                  <Text style={styles.noteContent} numberOfLines={2}>{n.content}</Text>
+                  <Text style={styles.noteDate}>{new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}</Text>
+                </TouchableOpacity>
+              )
             ))
           )}
         </View>
