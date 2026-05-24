@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markAllRead, updateUser } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
@@ -8,6 +8,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [scrolled, setScrolled] = useState(false)
+  const [activeCallNotif, setActiveCallNotif] = useState(null)
 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -41,10 +42,29 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
   useEffect(() => {
-    if (currentUser?.id) {
-      getUnreadCount(currentUser.id).then(r => setUnreadCount(r.data.unread_count)).catch(() => {})
+    if (!currentUser?.id) return
+    let lastCount = 0
+    const checkNotifs = async () => {
+      try {
+        const { data } = await getUnreadCount(currentUser.id)
+        const count = data.unread_count
+        setUnreadCount(count)
+        if (count > lastCount) {
+          const { data: notifs } = await getNotifications(currentUser.id, true)
+          setNotifications(prev => {
+            const ids = new Set(prev.map(n => n.id))
+            return [...notifs.filter(n => !ids.has(n.id)), ...prev]
+          })
+          const call = notifs.find(n => n.type === 'call_started' && n.data?.room_url)
+          if (call) setActiveCallNotif(call)
+        }
+        lastCount = count
+      } catch {}
     }
-  }, [currentUser])
+    checkNotifs()
+    const interval = setInterval(checkNotifs, 20000)
+    return () => clearInterval(interval)
+  }, [currentUser?.id])
 
   useEffect(() => {
     setProfileForm({
@@ -236,6 +256,42 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
         </div>
       </header>
 
+      {/* Active call banner */}
+      {activeCallNotif && (
+        <div style={{
+          position: 'fixed', top: 58, left: 240, right: 0, zIndex: 120,
+          background: 'var(--color-accent)', color: '#fff',
+          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
+          boxShadow: '0 2px 12px rgba(0,97,255,0.3)',
+        }}>
+          <span style={{ fontSize: 18 }}>📹</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{activeCallNotif.title}</span>
+          </div>
+          <button
+            onClick={() => {
+              window.open(activeCallNotif.data.room_url, '_blank')
+              markRead(activeCallNotif.id).catch(() => {})
+              setActiveCallNotif(null)
+            }}
+            style={{
+              padding: '6px 18px', fontSize: 13, fontWeight: 700,
+              background: '#fff', color: 'var(--color-accent)',
+              border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            Присоединиться
+          </button>
+          <button
+            onClick={() => setActiveCallNotif(null)}
+            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 18, flexShrink: 0, padding: 4 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Password change modal */}
       {showPasswordModal && (
         <div className="overlay-center" onClick={() => setShowPasswordModal(false)}>
@@ -311,12 +367,32 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
                   key={n.id}
                   style={{
                     padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
-                    background: !n.read ? 'var(--blue-50)' : 'transparent',
+                    background: n.type === 'call_started' && !n.read
+                      ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
+                      : !n.read ? 'var(--blue-50)' : 'transparent',
                     transition: 'background 0.15s',
                   }}
                 >
                   <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
                   <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
+                  {n.type === 'call_started' && n.data?.room_url && (
+                    <button
+                      onClick={() => {
+                        window.open(n.data.room_url, '_blank')
+                        markRead(n.id).catch(() => {})
+                        setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                        setUnreadCount(c => Math.max(0, c - 1))
+                        if (activeCallNotif?.id === n.id) setActiveCallNotif(null)
+                      }}
+                      style={{
+                        marginTop: 8, padding: '5px 14px', fontSize: 13, fontWeight: 600,
+                        background: 'var(--color-accent)', color: '#fff',
+                        border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                      }}
+                    >
+                      Присоединиться →
+                    </button>
+                  )}
                 </div>
               ))
             )}

@@ -103,6 +103,15 @@ class NotificationService:
             data={"meeting_id": meeting_id},
         )
 
+    def call_started(self, user_id: int, caller_name: str, room_url: str):
+        return self.create_notification(
+            user_id=user_id,
+            type="call_started",
+            title=f"📹 {caller_name} начал созвон",
+            body="Нажмите «Присоединиться» чтобы войти",
+            data={"room_url": room_url},
+        )
+
     def task_assigned(self, user_id: int, task_id: int, task_title: str, assigner_name: str):
         return self.create_notification(
             user_id=user_id,

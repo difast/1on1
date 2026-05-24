@@ -141,10 +141,16 @@ def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends
         db.refresh(meeting)
 
     user = db.query(User).filter(User.id == user_id).first()
+    caller_name = user.name if user else "Участник"
+
+    # Notify the other participant about the call
+    notify_id = meeting.member_id if user_id == meeting.team_lead_id else meeting.team_lead_id
+    NotificationService(db).call_started(notify_id, caller_name, meeting.jitsi_room_url)
+
     return {
         "room_url": meeting.jitsi_room_url,
         "room_name": meeting.jitsi_room_name,
-        "user_name": user.name if user else "Участник",
+        "user_name": caller_name,
         "is_moderator": user_id == meeting.team_lead_id,
     }
 

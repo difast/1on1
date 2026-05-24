@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall } from '../api/client'
 import Layout from './Layout'
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
@@ -93,6 +93,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Analytics force-refresh key
   const [analyticsKey, setAnalyticsKey] = useState(0)
+
+  // Spontaneous call modal
+  const [showStartCall, setShowStartCall] = useState(false)
+  const [callModalLoading, setCallModalLoading] = useState(false)
+
+  const handleStartSpontaneousCall = async (memberIds) => {
+    if (!selectedTeamId || memberIds.length === 0) return
+    setCallModalLoading(true)
+    try {
+      const { data } = await startSpontaneousCall({ lead_id: user.id, team_id: selectedTeamId, member_ids: memberIds })
+      setShowStartCall(false)
+      window.open(data.room_url, '_blank')
+    } catch { alert('Не удалось создать созвон') }
+    finally { setCallModalLoading(false) }
+  }
 
   // Meeting notes expanded in notes tab
   const [notesMeetingExpanded, setNotesMeetingExpanded] = useState(new Set())
@@ -527,9 +542,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           {activeView === 'teams' && (
-            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
-              + Создать команду
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {selectedTeamId && (
+                <button onClick={() => setShowStartCall(true)} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                  📹 Созвон
+                </button>
+              )}
+              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
+                + Создать команду
+              </button>
+            </div>
           )}
         </div>
 
@@ -1226,6 +1248,56 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       </div>
 
       {userCardMember && <UserCard user={userCardMember} onClose={() => setUserCardMember(null)} />}
+
+      {showStartCall && (
+        <Modal title="Начать созвон" onClose={() => setShowStartCall(false)}>
+          <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16 }}>
+            Участники получат уведомление со ссылкой для входа.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {teamDetail?.members?.filter(m => m.user_id !== user.id).length > 1 && (
+              <button
+                onClick={() => {
+                  const all = (teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => m.user_id)
+                  handleStartSpontaneousCall(all)
+                }}
+                disabled={callModalLoading}
+                className="btn btn-accent btn-sm"
+                style={{ justifyContent: 'flex-start', gap: 10 }}
+              >
+                <span>👥</span> Вся команда
+              </button>
+            )}
+            {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => (
+              <button
+                key={member.user_id}
+                onClick={() => handleStartSpontaneousCall([member.user_id])}
+                disabled={callModalLoading}
+                className="btn btn-secondary btn-sm"
+                style={{ justifyContent: 'flex-start', gap: 10 }}
+              >
+                <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0, width: 24, height: 24, fontSize: 11 }}>
+                  {(member.user_name || '?').charAt(0).toUpperCase()}
+                </div>
+                {member.user_name}
+                {member.user_title && (
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{member.user_title}</span>
+                )}
+              </button>
+            ))}
+            {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
+              <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>
+                Нет участников в команде
+              </p>
+            )}
+          </div>
+          {callModalLoading && (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginTop: 12, textAlign: 'center' }}>
+              Создаём комнату и отправляем уведомления...
+            </p>
+          )}
+        </Modal>
+      )}
 
       {showCreateTeam && (
         <Modal title="Создать команду" onClose={() => setShowCreateTeam(false)}>

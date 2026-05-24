@@ -1,5 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import List
 import httpx, os, json, uuid, asyncio
 from app.database import get_db, SessionLocal
 from app.models.meeting import Meeting
@@ -8,6 +10,29 @@ from app.models.user import User
 from app.services.notification_service import NotificationService
 
 router = APIRouter()
+
+
+# ─── Spontaneous call ────────────────────────────────────────────────────────
+
+class StartCallBody(BaseModel):
+    lead_id: int
+    team_id: int
+    member_ids: List[int]  # empty = all members were pre-filtered by caller
+
+
+@router.post("/start-call")
+def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db)):
+    room_name = f"1on1-{body.team_id}-{uuid.uuid4().hex[:8]}"
+    room_url = f"https://meet.jit.si/{room_name}"
+
+    lead = db.query(User).filter(User.id == body.lead_id).first()
+    caller_name = lead.name if lead else "Тимлид"
+
+    notif_service = NotificationService(db)
+    for member_id in body.member_ids:
+        notif_service.call_started(member_id, caller_name, room_url)
+
+    return {"room_url": room_url, "room_name": room_name}
 
 
 # ─── Transcript + AI analysis (background) ───────────────────────────────────
