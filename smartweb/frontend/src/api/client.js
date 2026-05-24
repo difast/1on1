@@ -34,6 +34,8 @@ export const updateMeeting = (id, data) => api.patch(`/meetings/${id}`, data)
 export const requestMeeting = (data) => api.post('/meetings/request', data)
 export const confirmMeeting = (id) => api.post(`/meetings/${id}/confirm`)
 export const declineMeeting = (id) => api.post(`/meetings/${id}/decline`)
+export const startCall = (meetingId, userId) =>
+  api.post(`/meetings/${meetingId}/start-call`, null, { params: { user_id: userId } })
 
 // Scheduling
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
