@@ -20,6 +20,9 @@ class MeetingOut(BaseModel):
     notes: Optional[str]
     agenda: Optional[str]
     context_from_last: Optional[str]
+    daily_room_url: Optional[str] = None
+    daily_room_name: Optional[str] = None
+    call_transcript: Optional[str] = None
     created_at: datetime
 
     class Config:

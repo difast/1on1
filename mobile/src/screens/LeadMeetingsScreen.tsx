@@ -1,11 +1,11 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, TextInput, Alert,
+  RefreshControl, TextInput, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote } from '../lib/api';
+import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
@@ -29,6 +29,21 @@ export default function LeadMeetingsScreen() {
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
   const [savingNote, setSavingNote] = useState<Record<number, boolean>>({});
+  const [callLoading, setCallLoading] = useState<Record<number, boolean>>({});
+
+  const handleStartCall = async (meetingId: number) => {
+    if (!user) return;
+    setCallLoading(prev => ({ ...prev, [meetingId]: true }));
+    try {
+      const data = await startCall(meetingId, user.id);
+      const url = `${data.room_url}?t=${data.token}`;
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось начать созвон');
+    } finally {
+      setCallLoading(prev => ({ ...prev, [meetingId]: false }));
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -185,11 +200,21 @@ export default function LeadMeetingsScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Предстоящие</Text>
                 {upcoming.map(m => (
-                  <MeetingItem
-                    key={m.id}
-                    meeting={m}
-                    subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
-                  />
+                  <View key={m.id} style={styles.upcomingCard}>
+                    <MeetingItem
+                      meeting={m}
+                      subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
+                    />
+                    <TouchableOpacity
+                      style={[styles.callBtn, callLoading[m.id] && styles.btnDisabled]}
+                      onPress={() => handleStartCall(m.id)}
+                      disabled={callLoading[m.id]}
+                    >
+                      <Text style={styles.callBtnText}>
+                        {callLoading[m.id] ? 'Подключение...' : '📹 Начать созвон'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 ))}
               </View>
             )}
@@ -285,6 +310,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   declineBtnText: { fontSize: 14, fontWeight: '600', color: c.danger },
   btnDisabled: { opacity: 0.6 },
+
+  // Upcoming with call button
+  upcomingCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
+  },
+  callBtn: {
+    backgroundColor: '#0061ff', paddingVertical: 10,
+    alignItems: 'center', borderTopWidth: 1, borderTopColor: c.border,
+  },
+  callBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 
   // Past meeting with notes
   pastMeetingCard: {

@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+import os, time, httpx
 from app.database import get_db
 from app.models.meeting import Meeting
 from app.models.team import Team, TeamMember
@@ -124,6 +125,57 @@ def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
     NotificationService(db).meeting_confirmed(meeting.member_id, lead_name, meeting.id, when)
 
     return meeting
+
+@router.post("/{meeting_id}/start-call")
+def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends(get_db)):
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    api_key = os.getenv("DAILY_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="Daily.co not configured")
+
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    exp = int(time.time()) + 7200
+
+    if not meeting.daily_room_name:
+        room_name = f"1on1-{meeting_id}"
+        resp = httpx.post("https://api.daily.co/v1/rooms", headers=headers, json={
+            "name": room_name,
+            "properties": {
+                "exp": exp,
+                "enable_recording": "cloud",
+                "enable_transcription": "deepgram",
+            },
+        }, timeout=15)
+        if resp.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail=f"Daily room creation failed: {resp.text}")
+        room = resp.json()
+        meeting.daily_room_name = room["name"]
+        meeting.daily_room_url = room["url"]
+        db.commit()
+        db.refresh(meeting)
+
+    user = db.query(User).filter(User.id == user_id).first()
+    is_owner = user_id == meeting.team_lead_id
+    token_resp = httpx.post("https://api.daily.co/v1/meeting-tokens", headers=headers, json={
+        "properties": {
+            "room_name": meeting.daily_room_name,
+            "user_name": user.name if user else "Участник",
+            "is_owner": is_owner,
+            "exp": exp,
+        },
+    }, timeout=15)
+    if token_resp.status_code != 200:
+        raise HTTPException(status_code=500, detail="Failed to create meeting token")
+
+    return {
+        "room_url": meeting.daily_room_url,
+        "token": token_resp.json()["token"],
+        "room_name": meeting.daily_room_name,
+    }
+
 
 @router.post("/{meeting_id}/decline", response_model=MeetingOut)
 def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
