@@ -15,9 +15,10 @@ class Meeting(Base):
     notes = Column(Text, nullable=True)
     agenda = Column(Text, nullable=True)
     context_from_last = Column(Text, nullable=True)
-    daily_room_url = Column(String(500), nullable=True)
-    daily_room_name = Column(String(200), nullable=True)
+    jitsi_room_url = Column(String(500), nullable=True)
+    jitsi_room_name = Column(String(200), nullable=True)
     call_transcript = Column(Text, nullable=True)
+    ai_summary = Column(Text, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 

@@ -103,6 +103,15 @@ class NotificationService:
             data={"meeting_id": meeting_id},
         )
 
+    def task_assigned(self, user_id: int, task_id: int, task_title: str, assigner_name: str):
+        return self.create_notification(
+            user_id=user_id,
+            type="new_task",
+            title="Новая задача",
+            body=f"{assigner_name}: {task_title}",
+            data={"task_id": task_id},
+        )
+
     def burnout_alert(self, user_id: int, member_name: str, reschedule_count: int):
         return self.create_notification(
             user_id=user_id,
