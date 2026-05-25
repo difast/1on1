@@ -6,6 +6,7 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
+import MoodPrompt from './MoodPrompt'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -849,6 +850,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => setActiveCall(null)}
       />
     )}
+    <MoodPrompt teamId={teamId} />
     </>
   )
 }

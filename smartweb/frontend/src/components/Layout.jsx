@@ -24,6 +24,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
   const userMenuRef = useRef(null)
+  const notifRef = useRef(null)
+  const [switchingRole, setSwitchingRole] = useState(false)
 
   // Dark theme — per-user preference; defaults to dark when no preference stored
   const themeKey = (id) => `web_theme_${id}`
@@ -123,6 +125,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
         setShowUserMenu(false)
       }
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        setShowNotifications(false)
+      }
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
@@ -135,6 +140,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     }, 1000)
     return () => clearInterval(timer)
   }, [toasts.length])
+
+  const handleSwitchRole = async () => {
+    if (!currentUser?.id || switchingRole) return
+    const newRole = currentUser.role === 'team_lead' ? 'member' : 'team_lead'
+    setSwitchingRole(true)
+    try {
+      await updateUser(currentUser.id, { role: newRole })
+      const updated = { ...currentUser, role: newRole }
+      localStorage.setItem('smart_user', JSON.stringify(updated))
+      if (onUserUpdate) onUserUpdate(updated)
+    } catch { } finally {
+      setSwitchingRole(false)
+      setShowUserMenu(false)
+    }
+  }
 
   const toggleDark = () => {
     const next = !isDark
@@ -245,7 +265,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </nav>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <NotificationBell count={unreadCount} onClick={toggleNotifications} />
+          <div ref={notifRef} style={{ position: 'relative' }}>
+            <NotificationBell count={unreadCount} onClick={toggleNotifications} />
+          </div>
           <div ref={userMenuRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowUserMenu(v => !v)}
@@ -275,6 +297,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </MenuItemBtn>
                 <MenuItemBtn onClick={toggleDark}>
                   {isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема'}
+                </MenuItemBtn>
+                <MenuItemBtn onClick={handleSwitchRole}>
+                  {switchingRole ? '⏳ Переключение...' : currentUser?.role === 'team_lead' ? '👤 Войти как участник' : '👑 Войти как тимлид'}
                 </MenuItemBtn>
                 <MenuItemBtn onClick={() => setShowUserMenu(false)}>
                   ❓ Помощь

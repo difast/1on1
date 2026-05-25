@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
-import { getLeadAnalytics } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary } from '../api/client'
+
+const SCORE_EMOJI = ['', '😢', '😕', '😐', '🙂', '😄']
+const SCORE_COLOR = ['', '#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981']
 
 const MOOD_EMOJI = { great: '😊', good: '🙂', neutral: '😐', bad: '😔' }
 const FLAG_LABELS = {
@@ -134,11 +137,19 @@ export default function LeadAnalytics({ user }) {
   const [loading, setLoading] = useState(true)
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
   const [expandedMembers, setExpandedMembers] = useState(new Set())
+  const [moodByTeam, setMoodByTeam] = useState({})
 
   useEffect(() => {
     setLoading(true)
     getLeadAnalytics(user.id)
-      .then(r => setData(r.data))
+      .then(r => {
+        setData(r.data)
+        r.data.teams.forEach(t => {
+          getTeamMoodSummary(t.team_id)
+            .then(mr => setMoodByTeam(prev => ({ ...prev, [t.team_id]: mr.data })))
+            .catch(() => {})
+        })
+      })
       .catch(() => setData(null))
       .finally(() => setLoading(false))
   }, [user.id])
@@ -297,6 +308,51 @@ export default function LeadAnalytics({ user }) {
           </div>
         </div>
       )}
+
+      {/* Team mood section */}
+      {(() => {
+        const mood = moodByTeam[team.team_id]
+        if (!mood) return null
+        const activeDays = mood.days.filter(d => d.count > 0)
+        if (activeDays.length === 0 && mood.total === 0) return null
+        return (
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+              <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>🌙 Настроение команды (7 дней)</span>
+              {mood.overall_avg && (
+                <span style={{ fontSize: 20 }} title={`Средний балл: ${mood.overall_avg}`}>
+                  {SCORE_EMOJI[Math.round(mood.overall_avg)]}
+                </span>
+              )}
+              {mood.overall_avg && (
+                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                  ср. {mood.overall_avg}/5 · {mood.total} отзывов
+                </span>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
+              {mood.days.map((d, i) => {
+                const pct = d.avg ? (d.avg / 5) : 0
+                const color = d.avg ? SCORE_COLOR[Math.round(d.avg)] : 'var(--gray-200)'
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, height: '100%', justifyContent: 'flex-end' }}>
+                    {d.avg && <span style={{ fontSize: 14 }} title={`${d.avg}/5`}>{SCORE_EMOJI[Math.round(d.avg)]}</span>}
+                    <div style={{
+                      width: '100%',
+                      height: pct > 0 ? `${Math.max(pct * 52, 4)}px` : '4px',
+                      background: color,
+                      borderRadius: '4px 4px 0 0',
+                      opacity: d.count > 0 ? 1 : 0.25,
+                      transition: 'height 0.4s var(--ease-spring)',
+                    }} />
+                    <div style={{ fontSize: 9, color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>{d.day}</div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Per-member details */}
       <div>

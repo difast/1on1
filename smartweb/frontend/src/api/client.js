@@ -71,4 +71,8 @@ export const createNote = (data) => api.post('/notes/', data)
 export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
+// Mood
+export const submitMood = (data) => api.post('/mood/', data)
+export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)
+
 export default api
