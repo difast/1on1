@@ -310,7 +310,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)} onNavigate={type => {
+        if (type === 'new_task') setActiveTab('tasks')
+        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
+      }}>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
@@ -390,6 +393,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
                           </p>
                           {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
+                          {m.context_from_last && (
+                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                              💬 {m.context_from_last}
+                            </p>
+                          )}
                         </div>
                         <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
                           {statusLabel[m.status] || m.status}

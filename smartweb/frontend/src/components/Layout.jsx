@@ -3,12 +3,23 @@ import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser } f
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
-export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall }) {
+const TOAST_META = {
+  new_task:           { icon: '📋', color: '#4f46e5' },
+  meeting_scheduled:  { icon: '📅', color: '#0061ff' },
+  meeting_confirmed:  { icon: '✅', color: '#15803d' },
+  meeting_requested:  { icon: '🗓', color: '#b45309' },
+  meeting_declined:   { icon: '❌', color: '#dc2626' },
+}
+
+export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [scrolled, setScrolled] = useState(false)
   const [activeCallNotif, setActiveCallNotif] = useState(null)
+  const [toasts, setToasts] = useState([])
+  const shownToastIds = useRef(new Set())
+  const isFirstPoll = useRef(true)
 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
@@ -57,7 +68,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           })
           const call = notifs.find(n => n.type === 'call_started' && n.data?.room_url)
           if (call) setActiveCallNotif(call)
+
+          if (isFirstPoll.current) {
+            notifs.forEach(n => shownToastIds.current.add(n.id))
+          } else {
+            const fresh = notifs.filter(n => n.type !== 'call_started' && !shownToastIds.current.has(n.id))
+            if (fresh.length > 0) {
+              fresh.forEach(n => shownToastIds.current.add(n.id))
+              setToasts(prev => [
+                ...fresh.map(n => ({ ...n, dismissAt: Date.now() + 6000 })),
+                ...prev,
+              ].slice(0, 5))
+            }
+          }
         }
+        isFirstPoll.current = false
         lastCount = count
       } catch {}
     }
@@ -102,6 +127,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  useEffect(() => {
+    if (toasts.length === 0) return
+    const timer = setInterval(() => {
+      setToasts(prev => prev.filter(t => t.dismissAt > Date.now()))
+    }, 1000)
+    return () => clearInterval(timer)
+  }, [toasts.length])
 
   const toggleDark = () => {
     const next = !isDark
@@ -403,6 +436,53 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               ))
             )}
           </div>
+        </div>
+      )}
+
+      {/* Toast stack — bottom right */}
+      {toasts.length > 0 && (
+        <div style={{
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9000,
+          display: 'flex', flexDirection: 'column-reverse', gap: 10,
+          pointerEvents: 'none',
+        }}>
+          {toasts.map(t => {
+            const meta = TOAST_META[t.type] || { icon: '🔔', color: '#6b7280' }
+            return (
+              <div
+                key={t.id}
+                style={{
+                  pointerEvents: 'all',
+                  display: 'flex', alignItems: 'flex-start', gap: 12,
+                  background: 'var(--color-surface)',
+                  border: `1px solid ${meta.color}33`,
+                  borderLeft: `4px solid ${meta.color}`,
+                  borderRadius: 12,
+                  boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                  padding: '12px 14px',
+                  minWidth: 280, maxWidth: 340,
+                  cursor: 'pointer',
+                  animation: 'popIn 0.22s var(--ease-spring)',
+                }}
+                onClick={() => {
+                  setToasts(prev => prev.filter(x => x.id !== t.id))
+                  if (onNavigate) onNavigate(t.type)
+                }}
+              >
+                <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{t.title}</p>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 3, lineHeight: 1.4 }}>{t.body}</p>
+                </div>
+                <button
+                  onClick={e => { e.stopPropagation(); setToasts(prev => prev.filter(x => x.id !== t.id)) }}
+                  style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
+                >
+                  ✕
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
 

@@ -482,6 +482,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
             {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
+            {!isPast && !isRequest && m.context_from_last && (
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                💬 {m.context_from_last}
+              </p>
+            )}
           </div>
           <span className={`badge ${stBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
             {stLabel[m.status] || m.status}
@@ -577,7 +582,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)} onNavigate={type => {
+        if (type === 'new_task') setActiveView('tasks')
+        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
+      }}>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
