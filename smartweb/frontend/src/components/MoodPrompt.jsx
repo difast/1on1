@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react'
 import { submitMood } from '../api/client'
 
-const MOODS = [
-  { score: 1, emoji: '😢', label: 'Плохо' },
-  { score: 2, emoji: '😕', label: 'Не очень' },
-  { score: 3, emoji: '😐', label: 'Нормально' },
-  { score: 4, emoji: '🙂', label: 'Хорошо' },
-  { score: 5, emoji: '😄', label: 'Отлично' },
+const QUESTIONS = [
+  { id: 'overall', label: 'Как прошёл день?', placeholder: 'Расскажите в нескольких словах...', required: true },
+  { id: 'energy', label: 'Что давало вам энергию?', placeholder: 'Задачи, общение, достижения...', required: false },
+  { id: 'blocker', label: 'Что мешало работе?', placeholder: 'Блокеры, усталость, отвлечения...', required: false },
+  { id: 'team', label: 'Хотите что-то донести до команды?', placeholder: 'Анонимно — тимлид увидит обобщённо...', required: false },
 ]
 
 const todayKey = () => `mood_submitted_${new Date().toDateString()}`
@@ -14,9 +13,10 @@ const todayKey = () => `mood_submitted_${new Date().toDateString()}`
 export default function MoodPrompt({ teamId }) {
   const [visible, setVisible] = useState(false)
   const [open, setOpen] = useState(false)
-  const [selected, setSelected] = useState(null)
+  const [answers, setAnswers] = useState({ overall: '', energy: '', blocker: '', team: '' })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
+  const [resultScore, setResultScore] = useState(null)
 
   useEffect(() => {
     if (!teamId) return
@@ -26,33 +26,34 @@ export default function MoodPrompt({ teamId }) {
     const target = new Date()
     target.setHours(20, 0, 0, 0)
 
-    if (now >= target) {
-      // Already past 20:00 today — show banner immediately
-      setVisible(true)
-      return
-    }
-
+    if (now >= target) { setVisible(true); return }
     const delay = target - now
     const t = setTimeout(() => setVisible(true), delay)
     return () => clearTimeout(t)
   }, [teamId])
 
+  const canSubmit = answers.overall.trim().length > 0
+
   const handleSubmit = async () => {
-    if (!selected || submitting) return
+    if (!canSubmit || submitting) return
     setSubmitting(true)
     try {
-      await submitMood({ team_id: teamId, score: selected })
+      const answerList = QUESTIONS.map(q => answers[q.id].trim())
+      const res = await submitMood({ team_id: teamId, answers: answerList })
       localStorage.setItem(todayKey(), '1')
+      setResultScore(res.data?.score ?? null)
       setDone(true)
-      setTimeout(() => { setOpen(false); setVisible(false) }, 1800)
+      setTimeout(() => { setOpen(false); setVisible(false) }, 2500)
     } catch { } finally { setSubmitting(false) }
   }
+
+  const SCORE_EMOJI = ['', '😢', '😕', '😐', '🙂', '😄']
 
   if (!visible) return null
 
   return (
     <>
-      {/* Banner toast */}
+      {/* Floating banner */}
       {!open && (
         <div
           onClick={() => setOpen(true)}
@@ -62,82 +63,92 @@ export default function MoodPrompt({ teamId }) {
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
             borderLeft: '4px solid #8b5cf6',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-            padding: '12px 16px',
-            minWidth: 260, maxWidth: 320,
+            borderRadius: 14,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
+            padding: '14px 18px',
+            minWidth: 270, maxWidth: 330,
             cursor: 'pointer',
-            animation: 'popIn 0.22s var(--ease-spring)',
+            animation: 'popIn 0.25s var(--ease-spring)',
           }}
         >
-          <span style={{ fontSize: 22 }}>🌙</span>
+          <span style={{ fontSize: 24 }}>🌙</span>
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>
-            <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>Оцените настроение — анонимно</p>
+            <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>Мини-опрос · 1 минута · анонимно</p>
           </div>
           <button
             onClick={e => { e.stopPropagation(); setVisible(false) }}
-            style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, padding: 0 }}
+            style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, padding: 0, flexShrink: 0 }}
           >
             ✕
           </button>
         </div>
       )}
 
-      {/* Mood form modal */}
+      {/* Survey modal */}
       {open && (
-        <div
-          className="overlay-center"
-          onClick={() => setOpen(false)}
-        >
+        <div className="overlay-center" onClick={() => !submitting && setOpen(false)}>
           <div
             className="modal"
             onClick={e => e.stopPropagation()}
-            style={{ maxWidth: 380, textAlign: 'center' }}
+            style={{ maxWidth: 460, width: '90vw' }}
           >
             {done ? (
-              <div style={{ padding: '24px 0' }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🎉</div>
-                <p style={{ fontWeight: 600, fontSize: 16, color: 'var(--color-text-primary)' }}>Спасибо!</p>
-                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 6 }}>Ваш отзыв анонимно учтён</p>
+              <div style={{ padding: '32px 24px', textAlign: 'center' }}>
+                <div style={{ fontSize: 56, marginBottom: 12 }}>
+                  {resultScore ? SCORE_EMOJI[resultScore] : '🎉'}
+                </div>
+                <p style={{ fontWeight: 700, fontSize: 17, color: 'var(--color-text-primary)', marginBottom: 8 }}>
+                  Спасибо за честный ответ!
+                </p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                  Ваш отзыв анонимно обработан ИИ и добавлен в аналитику команды.
+                  Тимлид видит только обобщённые тренды, не ваши слова.
+                </p>
               </div>
             ) : (
               <>
-                <div className="modal-header">
-                  <span className="modal-title">🌙 Настроение за день</span>
+                <div className="modal-header" style={{ paddingBottom: 12 }}>
+                  <div>
+                    <span className="modal-title">🌙 Опрос по итогам дня</span>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
+                      Анонимно · ответы анализирует ИИ
+                    </p>
+                  </div>
                   <button className="modal-close" onClick={() => setOpen(false)}>✕</button>
                 </div>
-                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 20 }}>
-                  Это анонимно — тимлид видит только общую картину команды
-                </p>
-                <div style={{ display: 'flex', justifyContent: 'center', gap: 10, marginBottom: 24 }}>
-                  {MOODS.map(m => (
-                    <button
-                      key={m.score}
-                      onClick={() => setSelected(m.score)}
-                      title={m.label}
-                      style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4,
-                        padding: '10px 8px', borderRadius: 12, border: 'none',
-                        background: selected === m.score ? '#ede9fe' : 'var(--color-bg)',
-                        outline: selected === m.score ? '2px solid #8b5cf6' : '2px solid transparent',
-                        cursor: 'pointer', transition: 'all 0.15s',
-                        transform: selected === m.score ? 'scale(1.12)' : 'scale(1)',
-                      }}
-                    >
-                      <span style={{ fontSize: 28 }}>{m.emoji}</span>
-                      <span style={{ fontSize: 10, color: selected === m.score ? '#7c3aed' : 'var(--color-text-muted)', fontWeight: 600 }}>{m.label}</span>
-                    </button>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0 8px' }}>
+                  {QUESTIONS.map(q => (
+                    <div key={q.id} className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label" style={{ fontSize: 13 }}>
+                        {q.label}{q.required && <span style={{ color: 'var(--color-danger)', marginLeft: 3 }}>*</span>}
+                      </label>
+                      <textarea
+                        value={answers[q.id]}
+                        onChange={e => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
+                        placeholder={q.placeholder}
+                        rows={q.id === 'overall' ? 3 : 2}
+                        className="input"
+                        style={{ resize: 'none', fontSize: 13, lineHeight: 1.5 }}
+                      />
+                    </div>
                   ))}
                 </div>
-                <button
-                  onClick={handleSubmit}
-                  disabled={!selected || submitting}
-                  className="btn btn-accent"
-                  style={{ width: '100%', opacity: selected ? 1 : 0.45 }}
-                >
-                  {submitting ? 'Отправляем...' : 'Отправить'}
-                </button>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8 }}>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flex: 1 }}>
+                    🔒 Имя не сохраняется
+                  </span>
+                  <button
+                    onClick={handleSubmit}
+                    disabled={!canSubmit || submitting}
+                    className="btn btn-accent"
+                    style={{ minWidth: 120, opacity: canSubmit ? 1 : 0.5 }}
+                  >
+                    {submitting ? '⏳ Анализ ИИ...' : 'Отправить'}
+                  </button>
+                </div>
               </>
             )}
           </div>
