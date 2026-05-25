@@ -247,11 +247,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const statusBadge = {
     scheduled: 'badge badge-blue', completed: 'badge badge-green',
-    cancelled: 'badge badge-red', requested: 'badge badge-amber', confirmed: 'badge badge-green',
+    in_progress: 'badge badge-green', cancelled: 'badge badge-red',
+    requested: 'badge badge-amber', confirmed: 'badge badge-green',
   }
   const statusLabel = {
     scheduled: 'Запланирована', completed: 'Завершена',
-    cancelled: 'Отменена', requested: 'Запрошена', confirmed: 'Подтверждена',
+    in_progress: 'Идёт созвон', cancelled: 'Отменена',
+    requested: 'Запрошена', confirmed: 'Подтверждена',
   }
 
   if (loadingTeam) {
@@ -307,7 +309,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>

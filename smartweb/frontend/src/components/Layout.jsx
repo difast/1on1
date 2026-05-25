@@ -3,7 +3,7 @@ import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser } f
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
-export default function Layout({ children, currentUser, onLogout, onUserUpdate }) {
+export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -270,7 +270,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
           </div>
           <button
             onClick={() => {
-              window.open(activeCallNotif.data.room_url, '_blank')
+              const url = activeCallNotif.data.room_url
+              const roomName = url.split('/').pop()
+              if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
+              else window.open(url, '_blank')
               markRead(activeCallNotif.id).catch(() => {})
               setActiveCallNotif(null)
             }}
@@ -378,7 +381,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate }
                   {n.type === 'call_started' && n.data?.room_url && (
                     <button
                       onClick={() => {
-                        window.open(n.data.room_url, '_blank')
+                        const url = n.data.room_url
+                        const roomName = url.split('/').pop()
+                        if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
+                        else window.open(url, '_blank')
                         markRead(n.id).catch(() => {})
                         setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
                         setUnreadCount(c => Math.max(0, c - 1))

@@ -178,7 +178,7 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
 
     meetings_90 = [m for m in meetings if m.scheduled_date >= ninety_ago]
 
-    lead_init = sum(1 for m in meetings_90 if m.status in ("scheduled", "confirmed", "completed"))
+    lead_init = sum(1 for m in meetings_90 if m.status in ("scheduled", "confirmed", "completed", "in_progress"))
     member_init = sum(1 for m in meetings_90 if m.status == "requested")
 
     days_since = None

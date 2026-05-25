@@ -456,8 +456,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const noteState = meetingNotes[m.id]
     const isPast = new Date(m.scheduled_date) < new Date()
     const isRequest = m.status === 'requested'
-    const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
-    const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
+    const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
+    const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
       <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -571,7 +571,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
