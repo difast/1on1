@@ -1,6 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall } from '../api/client'
 import Layout from './Layout'
+
+const STATUS_CYCLE = { in_progress: 'review', review: 'done', done: 'in_progress', blocked: 'in_progress' }
+const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
+const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
@@ -1212,14 +1216,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                             )
                                           })()}
                                         </div>
-                                        <button
-                                          onClick={() => handleCycleTask(task, member.user_id)}
-                                          className={`badge ${STATUS_CLS[st] || 'badge-blue'}`}
-                                          style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', fontSize: 10, padding: '2px 7px' }}
-                                          title="Нажмите чтобы изменить статус"
-                                        >
-                                          {STATUS_LABEL[st] || st}
-                                        </button>
+                                        <TaskStatusSelect
+                                          status={st}
+                                          onChange={async (newStatus) => {
+                                            try {
+                                              await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                              setMemberTasks(prev => ({
+                                                ...prev,
+                                                [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                                  t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
+                                                ),
+                                              }))
+                                            } catch {}
+                                          }}
+                                          canMarkDone={true}
+                                        />
                                       </div>
                                     )
                                   })}
