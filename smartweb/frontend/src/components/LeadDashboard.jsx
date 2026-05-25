@@ -30,7 +30,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: meetingId })
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
@@ -133,7 +134,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startSpontaneousCall({
         lead_id: user.id, team_id: selectedTeamId, member_ids: [memberId], is_group: false,
       })
-      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: data.meeting_id })
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
@@ -581,18 +583,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
-          {activeView === 'teams' && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {selectedTeamId && (
-                <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
-                  📹 Созвон
-                </button>
-              )}
-              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
-                + Создать команду
+          <div style={{ display: 'flex', gap: 8 }}>
+            {selectedTeamId && (
+              <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                📹 Созвон
               </button>
-            </div>
-          )}
+            )}
+            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
+              + Создать команду
+            </button>
+          </div>
         </div>
 
         {/* View tabs */}
@@ -1406,11 +1406,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 {roomUrlCopied ? '✓ Скопировано!' : '📋 Копировать ссылку'}
               </button>
               <button
-                onClick={() => { setActiveCall({ room_name: callResult.room_name, room_url: callResult.room_url, meeting_id: callResult.meeting_id }); setShowStartCall(false) }}
-                className="btn btn-accent btn-sm"
-                style={{ gap: 8 }}
+                onClick={() => {
+                  const roomName = callResult.room_name || callResult.room_url?.split('/').pop()
+                  setActiveCall({ room_name: roomName, room_url: callResult.room_url, meeting_id: callResult.meeting_id })
+                  setShowStartCall(false)
+                }}
+                className="btn btn-accent"
+                style={{ gap: 8, fontWeight: 700 }}
               >
-                📹 Открыть созвон
+                📹 Начать созвон
               </button>
             </div>
           )}

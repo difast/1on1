@@ -46,7 +46,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: meetingId })
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
