@@ -570,6 +570,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const calendarMeetings = myMeetings.filter(m => m.status !== 'requested')
 
   return (
+    <>
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
@@ -1495,6 +1496,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => { setActiveCall(null); loadMyMeetings() }}
       />
     )}
+    </>
   )
 }
 

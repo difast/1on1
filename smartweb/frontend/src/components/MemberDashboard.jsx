@@ -306,6 +306,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   return (
+    <>
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
@@ -837,6 +838,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => setActiveCall(null)}
       />
     )}
+    </>
   )
 }
 
