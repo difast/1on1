@@ -5,6 +5,7 @@ import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import JitsiCall from './JitsiCall'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -39,12 +40,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
   const fileInputRefs = useRef({})
+  const [activeCall, setActiveCall] = useState(null)
 
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      window.open(data.room_url, '_blank')
+      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
@@ -826,6 +828,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
+
+    {activeCall && (
+      <JitsiCall
+        roomName={activeCall.room_name}
+        userName={user.name || user.email}
+        meetingId={activeCall.meeting_id}
+        onClose={() => setActiveCall(null)}
+      />
+    )}
   )
 }
 

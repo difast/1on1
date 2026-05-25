@@ -6,6 +6,7 @@ import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import JitsiCall from './JitsiCall'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -23,11 +24,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadDone, setUploadDone] = useState({})
   const fileInputRefs = useRef({})
 
+  const [activeCall, setActiveCall] = useState(null) // { room_name, room_url, meeting_id }
+
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      window.open(data.room_url, '_blank')
+      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
@@ -118,7 +121,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       })
       setCallResult(data)
       setCallStep('done')
-      window.open(data.room_url, '_blank')
       loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setCallModalLoading(false) }
@@ -131,11 +133,20 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startSpontaneousCall({
         lead_id: user.id, team_id: selectedTeamId, member_ids: [memberId], is_group: false,
       })
-      window.open(data.room_url, '_blank')
+      setActiveCall({ room_name: data.room_name, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
+
+  // Auto-copy invite link when call is created
+  useEffect(() => {
+    if (callStep === 'done' && callResult?.room_url) {
+      navigator.clipboard.writeText(callResult.room_url)
+        .then(() => setRoomUrlCopied(true))
+        .catch(() => {})
+    }
+  }, [callStep, callResult])
 
   // Meeting notes expanded in notes tab
   const [notesMeetingExpanded, setNotesMeetingExpanded] = useState(new Set())
@@ -1394,7 +1405,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 {roomUrlCopied ? '✓ Скопировано!' : '📋 Копировать ссылку'}
               </button>
               <button
-                onClick={() => window.open(callResult.room_url, '_blank')}
+                onClick={() => { setActiveCall({ room_name: callResult.room_name, room_url: callResult.room_url, meeting_id: callResult.meeting_id }); setShowStartCall(false) }}
                 className="btn btn-accent btn-sm"
                 style={{ gap: 8 }}
               >
@@ -1475,6 +1486,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
+
+    {activeCall && (
+      <JitsiCall
+        roomName={activeCall.room_name}
+        userName={user.name || user.email}
+        meetingId={activeCall.meeting_id}
+        onClose={() => { setActiveCall(null); loadMyMeetings() }}
+      />
+    )}
   )
 }
 
