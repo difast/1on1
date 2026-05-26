@@ -11,6 +11,7 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
+import KnowledgeBase from './KnowledgeBase'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -582,10 +583,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)} onNavigate={type => {
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      onNavigate={type => {
         if (type === 'new_task') setActiveView('tasks')
         else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
-      }}>
+      }}
+      onKnowledgeBase={() => setActiveView('knowledge')}>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -615,6 +618,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'tasks', label: 'Задачи' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
+            { key: 'knowledge', label: '📚 База знаний' },
           ].map(tab => (
             <button
               key={tab.key}
@@ -638,6 +642,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}
+
+        {/* Knowledge base view */}
+        {activeView === 'knowledge' && (
+          <KnowledgeBase teamId={selectedTeamId} userId={user.id} canEdit={true} />
+        )}
 
         {/* Notes view */}
         {activeView === 'notes' && (

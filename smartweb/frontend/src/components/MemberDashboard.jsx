@@ -7,6 +7,7 @@ import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
+import KnowledgeBase from './KnowledgeBase'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -311,10 +312,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   return (
     <>
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)} onNavigate={type => {
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      onNavigate={type => {
         if (type === 'new_task') setActiveTab('tasks')
         else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
-      }}>
+      }}
+      onKnowledgeBase={() => setActiveTab('knowledge')}>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
@@ -328,6 +331,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'tasks', label: 'Задачи' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
+            { key: 'knowledge', label: '📚 База знаний' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
@@ -800,6 +804,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Analytics */}
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
+
+        {activeTab === 'knowledge' && (
+          <KnowledgeBase teamId={teamId} userId={user.id} canEdit={false} />
+        )}
       </div>
 
       <QuickWidget

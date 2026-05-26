@@ -71,6 +71,12 @@ export const createNote = (data) => api.post('/notes/', data)
 export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
+// Knowledge Base
+export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)
+export const createKnowledgeArticle = (data) => api.post('/knowledge/', data)
+export const updateKnowledgeArticle = (id, data) => api.patch(`/knowledge/${id}`, data)
+export const deleteKnowledgeArticle = (id) => api.delete(`/knowledge/${id}`)
+
 // Mood
 export const submitMood = (data) => api.post('/mood/', data)
 export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)

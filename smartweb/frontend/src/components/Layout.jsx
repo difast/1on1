@@ -11,7 +11,7 @@ const TOAST_META = {
   meeting_declined:   { icon: '❌', color: '#dc2626' },
 }
 
-export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate }) {
+export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, onKnowledgeBase }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -300,6 +300,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </MenuItemBtn>
                 <MenuItemBtn onClick={handleSwitchRole}>
                   {switchingRole ? '⏳ Переключение...' : currentUser?.role === 'team_lead' ? '👤 Войти как участник' : '👑 Войти как тимлид'}
+                </MenuItemBtn>
+                <MenuItemBtn onClick={() => { setShowUserMenu(false); onKnowledgeBase?.() }}>
+                  📚 База знаний
                 </MenuItemBtn>
                 <MenuItemBtn onClick={() => setShowUserMenu(false)}>
                   ❓ Помощь
