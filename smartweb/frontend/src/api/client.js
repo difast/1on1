@@ -71,6 +71,9 @@ export const createNote = (data) => api.post('/notes/', data)
 export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
+// Admin
+export const getAdminStats = () => api.get('/users/admin/stats')
+
 // Knowledge Base
 export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)
 export const createKnowledgeArticle = (data) => api.post('/knowledge/', data)
