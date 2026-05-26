@@ -267,6 +267,75 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div ref={notifRef} style={{ position: 'relative' }}>
             <NotificationBell count={unreadCount} onClick={toggleNotifications} />
+
+            {/* Notification dropdown — inside notifRef so outside-click logic works correctly */}
+            {showNotifications && (
+              <div style={{
+                position: 'fixed', right: 16, top: 68, width: 360,
+                background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
+                border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)',
+                zIndex: 150, overflow: 'hidden', animation: 'popIn 0.2s var(--ease-spring)',
+              }}>
+                <div style={{
+                  padding: '14px 18px', borderBottom: '1px solid var(--color-border)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                }}>
+                  <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)' }}>
+                    Уведомления
+                  </span>
+                  <button
+                    onClick={handleMarkAllRead}
+                    style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+                  >
+                    Прочитать все
+                  </button>
+                </div>
+                <div style={{ maxHeight: 360, overflowY: 'auto' }}>
+                  {notifications.length === 0 ? (
+                    <p style={{ padding: '20px 18px', color: 'var(--color-text-muted)', fontSize: 14, textAlign: 'center' }}>
+                      Нет уведомлений
+                    </p>
+                  ) : (
+                    notifications.map(n => (
+                      <div
+                        key={n.id}
+                        style={{
+                          padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
+                          background: n.type === 'call_started' && !n.read
+                            ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
+                            : !n.read ? 'var(--blue-50)' : 'transparent',
+                          transition: 'background 0.15s',
+                        }}
+                      >
+                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
+                        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
+                        {n.type === 'call_started' && n.data?.room_url && (
+                          <button
+                            onClick={() => {
+                              const url = n.data.room_url
+                              const roomName = url.split('/').pop()
+                              if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
+                              else window.open(url, '_blank')
+                              markRead(n.id).catch(() => {})
+                              setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                              setUnreadCount(c => Math.max(0, c - 1))
+                              if (activeCallNotif?.id === n.id) setActiveCallNotif(null)
+                            }}
+                            style={{
+                              marginTop: 8, padding: '5px 14px', fontSize: 13, fontWeight: 600,
+                              background: 'var(--color-accent)', color: '#fff',
+                              border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                            }}
+                          >
+                            Присоединиться →
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           <div ref={userMenuRef} style={{ position: 'relative' }}>
             <button
@@ -393,75 +462,6 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   {pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}
                 </button>
               </form>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Notification dropdown */}
-      {showNotifications && (
-        <div style={{
-          position: 'fixed', right: 16, top: 68, width: 360,
-          background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)',
-          zIndex: 150, overflow: 'hidden', animation: 'popIn 0.2s var(--ease-spring)',
-        }}>
-          <div style={{
-            padding: '14px 18px', borderBottom: '1px solid var(--color-border)',
-            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          }}>
-            <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)' }}>
-              Уведомления
-            </span>
-            <button
-              onClick={handleMarkAllRead}
-              style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
-            >
-              Прочитать все
-            </button>
-          </div>
-          <div style={{ maxHeight: 360, overflowY: 'auto' }}>
-            {notifications.length === 0 ? (
-              <p style={{ padding: '20px 18px', color: 'var(--color-text-muted)', fontSize: 14, textAlign: 'center' }}>
-                Нет уведомлений
-              </p>
-            ) : (
-              notifications.map(n => (
-                <div
-                  key={n.id}
-                  style={{
-                    padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
-                    background: n.type === 'call_started' && !n.read
-                      ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
-                      : !n.read ? 'var(--blue-50)' : 'transparent',
-                    transition: 'background 0.15s',
-                  }}
-                >
-                  <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
-                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
-                  {n.type === 'call_started' && n.data?.room_url && (
-                    <button
-                      onClick={() => {
-                        const url = n.data.room_url
-                        const roomName = url.split('/').pop()
-                        if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
-                        else window.open(url, '_blank')
-                        markRead(n.id).catch(() => {})
-                        setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
-                        setUnreadCount(c => Math.max(0, c - 1))
-                        if (activeCallNotif?.id === n.id) setActiveCallNotif(null)
-                      }}
-                      style={{
-                        marginTop: 8, padding: '5px 14px', fontSize: 13, fontWeight: 600,
-                        background: 'var(--color-accent)', color: '#fff',
-                        border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                      }}
-                    >
-                      Присоединиться →
-                    </button>
-                  )}
-                </div>
-              ))
             )}
           </div>
         </div>
