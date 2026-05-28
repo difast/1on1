@@ -43,7 +43,7 @@ def pit_chat(data: ChatRequest):
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3-5-haiku-20241022", "max_tokens": 600, "messages": messages},
+            json={"model": "claude-3.5-haiku", "max_tokens": 600, "messages": messages},
             timeout=25,
         )
         body = resp.json()

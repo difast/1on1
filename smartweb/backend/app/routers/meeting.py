@@ -199,7 +199,7 @@ def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db)):
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3-5-haiku-20241022", "max_tokens": 150,
+            json={"model": "claude-3.5-haiku", "max_tokens": 150,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=15,
         )

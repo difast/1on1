@@ -30,7 +30,7 @@ def get_task_ai_advice(data: TaskAIRequest):
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3-5-haiku-20241022", "max_tokens": 500,
+            json={"model": "claude-3.5-haiku", "max_tokens": 500,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=25,
         )
