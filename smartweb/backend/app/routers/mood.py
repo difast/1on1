@@ -27,7 +27,7 @@ def _analyze_survey(answers: List[str]) -> dict:
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 120,
+            json={"model": "claude-3-5-haiku-20241022", "max_tokens": 120,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=20,
         )
