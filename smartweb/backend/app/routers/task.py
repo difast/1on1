@@ -20,6 +20,24 @@ class TaskAIRequest(PydanticBaseModel):
     due_date: Optional[str] = None
     role: str = "member"
 
+def _extract_json(text: str):
+    """Find the first balanced {...} object in text and parse it."""
+    start = text.find('{')
+    if start == -1:
+        return None
+    depth = 0
+    for i in range(start, len(text)):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                try:
+                    return json.loads(text[start:i + 1])
+                except Exception:
+                    return None
+    return None
+
 @router.post("/ai-advice")
 def get_task_ai_advice(data: TaskAIRequest):
     role_ctx = "тимлида" if data.role == "lead" else "участника команды"
@@ -30,39 +48,31 @@ def get_task_ai_advice(data: TaskAIRequest):
         f"Ты {role_ctx} в IT-команде.\n"
         f"Задача: \"{data.title}\". Статус: {status_label}.{due_ctx}\n"
         f"Составь 4–5 конкретных последовательных шагов выполнения ИМЕННО ЭТОЙ задачи. "
-        f"Категорически запрещены общие фразы вроде 'уточни требования', 'разбей на подзадачи', 'обсудись с командой' — они не несут смысла. "
-        f"Каждый шаг должен прямо вытекать из названия задачи и описывать конкретное физическое или умственное действие. "
-        f"Пример: задача 'Купить помидоры в Петербурге' → шаги: Забронировать билет Москва–Петербург, Найти ближайший рынок по адресу, Купить помидоры нужного сорта и количества, Упаковать товар для перевозки, Вернуться в Москву. "
+        f"Категорически запрещены общие фразы вроде 'уточни требования', 'разбей на подзадачи', 'обсудись с командой'. "
+        f"Каждый шаг должен прямо вытекать из названия задачи. "
+        f"Пример: задача 'Купить помидоры в Петербурге' → шаги: Забронировать билет Москва–Петербург, Найти ближайший рынок, Купить помидоры, Вернуться в Москву. "
         f"Начинай каждый шаг с глагола. "
-        f"Ответ ТОЛЬКО JSON без каких-либо пояснений: {{\"steps\": [\"шаг 1\", \"шаг 2\", \"шаг 3\", \"шаг 4\"]}}"
+        f"Ответ ТОЛЬКО JSON: {{\"steps\": [\"шаг 1\", \"шаг 2\", \"шаг 3\", \"шаг 4\"]}}"
     )
     try:
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 400,
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 500,
                   "messages": [{"role": "user", "content": prompt}]},
-            timeout=20,
+            timeout=25,
         )
         resp.raise_for_status()
-        text = resp.json()["choices"][0]["message"]["content"].strip()
-        # Strip code blocks if present
-        if "```" in text:
-            for part in text.split("```"):
-                part = part.lstrip("json").strip()
-                if "{" in part:
-                    text = part
-                    break
-        # Try regex extraction if direct parse fails
-        try:
-            result = json.loads(text)
-        except Exception:
-            m = re.search(r'\{.*?"steps"\s*:\s*(\[.*?\])', text, re.DOTALL)
-            if m:
-                result = {"steps": json.loads(m.group(1))}
-            else:
-                result = {"steps": []}
-        return {"steps": result.get("steps", [])}
+        raw = resp.json()["choices"][0]["message"]["content"]
+        result = _extract_json(raw)
+        if result and result.get("steps"):
+            return {"steps": result["steps"]}
+        # Fallback: split numbered lines into steps
+        lines = [l.strip().lstrip("0123456789.-) ") for l in raw.splitlines() if l.strip()]
+        steps = [l for l in lines if len(l) > 8][:5]
+        if steps:
+            return {"steps": steps}
+        raise ValueError("no steps")
     except Exception:
         raise HTTPException(status_code=503, detail="AI service unavailable")
 

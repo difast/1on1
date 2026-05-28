@@ -10,6 +10,7 @@ import MoodPrompt from './MoodPrompt'
 import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
 import DeadlineBanner from './DeadlineBanner'
+import UserCard from './UserCard'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -19,6 +20,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   })
   const [loadingTeam, setLoadingTeam] = useState(true)
   const [activeTab, setActiveTab] = useState('overview')
+
+  const [viewUserCard, setViewUserCard] = useState(null)
 
   const [joinCode, setJoinCode] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
@@ -350,14 +353,21 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               const lead = (team.members || []).find(m => m.user_id === team.team_lead_id)
               return (
                 <div className="card card-accent" style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 18 }}>
-                  <div className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}>
+                  <div
+                    className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}
+                    style={{ cursor: 'pointer' }}
+                    onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                  >
                     {lead?.user_avatar_url
                       ? <img src={lead.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                       : (team.team_lead_name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div style={{ flex: 1 }}>
                     <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
-                    <p style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)' }}>
+                    <p
+                      style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)', cursor: 'pointer' }}
+                      onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                    >
                       {team.team_lead_name || 'Тимлид'}
                     </p>
                     {team.team_lead_title && (
@@ -864,6 +874,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     )}
     <MoodPrompt teamId={teamId} />
     <DeadlineBanner tasks={tasks} />
+    {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
     </>
   )
 }
