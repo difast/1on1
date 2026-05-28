@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>OneOnOne — Платформа регулярных 1-on-1 встреч</title>
+<meta name="description" content="Умные 1-on-1 встречи с AI-ассистентом, аналитикой команды и трекингом задач. Начните бесплатно.">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#080812;--bg2:rgba(255,255,255,0.03);
+  --acc:#6366f1;--acc2:#4f46e5;--acc3:#7c3aed;
+  --txt:#f8fafc;--txt2:rgba(248,250,252,0.62);--txt3:rgba(248,250,252,0.38);
+  --brd:rgba(255,255,255,0.09);--card:rgba(255,255,255,0.05);
+  --r:16px;
+}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;overflow-x:hidden}
+
+/* ── Animations ── */
+@keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
+@keyframes f1{0%,100%{transform:translate(0,0)scale(1)}33%{transform:translate(50px,-70px)scale(1.1)}66%{transform:translate(-35px,40px)scale(0.93)}}
+@keyframes f2{0%,100%{transform:translate(0,0)}40%{transform:translate(-55px,45px)}70%{transform:translate(40px,-25px)}}
+@keyframes f3{0%,100%{transform:translate(0,0)}50%{transform:translate(22px,-35px)}}
+@keyframes mockFloat{0%,100%{transform:perspective(1000px)rotateY(-13deg)rotateX(7deg)translateY(0)}50%{transform:perspective(1000px)rotateY(-8deg)rotateX(4deg)translateY(-18px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(32px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pitFloat{0%,100%{transform:translateY(0)rotate(-1.5deg)}50%{transform:translateY(-10px)rotate(1.5deg)}}
+@keyframes pitBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(0.08)}}
+@keyframes pitGlow{0%,100%{box-shadow:0 8px 28px rgba(99,102,241,0.45)}50%{box-shadow:0 14px 36px rgba(99,102,241,0.65),0 0 18px 4px rgba(99,102,241,0.2)}}
+@keyframes pitAntenna{0%,100%{box-shadow:0 0 6px 2px rgba(165,180,252,0.7)}50%{box-shadow:0 0 14px 5px rgba(165,180,252,1)}}
+@keyframes twinkle{0%,100%{opacity:0.15;transform:scale(1)}50%{opacity:0.7;transform:scale(1.4)}}
+@keyframes glowBorder{0%,100%{box-shadow:0 0 0 1px rgba(99,102,241,0.3),0 8px 32px rgba(99,102,241,0.15)}50%{box-shadow:0 0 0 1px rgba(99,102,241,0.6),0 8px 40px rgba(99,102,241,0.3)}}
+@keyframes barRise{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+
+/* ── Nav ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 48px;background:rgba(8,8,18,0.75);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--brd);transition:padding 0.3s}
+.logo{font-size:22px;font-weight:800;color:var(--txt);text-decoration:none;letter-spacing:-0.02em}
+.logo span{color:#818cf8}
+.nav-r{display:flex;gap:12px;align-items:center}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:10px;font-weight:600;font-size:14px;cursor:pointer;transition:all 0.2s;text-decoration:none;border:none;font-family:inherit;white-space:nowrap}
+.btn-ghost{background:rgba(255,255,255,0.08);color:var(--txt);border:1px solid var(--brd)}
+.btn-ghost:hover{background:rgba(255,255,255,0.14)}
+.btn-acc{background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;box-shadow:0 4px 16px rgba(99,102,241,0.38)}
+.btn-acc:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(99,102,241,0.52)}
+.btn-lg{padding:15px 32px;font-size:16px;border-radius:12px}
+.btn-xl{padding:18px 42px;font-size:17px;border-radius:14px}
+
+/* ── Hero ── */
+.hero{min-height:100vh;display:flex;align-items:center;position:relative;overflow:hidden;padding:120px 48px 80px}
+.hero-content{position:relative;z-index:2;max-width:580px}
+.tag{display:inline-block;padding:6px 16px;border-radius:20px;background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.28);color:#818cf8;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:20px}
+h1.hero-title{font-size:clamp(38px,6.5vw,76px);font-weight:900;line-height:1.06;letter-spacing:-0.03em;margin-bottom:22px}
+.grad{background:linear-gradient(135deg,#a5b4fc 0%,#6366f1 35%,#c084fc 65%,#818cf8 100%);background-size:300% 300%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gradShift 4s ease-in-out infinite}
+.hero-sub{font-size:18px;color:var(--txt2);margin-bottom:38px;max-width:460px;line-height:1.75}
+.hero-actions{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:40px}
+.hero-trust{display:flex;gap:28px;flex-wrap:wrap}
+.trust-item{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--txt3)}
+.trust-item span.check{color:#818cf8;font-size:16px}
+.hero-mockup{position:absolute;right:48px;top:50%;transform:translateY(-50%);width:460px;z-index:2;animation:mockFloat 7s ease-in-out infinite}
+.orb{position:absolute;border-radius:50%;pointer-events:none}
+
+/* ── Mock UI ── */
+.mock{background:rgba(10,8,30,0.95);border:1px solid rgba(255,255,255,0.14);border-radius:18px;overflow:hidden;box-shadow:0 40px 120px rgba(0,0,0,0.65),0 0 0 1px rgba(255,255,255,0.05)}
+.mock-bar{background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.07);padding:10px 14px;display:flex;gap:6px;align-items:center}
+.mock-dot{width:10px;height:10px;border-radius:50%}
+.mock-body{padding:16px}
+.mock-label{font-size:10px;font-weight:700;color:rgba(255,255,255,0.35);text-transform:uppercase;letter-spacing:.08em;margin-bottom:10px}
+.mc{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:12px;margin-bottom:8px}
+.mrow{display:flex;gap:10px;align-items:center}
+.mavt{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff}
+.mlines{flex:1}
+.ml{border-radius:4px;height:8px;background:rgba(255,255,255,0.11);margin-bottom:5px}
+.mbadge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+.mgc{border-radius:10px;padding:10px}
+.mnum{font-size:18px;font-weight:900;margin:2px 0 5px}
+.mbar{height:6px;border-radius:3px;background:rgba(255,255,255,0.07);overflow:hidden}
+.mbarf{height:100%;border-radius:3px}
+.mchart{display:flex;align-items:flex-end;gap:3px;height:36px;margin-top:6px}
+.mchb{flex:1;border-radius:2px 2px 0 0;transform-origin:bottom;animation:barRise 0.8s ease forwards}
+.pit-mini{width:42px;height:42px;border-radius:50%;background:radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#6366f1 38%,#3730a3 68%,#1e1b4b 100%);animation:pitFloat 3.2s ease-in-out infinite,pitGlow 3.2s ease-in-out infinite;position:relative;flex-shrink:0}
+.pit-eye{position:absolute;border-radius:50%;background:#fff;width:8px;height:8px;animation:pitBlink 4.5s ease-in-out infinite}
+
+/* ── Sections ── */
+.wrap{max-width:1200px;margin:0 auto;padding:100px 48px}
+h2.stitle{font-size:clamp(28px,3.8vw,44px);font-weight:800;line-height:1.2;letter-spacing:-0.02em;margin-bottom:16px}
+.ssub{font-size:17px;color:var(--txt2);max-width:560px}
+.reveal{opacity:0;transform:translateY(28px);transition:opacity .65s ease,transform .65s ease}
+.reveal.vis{opacity:1;transform:translateY(0)}
+
+/* ── Features ── */
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:56px}
+.fcard{background:var(--card);border:1px solid var(--brd);border-radius:var(--r);padding:28px;transition:border-color .2s,box-shadow .2s,transform .15s;cursor:default;transform-style:preserve-3d}
+.fcard:hover{border-color:rgba(99,102,241,0.4);box-shadow:0 16px 48px rgba(0,0,0,0.32)}
+.ficon{width:50px;height:50px;border-radius:13px;margin-bottom:18px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.fcard h3{font-size:17px;font-weight:700;color:var(--txt);margin-bottom:8px}
+.fcard p{font-size:14px;color:var(--txt2);line-height:1.65}
+
+/* ── How ── */
+.how-wrap{background:var(--bg2);border-top:1px solid var(--brd);border-bottom:1px solid var(--brd)}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:40px;margin-top:56px;position:relative}
+.steps::before{content:'';position:absolute;top:36px;left:17%;right:17%;height:2px;background:linear-gradient(90deg,transparent,rgba(99,102,241,0.45),transparent)}
+.step{text-align:center}
+.snum{width:72px;height:72px;border-radius:50%;margin:0 auto 20px;background:linear-gradient(135deg,rgba(99,102,241,0.18),rgba(124,58,237,0.18));border:2px solid rgba(99,102,241,0.38);display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:900;color:#818cf8;position:relative;z-index:1}
+.step h3{font-size:18px;font-weight:700;color:var(--txt);margin-bottom:8px}
+.step p{font-size:14px;color:var(--txt2)}
+
+/* ── Pit spotlight ── */
+.pit-spot{text-align:center;padding:80px 48px;background:linear-gradient(180deg,transparent,rgba(99,102,241,0.06),transparent)}
+.pit-big{width:88px;height:88px;border-radius:50%;position:relative;background:radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#6366f1 38%,#3730a3 68%,#1e1b4b 100%);animation:pitFloat 3.2s ease-in-out infinite,pitGlow 3.2s ease-in-out infinite;margin:0 auto}
+.pit-shadow{width:64px;height:11px;border-radius:50%;background:rgba(79,70,229,0.38);margin:4px auto 0;animation:pitFloat 3.2s ease-in-out infinite}
+
+/* ── Pricing ── */
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px;margin-top:56px;align-items:start}
+.pcard{background:var(--card);border:1px solid var(--brd);border-radius:20px;padding:28px 22px;position:relative;transition:transform .2s,box-shadow .2s}
+.pcard:hover{transform:translateY(-5px);box-shadow:0 24px 56px rgba(0,0,0,0.32)}
+.pcard.pop{background:rgba(99,102,241,0.09);border-color:rgba(99,102,241,0.55);animation:glowBorder 3s ease-in-out infinite}
+.pbadge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,#6366f1,#4f46e5);color:#fff;font-size:11px;font-weight:800;padding:4px 16px;border-radius:20px;text-transform:uppercase;letter-spacing:.08em;box-shadow:0 4px 14px rgba(99,102,241,0.4);white-space:nowrap}
+.pname{font-size:13px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px}
+.pprice{font-size:36px;font-weight:900;color:var(--txt);letter-spacing:-0.02em;margin-bottom:4px}
+.pprice small{font-size:15px;font-weight:500;color:var(--txt3)}
+.pdesc{font-size:13px;color:var(--txt3);margin-bottom:20px}
+.plist{list-style:none;margin-bottom:24px;display:flex;flex-direction:column;gap:10px}
+.plist li{font-size:13px;color:var(--txt2);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.plist li::before{content:'✓';color:#818cf8;font-weight:800;flex-shrink:0;margin-top:1px}
+.plist li.dim{color:var(--txt3)}
+.plist li.dim::before{color:var(--txt3)}
+.pbtn{display:block;width:100%;padding:12px;border-radius:10px;text-align:center;font-weight:700;font-size:14px;cursor:pointer;border:1px solid var(--brd);background:rgba(255,255,255,0.07);color:var(--txt);text-decoration:none;transition:all .2s;font-family:inherit}
+.pbtn:hover{background:rgba(255,255,255,0.13)}
+.pbtn.prim{background:linear-gradient(135deg,#6366f1,#4f46e5);border-color:transparent;box-shadow:0 4px 16px rgba(99,102,241,0.35)}
+.pbtn.prim:hover{box-shadow:0 8px 28px rgba(99,102,241,0.5);transform:translateY(-1px)}
+
+/* ── CTA banner ── */
+.cta-banner{max-width:820px;margin:0 auto;text-align:center;background:linear-gradient(135deg,rgba(99,102,241,0.14),rgba(124,58,237,0.09));border:1px solid rgba(99,102,241,0.28);border-radius:24px;padding:64px 48px}
+.cta-banner h2{font-size:clamp(24px,4vw,42px);font-weight:800;margin-bottom:18px;letter-spacing:-0.02em}
+.cta-banner p{font-size:17px;color:var(--txt2);margin-bottom:36px}
+.cta-btns{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+
+/* ── Footer ── */
+footer{border-top:1px solid var(--brd);padding:48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;max-width:100%}
+.flinks{display:flex;gap:24px;flex-wrap:wrap}
+.flinks a{font-size:14px;color:var(--txt3);text-decoration:none;transition:color .2s}
+.flinks a:hover{color:var(--txt)}
+.fcopy{font-size:13px;color:var(--txt3)}
+
+/* ── Stars ── */
+.stars{position:absolute;inset:0;pointer-events:none;z-index:0}
+.star{position:absolute;background:#fff;border-radius:50%}
+
+/* ── Responsive ── */
+@media(max-width:960px){
+  nav{padding:14px 20px}
+  .hero{padding:100px 20px 60px;flex-direction:column;min-height:auto}
+  .hero-mockup{position:static;transform:none;width:100%;max-width:420px;margin:40px auto 0;animation:none}
+  .wrap{padding:60px 20px}
+  .feat-grid{grid-template-columns:1fr}
+  .steps{grid-template-columns:1fr}
+  .steps::before{display:none}
+  .pgrid{grid-template-columns:1fr 1fr}
+  footer{padding:32px 20px}
+  .pit-spot{padding:60px 20px}
+}
+@media(max-width:580px){
+  .pgrid{grid-template-columns:1fr}
+  .hero-actions{flex-direction:column}
+  .cta-btns{flex-direction:column;align-items:center}
+  .cta-banner{padding:40px 24px}
+  .hero-trust{gap:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="logo">OneOn<span>One</span></a>
+  <div class="nav-r">
+    <a href="YOUR_APP_URL" class="btn btn-ghost">Войти</a>
+    <a href="YOUR_APP_URL" class="btn btn-acc">Зарегистрироваться</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero" id="home">
+  <div class="stars" id="stars"></div>
+
+  <!-- Orbs -->
+  <div class="orb" style="width:520px;height:520px;background:radial-gradient(ellipse,rgba(99,102,241,0.2) 0%,transparent 70%);top:5%;left:-8%;animation:f1 11s ease-in-out infinite;filter:blur(2px)"></div>
+  <div class="orb" style="width:420px;height:420px;background:radial-gradient(ellipse,rgba(124,58,237,0.16) 0%,transparent 70%);bottom:3%;right:5%;animation:f2 13s ease-in-out infinite;filter:blur(2px)"></div>
+  <div class="orb" style="width:220px;height:220px;background:radial-gradient(ellipse,rgba(59,130,246,0.13) 0%,transparent 70%);top:58%;left:36%;animation:f3 8s ease-in-out infinite"></div>
+
+  <div class="hero-content">
+    <div class="tag">🚀 Новый способ вести 1-on-1</div>
+    <h1 class="hero-title">
+      Встречи,<br>
+      которые <span class="grad">меняют</span><br>
+      команды
+    </h1>
+    <p class="hero-sub">
+      OneOnOne — платформа регулярных 1-on-1 встреч. Умное расписание, AI-ассистент Пит, аналитика и трекинг настроения — всё в одном месте.
+    </p>
+    <div class="hero-actions">
+      <a href="YOUR_APP_URL" class="btn btn-acc btn-xl">Начать бесплатно →</a>
+      <a href="#pricing" class="btn btn-ghost btn-lg">Посмотреть тарифы</a>
+    </div>
+    <div class="hero-trust">
+      <div class="trust-item"><span class="check">✓</span> Бесплатный старт</div>
+      <div class="trust-item"><span class="check">✓</span> AI включён</div>
+      <div class="trust-item"><span class="check">✓</span> Без кредитки</div>
+    </div>
+  </div>
+
+  <!-- 3D Floating Mockup -->
+  <div class="hero-mockup">
+    <div class="mock">
+      <div class="mock-bar">
+        <div class="mock-dot" style="background:#ff5f57"></div>
+        <div class="mock-dot" style="background:#ffbd2e"></div>
+        <div class="mock-dot" style="background:#28c840"></div>
+        <div style="flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,0.06);margin-left:8px;max-width:110px"></div>
+      </div>
+      <div class="mock-body">
+        <div class="mock-label">Встречи команды</div>
+        <div class="mc">
+          <div class="mrow">
+            <div class="mavt" style="background:linear-gradient(135deg,#6366f1,#4f46e5)">А</div>
+            <div class="mlines"><div class="ml" style="width:68%"></div><div class="ml" style="width:42%"></div></div>
+            <div class="mbadge" style="background:rgba(34,197,94,0.14);color:#86efac;border:1px solid rgba(34,197,94,0.28)">Сегодня 14:00</div>
+          </div>
+        </div>
+        <div class="mc">
+          <div class="mrow">
+            <div class="mavt" style="background:linear-gradient(135deg,#7c3aed,#6366f1)">М</div>
+            <div class="mlines"><div class="ml" style="width:58%"></div><div class="ml" style="width:33%"></div></div>
+            <div class="mbadge" style="background:rgba(99,102,241,0.14);color:#a5b4fc;border:1px solid rgba(99,102,241,0.28)">Завтра</div>
+          </div>
+        </div>
+        <div class="mgrid">
+          <div class="mgc" style="background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2)">
+            <div style="font-size:10px;color:rgba(255,255,255,0.38);text-transform:uppercase;font-weight:700">Задачи</div>
+            <div class="mnum" style="color:#818cf8">12</div>
+            <div class="mbar"><div class="mbarf" style="width:70%;background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+          </div>
+          <div class="mgc" style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2)">
+            <div style="font-size:10px;color:rgba(255,255,255,0.38);text-transform:uppercase;font-weight:700">Настроение</div>
+            <div class="mnum" style="color:#86efac">4.2</div>
+            <div class="mchart">
+              <div class="mchb" style="height:50%;background:rgba(134,239,172,0.45);animation-delay:0.1s"></div>
+              <div class="mchb" style="height:65%;background:rgba(134,239,172,0.45);animation-delay:0.15s"></div>
+              <div class="mchb" style="height:80%;background:rgba(134,239,172,0.5);animation-delay:0.2s"></div>
+              <div class="mchb" style="height:60%;background:rgba(134,239,172,0.45);animation-delay:0.25s"></div>
+              <div class="mchb" style="height:88%;background:rgba(134,239,172,0.55);animation-delay:0.3s"></div>
+              <div class="mchb" style="height:72%;background:rgba(134,239,172,0.5);animation-delay:0.35s"></div>
+              <div class="mchb" style="height:100%;background:rgba(134,239,172,0.65);animation-delay:0.4s"></div>
+            </div>
+          </div>
+        </div>
+        <div style="margin-top:10px;display:flex;align-items:center;gap:8px;padding:10px;background:rgba(255,255,255,0.03);border-radius:10px;border:1px solid rgba(255,255,255,0.06)">
+          <div class="pit-mini">
+            <div class="pit-eye" style="top:30%;left:20%"></div>
+            <div class="pit-eye" style="top:30%;right:20%;animation-delay:0.18s"></div>
+          </div>
+          <div style="flex:1"><div class="ml" style="width:92%;background:rgba(165,180,252,0.18);margin-bottom:5px"></div><div class="ml" style="width:60%;background:rgba(165,180,252,0.13)"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<div class="wrap" id="features">
+  <div class="reveal">
+    <div class="tag">Возможности</div>
+    <h2 class="stitle">Всё что нужно для<br>эффективных 1-on-1</h2>
+    <p class="ssub">Платформа объединяет встречи, задачи, аналитику и AI в единую систему работы с командой.</p>
+  </div>
+  <div class="feat-grid reveal">
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.28)">📅</div>
+      <h3>Умные встречи</h3>
+      <p>Планируйте 1-on-1 с AI-подбором оптимального времени. Транскрипты, заметки, история встреч и видеозвонки.</p>
+    </div>
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(234,179,8,0.12);border:1px solid rgba(234,179,8,0.24)">✅</div>
+      <h3>Задачи и подзадачи</h3>
+      <p>Ставьте задачи прямо на встречах. AI декомпозирует на шаги. Авто-завершение при выполнении всех подзадач.</p>
+    </div>
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(59,130,246,0.12);border:1px solid rgba(59,130,246,0.24)">📊</div>
+      <h3>Аналитика команды</h3>
+      <p>Частота встреч, участники в зоне риска, графики активности за 12 недель. Всё на одном экране.</p>
+    </div>
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(99,102,241,0.14);border:1px solid rgba(99,102,241,0.28)">🤖</div>
+      <h3>AI-ассистент Пит</h3>
+      <p>Встроенный ассистент на базе Claude. Знает вашу команду, встречи и задачи — просто спросите его.</p>
+    </div>
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(34,197,94,0.12);border:1px solid rgba(34,197,94,0.24)">😊</div>
+      <h3>Настроение команды</h3>
+      <p>Ежедневные опросы, AI-анализ ответов, тренды за 12 недель и алерты при снижении настроения.</p>
+    </div>
+    <div class="fcard" data-tilt>
+      <div class="ficon" style="background:rgba(251,146,60,0.12);border:1px solid rgba(251,146,60,0.24)">📚</div>
+      <h3>База знаний</h3>
+      <p>Командная вики с историей изменений. Делитесь инструкциями и знаниями внутри команды.</p>
+    </div>
+  </div>
+</div>
+
+<!-- HOW IT WORKS -->
+<div class="how-wrap">
+  <div class="wrap" style="padding-top:80px;padding-bottom:80px">
+    <div class="reveal" style="text-align:center">
+      <div class="tag">Как это работает</div>
+      <h2 class="stitle" style="margin:0 auto">Три шага до первой встречи</h2>
+    </div>
+    <div class="steps reveal">
+      <div class="step">
+        <div class="snum">1</div>
+        <h3>Создайте команду</h3>
+        <p>Тимлид регистрируется и создаёт команду. Участники получают инвайт-код и присоединяются за пару кликов.</p>
+      </div>
+      <div class="step">
+        <div class="snum">2</div>
+        <h3>Запланируйте встречу</h3>
+        <p>AI предложит оптимальное время. Подтвердите, добавьте тему — встреча создана с уведомлениями.</p>
+      </div>
+      <div class="step">
+        <div class="snum">3</div>
+        <h3>Развивайте команду</h3>
+        <p>Аналитика покажет прогресс каждого. Задачи, настроение, база знаний — всё в одном окне.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PIT SPOTLIGHT -->
+<div class="pit-spot reveal">
+  <div style="max-width:600px;margin:0 auto">
+    <!-- Pit character -->
+    <div style="margin-bottom:24px">
+      <div class="pit-big">
+        <div style="position:absolute;top:-18px;left:50%;transform:translateX(-50%);width:4px;height:16px;background:linear-gradient(to top,#6366f1,#a5b4fc);border-radius:4px">
+          <div style="position:absolute;top:-7px;left:50%;transform:translateX(-50%);width:11px;height:11px;border-radius:50%;background:#c7d2fe;animation:pitAntenna 2s ease-in-out infinite"></div>
+        </div>
+        <div style="position:absolute;top:16%;left:18%;width:34%;height:24%;background:radial-gradient(ellipse,rgba(255,255,255,0.5) 0%,transparent 70%);border-radius:50%;transform:rotate(-30deg);pointer-events:none"></div>
+        <div style="position:absolute;top:32%;left:22%;width:15px;height:15px;border-radius:50%;background:#fff;animation:pitBlink 4.5s ease-in-out infinite;box-shadow:0 0 8px rgba(199,210,254,0.9)">
+          <div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div>
+        </div>
+        <div style="position:absolute;top:32%;right:22%;width:15px;height:15px;border-radius:50%;background:#fff;animation:pitBlink 4.5s ease-in-out infinite 0.18s;box-shadow:0 0 8px rgba(199,210,254,0.9)">
+          <div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div>
+        </div>
+        <div style="position:absolute;bottom:22%;left:50%;transform:translateX(-50%);width:26px;height:11px;border-bottom:3px solid rgba(255,255,255,0.75);border-radius:0 0 26px 26px"></div>
+      </div>
+      <div class="pit-shadow"></div>
+      <div style="margin-top:10px;font-size:12px;font-weight:700;color:#a5b4fc;background:rgba(99,102,241,0.15);border:1px solid rgba(165,180,252,0.3);border-radius:10px;padding:3px 16px;display:inline-block">Пит</div>
+    </div>
+    <h2 class="stitle" style="margin:0 auto 16px">Познакомьтесь с Питом</h2>
+    <p style="font-size:17px;color:var(--txt2);margin-bottom:28px">
+      Персональный AI-ассистент на базе Claude. Пит знает всё о вашей команде, встречах и задачах — просто спросите его в любой момент.
+    </p>
+    <a href="YOUR_APP_URL" class="btn btn-acc btn-lg">Попробовать бесплатно</a>
+  </div>
+</div>
+
+<!-- PRICING -->
+<div class="wrap" id="pricing">
+  <div class="reveal" style="text-align:center">
+    <div class="tag">Тарифы</div>
+    <h2 class="stitle" style="margin:0 auto 12px">Выберите свой план</h2>
+    <p class="ssub" style="margin:0 auto">Начните бесплатно, масштабируйтесь по мере роста команды.</p>
+  </div>
+  <div class="pgrid reveal">
+
+    <!-- Free -->
+    <div class="pcard">
+      <div class="pname">Free</div>
+      <div class="pprice">0₽ <small>/мес</small></div>
+      <div class="pdesc">Идеально для начала</div>
+      <ul class="plist">
+        <li>1 команда</li>
+        <li>До 5 участников</li>
+        <li>Базовые встречи</li>
+        <li>История 30 дней</li>
+        <li class="dim">AI-ассистент</li>
+        <li class="dim">Аналитика</li>
+        <li class="dim">Mood tracking</li>
+      </ul>
+      <a href="YOUR_APP_URL" class="pbtn">Начать бесплатно</a>
+    </div>
+
+    <!-- Pro -->
+    <div class="pcard pop">
+      <div class="pbadge">Популярный</div>
+      <div class="pname" style="color:#818cf8">Pro</div>
+      <div class="pprice">990₽ <small>/мес</small></div>
+      <div class="pdesc">Для активных команд</div>
+      <ul class="plist">
+        <li>3 команды</li>
+        <li>До 20 участников</li>
+        <li>AI-советы по задачам</li>
+        <li>Полная аналитика</li>
+        <li>Mood tracking</li>
+        <li>История неограничена</li>
+        <li class="dim">База знаний</li>
+      </ul>
+      <a href="YOUR_APP_URL" class="pbtn prim">Выбрать Pro</a>
+    </div>
+
+    <!-- Max -->
+    <div class="pcard">
+      <div class="pname">Max</div>
+      <div class="pprice">2490₽ <small>/мес</small></div>
+      <div class="pdesc">Для больших команд</div>
+      <ul class="plist">
+        <li>10 команд</li>
+        <li>До 100 участников</li>
+        <li>Всё из Pro</li>
+        <li>База знаний</li>
+        <li>Видеозвонки</li>
+        <li>Транскрипты встреч</li>
+        <li>Приоритетная поддержка</li>
+      </ul>
+      <a href="YOUR_APP_URL" class="pbtn">Выбрать Max</a>
+    </div>
+
+    <!-- Enterprise -->
+    <div class="pcard" style="border-color:rgba(167,139,250,0.28)">
+      <div class="pname" style="color:#c084fc">Enterprise</div>
+      <div class="pprice" style="font-size:26px">По запросу</div>
+      <div class="pdesc">Для крупных организаций</div>
+      <ul class="plist">
+        <li>Неограниченно команд</li>
+        <li>Неограниченно участников</li>
+        <li>SLA 99.9%</li>
+        <li>On-premise деплой</li>
+        <li>SSO / SAML</li>
+        <li>Поддержка 24/7</li>
+        <li>Кастомная интеграция</li>
+      </ul>
+      <a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(167,139,250,0.35);color:#c084fc">Связаться с нами</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- CTA -->
+<div class="wrap" style="padding-top:20px">
+  <div class="cta-banner reveal">
+    <h2>Начните улучшать команду<br>прямо сейчас</h2>
+    <p>Первая встреча — через 5 минут. Бесплатно. Без кредитки.</p>
+    <div class="cta-btns">
+      <a href="YOUR_APP_URL" class="btn btn-acc btn-xl">Создать аккаунт →</a>
+      <a href="YOUR_APP_URL" class="btn btn-ghost btn-lg">Войти</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="logo">OneOn<span>One</span></div>
+  <div class="flinks">
+    <a href="#features">Возможности</a>
+    <a href="#pricing">Тарифы</a>
+    <a href="#how">Как работает</a>
+    <a href="YOUR_APP_URL">Войти</a>
+    <a href="YOUR_APP_URL">Зарегистрироваться</a>
+  </div>
+  <div class="fcopy">© 2025 OneOnOne. Все права защищены.</div>
+</footer>
+
+<script>
+// Stars
+const starsEl = document.getElementById('stars')
+for (let i = 0; i < 90; i++) {
+  const sz = Math.random() * 2.2 + 0.4
+  const s = document.createElement('div')
+  s.className = 'star'
+  s.style.cssText = `width:${sz}px;height:${sz}px;top:${Math.random()*100}%;left:${Math.random()*100}%;opacity:${(Math.random()*0.4+0.08).toFixed(2)};animation:twinkle ${(2+Math.random()*4).toFixed(1)}s ease-in-out infinite;animation-delay:${(Math.random()*4).toFixed(1)}s`
+  starsEl.appendChild(s)
+}
+
+// 3D tilt on feature cards
+document.querySelectorAll('[data-tilt]').forEach(card => {
+  card.addEventListener('mousemove', e => {
+    const r = card.getBoundingClientRect()
+    const dx = (e.clientX - r.left - r.width/2) / (r.width/2)
+    const dy = (e.clientY - r.top  - r.height/2) / (r.height/2)
+    card.style.transition = 'transform 0.08s'
+    card.style.transform = `perspective(700px) rotateY(${dx*9}deg) rotateX(${-dy*9}deg) translateZ(12px)`
+  })
+  card.addEventListener('mouseleave', () => {
+    card.style.transition = 'transform 0.55s cubic-bezier(0.34,1.56,0.64,1)'
+    card.style.transform = 'perspective(700px) rotateY(0deg) rotateX(0deg) translateZ(0)'
+  })
+})
+
+// Scroll reveal
+const obs = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('vis') })
+}, { threshold: 0.1 })
+document.querySelectorAll('.reveal').forEach(el => obs.observe(el))
+
+// Smooth nav shrink on scroll
+window.addEventListener('scroll', () => {
+  document.querySelector('nav').style.padding = window.scrollY > 40 ? '10px 48px' : '14px 48px'
+}, { passive: true })
+</script>
+</body>
+</html>
