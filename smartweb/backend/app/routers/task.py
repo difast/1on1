@@ -2,17 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-import httpx, json, re
+import httpx, json
 from pydantic import BaseModel as PydanticBaseModel
 from app.database import get_db
 from app.models.task import Task
 from app.models.user import User
 from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 from app.tasks.reminders import send_new_task_notification
-
-router = APIRouter()
-
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+from app.prompts import AITUNNEL_KEY, task_ai_prompt
 
 class TaskAIRequest(PydanticBaseModel):
     title: str
@@ -20,40 +17,13 @@ class TaskAIRequest(PydanticBaseModel):
     due_date: Optional[str] = None
     role: str = "member"
 
-def _extract_json(text: str):
-    """Find the first balanced {...} object in text and parse it."""
-    start = text.find('{')
-    if start == -1:
-        return None
-    depth = 0
-    for i in range(start, len(text)):
-        if text[i] == '{':
-            depth += 1
-        elif text[i] == '}':
-            depth -= 1
-            if depth == 0:
-                try:
-                    return json.loads(text[start:i + 1])
-                except Exception:
-                    return None
-    return None
-
 @router.post("/ai-advice")
 def get_task_ai_advice(data: TaskAIRequest):
     role_ctx = "тимлида" if data.role == "lead" else "участника команды"
     due_ctx = f" Срок: {data.due_date}." if data.due_date else ""
     status_map = {"in_progress": "в работе", "review": "на ревью", "blocked": "заблокирована", "done": "выполнена"}
     status_label = status_map.get(data.status or "in_progress", "в работе")
-    prompt = (
-        f"Ты {role_ctx} в IT-команде.\n"
-        f"Задача: \"{data.title}\". Статус: {status_label}.{due_ctx}\n"
-        f"Составь 4–5 конкретных последовательных шагов выполнения ИМЕННО ЭТОЙ задачи. "
-        f"Категорически запрещены общие фразы вроде 'уточни требования', 'разбей на подзадачи', 'обсудись с командой'. "
-        f"Каждый шаг должен прямо вытекать из названия задачи. "
-        f"Пример: задача 'Купить помидоры в Петербурге' → шаги: Забронировать билет Москва–Петербург, Найти ближайший рынок, Купить помидоры, Вернуться в Москву. "
-        f"Начинай каждый шаг с глагола. "
-        f"Ответ ТОЛЬКО JSON: {{\"steps\": [\"шаг 1\", \"шаг 2\", \"шаг 3\", \"шаг 4\"]}}"
-    )
+    prompt = task_ai_prompt(data.title, role_ctx, status_label, due_ctx)
     try:
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
@@ -62,19 +32,39 @@ def get_task_ai_advice(data: TaskAIRequest):
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=25,
         )
-        resp.raise_for_status()
-        raw = resp.json()["choices"][0]["message"]["content"]
-        result = _extract_json(raw)
-        if result and result.get("steps"):
-            return {"steps": result["steps"]}
-        # Fallback: split numbered lines into steps
+        raw_body = resp.json()
+        if "choices" not in raw_body:
+            raise ValueError(f"no choices: {raw_body}")
+        raw = raw_body["choices"][0]["message"]["content"]
+
+        # Strategy 1: find balanced JSON object
+        start = raw.find('{')
+        if start != -1:
+            depth, end = 0, -1
+            for i in range(start, len(raw)):
+                if raw[i] == '{': depth += 1
+                elif raw[i] == '}':
+                    depth -= 1
+                    if depth == 0: end = i; break
+            if end != -1:
+                try:
+                    obj = json.loads(raw[start:end + 1])
+                    if obj.get("steps"):
+                        return {"steps": obj["steps"]}
+                except Exception:
+                    pass
+
+        # Strategy 2: numbered lines as steps
         lines = [l.strip().lstrip("0123456789.-) ") for l in raw.splitlines() if l.strip()]
-        steps = [l for l in lines if len(l) > 8][:5]
+        steps = [l for l in lines if len(l) > 10 and not l.startswith('{') and not l.startswith('"steps')]
         if steps:
-            return {"steps": steps}
-        raise ValueError("no steps")
-    except Exception:
-        raise HTTPException(status_code=503, detail="AI service unavailable")
+            return {"steps": steps[:5]}
+
+        raise ValueError("could not extract steps")
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=503, detail=f"AI error: {e}")
 
 @router.post("/", response_model=TaskOut)
 def create_task(data: TaskCreate, db: Session = Depends(get_db)):

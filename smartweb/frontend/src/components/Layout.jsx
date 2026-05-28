@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
+import PitAssistant from './PitAssistant'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -344,6 +345,30 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
+          {/* Payment stub — team lead only */}
+          {user?.role === 'team_lead' && (
+            <button
+              onClick={() => alert('Оплата — скоро будет доступна')}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                fontSize: 12, fontWeight: 700, color: '#16a34a',
+                padding: '5px 12px', borderRadius: 8,
+                border: '1px solid #dcfce7', background: '#f0fdf4', cursor: 'pointer',
+                letterSpacing: '0.02em', whiteSpace: 'nowrap',
+                transition: 'all 0.15s',
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
+              onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
+            >
+              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
+                <rect x="1" y="2.5" width="11" height="8" rx="1.5" stroke="#16a34a" strokeWidth="1.3"/>
+                <path d="M1 5.5h11" stroke="#16a34a" strokeWidth="1.1"/>
+                <rect x="2.5" y="7.5" width="3" height="1.2" rx="0.4" fill="#16a34a"/>
+              </svg>
+              Оплата
+            </button>
+          )}
+
           <div ref={userMenuRef} style={{ position: 'relative' }}>
             <button
               onClick={() => setShowUserMenu(v => !v)}
@@ -369,7 +394,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 overflow: 'hidden', animation: 'popIn 0.18s var(--ease-spring)', zIndex: 200,
               }}>
                 <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
-                  🔑 Сменить пароль
+                  Сменить пароль
                 </MenuItemBtn>
                 <MenuItemBtn onClick={toggleDark}>
                   {isDark ? 'Светлая тема' : 'Тёмная тема'}
@@ -640,6 +665,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {children}
         </main>
       </div>
+      <PitAssistant />
     </div>
   )
 }

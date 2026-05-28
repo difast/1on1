@@ -78,6 +78,9 @@ export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
 // Admin
 export const getAdminStats = () => api.get('/users/admin/stats')
 
+// Assistant (Пит)
+export const pitChat = (messages) => api.post('/assistant/chat', { messages })
+
 // Knowledge Base
 export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)
 export const createKnowledgeArticle = (data) => api.post('/knowledge/', data)
