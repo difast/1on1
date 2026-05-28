@@ -11,7 +11,6 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
-import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
 import DeadlineBanner from './DeadlineBanner'
@@ -642,7 +641,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         if (type === 'new_task') setActiveView('tasks')
         else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
       }}
-      onKnowledgeBase={() => setActiveView('knowledge')}>
+>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -695,11 +694,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}
-
-        {/* Knowledge base view */}
-        {activeView === 'knowledge' && (
-          <KnowledgeBase teamId={selectedTeamId} userId={user.id} canEdit={true} />
-        )}
 
         {/* Notes view */}
         {activeView === 'notes' && (

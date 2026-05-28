@@ -7,7 +7,6 @@ import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
-import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
 import DeadlineBanner from './DeadlineBanner'
@@ -332,7 +331,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         if (type === 'new_task') setActiveTab('tasks')
         else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
       }}
-      onKnowledgeBase={() => setActiveTab('knowledge')}>
+>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
@@ -860,22 +859,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {/* Tab: Analytics */}
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
 
-        {activeTab === 'knowledge' && (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center' }}>
-            <div style={{ width: 64, height: 64, borderRadius: 16, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-                <rect x="4" y="2" width="16" height="22" rx="2.5" stroke="#7c3aed" strokeWidth="1.8"/>
-                <path d="M8 8h8M8 13h8M8 18h5" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round"/>
-                <path d="M20 10v14" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round"/>
-              </svg>
-            </div>
-            <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 8 }}>База знаний</p>
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', maxWidth: 340, lineHeight: 1.6 }}>
-              Здесь будут храниться документы и материалы вашей команды. Раздел находится в разработке.
-            </p>
-            <span style={{ marginTop: 20, fontSize: 12, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8, padding: '4px 14px', letterSpacing: '0.04em' }}>СКОРО</span>
-          </div>
-        )}
       </div>
 
       <QuickWidget
