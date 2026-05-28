@@ -4,9 +4,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
+
+@app.on_event("startup")
+def run_migrations():
+    from alembic.config import Config
+    from alembic import command
+    import os
+    cfg = Config(os.path.join(os.path.dirname(__file__), "../../alembic.ini"))
+    cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "../../alembic"))
+    command.upgrade(cfg, "head")
 
 _origins_env = os.getenv("CORS_ORIGINS", "")
 _extra_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
@@ -32,6 +41,7 @@ app.include_router(video.router, prefix="/api/video", tags=["video"])
 app.include_router(mood.router, prefix="/api/mood", tags=["mood"])
 app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"])
 app.include_router(assistant.router, prefix="/api/assistant", tags=["assistant"])
+app.include_router(subtask.router, prefix="/api/subtasks", tags=["subtasks"])
 
 @app.get("/")
 @app.get("/api/health")

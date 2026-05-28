@@ -13,6 +13,7 @@ import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
+import SubtaskList from './SubtaskList'
 import DeadlineBanner from './DeadlineBanner'
 import MoodDropBanner from './MoodDropBanner'
 
@@ -87,6 +88,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [expandedTasks, setExpandedTasks] = useState(new Set())
   const [taskForms, setTaskForms] = useState({})
   const [editingTask, setEditingTask] = useState(null)
+  const [subtaskRefresh, setSubtaskRefresh] = useState({})
 
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -901,9 +903,23 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                             onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                             title="Удалить">✕</button>
-                          {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                          {!task.completed && (
+                            <TaskAIHelper
+                              task={task}
+                              role="lead"
+                              onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
+                            />
+                          )}
                         </div>
                       )}
+                      <SubtaskList
+                        taskId={task.id}
+                        refreshKey={subtaskRefresh[task.id] || 0}
+                        onAllDone={() => {
+                          updateTask(task.id, { status: 'done', completed: true }).catch(() => {})
+                          setMyTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'done', completed: true } : t))
+                        }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -987,9 +1003,23 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                       }} canMarkDone={true} />
                                       <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
                                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
-                                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                                      {!task.completed && (
+                                        <TaskAIHelper
+                                          task={task}
+                                          role="lead"
+                                          onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
+                                        />
+                                      )}
                                     </div>
                                   )}
+                                  <SubtaskList
+                                    taskId={task.id}
+                                    refreshKey={subtaskRefresh[task.id] || 0}
+                                    onAllDone={() => {
+                                      updateTask(task.id, { status: 'done', completed: true }).catch(() => {})
+                                      setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(t => t.id === task.id ? { ...t, status: 'done', completed: true } : t) }))
+                                    }}
+                                  />
                                 </div>
                               ))}
                               {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
@@ -1293,39 +1323,54 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                   {tasks !== undefined && tasks.map(task => {
                                     const st = task.status || 'in_progress'
                                     return (
-                                      <div key={task.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 8, padding: '4px 0' }}>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                          <p style={{
-                                            fontSize: 12, lineHeight: 1.4,
-                                            color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                                            textDecoration: task.completed ? 'line-through' : 'none',
-                                          }}>
-                                            {task.title || task.description}
-                                          </p>
-                                          {task.due_date && (() => {
-                                            const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
-                                            return (
-                                              <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                                {overdue ? 'Просрочено · ' : 'до '}
-                                                {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                                              </p>
-                                            )
-                                          })()}
+                                      <div key={task.id} style={{ padding: '4px 0' }}>
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                                          <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{
+                                              fontSize: 12, lineHeight: 1.4,
+                                              color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
+                                              textDecoration: task.completed ? 'line-through' : 'none',
+                                            }}>
+                                              {task.title || task.description}
+                                            </p>
+                                            {task.due_date && (() => {
+                                              const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                                              return (
+                                                <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                                  {overdue ? 'Просрочено · ' : 'до '}
+                                                  {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                                </p>
+                                              )
+                                            })()}
+                                          </div>
+                                          <TaskStatusSelect
+                                            status={st}
+                                            onChange={async (newStatus) => {
+                                              try {
+                                                await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                                setMemberTasks(prev => ({
+                                                  ...prev,
+                                                  [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                                    t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
+                                                  ),
+                                                }))
+                                              } catch {}
+                                            }}
+                                            canMarkDone={true}
+                                          />
                                         </div>
-                                        <TaskStatusSelect
-                                          status={st}
-                                          onChange={async (newStatus) => {
-                                            try {
-                                              await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
-                                              setMemberTasks(prev => ({
-                                                ...prev,
-                                                [member.user_id]: (prev[member.user_id] || []).map(t =>
-                                                  t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
-                                                ),
-                                              }))
-                                            } catch {}
+                                        <SubtaskList
+                                          taskId={task.id}
+                                          refreshKey={subtaskRefresh[task.id] || 0}
+                                          onAllDone={() => {
+                                            updateTask(task.id, { status: 'done', completed: true }).catch(() => {})
+                                            setMemberTasks(prev => ({
+                                              ...prev,
+                                              [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                                t.id === task.id ? { ...t, status: 'done', completed: true } : t
+                                              ),
+                                            }))
                                           }}
-                                          canMarkDone={true}
                                         />
                                       </div>
                                     )

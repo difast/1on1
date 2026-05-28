@@ -92,4 +92,10 @@ export const deleteKnowledgeArticle = (id) => api.delete(`/knowledge/${id}`)
 export const submitMood = (data) => api.post('/mood/', data)
 export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)
 
+// Subtasks
+export const createSubtasks = (taskId, titles) => api.post('/subtasks/bulk', { task_id: taskId, titles })
+export const getSubtasks = (taskId) => api.get('/subtasks/', { params: { task_id: taskId } })
+export const updateSubtask = (id, data) => api.patch(`/subtasks/${id}`, data)
+export const deleteSubtask = (id) => api.delete(`/subtasks/${id}`)
+
 export default api

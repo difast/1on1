@@ -1,7 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
   const [open, setOpen] = useState(false)
+
+  useEffect(() => {
+    window.dispatchEvent(new CustomEvent('quickwidget-toggle', { detail: { open } }))
+  }, [open])
 
   const fmtDate = (d) =>
     new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })

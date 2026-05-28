@@ -9,6 +9,7 @@ import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
 import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
+import SubtaskList from './SubtaskList'
 import DeadlineBanner from './DeadlineBanner'
 import UserCard from './UserCard'
 
@@ -36,6 +37,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [tasks, setTasks] = useState([])
   const [selfTaskForm, setSelfTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
   const [editingTask, setEditingTask] = useState(null)
+  const [subtaskRefresh, setSubtaskRefresh] = useState({})
 
   // Notes state
   const [notes, setNotes] = useState([])
@@ -740,9 +742,23 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                               title="Удалить">✕</button>
                           )}
-                          {!task.completed && <TaskAIHelper task={task} role="member" />}
+                          {!task.completed && (
+                            <TaskAIHelper
+                              task={task}
+                              role="member"
+                              onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
+                            />
+                          )}
                         </div>
                       )}
+                      <SubtaskList
+                        taskId={task.id}
+                        refreshKey={subtaskRefresh[task.id] || 0}
+                        onAllDone={() => {
+                          updateTask(task.id, { status: 'done', completed: true }).catch(() => {})
+                          setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: 'done', completed: true } : t))
+                        }}
+                      />
                     </div>
                   )
                 })}

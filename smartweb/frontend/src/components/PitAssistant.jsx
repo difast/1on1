@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
 
 const PIT_STYLES = `
@@ -39,8 +39,15 @@ export default function PitAssistant() {
   const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [shifted, setShifted] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+
+  useEffect(() => {
+    const handler = (e) => setShifted(e.detail.open)
+    window.addEventListener('quickwidget-toggle', handler)
+    return () => window.removeEventListener('quickwidget-toggle', handler)
+  }, [])
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -184,7 +191,12 @@ export default function PitAssistant() {
       )}
 
       {/* ── 3D Character ── */}
-      <div style={{ position: 'fixed', bottom: 90, right: 24, zIndex: 9350, userSelect: 'none' }}>
+      <div style={{
+        position: 'fixed', bottom: 90,
+        right: shifted ? 320 : 24,
+        zIndex: 9350, userSelect: 'none',
+        transition: 'right 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
+      }}>
         {/* Shadow */}
         <div style={{
           width: 52, height: 10, borderRadius: '50%', margin: '0 auto',
