@@ -123,9 +123,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   }, [isDark])
 
   useEffect(() => {
-    if (!user?.id) return
-    getUserStats(user.id).then(r => setSidebarStats(r.data)).catch(() => {})
-  }, [user?.id])
+    if (!currentUser?.id) return
+    getUserStats(currentUser.id).then(r => setSidebarStats(r.data)).catch(() => {})
+  }, [currentUser?.id])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
