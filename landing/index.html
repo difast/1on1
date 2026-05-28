@@ -25,11 +25,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 @keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 @keyframes borderGlow{0%,100%{border-color:rgba(99,102,241,.3)}50%{border-color:rgba(99,102,241,.7)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
-@keyframes panelBreath{0%,100%{opacity:.42}50%{opacity:.55}}
 @keyframes liftBounce{0%{transform:translateY(0)}30%{transform:translateY(-6px)}55%{transform:translateY(2px)}75%{transform:translateY(-2px)}100%{transform:translateY(0)}}
-@keyframes floorBlink{0%,100%{opacity:1}50%{opacity:.3}}
-@keyframes rainFall{from{transform:translateY(-40px) translateX(0);opacity:0}10%{opacity:.6}90%{opacity:.6}to{transform:translateY(100px) translateX(-20px);opacity:0}}
-@keyframes sakuraFall{from{transform:translateY(-30px) rotate(0deg);opacity:0}15%{opacity:.7}85%{opacity:.7}to{transform:translateY(110px) rotate(180deg);opacity:0}}
+@keyframes rainFall{from{transform:translateY(-40px) translateX(0);opacity:0}10%{opacity:.7}90%{opacity:.7}to{transform:translateY(110px) translateX(-20px);opacity:0}}
+@keyframes sakuraFall{from{transform:translateY(-30px) rotate(0deg);opacity:0}15%{opacity:.8}85%{opacity:.8}to{transform:translateY(120px) rotate(200deg);opacity:0}}
 
 /* ── NAV ── */
 nav{position:fixed;inset:0 0 auto;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:60px;background:rgba(6,6,9,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}
@@ -47,55 +45,62 @@ nav{position:fixed;inset:0 0 auto;z-index:200;display:flex;align-items:center;ju
 .btn-xl{padding:14px 32px;font-size:15px;border-radius:10px}
 
 /* ═══════════════════════
-   HERO
+   HERO — Cyberpunk sunset
 ═══════════════════════ */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 40px 80px;position:relative;overflow:hidden}
-
-/* Background photo panels */
-.hero-imgs{position:absolute;inset:48px;display:flex;gap:14px;pointer-events:none;z-index:0}
-.hero-img{flex:1;border-radius:20px;background-size:cover;background-position:center;position:relative;overflow:hidden;animation:panelBreath 6s ease-in-out infinite}
-.hero-img-r{animation-delay:-3s}
-/* Japan panel */
-.img-japan{
-  background-color:#010d05;
-  background-image:
-    linear-gradient(180deg,rgba(0,8,3,.55) 0%,rgba(0,8,3,.15) 45%,rgba(0,8,3,.6) 100%),
-    url('https://images.unsplash.com/photo-1528360983277-13d401cdc186?auto=format&fit=crop&w=900&q=80');
-}
-/* Cyberpunk panel */
-.img-cyber{
-  background-color:#03000d;
-  background-image:
-    linear-gradient(180deg,rgba(3,0,10,.55) 0%,rgba(3,0,10,.15) 45%,rgba(3,0,10,.6) 100%),
-    url('https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=900&q=80');
+.hero{
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:120px 40px 80px;
+  position:relative;overflow:hidden;
+  background:var(--bg);
 }
 
-/* Overlay decorations */
-.img-japan .panel-fx{position:absolute;inset:0;overflow:hidden}
-.img-cyber .panel-fx{position:absolute;inset:0;overflow:hidden}
-/* Sakura petals (Japan) */
-.sakura{position:absolute;width:5px;height:5px;border-radius:50% 0 50% 0;background:rgba(255,180,200,.65);animation:sakuraFall linear infinite}
-/* Rain drops (Cyberpunk) */
-.rain{position:absolute;width:1px;background:linear-gradient(180deg,transparent,rgba(99,102,241,.6),transparent);animation:rainFall linear infinite}
+/* Floating background panel (cyberpunk) */
+.hero-bg{
+  position:absolute;inset:8px;
+  border-radius:18px;overflow:hidden;
+  z-index:0;pointer-events:none;
+}
+.hero-bg-inner{
+  position:absolute;inset:0;
+  background-color:#0a0018;
+  background-image:
+    linear-gradient(160deg,rgba(50,0,90,.55) 0%,rgba(100,40,0,.18) 50%,rgba(20,0,60,.6) 100%),
+    url('https://images.unsplash.com/photo-1519501025264-65ba15a82390?auto=format&fit=crop&w=1400&q=85') center/cover no-repeat;
+}
+/* Subtle scan-line texture */
+.hero-bg-inner::after{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(99,102,241,.018) 3px,rgba(99,102,241,.018) 4px);
+  pointer-events:none;
+}
 
-/* Vignette over panels */
-.hero-vignette{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 50%,transparent 20%,var(--bg) 68%);pointer-events:none;z-index:1}
-/* Inset shadow to blend edges */
-.hero-imgs::after{content:'';position:absolute;inset:-48px;background:radial-gradient(ellipse at 50% 50%,transparent 30%,var(--bg) 75%);pointer-events:none;z-index:5}
+/* Overlay to make hero text readable */
+.hero-vignette{
+  position:absolute;inset:0;
+  background:radial-gradient(ellipse 75% 65% at 50% 50%,transparent 0%,rgba(6,6,9,.55) 70%,rgba(6,6,9,.88) 100%);
+  pointer-events:none;z-index:1;
+}
 
-.hero>*:not(.hero-imgs):not(.hero-vignette){position:relative;z-index:2}
-.badge{display:inline-flex;align-items:center;gap:7px;background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);border-radius:6px;padding:5px 13px;font-size:12px;color:var(--acc3);font-weight:600;letter-spacing:.03em;margin-bottom:32px;animation:fadeUp .6s ease both}
+/* Rain particles (cyberpunk) */
+.panel-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.rain{position:absolute;width:1px;background:linear-gradient(180deg,transparent,rgba(140,100,255,.75),transparent);animation:rainFall linear infinite}
+/* Sakura petals */
+.sakura{position:absolute;width:5px;height:5px;border-radius:50% 0 50% 0;background:rgba(255,195,215,.75);animation:sakuraFall linear infinite}
+
+.hero>*:not(.hero-bg):not(.hero-vignette){position:relative;z-index:2}
+.badge{display:inline-flex;align-items:center;gap:7px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.28);border-radius:6px;padding:5px 13px;font-size:12px;color:var(--acc3);font-weight:600;letter-spacing:.03em;margin-bottom:32px;animation:fadeUp .6s ease both}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--acc3);animation:antPulse 2s ease-in-out infinite}
 h1.ht{font-size:clamp(44px,7vw,88px);font-weight:900;line-height:1;letter-spacing:-0.04em;margin-bottom:24px;animation:fadeUp .6s .1s ease both}
 .grad{background:linear-gradient(135deg,#fff 0%,#c7d2fe 30%,#818cf8 60%,#6366f1 100%);background-size:200% 200%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:gradShift 5s ease-in-out infinite}
 .hero-sub{font-size:18px;color:var(--txt2);max-width:480px;line-height:1.65;font-weight:400;margin:0 auto 40px;animation:fadeUp .6s .2s ease both}
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .3s ease both;margin-bottom:56px}
 .hero-meta{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s ease both}
-.hero-meta-i{font-size:12px;color:var(--txt3);display:flex;align-items:center;gap:6px;font-weight:500}
-.hero-meta-i::before{content:'';width:4px;height:4px;border-radius:50%;background:rgba(99,102,241,.6);flex-shrink:0}
+.hero-meta-i{font-size:12px;color:rgba(255,255,255,.45);display:flex;align-items:center;gap:6px;font-weight:500}
+.hero-meta-i::before{content:'';width:4px;height:4px;border-radius:50%;background:rgba(99,102,241,.65);flex-shrink:0}
 
 /* Terminal */
-.term-wrap{width:100%;max-width:680px;margin:56px auto 0;border-radius:14px;border:1px solid var(--brd2);background:var(--bg1);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);animation:fadeUp .6s .5s ease both}
+.term-wrap{width:100%;max-width:680px;margin:56px auto 0;border-radius:14px;border:1px solid var(--brd2);background:rgba(12,12,18,.82);backdrop-filter:blur(16px);overflow:hidden;box-shadow:0 40px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);animation:fadeUp .6s .5s ease both}
 .term-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--brd);background:rgba(255,255,255,.02)}
 .tdot{width:11px;height:11px;border-radius:50%}
 .term-title{flex:1;text-align:center;font-size:11px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace}
@@ -110,6 +115,33 @@ h1.ht{font-size:clamp(44px,7vw,88px);font-weight:900;line-height:1;letter-spacin
 .pit-eye-sm{position:absolute;border-radius:50%;background:#fff;width:6px;height:6px;animation:pitBlink 4s ease-in-out infinite}
 .pit-msg{font-family:-apple-system,sans-serif;font-size:13px;color:var(--txt2);line-height:1.6}
 .pit-msg b{color:var(--txt);font-weight:600}
+
+/* ═══════════════════════
+   FEATURES — Japan garden
+═══════════════════════ */
+.jp-section{position:relative;background:var(--bg)}
+.jp-bg{
+  position:absolute;inset:8px;
+  border-radius:18px;overflow:hidden;
+  z-index:0;pointer-events:none;
+}
+.jp-bg-inner{
+  position:absolute;inset:0;
+  background-color:#010d05;
+  background-image:
+    linear-gradient(170deg,rgba(0,10,2,.42) 0%,rgba(0,10,2,.1) 48%,rgba(0,10,2,.48) 100%),
+    url('https://images.unsplash.com/photo-1526481280693-3bfa7568e0f3?auto=format&fit=crop&w=1400&q=85') center/cover no-repeat;
+}
+.jp-content{position:relative;z-index:1}
+
+/* Glassmorphism for bento cards on Japan bg */
+.jp-section .bcard{
+  background:rgba(6,6,9,.8);
+  backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
+  border-color:rgba(255,255,255,.09);
+}
+.jp-section .bcard:hover{background:rgba(10,10,18,.9)}
 
 /* ── BENTO ── */
 .wrap{max-width:1160px;margin:0 auto;padding:100px 40px}
@@ -193,125 +225,64 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .lift-inner{max-width:860px;margin:0 auto;padding:0 40px}
 .lift-header{text-align:center;margin-bottom:52px}
 
-/* The shaft container */
 .shaft-wrap{position:relative}
-
-/* Shaft background */
 .shaft{
-  position:relative;
-  height:380px;
-  background:var(--bg1);
-  border:1px solid var(--brd2);
-  border-radius:20px;
-  overflow:hidden;
+  position:relative;height:380px;
+  background:var(--bg1);border:1px solid var(--brd2);
+  border-radius:20px;overflow:hidden;
 }
-/* Shaft inner walls */
-.shaft::before,.shaft::after{
-  content:'';
-  position:absolute;
-  top:0;bottom:0;
-  width:56px;
-  background:var(--bg2);
-  z-index:0;
-}
+.shaft::before,.shaft::after{content:'';position:absolute;top:0;bottom:0;width:56px;background:var(--bg2);z-index:0}
 .shaft::before{left:0;border-right:1px solid var(--brd2);border-radius:20px 0 0 20px}
 .shaft::after{right:0;border-left:1px solid var(--brd2);border-radius:0 20px 20px 20px}
-/* Guide rails */
 .rail{position:absolute;top:20px;bottom:20px;width:5px;background:repeating-linear-gradient(180deg,var(--brd2) 0,var(--brd2) 6px,transparent 6px,transparent 16px);border-radius:3px;z-index:1}
-.rail-l{left:24px}
-.rail-r{right:24px}
-/* Shaft grid lines (background) */
+.rail-l{left:24px}.rail-r{right:24px}
 .shaft-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px);background-size:100% 48px;z-index:0;pointer-events:none}
 
-/* Floor indicator display */
 .floor-display{
-  position:absolute;
-  top:18px;left:50%;transform:translateX(-50%);
+  position:absolute;top:18px;left:50%;transform:translateX(-50%);
   display:flex;align-items:center;gap:10px;
   background:var(--bg2);border:1px solid rgba(99,102,241,.3);
   border-radius:10px;padding:8px 20px;z-index:10;
   box-shadow:0 0 20px rgba(99,102,241,.15);
 }
-.floor-digit{
-  font-family:'SF Mono','Fira Code','Courier New',monospace;
-  font-size:24px;font-weight:900;
-  color:var(--acc3);letter-spacing:.08em;
-  min-width:24px;text-align:center;
-  transition:opacity .15s;
-}
+.floor-digit{font-family:'SF Mono','Fira Code','Courier New',monospace;font-size:24px;font-weight:900;color:var(--acc3);letter-spacing:.08em;min-width:24px;text-align:center;transition:opacity .15s}
 .floor-label{font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:.08em}
 .floor-arrow{font-size:12px;color:var(--acc3)}
 
-/* ── THE ELEVATOR CAR ── */
 .lift-car{
-  position:absolute;
-  left:72px;right:72px;
-  /* JS will set top dynamically */
-  background:var(--bg1);
-  border:1px solid rgba(99,102,241,.28);
-  border-radius:12px;
-  overflow:hidden;
-  z-index:5;
+  position:absolute;left:72px;right:72px;
+  background:var(--bg1);border:1px solid rgba(99,102,241,.28);
+  border-radius:12px;overflow:hidden;z-index:5;
   box-shadow:0 0 0 1px rgba(255,255,255,.04),0 12px 40px rgba(0,0,0,.6);
-  /* Top accent */
 }
 .lift-car::before{content:'';position:absolute;top:0;left:5%;right:5%;height:2px;background:linear-gradient(90deg,transparent,rgba(99,102,241,.7),transparent);pointer-events:none;z-index:10}
-/* Bounce class applied after descent */
 .lift-car.bouncing{animation:liftBounce .4s ease forwards}
 
-/* Car ceiling / top bar */
-.car-ceiling{
-  display:flex;align-items:center;gap:8px;padding:12px 18px 10px;
-  border-bottom:1px solid var(--brd);
-  background:rgba(255,255,255,.02);
-}
+.car-ceiling{display:flex;align-items:center;gap:8px;padding:12px 18px 10px;border-bottom:1px solid var(--brd);background:rgba(255,255,255,.02)}
 .car-light{width:12px;height:12px;border-radius:50%;background:rgba(99,102,241,.15);border:1px solid rgba(99,102,241,.25);flex-shrink:0}
 .car-light.on{background:rgba(165,180,252,.7);box-shadow:0 0 8px rgba(165,180,252,.5)}
 .car-num-badge{margin-left:auto;font-size:10px;font-weight:700;color:var(--txt3);letter-spacing:.08em;background:rgba(255,255,255,.04);border:1px solid var(--brd);border-radius:5px;padding:2px 8px}
-/* Pit face in car ceiling */
 .car-pit-win{width:32px;height:32px;border-radius:50%;background:radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#6366f1 38%,#3730a3 68%,#1e1b4b 100%);flex-shrink:0;position:relative;animation:pitGlow 3s ease-in-out infinite}
 .car-pit-eye{position:absolute;border-radius:50%;background:#fff;width:5px;height:5px;animation:pitBlink 4s ease-in-out infinite}
 
-/* ── DOORS ── */
 .door-zone{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center;min-height:168px}
-.door{
-  position:absolute;top:0;bottom:0;
-  width:50%;
-  z-index:4;
-  background:var(--bg1);
-  transition:transform .88s cubic-bezier(.4,0,.2,1);
-  will-change:transform;
-}
-/* Door panel details */
+.door{position:absolute;top:0;bottom:0;width:50%;z-index:4;background:var(--bg1);transition:transform .88s cubic-bezier(.4,0,.2,1);will-change:transform}
 .door::before{content:'';position:absolute;inset:10px;border:1px solid rgba(255,255,255,.05);border-radius:6px}
 .door::after{content:'';position:absolute;inset:18px;border:1px solid rgba(255,255,255,.03);border-radius:4px}
-/* Center seam + glow when closed */
 .door-l{left:0;border-right:2px solid rgba(99,102,241,.35);box-shadow:inset -10px 0 20px rgba(0,0,0,.4)}
 .door-r{right:0;border-left:2px solid rgba(99,102,241,.35);box-shadow:inset 10px 0 20px rgba(0,0,0,.4)}
-/* Handle */
 .d-handle{position:absolute;top:50%;transform:translateY(-50%);width:4px;height:32px;border-radius:4px;background:rgba(99,102,241,.4)}
-.door-l .d-handle{right:10px}
-.door-r .d-handle{left:10px}
-/* Open state */
+.door-l .d-handle{right:10px}.door-r .d-handle{left:10px}
 .lift-car.open .door-l{transform:translateX(-100%);box-shadow:none}
 .lift-car.open .door-r{transform:translateX(100%);box-shadow:none}
 
-/* CTA content inside car */
-.car-cta{
-  position:relative;z-index:2;
-  text-align:center;padding:32px 40px;
-  opacity:0;transform:translateY(6px);
-  transition:opacity .45s ease .55s,transform .45s ease .55s;
-}
+.car-cta{position:relative;z-index:2;text-align:center;padding:32px 40px;opacity:0;transform:translateY(6px);transition:opacity .45s ease .55s,transform .45s ease .55s}
 .lift-car.open .car-cta{opacity:1;transform:translateY(0)}
 .car-cta h2{font-size:clamp(20px,2.8vw,32px);font-weight:800;letter-spacing:-.03em;margin-bottom:10px}
 .car-cta p{font-size:14px;color:var(--txt2);margin-bottom:24px;line-height:1.6}
 .car-cta-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
-/* Car floor strip */
 .car-floor{height:8px;background:linear-gradient(180deg,rgba(99,102,241,.05),transparent);border-top:1px solid rgba(99,102,241,.1)}
-
-/* Lobby / platform at bottom of shaft */
 .lobby{position:absolute;bottom:0;left:0;right:0;height:16px;background:linear-gradient(180deg,var(--brd2),var(--brd));z-index:3}
 .lobby::before{content:'▲ LOBBY';position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:var(--acc3);letter-spacing:.15em;opacity:.6;white-space:nowrap}
 
@@ -332,8 +303,8 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   nav{padding:0 20px}
   .nav-links{display:none}
   .hero{padding:100px 20px 60px}
-  .hero-imgs{inset:24px;gap:8px}
-  .hero-imgs::after{inset:-24px}
+  .hero-bg{inset:6px}
+  .jp-bg{inset:6px}
   .wrap{padding:70px 20px}
   .bento{grid-template-columns:1fr 1fr}
   .b-wide,.b-narrow,.b-half{grid-column:span 2}
@@ -354,7 +325,6 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   .hero-actions,.car-cta-btns{flex-direction:column}
   .term-wrap{display:none}
   .bento{grid-template-columns:1fr}
-  .hero-imgs{flex-direction:column}
   .lift-car{left:32px;right:32px}
 }
 </style>
@@ -374,18 +344,12 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </nav>
 
-<!-- ═══ HERO ═══ -->
+<!-- ═══ HERO — Cyberpunk Sunset ═══ -->
 <section class="hero" id="home">
-  <!-- Background image panels -->
-  <div class="hero-imgs">
-    <!-- Japan forest panel -->
-    <div class="hero-img img-japan">
-      <div class="panel-fx" id="jpFx"></div>
-    </div>
-    <!-- Cyberpunk city panel -->
-    <div class="hero-img img-cyber hero-img-r">
-      <div class="panel-fx" id="cyFx"></div>
-    </div>
+  <!-- Cyberpunk sunset background panel (inset 8px) -->
+  <div class="hero-bg">
+    <div class="hero-bg-inner"></div>
+    <div class="panel-fx" id="cyFx"></div>
   </div>
   <div class="hero-vignette"></div>
 
@@ -426,46 +390,53 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </section>
 
-<!-- ═══ FEATURES ═══ -->
-<div class="wrap" id="features">
-  <div class="reveal">
-    <div class="section-tag">Возможности</div>
-    <h2 class="st">Всё для эффективных команд</h2>
-    <p class="st-sub">Встречи, задачи, аналитика — единая система в одном окне.</p>
+<!-- ═══ FEATURES — Japan Garden ═══ -->
+<div class="jp-section" id="features">
+  <!-- Japan garden background panel (inset 8px) -->
+  <div class="jp-bg">
+    <div class="jp-bg-inner"></div>
+    <div class="panel-fx" id="jpFx"></div>
   </div>
-  <div class="bento reveal">
-    <div class="bcard b-wide" style="min-height:200px;display:flex;flex-direction:column">
-      <div class="bcard-tag">01 — Встречи</div><h3>Умное расписание с AI</h3>
-      <p>AI предложит оптимальное время на основе загрузки команды. Транскрипты, заметки и история — в одном месте.</p>
-      <div class="tag-row" style="margin-top:auto;padding-top:16px">
-        <span class="tag acc">AI слоты</span><span class="tag acc">Транскрипты</span><span class="tag">Видеозвонки</span><span class="tag">Календарь</span>
+  <div class="wrap jp-content">
+    <div class="reveal">
+      <div class="section-tag">Возможности</div>
+      <h2 class="st">Всё для эффективных команд</h2>
+      <p class="st-sub">Встречи, задачи, аналитика — единая система в одном окне.</p>
+    </div>
+    <div class="bento reveal">
+      <div class="bcard b-wide" style="min-height:200px;display:flex;flex-direction:column">
+        <div class="bcard-tag">01 — Встречи</div><h3>Умное расписание с AI</h3>
+        <p>AI предложит оптимальное время на основе загрузки команды. Транскрипты, заметки и история — в одном месте.</p>
+        <div class="tag-row" style="margin-top:auto;padding-top:16px">
+          <span class="tag acc">AI слоты</span><span class="tag acc">Транскрипты</span><span class="tag">Видеозвонки</span><span class="tag">Календарь</span>
+        </div>
       </div>
-    </div>
-    <div class="bcard b-narrow" style="min-height:200px;display:flex;flex-direction:column">
-      <div class="bcard-tag">Аналитика</div>
-      <div class="mini-stat">94%</div>
-      <div class="mini-stat-label" style="margin-bottom:16px">средний охват команды</div>
-      <div class="sparkline">
-        <div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:55%"></div>
-        <div class="spark-bar" style="height:45%"></div><div class="spark-bar" style="height:70%"></div>
-        <div class="spark-bar hi" style="height:85%"></div><div class="spark-bar" style="height:60%"></div>
-        <div class="spark-bar" style="height:75%"></div><div class="spark-bar hi" style="height:100%"></div>
+      <div class="bcard b-narrow" style="min-height:200px;display:flex;flex-direction:column">
+        <div class="bcard-tag">Аналитика</div>
+        <div class="mini-stat">94%</div>
+        <div class="mini-stat-label" style="margin-bottom:16px">средний охват команды</div>
+        <div class="sparkline">
+          <div class="spark-bar" style="height:40%"></div><div class="spark-bar" style="height:55%"></div>
+          <div class="spark-bar" style="height:45%"></div><div class="spark-bar" style="height:70%"></div>
+          <div class="spark-bar hi" style="height:85%"></div><div class="spark-bar" style="height:60%"></div>
+          <div class="spark-bar" style="height:75%"></div><div class="spark-bar hi" style="height:100%"></div>
+        </div>
       </div>
+      <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">02 — Задачи</div><h3>Задачи и подзадачи</h3><p>Ставьте на встречах. AI декомпозирует на шаги. Авто-завершение при выполнении всех подзадач.</p></div>
+      <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">03 — Настроение</div><h3>Mood tracking</h3><p>Ежедневные опросы, AI-анализ ответов, тренды за 12 недель и алерты при снижении настроения.</p></div>
+      <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">04 — Время</div><h3>Учёт рабочего времени</h3><p>Кнопки прихода и ухода. Тимлид видит статистику по команде в аналитике.</p></div>
+      <div class="bcard b-half" style="min-height:180px">
+        <div class="bcard-tag">05 — Аналитика</div><h3>Дашборд тимлида</h3>
+        <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV. Всё на одном экране.</p>
+        <div class="tag-row" style="margin-top:auto;padding-top:16px"><span class="tag acc">CSV экспорт</span><span class="tag">Зоны риска</span><span class="tag">12 недель</span></div>
+      </div>
+      <div class="bcard b-half" style="min-height:180px"><div class="bcard-tag">06 — Уведомления</div><h3>Умные уведомления</h3><p>Напоминания о встречах, статусы задач, изменения настроения. Только важное.</p></div>
     </div>
-    <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">02 — Задачи</div><h3>Задачи и подзадачи</h3><p>Ставьте на встречах. AI декомпозирует на шаги. Авто-завершение при выполнении всех подзадач.</p></div>
-    <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">03 — Настроение</div><h3>Mood tracking</h3><p>Ежедневные опросы, AI-анализ ответов, тренды за 12 недель и алерты при снижении настроения.</p></div>
-    <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">04 — Время</div><h3>Учёт рабочего времени</h3><p>Кнопки прихода и ухода. Тимлид видит статистику по команде в аналитике.</p></div>
-    <div class="bcard b-half" style="min-height:180px">
-      <div class="bcard-tag">05 — Аналитика</div><h3>Дашборд тимлида</h3>
-      <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV. Всё на одном экране.</p>
-      <div class="tag-row" style="margin-top:auto;padding-top:16px"><span class="tag acc">CSV экспорт</span><span class="tag">Зоны риска</span><span class="tag">12 недель</span></div>
-    </div>
-    <div class="bcard b-half" style="min-height:180px"><div class="bcard-tag">06 — Уведомления</div><h3>Умные уведомления</h3><p>Напоминания о встречах, статусы задач, изменения настроения. Только важное.</p></div>
   </div>
 </div>
 
-<!-- ═══ HOW ═══ -->
-<div class="wrap" id="how" style="padding-top:0">
+<!-- ═══ HOW IT WORKS — Dark ═══ -->
+<div class="wrap" id="how" style="padding-top:88px">
   <div class="reveal"><div class="section-tag">Как работает</div><h2 class="st">Три шага до первой встречи</h2></div>
   <div class="how-grid reveal">
     <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 01</div><h3>Создайте команду</h3><p>Зарегистрируйтесь и создайте команду. Участники присоединяются по инвайт-коду — без сложных настроек.</p></div>
@@ -474,7 +445,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </div>
 
-<!-- ═══ PIT ═══ -->
+<!-- ═══ PIT — Dark ═══ -->
 <div class="wrap" style="padding-top:0">
   <div class="pit-section reveal-scale">
     <div class="pit-section-left">
@@ -503,7 +474,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </div>
 
-<!-- ═══ PRICING ═══ -->
+<!-- ═══ PRICING — Dark ═══ -->
 <div class="wrap" id="pricing" style="padding-top:0">
   <div class="reveal" style="text-align:center">
     <div class="section-tag" style="justify-content:center;display:flex">Тарифы</div>
@@ -545,25 +516,20 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 
     <div class="shaft-wrap reveal-scale">
       <div class="shaft" id="liftShaft">
-        <!-- Shaft decorations -->
         <div class="shaft-grid"></div>
         <div class="rail rail-l"></div>
         <div class="rail rail-r"></div>
 
-        <!-- Floor indicator -->
         <div class="floor-display">
           <div class="floor-digit" id="floorNum">3</div>
           <div class="floor-label">ЭТАЖ</div>
           <div class="floor-arrow" id="floorArrow">▼</div>
         </div>
 
-        <!-- The elevator car -->
         <div class="lift-car" id="liftCar">
-          <!-- Ceiling / lights row -->
           <div class="car-ceiling">
             <div class="car-light on"></div>
             <div class="car-light"></div>
-            <!-- Pit in a porthole -->
             <div class="car-pit-win">
               <div class="car-pit-eye" style="top:26%;left:16%"></div>
               <div class="car-pit-eye" style="top:26%;right:16%;animation-delay:.18s"></div>
@@ -573,7 +539,6 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
             <div class="car-num-badge">ЛИФТ № 1</div>
           </div>
 
-          <!-- Doors + CTA -->
           <div class="door-zone">
             <div class="door door-l"><div class="d-handle"></div></div>
             <div class="door door-r"><div class="d-handle"></div></div>
@@ -590,7 +555,6 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
           <div class="car-floor"></div>
         </div>
 
-        <!-- Lobby floor line -->
         <div class="lobby"></div>
       </div>
     </div>
@@ -615,35 +579,35 @@ const revIo = new IntersectionObserver(entries => {
 }, { threshold: .1 })
 document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(el))
 
-// ── Sakura petals (Japan panel)
-;(function(){
-  const fx = document.getElementById('jpFx')
-  if (!fx) return
-  for (let i = 0; i < 12; i++) {
-    const p = document.createElement('div')
-    p.className = 'sakura'
-    const left = 5 + Math.random() * 90
-    const dur = 5 + Math.random() * 8
-    const delay = Math.random() * 10
-    const size = 3 + Math.random() * 5
-    p.style.cssText = `left:${left}%;top:${Math.random() * 60}%;width:${size}px;height:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`
-    fx.appendChild(p)
-  }
-})()
-
-// ── Rain drops (Cyberpunk panel)
+// ── Rain drops (Cyberpunk hero)
 ;(function(){
   const fx = document.getElementById('cyFx')
   if (!fx) return
-  for (let i = 0; i < 20; i++) {
+  for (let i = 0; i < 28; i++) {
     const r = document.createElement('div')
     r.className = 'rain'
     const left = Math.random() * 100
-    const dur = 0.8 + Math.random() * 1.2
-    const delay = Math.random() * 4
-    const h = 24 + Math.random() * 32
-    r.style.cssText = `left:${left}%;top:${Math.random() * 80}%;height:${h}px;animation-duration:${dur}s;animation-delay:-${delay}s`
+    const dur = 0.7 + Math.random() * 1.1
+    const delay = Math.random() * 5
+    const h = 28 + Math.random() * 40
+    r.style.cssText = `left:${left}%;top:${Math.random()*80}%;height:${h}px;animation-duration:${dur}s;animation-delay:-${delay}s`
     fx.appendChild(r)
+  }
+})()
+
+// ── Sakura petals (Japan garden)
+;(function(){
+  const fx = document.getElementById('jpFx')
+  if (!fx) return
+  for (let i = 0; i < 16; i++) {
+    const p = document.createElement('div')
+    p.className = 'sakura'
+    const left = 4 + Math.random() * 92
+    const dur = 6 + Math.random() * 9
+    const delay = Math.random() * 12
+    const size = 4 + Math.random() * 6
+    p.style.cssText = `left:${left}%;top:${Math.random()*55}%;width:${size}px;height:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`
+    fx.appendChild(p)
   }
 })()
 
@@ -655,7 +619,6 @@ document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(e
   const arrEl  = document.getElementById('floorArrow')
   if (!shaft || !car) return
 
-  // Position car at very top initially (hidden)
   car.style.top = '-300px'
   car.style.transition = 'none'
 
@@ -666,16 +629,12 @@ document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(e
     triggered = true
     io.disconnect()
 
-    const shaftH = shaft.offsetHeight
-    const carH   = car.offsetHeight
-    const lobbyTop = shaftH - 16 - carH  // sit just above lobby strip
+    const lobbyTop = shaft.offsetHeight - 16 - car.offsetHeight
 
-    // Start descent
     setTimeout(() => {
       car.style.transition = 'top 1.2s cubic-bezier(0.16,1,0.3,1)'
       car.style.top = lobbyTop + 'px'
 
-      // Animate floor counter 3→2→1→G
       const floors = ['3','2','1','G']
       floors.forEach((f, i) => {
         setTimeout(() => {
@@ -689,12 +648,10 @@ document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(e
       })
     }, 300)
 
-    // Bounce + open doors
     setTimeout(() => {
       car.classList.add('bouncing')
       setTimeout(() => {
         car.classList.add('open')
-        // Flash ceiling lights
         document.querySelectorAll('.car-light').forEach((l, i) => {
           setTimeout(() => l.classList.toggle('on'), i * 80)
         })
