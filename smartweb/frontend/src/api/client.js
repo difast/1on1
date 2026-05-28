@@ -51,6 +51,7 @@ export const getTasks = (params) => api.get('/tasks/', { params })
 export const getMyLeadTasks = (userId) => api.get('/tasks/', { params: { assigned_to: userId, assigned_by: userId } })
 export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data)
 export const deleteTask = (id) => api.delete(`/tasks/${id}`)
+export const getTaskAIAdvice = (data) => api.post('/tasks/ai-advice', data)
 
 // Notifications
 export const getNotifications = (userId, unreadOnly = false) =>

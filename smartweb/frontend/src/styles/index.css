@@ -169,6 +169,11 @@ button { cursor: pointer; border: none; background: none; }
   0%, 100% { border-color: var(--blue-200); }
   50%       { border-color: var(--blue-400); }
 }
+@keyframes aiPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+}
 
 .anim-fade   { animation: fadeUp var(--dur-slow) var(--ease-spring) both; }
 .anim-fade-1 { animation: fadeUp var(--dur-slow) var(--ease-spring) 0.05s both; }

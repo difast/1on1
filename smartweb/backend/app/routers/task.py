@@ -2,6 +2,8 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
+import httpx, json
+from pydantic import BaseModel as PydanticBaseModel
 from app.database import get_db
 from app.models.task import Task
 from app.models.user import User
@@ -9,6 +11,42 @@ from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 from app.tasks.reminders import send_new_task_notification
 
 router = APIRouter()
+
+AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+
+class TaskAIRequest(PydanticBaseModel):
+    title: str
+    status: Optional[str] = None
+    due_date: Optional[str] = None
+    role: str = "member"
+
+@router.post("/ai-advice")
+def get_task_ai_advice(data: TaskAIRequest):
+    role_ctx = "тимлида" if data.role == "lead" else "участника команды"
+    due_ctx = f" Срок: {data.due_date}." if data.due_date else ""
+    status_map = {"in_progress": "в работе", "review": "на ревью", "blocked": "заблокирована", "done": "выполнена"}
+    status_label = status_map.get(data.status or "in_progress", "в работе")
+    prompt = (
+        f"Ты помощник {role_ctx}. Задача: \"{data.title}\". "
+        f"Статус: {status_label}.{due_ctx} "
+        f"Дай 3-5 конкретных шагов для выполнения этой задачи на русском языке. "
+        f"Ответ ТОЛЬКО JSON: {{\"steps\": [\"шаг 1\", \"шаг 2\", ...]}}"
+    )
+    try:
+        resp = httpx.post(
+            "https://api.aitunnel.ru/v1/chat/completions",
+            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=20,
+        )
+        text = resp.json()["choices"][0]["message"]["content"].strip()
+        if "```" in text:
+            text = text.split("```")[1].lstrip("json").strip()
+        result = json.loads(text)
+        return {"steps": result.get("steps", [])}
+    except Exception:
+        return {"steps": ["Уточните требования к задаче", "Разбейте на подзадачи", "Обсудите приоритеты с командой"]}
 
 @router.post("/", response_model=TaskOut)
 def create_task(data: TaskCreate, db: Session = Depends(get_db)):

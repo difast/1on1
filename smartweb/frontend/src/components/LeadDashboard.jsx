@@ -12,6 +12,8 @@ import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import KnowledgeBase from './KnowledgeBase'
+import TaskAIHelper from './TaskAIHelper'
+import DeadlineBanner from './DeadlineBanner'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -618,7 +620,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'tasks', label: 'Задачи' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
-            { key: 'knowledge', label: '📚 База знаний' },
           ].map(tab => (
             <button
               key={tab.key}
@@ -834,6 +835,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         }}
                         canMarkDone={true}
                       />
+                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
                       <button
                         onClick={() => handleDeleteMyTask(task.id)}
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
@@ -918,6 +920,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     }}
                                     canMarkDone={true}
                                   />
+                                  {!task.completed && <TaskAIHelper task={task} role="lead" />}
                                 </div>
                               ))}
                               {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
@@ -1528,6 +1531,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => { setActiveCall(null); loadMyMeetings() }}
       />
     )}
+    <DeadlineBanner tasks={myTasks} />
     </>
   )
 }

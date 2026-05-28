@@ -8,6 +8,8 @@ import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
 import KnowledgeBase from './KnowledgeBase'
+import TaskAIHelper from './TaskAIHelper'
+import DeadlineBanner from './DeadlineBanner'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -331,7 +333,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'tasks', label: 'Задачи' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
-            { key: 'knowledge', label: '📚 База знаний' },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
@@ -695,6 +696,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)}
                         canMarkDone={false}
                       />
+                      {!task.completed && <TaskAIHelper task={task} role="member" />}
                       {isSelf && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
@@ -859,6 +861,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <MoodPrompt teamId={teamId} />
+    <DeadlineBanner tasks={tasks} />
     </>
   )
 }
