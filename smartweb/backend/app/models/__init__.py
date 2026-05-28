@@ -7,3 +7,4 @@ from app.models.note import Note
 from app.models.mood import MoodEntry
 from app.models.knowledge import KnowledgeArticle
 from app.models.subtask import SubTask
+from app.models.checkin import WorkCheckin

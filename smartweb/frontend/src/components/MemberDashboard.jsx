@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
@@ -22,6 +22,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [activeTab, setActiveTab] = useState('overview')
 
   const [viewUserCard, setViewUserCard] = useState(null)
+  const [checkin, setCheckin] = useState(null)
+  const [checkinLoading, setCheckinLoading] = useState(false)
 
   const [joinCode, setJoinCode] = useState('')
   const [joinLoading, setJoinLoading] = useState(false)
@@ -50,6 +52,21 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadDone, setUploadDone] = useState({})
   const fileInputRefs = useRef({})
   const [activeCall, setActiveCall] = useState(null)
+
+  useEffect(() => {
+    getTodayCheckin(user.id).then(r => setCheckin(r.data)).catch(() => {})
+  }, [user.id])
+
+  const handleArrive = async () => {
+    setCheckinLoading(true)
+    try { const r = await checkInArrive(user.id); setCheckin(r.data) } catch {}
+    finally { setCheckinLoading(false) }
+  }
+  const handleLeave = async () => {
+    setCheckinLoading(true)
+    try { const r = await checkInLeave(user.id); setCheckin(r.data) } catch {}
+    finally { setCheckinLoading(false) }
+  }
 
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
@@ -333,9 +350,30 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       }}
 >
       <div style={{ maxWidth: 900 }}>
-        <div style={{ marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
-          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
+        <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {checkin?.arrived_at && (
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
+                Пришёл: {new Date(checkin.arrived_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                {checkin.left_at && ` · Ушёл: ${new Date(checkin.left_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+              </span>
+            )}
+            {!checkin?.arrived_at ? (
+              <button onClick={handleArrive} disabled={checkinLoading} className="btn btn-accent btn-sm">
+                {checkinLoading ? '...' : '✓ Пришёл'}
+              </button>
+            ) : !checkin?.left_at ? (
+              <button onClick={handleLeave} disabled={checkinLoading} style={{ fontSize: 13, fontWeight: 600, padding: '6px 14px', borderRadius: 8, background: '#fff7ed', color: '#c2410c', border: '1px solid #fed7aa', cursor: 'pointer' }}>
+                {checkinLoading ? '...' : 'Ушёл'}
+              </button>
+            ) : (
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '5px 12px' }}>День завершён</span>
+            )}
+          </div>
         </div>
 
         <div className="tabs" style={{ width: 'fit-content', marginBottom: 24 }}>

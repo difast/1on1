@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadAnalytics, getTeamMoodSummary } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins } from '../api/client'
 
 // ─── Animated number counter ──────────────────────────────────────────────────
 function AnimNum({ value, suffix = '', duration = 900 }) {
@@ -254,6 +254,7 @@ export default function LeadAnalytics({ user }) {
   const [loading, setLoading] = useState(true)
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
   const [moodByTeam, setMoodByTeam] = useState({})
+  const [checkinsByTeam, setCheckinsByTeam] = useState({})
 
   useEffect(() => {
     setLoading(true)
@@ -264,11 +265,27 @@ export default function LeadAnalytics({ user }) {
           getTeamMoodSummary(t.team_id)
             .then(mr => setMoodByTeam(prev => ({ ...prev, [t.team_id]: mr.data })))
             .catch(() => {})
+          getTeamCheckins(t.team_id, 7)
+            .then(cr => setCheckinsByTeam(prev => ({ ...prev, [t.team_id]: cr.data })))
+            .catch(() => {})
         })
       })
       .catch(() => setData(null))
       .finally(() => setLoading(false))
   }, [user.id])
+
+  const exportCSV = (team, members) => {
+    const rows = [['Участник', 'Встреч (30 дн)', 'Последняя встреча', 'Задачи %', 'Статус']]
+    members.forEach(s => {
+      const status = s.warning_flags.length ? 'Риск' : 'Норма'
+      rows.push([s.member_name, s.meetings_last_30_days, s.last_meeting_date || '—', s.task_completion_pct ?? '—', status])
+    })
+    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
+    a.download = `${team.team_name}_аналитика.csv`
+    a.click()
+  }
 
   if (loading) return (
     <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}>
@@ -313,11 +330,15 @@ export default function LeadAnalytics({ user }) {
       )}
 
       {/* 4 Top stats */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
         <StatCard value={teamAvgInterval} suffix=" дн." label="Ср. интервал встреч" delay={0} />
         <StatCard value={teamMeetings30} label="Встреч за 30 дней" accent delay={100} />
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
+        <button
+          onClick={() => exportCSV(team, team.member_stats)}
+          style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+        >↓ Экспорт CSV</button>
       </div>
 
       {/* Heatmap + Mood line */}
@@ -422,6 +443,53 @@ export default function LeadAnalytics({ user }) {
                 </div>
               ))}
             </div>
+          </div>
+        )
+      })()}
+
+      {/* Checkins */}
+      {(() => {
+        const checkins = checkinsByTeam[team.team_id] || []
+        const memberMap = Object.fromEntries(team.member_stats.map(s => [s.user_id, s.member_name]))
+        const today = new Date().toISOString().slice(0, 10)
+        const todayCheckins = checkins.filter(c => c.date === today)
+        if (!todayCheckins.length && checkins.length === 0) return null
+        const fmt = dt => dt ? new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—'
+        const dur = (a, l) => {
+          if (!a || !l) return '—'
+          const m = Math.round((new Date(l) - new Date(a)) / 60000)
+          return `${Math.floor(m / 60)}ч ${m % 60}м`
+        }
+        return (
+          <div className="card" style={{ padding: '18px 20px' }}>
+            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>Приход / уход сегодня</p>
+            {todayCheckins.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Никто ещё не отметился сегодня</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                    {['Участник', 'Пришёл', 'Ушёл', 'В офисе'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '6px 12px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {todayCheckins.map(c => (
+                    <tr key={c.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                      <td style={{ padding: '10px 12px', fontWeight: 500 }}>{memberMap[c.user_id] || `#${c.user_id}`}</td>
+                      <td style={{ padding: '10px 12px', color: 'var(--color-success)' }}>{fmt(c.arrived_at)}</td>
+                      <td style={{ padding: '10px 12px', color: c.left_at ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>{fmt(c.left_at)}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        {!c.left_at
+                          ? <span className="badge badge-green" style={{ fontSize: 11 }}>Онлайн</span>
+                          : <span style={{ color: 'var(--color-text-secondary)' }}>{dur(c.arrived_at, c.left_at)}</span>}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         )
       })()}

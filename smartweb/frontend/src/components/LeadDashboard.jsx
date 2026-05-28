@@ -533,6 +533,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           </span>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button onClick={() => {
+                const d = new Date(m.scheduled_date)
+                const fmt = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z/, 'Z')
+                const end = new Date(d.getTime() + 60 * 60 * 1000)
+                const title = encodeURIComponent(`1-on-1: ${memberName}`)
+                const details = encodeURIComponent(m.agenda || m.topic || '')
+                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(d)}/${fmt(end)}&details=${details}`, '_blank')
+              }} style={{ fontSize: 11, fontWeight: 600, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }} title="Добавить в Google Calendar">📅</button>
               <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
               <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
             </div>

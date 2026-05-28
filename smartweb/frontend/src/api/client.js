@@ -98,4 +98,10 @@ export const getSubtasks = (taskId) => api.get('/subtasks/', { params: { task_id
 export const updateSubtask = (id, data) => api.patch(`/subtasks/${id}`, data)
 export const deleteSubtask = (id) => api.delete(`/subtasks/${id}`)
 
+// Checkins
+export const checkInArrive = (userId) => api.post('/checkins/arrive', { user_id: userId })
+export const checkInLeave = (userId) => api.post('/checkins/leave', { user_id: userId })
+export const getTodayCheckin = (userId) => api.get(`/checkins/today/${userId}`)
+export const getTeamCheckins = (teamId, days = 7) => api.get(`/checkins/team/${teamId}`, { params: { days } })
+
 export default api
