@@ -11,6 +11,8 @@ from app.schemas.task import TaskCreate, TaskOut, TaskUpdate
 from app.tasks.reminders import send_new_task_notification
 from app.prompts import AITUNNEL_KEY, task_ai_prompt
 
+router = APIRouter()
+
 class TaskAIRequest(PydanticBaseModel):
     title: str
     status: Optional[str] = None

@@ -74,10 +74,10 @@ export default function PitAssistant() {
       {/* ── Chat window ── */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 110, right: 24, zIndex: 9400,
+          position: 'fixed', bottom: 195, right: 24, zIndex: 9400,
           width: 340, maxHeight: 500, display: 'flex', flexDirection: 'column',
-          background: 'var(--color-surface)',
-          border: '1px solid var(--color-border)',
+          background: '#ffffff',
+          border: '1px solid #e2e8f0',
           borderRadius: 20,
           boxShadow: '0 20px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(99,102,241,0.12)',
           overflow: 'hidden',
@@ -123,8 +123,8 @@ export default function PitAssistant() {
                   borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
                   background: m.role === 'user'
                     ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
-                    : 'var(--color-bg-secondary, #f3f4f6)',
-                  color: m.role === 'user' ? '#fff' : 'var(--color-text-primary)',
+                    : '#f1f5f9',
+                  color: m.role === 'user' ? '#fff' : '#1e293b',
                   fontSize: 13, lineHeight: 1.55,
                   boxShadow: m.role === 'user' ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
                 }}>{m.content}</div>
@@ -133,7 +133,7 @@ export default function PitAssistant() {
             {loading && (
               <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6 }}>
                 <div style={{ width: 26, height: 26, borderRadius: '50%', background: 'radial-gradient(ellipse at 38% 30%, #a5b4fc, #4f46e5)' }} />
-                <div style={{ padding: '10px 14px', borderRadius: '4px 16px 16px 16px', background: 'var(--color-bg-secondary, #f3f4f6)' }}>
+                <div style={{ padding: '10px 14px', borderRadius: '4px 16px 16px 16px', background: '#f1f5f9' }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                     {[0, 1, 2].map(i => (
                       <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', animation: `pitTyping 1.2s ease-in-out infinite`, animationDelay: `${i * 0.22}s` }} />
@@ -146,7 +146,7 @@ export default function PitAssistant() {
           </div>
 
           {/* Input */}
-          <div style={{ padding: '10px 12px 12px', display: 'flex', gap: 8, borderTop: '1px solid var(--color-border)', flexShrink: 0 }}>
+          <div style={{ padding: '10px 12px 12px', display: 'flex', gap: 8, borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
             <input
               ref={inputRef}
               value={input}
@@ -156,11 +156,11 @@ export default function PitAssistant() {
               disabled={loading}
               style={{
                 flex: 1, padding: '9px 13px', borderRadius: 12,
-                border: '1px solid var(--color-border)',
-                background: 'var(--color-bg-secondary, #f9fafb)',
-                color: 'var(--color-text-primary)',
+                border: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                color: '#1e293b',
                 fontSize: 13, outline: 'none',
-                fontFamily: 'var(--font-sans)',
+                fontFamily: 'inherit',
               }}
             />
             <button
@@ -183,7 +183,7 @@ export default function PitAssistant() {
       )}
 
       {/* ── 3D Character ── */}
-      <div style={{ position: 'fixed', bottom: 24, right: 32, zIndex: 9350, userSelect: 'none' }}>
+      <div style={{ position: 'fixed', bottom: 90, right: 24, zIndex: 9350, userSelect: 'none' }}>
         {/* Shadow */}
         <div style={{
           width: 52, height: 10, borderRadius: '50%', margin: '0 auto',

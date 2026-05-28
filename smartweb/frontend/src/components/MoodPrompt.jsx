@@ -59,7 +59,7 @@ export default function MoodPrompt({ teamId }) {
         <div
           onClick={() => setOpen(true)}
           style={{
-            position: 'fixed', bottom: 96, right: 24, zIndex: 9100,
+            position: 'fixed', bottom: 210, right: 24, zIndex: 9100,
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
