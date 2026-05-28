@@ -60,8 +60,9 @@ export default function PitAssistant() {
     try {
       const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'))
       setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Извините, что-то пошло не так. Попробуйте ещё раз.' }])
+    } catch (err) {
+      const detail = err?.response?.data?.detail || err?.message || 'неизвестная ошибка'
+      setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${detail}` }])
     } finally {
       setLoading(false)
     }

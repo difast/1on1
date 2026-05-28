@@ -16,6 +16,25 @@ class ChatRequest(PydanticBase):
     messages: List[ChatMessage]
 
 
+@router.get("/diagnose")
+def diagnose():
+    """Test endpoint: returns raw aitunnel response for debugging."""
+    results = {}
+    for model in ["claude-3-5-haiku-20241022", "claude-3-haiku-20240307", "gpt-4o-mini"]:
+        try:
+            resp = httpx.post(
+                "https://api.aitunnel.ru/v1/chat/completions",
+                headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
+                json={"model": model, "max_tokens": 10,
+                      "messages": [{"role": "user", "content": "ping"}]},
+                timeout=15,
+            )
+            results[model] = {"status": resp.status_code, "body": resp.json()}
+        except Exception as e:
+            results[model] = {"error": str(e)}
+    return results
+
+
 @router.post("/chat")
 def pit_chat(data: ChatRequest):
     messages = [{"role": "system", "content": PIT_SYSTEM_PROMPT}]
@@ -29,10 +48,10 @@ def pit_chat(data: ChatRequest):
         )
         body = resp.json()
         if "choices" not in body:
-            raise ValueError(f"no choices: {body}")
+            raise HTTPException(status_code=503, detail=f"aitunnel error: {body}")
         reply = body["choices"][0]["message"]["content"]
         return {"reply": reply}
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=503, detail=f"AI error: {e}")
+        raise HTTPException(status_code=503, detail=f"connection error: {type(e).__name__}: {e}")
