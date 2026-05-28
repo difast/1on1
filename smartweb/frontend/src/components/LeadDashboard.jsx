@@ -1,11 +1,19 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall } from '../api/client'
 import Layout from './Layout'
+
+const STATUS_CYCLE = { in_progress: 'review', review: 'done', done: 'in_progress', blocked: 'in_progress' }
+const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
+const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import JitsiCall from './JitsiCall'
+import KnowledgeBase from './KnowledgeBase'
+import TaskAIHelper from './TaskAIHelper'
+import DeadlineBanner from './DeadlineBanner'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -23,11 +31,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadDone, setUploadDone] = useState({})
   const fileInputRefs = useRef({})
 
+  const [activeCall, setActiveCall] = useState(null) // { room_name, room_url, meeting_id }
+
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      window.open(data.room_url, '_blank')
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
@@ -118,7 +129,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       })
       setCallResult(data)
       setCallStep('done')
-      window.open(data.room_url, '_blank')
       loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setCallModalLoading(false) }
@@ -131,11 +141,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startSpontaneousCall({
         lead_id: user.id, team_id: selectedTeamId, member_ids: [memberId], is_group: false,
       })
-      window.open(data.room_url, '_blank')
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
     } catch { alert('Не удалось создать созвон') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
+
+  // Auto-copy invite link when call is created
+  useEffect(() => {
+    if (callStep === 'done' && callResult?.room_url) {
+      navigator.clipboard.writeText(callResult.room_url)
+        .then(() => setRoomUrlCopied(true))
+        .catch(() => {})
+    }
+  }, [callStep, callResult])
 
   // Meeting notes expanded in notes tab
   const [notesMeetingExpanded, setNotesMeetingExpanded] = useState(new Set())
@@ -445,8 +465,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const noteState = meetingNotes[m.id]
     const isPast = new Date(m.scheduled_date) < new Date()
     const isRequest = m.status === 'requested'
-    const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
-    const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
+    const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
+    const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
       <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -465,6 +485,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
             {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
+            {!isPast && !isRequest && m.context_from_last && (
+              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                💬 {m.context_from_last}
+              </p>
+            )}
           </div>
           <span className={`badge ${stBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
             {stLabel[m.status] || m.status}
@@ -559,7 +584,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const calendarMeetings = myMeetings.filter(m => m.status !== 'requested')
 
   return (
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
+    <>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      onNavigate={type => {
+        if (type === 'new_task') setActiveView('tasks')
+        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
+      }}
+      onKnowledgeBase={() => setActiveView('knowledge')}>
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -569,18 +600,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
-          {activeView === 'teams' && (
-            <div style={{ display: 'flex', gap: 8 }}>
-              {selectedTeamId && (
-                <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
-                  📹 Созвон
-                </button>
-              )}
-              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
-                + Создать команду
+          <div style={{ display: 'flex', gap: 8 }}>
+            {selectedTeamId && (
+              <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
+                📹 Созвон
               </button>
-            </div>
-          )}
+            )}
+            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
+              + Создать команду
+            </button>
+          </div>
         </div>
 
         {/* View tabs */}
@@ -614,6 +643,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}
+
+        {/* Knowledge base view */}
+        {activeView === 'knowledge' && (
+          <KnowledgeBase teamId={selectedTeamId} userId={user.id} canEdit={true} />
+        )}
 
         {/* Notes view */}
         {activeView === 'notes' && (
@@ -801,6 +835,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         }}
                         canMarkDone={true}
                       />
+                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
                       <button
                         onClick={() => handleDeleteMyTask(task.id)}
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
@@ -885,6 +920,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     }}
                                     canMarkDone={true}
                                   />
+                                  {!task.completed && <TaskAIHelper task={task} role="lead" />}
                                 </div>
                               ))}
                               {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
@@ -1200,14 +1236,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                             )
                                           })()}
                                         </div>
-                                        <button
-                                          onClick={() => handleCycleTask(task, member.user_id)}
-                                          className={`badge ${STATUS_CLS[st] || 'badge-blue'}`}
-                                          style={{ cursor: 'pointer', border: 'none', flexShrink: 0, fontFamily: 'var(--font-sans)', fontSize: 10, padding: '2px 7px' }}
-                                          title="Нажмите чтобы изменить статус"
-                                        >
-                                          {STATUS_LABEL[st] || st}
-                                        </button>
+                                        <TaskStatusSelect
+                                          status={st}
+                                          onChange={async (newStatus) => {
+                                            try {
+                                              await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                              setMemberTasks(prev => ({
+                                                ...prev,
+                                                [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                                  t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
+                                                ),
+                                              }))
+                                            } catch {}
+                                          }}
+                                          canMarkDone={true}
+                                        />
                                       </div>
                                     )
                                   })}
@@ -1394,11 +1437,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 {roomUrlCopied ? '✓ Скопировано!' : '📋 Копировать ссылку'}
               </button>
               <button
-                onClick={() => window.open(callResult.room_url, '_blank')}
-                className="btn btn-accent btn-sm"
-                style={{ gap: 8 }}
+                onClick={() => {
+                  const roomName = callResult.room_name || callResult.room_url?.split('/').pop()
+                  setActiveCall({ room_name: roomName, room_url: callResult.room_url, meeting_id: callResult.meeting_id })
+                  setShowStartCall(false)
+                }}
+                className="btn btn-accent"
+                style={{ gap: 8, fontWeight: 700 }}
               >
-                📹 Открыть созвон
+                📹 Начать созвон
               </button>
             </div>
           )}
@@ -1475,6 +1522,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
+
+    {activeCall && (
+      <JitsiCall
+        roomName={activeCall.room_name}
+        userName={user.name || user.email}
+        meetingId={activeCall.meeting_id}
+        onClose={() => { setActiveCall(null); loadMyMeetings() }}
+      />
+    )}
+    <DeadlineBanner tasks={myTasks} />
+    </>
   )
 }
 

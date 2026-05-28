@@ -19,6 +19,8 @@ class Meeting(Base):
     jitsi_room_name = Column(String(200), nullable=True)
     call_transcript = Column(Text, nullable=True)
     ai_summary = Column(Text, nullable=True)
+    call_duration_seconds = Column(Integer, nullable=True)
+    call_analytics = Column(Text, nullable=True)  # JSON
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
 

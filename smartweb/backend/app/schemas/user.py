@@ -28,6 +28,7 @@ class UserOut(BaseModel):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
+    role: Optional[str] = None
     title: Optional[str] = None
     telegram: Optional[str] = None
     linkedin: Optional[str] = None

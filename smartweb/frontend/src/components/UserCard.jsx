@@ -43,6 +43,16 @@ export default function UserCard({ user, onClose }) {
           )}
         </div>
 
+        {/* Knowledge base stub */}
+        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: '#f5f3ff', border: '1px solid #ede9fe' }}>
+          <span style={{ fontSize: 16 }}>📚</span>
+          <div style={{ flex: 1 }}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', margin: 0 }}>База знаний</p>
+            <p style={{ fontSize: 11, color: '#a78bfa', margin: 0 }}>Скоро будет доступна</p>
+          </div>
+          <span style={{ fontSize: 11, color: '#c4b5fd', background: '#ede9fe', borderRadius: 8, padding: '2px 8px', fontWeight: 500 }}>Soon</span>
+        </div>
+
         {/* Social links */}
         <div className="space-y-2">
           {/* Telegram */}

@@ -5,6 +5,11 @@ import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import JitsiCall from './JitsiCall'
+import MoodPrompt from './MoodPrompt'
+import KnowledgeBase from './KnowledgeBase'
+import TaskAIHelper from './TaskAIHelper'
+import DeadlineBanner from './DeadlineBanner'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [team, setTeam] = useState(null)
@@ -39,12 +44,14 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
   const fileInputRefs = useRef({})
+  const [activeCall, setActiveCall] = useState(null)
 
   const handleStartCall = async (meetingId) => {
     setCallLoading(prev => ({ ...prev, [meetingId]: true }))
     try {
       const { data } = await startCall(meetingId, user.id)
-      window.open(data.room_url, '_blank')
+      const roomName = data.room_name || data.room_url?.split('/').pop()
+      setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
     } catch { alert('Не удалось начать созвон') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
@@ -245,11 +252,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const statusBadge = {
     scheduled: 'badge badge-blue', completed: 'badge badge-green',
-    cancelled: 'badge badge-red', requested: 'badge badge-amber', confirmed: 'badge badge-green',
+    in_progress: 'badge badge-green', cancelled: 'badge badge-red',
+    requested: 'badge badge-amber', confirmed: 'badge badge-green',
   }
   const statusLabel = {
     scheduled: 'Запланирована', completed: 'Завершена',
-    cancelled: 'Отменена', requested: 'Запрошена', confirmed: 'Подтверждена',
+    in_progress: 'Идёт созвон', cancelled: 'Отменена',
+    requested: 'Запрошена', confirmed: 'Подтверждена',
   }
 
   if (loadingTeam) {
@@ -304,7 +313,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   return (
-    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
+    <>
+    <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      onNavigate={type => {
+        if (type === 'new_task') setActiveTab('tasks')
+        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
+      }}
+      onKnowledgeBase={() => setActiveTab('knowledge')}>
       <div style={{ maxWidth: 900 }}>
         <div style={{ marginBottom: 24 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
@@ -384,6 +399,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             {new Date(m.scheduled_date).toLocaleString('ru-RU', { weekday: 'long', hour: '2-digit', minute: '2-digit' })}
                           </p>
                           {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
+                          {m.context_from_last && (
+                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
+                              💬 {m.context_from_last}
+                            </p>
+                          )}
                         </div>
                         <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
                           {statusLabel[m.status] || m.status}
@@ -676,6 +696,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)}
                         canMarkDone={false}
                       />
+                      {!task.completed && <TaskAIHelper task={task} role="member" />}
                       {isSelf && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
@@ -785,6 +806,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Analytics */}
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
+
+        {activeTab === 'knowledge' && (
+          <KnowledgeBase teamId={teamId} userId={user.id} canEdit={false} />
+        )}
       </div>
 
       <QuickWidget
@@ -826,6 +851,18 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         </Modal>
       )}
     </Layout>
+
+    {activeCall && (
+      <JitsiCall
+        roomName={activeCall.room_name}
+        userName={user.name || user.email}
+        meetingId={activeCall.meeting_id}
+        onClose={() => setActiveCall(null)}
+      />
+    )}
+    <MoodPrompt teamId={teamId} />
+    <DeadlineBanner tasks={tasks} />
+    </>
   )
 }
 

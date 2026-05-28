@@ -24,6 +24,8 @@ class MeetingOut(BaseModel):
     jitsi_room_name: Optional[str] = None
     call_transcript: Optional[str] = None
     ai_summary: Optional[str] = None
+    call_duration_seconds: Optional[int] = None
+    call_analytics: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -34,6 +36,8 @@ class MeetingUpdate(BaseModel):
     mood: Optional[str] = None
     notes: Optional[str] = None
     agenda: Optional[str] = None
+    call_duration_seconds: Optional[int] = None
+    call_analytics: Optional[str] = None
 
 class MeetingRequest(BaseModel):
     member_id: int

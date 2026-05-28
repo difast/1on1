@@ -51,6 +51,7 @@ export const getTasks = (params) => api.get('/tasks/', { params })
 export const getMyLeadTasks = (userId) => api.get('/tasks/', { params: { assigned_to: userId, assigned_by: userId } })
 export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data)
 export const deleteTask = (id) => api.delete(`/tasks/${id}`)
+export const getTaskAIAdvice = (data) => api.post('/tasks/ai-advice', data)
 
 // Notifications
 export const getNotifications = (userId, unreadOnly = false) =>
@@ -70,5 +71,18 @@ export const getNotes = (userId) => api.get('/notes/', { params: { user_id: user
 export const createNote = (data) => api.post('/notes/', data)
 export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
+
+// Admin
+export const getAdminStats = () => api.get('/users/admin/stats')
+
+// Knowledge Base
+export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)
+export const createKnowledgeArticle = (data) => api.post('/knowledge/', data)
+export const updateKnowledgeArticle = (id, data) => api.patch(`/knowledge/${id}`, data)
+export const deleteKnowledgeArticle = (id) => api.delete(`/knowledge/${id}`)
+
+// Mood
+export const submitMood = (data) => api.post('/mood/', data)
+export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)
 
 export default api

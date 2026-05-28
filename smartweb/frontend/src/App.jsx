@@ -4,12 +4,14 @@ import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
+import AdminDashboard from './components/AdminDashboard'
 import { getUserByEmail } from './api/client'
 
 function App() {
   const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isAdmin, setIsAdmin] = useState(false)
   const inactivityTimer = useRef(null)
 
   // Apply dark theme on first render (before user loads); Layout will
@@ -107,7 +109,9 @@ function App() {
     </div>
   )
 
-  if (!authUser) return <AuthPage />
+  if (isAdmin) return <AdminDashboard onLogout={() => setIsAdmin(false)} />
+
+  if (!authUser) return <AuthPage onAdminLogin={() => setIsAdmin(true)} />
 
   if (!appUser || !appUser.role) {
     return (
