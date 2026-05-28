@@ -98,7 +98,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [newNoteText, setNewNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
 
-  const [calPopup, setCalPopup] = useState(null) // meeting id
+  // Lead personal tasks
+  const [myTasks, setMyTasks] = useState([])
+  const [calPopup, setCalPopup] = useState(null)
 
   const openGcal = (m, name) => {
     const d = new Date(m.scheduled_date)
