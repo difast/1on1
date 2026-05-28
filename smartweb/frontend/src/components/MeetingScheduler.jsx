@@ -46,7 +46,12 @@ export default function MeetingScheduler({ user }) {
   if (loading) return <div className="text-center py-12">Finding best slots...</div>
   if (success) return (
     <div className="text-center py-12">
-      <div className="text-4xl mb-4">✅</div>
+      <div className="mb-4 flex justify-center">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+          <circle cx="24" cy="24" r="22" stroke="#16a34a" strokeWidth="2.5"/>
+          <path d="M14 24l7 7 13-14" stroke="#16a34a" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
+      </div>
       <h2 className="text-2xl font-bold text-green-600 mb-2">Meeting Scheduled!</h2>
       <p className="text-gray-600">Your 1-on-1 with {member?.name} has been booked.</p>
     </div>

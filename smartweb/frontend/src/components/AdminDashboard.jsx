@@ -17,7 +17,7 @@ function StatCard({ icon, value, label, accent, danger, sub }) {
   const color = danger ? 'var(--color-danger)' : accent ? 'var(--color-accent)' : 'var(--color-text-primary)'
   return (
     <div className="stat-card" style={{ flex: 1, minWidth: 130, textAlign: 'center', padding: '18px 14px' }}>
-      <div style={{ fontSize: 26, marginBottom: 6 }}>{icon}</div>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, margin: '0 auto 12px', opacity: 0.8 }} />
       <p style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: '-1px', lineHeight: 1 }}>{value ?? '—'}</p>
       <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 5 }}>{label}</p>
       {sub && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3 }}>{sub}</p>}
@@ -131,16 +131,16 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'overview' && (
               <>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
-                  <StatCard icon="👥" value={data.total_users} label="Пользователей" accent />
-                  <StatCard icon="👑" value={data.total_leads} label="Тимлидов" />
-                  <StatCard icon="👤" value={data.total_members} label="Участников" />
-                  <StatCard icon="🏢" value={data.total_teams} label="Команд" />
-                  <StatCard icon="📅" value={data.total_meetings} label="Встреч всего" sub={`${data.meetings_30d} за 30 дней`} />
-                  <StatCard icon="📞" value={data.total_calls} label="Звонков" />
-                  <StatCard icon="✅" value={data.total_tasks} label="Задач всего" sub={`${data.tasks_done} выполнено`} />
+                  <StatCard value={data.total_users} label="Пользователей" accent />
+                  <StatCard value={data.total_leads} label="Тимлидов" />
+                  <StatCard value={data.total_members} label="Участников" />
+                  <StatCard value={data.total_teams} label="Команд" />
+                  <StatCard value={data.total_meetings} label="Встреч всего" sub={`${data.meetings_30d} за 30 дней`} />
+                  <StatCard value={data.total_calls} label="Звонков" />
+                  <StatCard value={data.total_tasks} label="Задач всего" sub={`${data.tasks_done} выполнено`} />
                 </div>
                 <div className="card" style={{ padding: '18px 20px' }}>
-                  <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>🏢 Команды</p>
+                  <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Команды</p>
                   {data.teams.length === 0
                     ? <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Нет команд</p>
                     : <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -157,8 +157,8 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'users' && (
               <div className="card" style={{ padding: '18px 20px' }}>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
-                  <p style={{ fontWeight: 600, fontSize: 14, flex: 1 }}>👥 Пользователи ({filteredUsers.length})</p>
-                  <input className="input" style={{ width: 200, fontSize: 13 }} placeholder="🔍 Поиск..." value={search} onChange={e => setSearch(e.target.value)} />
+                  <p style={{ fontWeight: 600, fontSize: 14, flex: 1 }}>Пользователи ({filteredUsers.length})</p>
+                  <input className="input" style={{ width: 200, fontSize: 13 }} placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} />
                   <select className="input" style={{ width: 150, fontSize: 13 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
                     <option value="all">Все роли</option>
                     <option value="team_lead">Тимлиды</option>
@@ -208,7 +208,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* КОМАНДЫ */}
             {tab === 'teams' && (
               <div className="card" style={{ padding: '18px 20px' }}>
-                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>🏢 Команды ({data.teams.length})</p>
+                <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Команды ({data.teams.length})</p>
                 {data.teams.length === 0
                   ? <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Команд нет</p>
                   : <div style={{ overflowX: 'auto' }}>
@@ -243,12 +243,12 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'activity' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <StatCard icon="📅" value={data.total_meetings} label="Встреч всего" accent />
-                  <StatCard icon="🗓" value={data.meetings_30d} label="За 30 дней" />
-                  <StatCard icon="📞" value={data.total_calls} label="Звонков" />
-                  <StatCard icon="✅" value={data.total_tasks} label="Задач всего" />
-                  <StatCard icon="☑️" value={data.tasks_done} label="Выполнено" accent />
-                  <StatCard icon="⏳" value={data.total_tasks - data.tasks_done} label="В процессе" danger={data.total_tasks - data.tasks_done > 0} />
+                  <StatCard value={data.total_meetings} label="Встреч всего" accent />
+                  <StatCard value={data.meetings_30d} label="За 30 дней" />
+                  <StatCard value={data.total_calls} label="Звонков" />
+                  <StatCard value={data.total_tasks} label="Задач всего" />
+                  <StatCard value={data.tasks_done} label="Выполнено" accent />
+                  <StatCard value={data.total_tasks - data.tasks_done} label="В процессе" danger={data.total_tasks - data.tasks_done > 0} />
                 </div>
                 <div className="card" style={{ padding: '18px 20px' }}>
                   <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Топ активных пользователей по встречам</p>
@@ -274,10 +274,10 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'mood' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <StatCard icon="😊" value={data.mood.overall_avg ?? '—'} label="Средний балл" accent />
-                  <StatCard icon="📊" value={data.mood.avg_7d ?? '—'} label="Балл за 7 дней" />
-                  <StatCard icon="📝" value={data.mood.total_submissions} label="Всего ответов" />
-                  <StatCard icon="📆" value={data.mood.submissions_7d} label="За 7 дней" />
+                  <StatCard value={data.mood.overall_avg ?? '—'} label="Средний балл" accent />
+                  <StatCard value={data.mood.avg_7d ?? '—'} label="Балл за 7 дней" />
+                  <StatCard value={data.mood.total_submissions} label="Всего ответов" />
+                  <StatCard value={data.mood.submissions_7d} label="За 7 дней" />
                 </div>
                 <div className="card" style={{ padding: '18px 20px' }}>
                   <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Тренд настроения (7 дней)</p>

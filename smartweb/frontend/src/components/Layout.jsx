@@ -559,7 +559,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 onMouseEnter={e => e.currentTarget.style.opacity = 1}
                 onMouseLeave={e => e.currentTarget.style.opacity = 0}
               >
-                <span style={{ color: '#fff', fontSize: 16 }}>{uploadingAvatar ? '⏳' : '📷'}</span>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    {uploadingAvatar
+                      ? <circle cx="8" cy="8" r="6" stroke="#fff" strokeWidth="1.5" strokeDasharray="10 6" />
+                      : <><path d="M2 5.5A1.5 1.5 0 0 1 3.5 4h.75L5.25 2.5h5.5L11.75 4h.75A1.5 1.5 0 0 1 14 5.5v6A1.5 1.5 0 0 1 12.5 13h-9A1.5 1.5 0 0 1 2 11.5v-6z" stroke="#fff" strokeWidth="1.2"/><circle cx="8" cy="8.5" r="2" stroke="#fff" strokeWidth="1.2"/></>
+                    }
+                  </svg>
               </div>
               <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
             </label>

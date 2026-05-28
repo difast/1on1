@@ -69,6 +69,18 @@ export default function UserCard({ user, onClose }) {
             </div>
             <span style={{ fontSize: 10, color: '#86efac', background: '#dcfce7', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+              <circle cx="8" cy="8" r="6.5" stroke="#64748b" strokeWidth="1.4"/>
+              <path d="M8 9V8.5C8 7.5 9.5 7 9.5 5.5C9.5 4.67 8.83 4 8 4C7.17 4 6.5 4.67 6.5 5.5" stroke="#64748b" strokeWidth="1.3" strokeLinecap="round"/>
+              <circle cx="8" cy="11" r="0.75" fill="#64748b"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: 0 }}>Помощь</p>
+              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Скоро будет доступна</p>
+            </div>
+            <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
+          </div>
         </div>
 
         {/* Social links */}

@@ -571,7 +571,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             title="Загрузить запись созвона для AI-анализа"
                             style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0 }}
                           >
-                            {uploadLoading[m.id] ? '⏳' : uploadDone[m.id] ? '✓' : '🎙'}
+                            {uploadLoading[m.id] ? '...' : uploadDone[m.id] ? '✓' : 'Запись'}
                           </button>
                         </>
                       )}
@@ -687,7 +687,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                           return (
                             <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                              {overdue ? '⚠ Просрочено · ' : 'до '}
+                              {overdue ? 'Просрочено · ' : 'до '}
                               {new Date(task.due_date).toLocaleDateString('ru-RU')}
                             </p>
                           )

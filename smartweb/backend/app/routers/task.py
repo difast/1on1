@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime
-import httpx, json
+import httpx, json, re
 from pydantic import BaseModel as PydanticBaseModel
 from app.database import get_db
 from app.models.task import Task
@@ -44,10 +44,24 @@ def get_task_ai_advice(data: TaskAIRequest):
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=20,
         )
+        resp.raise_for_status()
         text = resp.json()["choices"][0]["message"]["content"].strip()
+        # Strip code blocks if present
         if "```" in text:
-            text = text.split("```")[1].lstrip("json").strip()
-        result = json.loads(text)
+            for part in text.split("```"):
+                part = part.lstrip("json").strip()
+                if "{" in part:
+                    text = part
+                    break
+        # Try regex extraction if direct parse fails
+        try:
+            result = json.loads(text)
+        except Exception:
+            m = re.search(r'\{.*?"steps"\s*:\s*(\[.*?\])', text, re.DOTALL)
+            if m:
+                result = {"steps": json.loads(m.group(1))}
+            else:
+                result = {"steps": []}
         return {"steps": result.get("steps", [])}
     except Exception:
         raise HTTPException(status_code=503, detail="AI service unavailable")

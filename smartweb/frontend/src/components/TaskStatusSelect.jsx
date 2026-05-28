@@ -48,7 +48,7 @@ export default function TaskStatusSelect({ status, onChange, canMarkDone = true 
         onMouseEnter={e => e.currentTarget.style.opacity = '0.82'}
         onMouseLeave={e => e.currentTarget.style.opacity = '1'}
       >
-        <span style={{ fontSize: 12 }}>{cfg.emoji}</span>
+        <span style={{ width: 7, height: 7, borderRadius: '50%', background: cfg.dot, flexShrink: 0 }} />
         {cfg.label}
         <svg width="8" height="5" viewBox="0 0 8 5" fill="currentColor" style={{ opacity: 0.6, marginLeft: 1 }}>
           <path d="M0 0l4 5 4-5z" />
@@ -92,7 +92,6 @@ export default function TaskStatusSelect({ status, onChange, canMarkDone = true 
                   width: 8, height: 8, borderRadius: '50%',
                   background: c.dot, flexShrink: 0,
                 }} />
-                <span style={{ fontSize: 14 }}>{c.emoji}</span>
                 {c.label}
                 {active && (
                   <svg style={{ marginLeft: 'auto' }} width="14" height="14" viewBox="0 0 14 14" fill={c.color}>

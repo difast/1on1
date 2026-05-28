@@ -117,7 +117,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       </button>
       <div className="card" style={{ padding: '24px 28px' }}>
         <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text-primary)', marginBottom: 18 }}>
-          {editing === 'new' ? '📝 Новая статья' : '✏️ Редактировать'}
+          {editing === 'new' ? 'Новая статья' : 'Редактировать'}
         </p>
         <div className="form-group">
           <label className="form-label">Заголовок *</label>
@@ -157,7 +157,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>
-            📚 База знаний
+            База знаний
           </h2>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
             {articles.length} статей · общая база команды
@@ -174,7 +174,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       <input
         className="input"
         style={{ marginBottom: 16, fontSize: 14 }}
-        placeholder="🔍 Поиск по статьям..."
+        placeholder="Поиск по статьям..."
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
@@ -186,13 +186,13 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
         </div>
       ) : !teamId ? (
         <div className="empty-state">
-          <div className="empty-icon">📚</div>
+          <div className="empty-icon">◎</div>
           <p className="empty-title">Команда не выбрана</p>
           <p className="empty-desc">Выберите команду, чтобы открыть базу знаний</p>
         </div>
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">{search ? '🔍' : '📝'}</div>
+          <div className="empty-icon">◎</div>
           <p className="empty-title">{search ? 'Ничего не найдено' : 'База знаний пуста'}</p>
           <p className="empty-desc">{search ? 'Попробуйте другой запрос' : canEdit ? 'Добавьте первую статью — инструкции, процессы, полезные ссылки' : 'Тимлид ещё не добавил статьи'}</p>
         </div>

@@ -30,7 +30,7 @@ function StatCard({ value, suffix, label, icon, accent, danger, warning, delay =
       flex: 1, minWidth: 130, opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(14px)',
       transition: 'opacity 0.4s ease, transform 0.4s ease',
     }}>
-      <div style={{ fontSize: 20, marginBottom: 8 }}>{icon}</div>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, marginBottom: 12, opacity: 0.8 }} />
       <p style={{ fontSize: 26, fontWeight: 800, color, letterSpacing: '-0.8px', lineHeight: 1 }}>
         {value !== null && value !== undefined ? <AnimNum value={value} suffix={suffix} /> : '—'}
       </p>
@@ -54,8 +54,7 @@ function MoodLineChart({ trend }) {
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 300); return () => clearTimeout(t) }, [])
 
   const SCORE = { great: 4, good: 3, neutral: 2, bad: 1 }
-  const EMOJI = { great: '😊', good: '🙂', neutral: '😐', bad: '😔' }
-  const points = trend.map(m => ({ y: SCORE[m.mood] || 0, label: m.date, emoji: EMOJI[m.mood] || '❓' }))
+  const points = trend.map(m => ({ y: SCORE[m.mood] || 0, label: m.date }))
   if (points.length < 2) return (
     <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нужно минимум 2 точки</p>
   )
@@ -97,8 +96,8 @@ function MoodLineChart({ trend }) {
         ))}
       </svg>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {trendDir === 'down' && <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>📉 Настроение ухудшается</span>}
-        {trendDir === 'up' && <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>📈 Настроение улучшается</span>}
+        {trendDir === 'down' && <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>↓ Настроение ухудшается</span>}
+        {trendDir === 'up' && <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>↑ Настроение улучшается</span>}
         {trendDir === 'flat' && <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>→ Настроение стабильно</span>}
       </div>
     </div>
@@ -124,7 +123,7 @@ export default function MemberAnalytics({ user }) {
   )
   if (!data) return (
     <div className="empty-state">
-      <div className="empty-icon">📊</div>
+      <div className="empty-icon">◎</div>
       <p className="empty-title">Нет данных для аналитики</p>
       <p className="empty-desc">Данные появятся после проведения встреч</p>
     </div>
@@ -138,25 +137,25 @@ export default function MemberAnalytics({ user }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 860 }}>
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard icon="🤝" value={data.meetings_last_90} label="Встреч за 90 дней" accent delay={0} />
-        <StatCard icon="📅" value={data.days_since_last} suffix=" дн." label="Последняя встреча" danger={data.days_since_last >= 14} delay={100} />
-        <StatCard icon="✅" value={data.task_completion_pct} suffix="%" label="Задач выполнено" accent={data.task_completion_pct >= 70} danger={data.task_completion_pct !== null && data.task_completion_pct < 40} delay={200} />
-        <StatCard icon="📋" value={data.open_tasks} label="Открытых задач" warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
-        <StatCard icon="🗓" value={data.closed_last_30} label="Закрыто за 30 дн." delay={400} />
+        <StatCard value={data.meetings_last_90} label="Встреч за 90 дней" accent delay={0} />
+        <StatCard value={data.days_since_last} suffix=" дн." label="Последняя встреча" danger={data.days_since_last >= 14} delay={100} />
+        <StatCard value={data.task_completion_pct} suffix="%" label="Задач выполнено" accent={data.task_completion_pct >= 70} danger={data.task_completion_pct !== null && data.task_completion_pct < 40} delay={200} />
+        <StatCard value={data.open_tasks} label="Открытых задач" warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
+        <StatCard value={data.closed_last_30} label="Закрыто за 30 дн." delay={400} />
       </div>
 
       {/* Mood line chart */}
       {data.mood_trend.length >= 2 ? (
         <div className="card" style={{ padding: '18px 20px' }}>
           <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-            😊 Моё настроение по встречам
+            Моё настроение по встречам
           </p>
           <MoodLineChart trend={data.mood_trend} />
         </div>
       ) : (
         <div className="card card-flat" style={{ padding: '14px 18px' }}>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-            😊 График настроения появится после нескольких встреч с записью настроения
+            График настроения появится после нескольких встреч с записью настроения
           </p>
         </div>
       )}
@@ -164,7 +163,7 @@ export default function MemberAnalytics({ user }) {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {/* Who initiates */}
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>🤝 Кто инициирует встречи</p>
+          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Кто инициирует встречи</p>
           {total === 0
             ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нет данных</p>
             : (
@@ -189,7 +188,7 @@ export default function MemberAnalytics({ user }) {
 
         {/* Tasks breakdown */}
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>✅ Задачи</p>
+          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Задачи</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
               { label: 'Открытых', val: data.open_tasks, badge: data.open_tasks >= 5 ? 'badge-red' : 'badge-gray' },
@@ -217,7 +216,7 @@ export default function MemberAnalytics({ user }) {
       {/* Meetings per week */}
       <div className="card" style={{ padding: '18px 20px' }}>
         <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-          📈 Встречи по неделям
+          Встречи по неделям
         </p>
         {(() => {
           const weeks = data.meetings_per_week || []

@@ -551,7 +551,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 title="Загрузить запись созвона для AI-анализа"
                 style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
               >
-                {uploadLoading[m.id] ? '⏳ Загрузка...' : uploadDone[m.id] ? '✓ Анализирую...' : '🎙 Запись'}
+                {uploadLoading[m.id] ? 'Загрузка...' : uploadDone[m.id] ? '✓ Анализирую...' : 'Запись'}
               </button>
             </>
           )}
@@ -855,7 +855,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                           return (
                             <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                              {overdue ? '⚠ Просрочено · ' : 'до '}
+                              {overdue ? 'Просрочено · ' : 'до '}
                               {new Date(task.due_date).toLocaleDateString('ru-RU')}
                             </p>
                           )
@@ -935,7 +935,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                       const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                                       return (
                                         <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                          {overdue ? '⚠ Просрочено · ' : 'до '}
+                                          {overdue ? 'Просрочено · ' : 'до '}
                                           {new Date(task.due_date).toLocaleDateString('ru-RU')}
                                         </p>
                                       )
@@ -1092,7 +1092,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       background: 'var(--color-surface)', display: 'flex', alignItems: 'center',
                       justifyContent: 'center', fontSize: 20, flexShrink: 0,
                       boxShadow: 'var(--shadow-sm)', border: '1px solid var(--blue-200)',
-                    }}>🔗</div>
+                    }}>
+                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                        <path d="M7.5 10.5a3.75 3.75 0 0 0 5.304.046l2.25-2.25a3.75 3.75 0 0 0-5.304-5.304L8.5 4.24" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+                        <path d="M10.5 7.5a3.75 3.75 0 0 0-5.304-.046L2.946 9.704a3.75 3.75 0 0 0 5.304 5.304l1.246-1.247" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
+                    </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
                         Код приглашения
@@ -1268,7 +1273,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                             const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                                             return (
                                               <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                                {overdue ? '⚠ Просрочено · ' : 'до '}
+                                                {overdue ? 'Просрочено · ' : 'до '}
                                                 {new Date(task.due_date).toLocaleDateString('ru-RU')}
                                               </p>
                                             )
@@ -1377,7 +1382,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="btn btn-accent"
                 style={{ justifyContent: 'flex-start', gap: 12, padding: '14px 16px' }}
               >
-                <span style={{ fontSize: 22 }}>👥</span>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+                    <circle cx="8" cy="8" r="3.5" stroke="white" strokeWidth="1.5"/>
+                    <circle cx="15" cy="8" r="3.5" stroke="white" strokeWidth="1.5" opacity="0.7"/>
+                    <path d="M1 18c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>Общий созвон</div>
                   <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Вся команда получит приглашение</div>
@@ -1389,7 +1398,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="btn btn-secondary"
                 style={{ justifyContent: 'flex-start', gap: 12, padding: '14px 16px' }}
               >
-                <span style={{ fontSize: 22 }}>👤</span>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+                    <circle cx="11" cy="8" r="4" stroke="currentColor" strokeWidth="1.5"/>
+                    <path d="M3 20c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
                 <div style={{ textAlign: 'left' }}>
                   <div style={{ fontWeight: 700, fontSize: 14 }}>Индивидуальный</div>
                   <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Выбрать конкретного участника</div>

@@ -32,7 +32,7 @@ function StatCard({ value, suffix, label, accent, danger, warning, icon, delay =
       flex: 1, minWidth: 140, opacity: vis ? 1 : 0, transform: vis ? 'none' : 'translateY(12px)',
       transition: 'opacity 0.4s ease, transform 0.4s ease',
     }}>
-      <div style={{ fontSize: 22, marginBottom: 8 }}>{icon}</div>
+      <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, marginBottom: 12, opacity: 0.8 }} />
       <p style={{ fontSize: 28, fontWeight: 800, color, letterSpacing: '-1px', lineHeight: 1 }}>
         {value !== null && value !== undefined ? <AnimNum value={value} suffix={suffix} /> : '—'}
       </p>
@@ -238,7 +238,7 @@ function RiskCard({ s, delay }) {
       transition: 'opacity 0.35s ease, transform 0.35s ease',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-        <span style={{ fontSize: 18 }}>{isUrgent ? '🚨' : '⚠️'}</span>
+        <div style={{ width: 8, height: 8, borderRadius: '50%', background: isUrgent ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{s.name}</span>
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
@@ -277,7 +277,7 @@ export default function LeadAnalytics({ user }) {
   )
   if (!data?.teams?.length) return (
     <div className="empty-state">
-      <div className="empty-icon">📊</div>
+      <div className="empty-icon">◎</div>
       <p className="empty-title">Нет данных для аналитики</p>
       <p className="empty-desc">Данные появятся после проведения встреч</p>
     </div>
@@ -314,17 +314,17 @@ export default function LeadAnalytics({ user }) {
 
       {/* 4 Top stats */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard icon="📅" value={teamAvgInterval} suffix=" дн." label="Ср. интервал встреч" delay={0} />
-        <StatCard icon="🤝" value={teamMeetings30} label="Встреч за 30 дней" accent delay={100} />
-        <StatCard icon="✅" value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
-        <StatCard icon="⚠️" value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
+        <StatCard value={teamAvgInterval} suffix=" дн." label="Ср. интервал встреч" delay={0} />
+        <StatCard value={teamMeetings30} label="Встреч за 30 дней" accent delay={100} />
+        <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
+        <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
       </div>
 
       {/* Heatmap + Mood line */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="card" style={{ padding: '18px 20px' }}>
           <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-            🗓 Активность встреч по неделям
+            Активность встреч по неделям
           </p>
           <Heatmap weeks={team.meetings_per_week} />
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>
@@ -341,7 +341,7 @@ export default function LeadAnalytics({ user }) {
         <div className="card" style={{ padding: '18px 20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
             <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>
-              🌙 Настроение команды
+              Настроение команды
             </p>
             {mood?.overall_avg && (
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
@@ -367,7 +367,7 @@ export default function LeadAnalytics({ user }) {
       {team.at_risk_members.length > 0 && (
         <div className="card" style={{ padding: '18px 20px' }}>
           <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-            🚨 Зоны риска
+            Зоны риска
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
             {team.at_risk_members.map((s, i) => <RiskCard key={s.user_id} s={s} delay={i * 80} />)}
@@ -378,7 +378,7 @@ export default function LeadAnalytics({ user }) {
       {/* Member table */}
       <div className="card" style={{ padding: '18px 20px', overflow: 'hidden' }}>
         <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-          👥 По каждому участнику
+          По каждому участнику
         </p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -407,7 +407,7 @@ export default function LeadAnalytics({ user }) {
         const maxH = Math.max(...hourEntries.map(e => e.count), 1)
         return (
           <div className="card" style={{ padding: '18px 20px' }}>
-            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>🕐 Распределение встреч по времени</p>
+            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Распределение встреч по времени</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 64 }}>
               {hourEntries.map((e, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, height: '100%', justifyContent: 'flex-end' }}>

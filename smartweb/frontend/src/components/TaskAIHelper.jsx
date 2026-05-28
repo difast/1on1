@@ -6,10 +6,9 @@ export default function TaskAIHelper({ task, role = 'member' }) {
   const [loading, setLoading] = useState(false)
   const [steps, setSteps] = useState(null)
 
-  const handleOpen = async () => {
-    setOpen(true)
-    if (steps) return
+  const fetchSteps = async () => {
     setLoading(true)
+    setSteps(null)
     try {
       const { data } = await getTaskAIAdvice({
         title: task.title || task.description || '',
@@ -17,12 +16,18 @@ export default function TaskAIHelper({ task, role = 'member' }) {
         due_date: task.due_date,
         role,
       })
-      setSteps(data.steps || [])
+      setSteps(data.steps?.length ? data.steps : null)
     } catch {
       setSteps(null)
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleOpen = async () => {
+    setOpen(true)
+    if (steps) return
+    fetchSteps()
   }
 
   return (
@@ -99,7 +104,17 @@ export default function TaskAIHelper({ task, role = 'member' }) {
                 ))}
               </ol>
             ) : (
-              <p style={{ fontSize: 13, color: 'var(--color-danger)', padding: '8px 0' }}>Не удалось получить подсказку. Попробуйте ещё раз.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0' }}>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>AI не смог обработать запрос</p>
+                <button
+                  onClick={fetchSteps}
+                  style={{
+                    background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                    border: 'none', borderRadius: 8, color: 'white',
+                    fontSize: 12, fontWeight: 700, padding: '7px 18px', cursor: 'pointer',
+                  }}
+                >Повторить</button>
+              </div>
             )}
           </div>
         </div>

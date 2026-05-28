@@ -47,7 +47,8 @@ export default function MoodPrompt({ teamId }) {
     } catch { } finally { setSubmitting(false) }
   }
 
-  const SCORE_EMOJI = ['', '😢', '😕', '😐', '🙂', '😄']
+  const SCORE_COLORS = ['', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e']
+  const SCORE_LABELS = ['', 'Плохо', 'Не очень', 'Нормально', 'Хорошо', 'Отлично']
 
   if (!visible) return null
 
@@ -71,7 +72,9 @@ export default function MoodPrompt({ teamId }) {
             animation: 'popIn 0.25s var(--ease-spring)',
           }}
         >
-          <span style={{ fontSize: 24 }}>🌙</span>
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+              <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#8b5cf6" opacity="0.9"/>
+            </svg>
           <div style={{ flex: 1 }}>
             <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>
             <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>Мини-опрос · 1 минута · анонимно</p>
@@ -95,8 +98,20 @@ export default function MoodPrompt({ teamId }) {
           >
             {done ? (
               <div style={{ padding: '32px 24px', textAlign: 'center' }}>
-                <div style={{ fontSize: 56, marginBottom: 12 }}>
-                  {resultScore ? SCORE_EMOJI[resultScore] : '🎉'}
+                <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'center' }}>
+                  {resultScore ? (
+                    <div style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: SCORE_COLORS[resultScore],
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white', fontWeight: 800, fontSize: 22,
+                    }}>{resultScore}</div>
+                  ) : (
+                    <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+                      <circle cx="28" cy="28" r="26" stroke="#4f46e5" strokeWidth="2.5"/>
+                      <path d="M17 28l8 8 14-16" stroke="#4f46e5" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  )}
                 </div>
                 <p style={{ fontWeight: 700, fontSize: 17, color: 'var(--color-text-primary)', marginBottom: 8 }}>
                   Спасибо за честный ответ!
@@ -110,7 +125,7 @@ export default function MoodPrompt({ teamId }) {
               <>
                 <div className="modal-header" style={{ paddingBottom: 12 }}>
                   <div>
-                    <span className="modal-title">🌙 Опрос по итогам дня</span>
+                    <span className="modal-title">Опрос по итогам дня</span>
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
                       Анонимно · ответы анализирует ИИ
                     </p>
@@ -146,7 +161,7 @@ export default function MoodPrompt({ teamId }) {
                     className="btn btn-accent"
                     style={{ minWidth: 120, opacity: canSubmit ? 1 : 0.5 }}
                   >
-                    {submitting ? '⏳ Анализ ИИ...' : 'Отправить'}
+                    {submitting ? 'Анализ ИИ...' : 'Отправить'}
                   </button>
                 </div>
               </>
