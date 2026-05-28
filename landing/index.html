@@ -17,7 +17,6 @@ html{scroll-behavior:smooth}
 body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
-/* ── KEYFRAMES ── */
 @keyframes gradShift{0%,100%{background-position:0% 50%}50%{background-position:100% 50%}}
 @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 @keyframes pitBlink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(0.07)}}
@@ -27,20 +26,19 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 @keyframes borderGlow{0%,100%{border-color:rgba(99,102,241,.3)}50%{border-color:rgba(99,102,241,.7)}}
 @keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
 @keyframes liftBounce{0%{transform:translateY(0)}30%{transform:translateY(-6px)}55%{transform:translateY(2px)}75%{transform:translateY(-2px)}100%{transform:translateY(0)}}
-/* Cyberpunk: glowing blobs drift */
 @keyframes blobDrift{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(40px,-30px) scale(1.08)}66%{transform:translate(-30px,20px) scale(.94)}}
 @keyframes blobDrift2{0%,100%{transform:translate(0,0) scale(1)}33%{transform:translate(-50px,25px) scale(1.1)}66%{transform:translate(35px,-40px) scale(.92)}}
 @keyframes blobDrift3{0%,100%{transform:translate(0,0)}50%{transform:translate(-25px,35px)}}
-/* City silhouette glow pulse */
-@keyframes cityGlow{0%,100%{opacity:.55}50%{opacity:.8}}
-/* Neon scan line sweep */
-@keyframes scanSweep{0%{top:-3px;opacity:0}5%{opacity:.4}95%{opacity:.4}100%{top:100%;opacity:0}}
-/* Rain */
-@keyframes rainFall{from{transform:translateY(-60px) translateX(0);opacity:0}8%{opacity:.65}92%{opacity:.65}to{transform:translateY(130px) translateX(-25px);opacity:0}}
-/* Sakura */
-@keyframes sakuraFall{from{transform:translateY(-40px) rotate(0deg);opacity:0}12%{opacity:.85}88%{opacity:.85}to{transform:translateY(130px) rotate(220deg);opacity:0}}
-/* Japan section image reveal */
-@keyframes jpReveal{from{transform:scale(1.04);opacity:.7}to{transform:scale(1);opacity:1}}
+@keyframes cityGlow{0%,100%{opacity:.55}50%{opacity:.85}}
+@keyframes scanSweep{0%{top:-3px;opacity:0}5%{opacity:.35}95%{opacity:.35}100%{top:100%;opacity:0}}
+@keyframes rainFall{from{transform:translateY(-60px);opacity:0}8%{opacity:.65}92%{opacity:.65}to{transform:translateY(130px) translateX(-20px);opacity:0}}
+@keyframes sakuraFall{from{transform:translateY(-40px) rotate(0deg);opacity:0}10%{opacity:.9}90%{opacity:.9}to{transform:translateY(130px) rotate(220deg);opacity:0}}
+@keyframes leafFall{
+  0%{transform:translateY(0) translateX(0) rotate(0deg);opacity:0}
+  6%{opacity:.92}
+  90%{opacity:.85}
+  100%{transform:translateY(100vh) translateX(var(--ldrift)) rotate(var(--lspin));opacity:0}
+}
 
 /* ── NAV ── */
 nav{position:fixed;inset:0 0 auto;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:0 40px;height:60px;background:rgba(6,6,9,.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}
@@ -57,121 +55,25 @@ nav{position:fixed;inset:0 0 auto;z-index:200;display:flex;align-items:center;ju
 .btn-lg{padding:12px 28px;font-size:14px;border-radius:10px}
 .btn-xl{padding:14px 32px;font-size:15px;border-radius:10px}
 
-/* ═══════════════════════════════════════
-   HERO — CSS Cyberpunk Sunset
-═══════════════════════════════════════ */
-.hero{
-  min-height:100vh;
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:120px 40px 80px;
-  position:relative;overflow:hidden;
-  background:#03000f;
-}
-
-/* Floating panel (inset from edges) */
-.hero-bg{
-  position:absolute;inset:8px;
-  border-radius:20px;overflow:hidden;
-  z-index:0;pointer-events:none;
-}
-
-/* Sky gradient: deep space → purple → magenta → fiery orange horizon → dark city */
-.hero-bg-sky{
-  position:absolute;inset:0;
-  background:linear-gradient(
-    180deg,
-    #02000c 0%,
-    #0a0028 8%,
-    #1e0050 18%,
-    #3d0068 28%,
-    #7a0860 38%,
-    #c01545 44%,
-    #e83525 48%,
-    #ff6b00 51%,
-    #ff8c00 52.5%,
-    #e06010 54%,
-    #8a1030 57%,
-    #280018 63%,
-    #0e000a 72%,
-    #060009 100%
-  );
-}
-
-/* Atmospheric glow blobs (neon city lights) */
+/* ═══ HERO — Cyberpunk Sunset CSS ═══ */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:120px 40px 80px;position:relative;overflow:hidden;background:#03000f}
+.hero-bg{position:absolute;inset:10px;border-radius:20px;overflow:hidden;z-index:0;pointer-events:none}
+.hero-bg-sky{position:absolute;inset:0;background:linear-gradient(180deg,#02000c 0%,#0a0028 8%,#1e0050 18%,#3d0068 28%,#7a0860 38%,#c01545 44%,#e83525 48%,#ff6b00 51%,#ff8c00 52.5%,#e06010 54%,#8a1030 57%,#280018 63%,#0e000a 72%,#060009 100%)}
 .hero-bg-blobs{position:absolute;inset:0}
 .gblob{position:absolute;border-radius:50%;filter:blur(60px);mix-blend-mode:screen}
 .gblob-1{width:55%;height:35%;bottom:12%;left:-5%;background:radial-gradient(ellipse,rgba(180,0,255,.55),transparent 70%);animation:blobDrift 14s ease-in-out infinite}
 .gblob-2{width:45%;height:30%;bottom:8%;right:-5%;background:radial-gradient(ellipse,rgba(255,0,100,.5),transparent 70%);animation:blobDrift2 17s ease-in-out infinite}
-.gblob-3{width:35%;height:20%;bottom:35%;left:30%;background:radial-gradient(ellipse,rgba(0,180,255,.3),transparent 70%);animation:blobDrift3 21s ease-in-out infinite}
-.gblob-4{width:30%;height:12%;bottom:50%;left:10%;background:radial-gradient(ellipse,rgba(255,120,0,.25),transparent 70%);animation:blobDrift 25s ease-in-out infinite reverse}
-/* Horizon glow */
-.hero-bg-horizon{
-  position:absolute;
-  left:0;right:0;
-  top:49%;height:8%;
-  background:radial-gradient(ellipse 80% 100% at 50% 50%,rgba(255,140,0,.45),rgba(255,60,0,.2) 45%,transparent 75%);
-  filter:blur(4px);
-}
-
-/* City silhouette */
-.hero-bg-city{
-  position:absolute;
-  bottom:0;left:0;right:0;height:38%;
-  background:linear-gradient(180deg,transparent 0%,rgba(4,0,12,.7) 20%,#030008 55%,#030008 100%);
-}
-.hero-bg-city::before{
-  content:'';position:absolute;
-  inset:0;
-  background-image:
-    /* Building silhouettes via repeating pattern of vertical rectangles */
-    linear-gradient(to top,#030008 0%,#030008 70%,transparent 70%),
-    linear-gradient(to top,#030008 0%,#030008 55%,transparent 55%),
-    linear-gradient(to top,#030008 0%,#030008 85%,transparent 85%),
-    linear-gradient(to top,#030008 0%,#030008 60%,transparent 60%),
-    linear-gradient(to top,#030008 0%,#030008 45%,transparent 45%),
-    linear-gradient(to top,#030008 0%,#030008 78%,transparent 78%),
-    linear-gradient(to top,#030008 0%,#030008 65%,transparent 65%);
-  background-size:8% 100%,9% 100%,7% 100%,11% 100%,8% 100%,10% 100%,9% 100%;
-  background-position:2% bottom,11% bottom,21% bottom,29% bottom,41% bottom,50% bottom,60% bottom;
-  background-repeat:no-repeat;
-  opacity:.9;
-}
-/* City top glow (neon edge light) */
-.hero-bg-city::after{
-  content:'';position:absolute;
-  top:-1px;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent 0%,rgba(200,30,80,.6) 20%,rgba(255,100,0,.8) 35%,rgba(200,30,200,.7) 50%,rgba(0,150,255,.6) 65%,rgba(255,50,100,.7) 80%,transparent 100%);
-  filter:blur(1px);
-  animation:cityGlow 4s ease-in-out infinite;
-}
-
-/* Scan line sweeping down */
-.hero-bg-scan{
-  position:absolute;left:0;right:0;height:3px;
-  background:linear-gradient(90deg,transparent,rgba(200,100,255,.4),transparent);
-  filter:blur(1px);
-  animation:scanSweep 6s linear infinite;
-  pointer-events:none;z-index:2;
-}
-/* Static scan-line texture */
-.hero-bg-lines{
-  position:absolute;inset:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(120,80,255,.012) 3px,rgba(120,80,255,.012) 4px);
-  z-index:1;
-}
-
-/* Rain particles container */
+.gblob-3{width:35%;height:20%;bottom:35%;left:30%;background:radial-gradient(ellipse,rgba(0,180,255,.28),transparent 70%);animation:blobDrift3 21s ease-in-out infinite}
+.gblob-4{width:30%;height:12%;bottom:50%;left:10%;background:radial-gradient(ellipse,rgba(255,120,0,.22),transparent 70%);animation:blobDrift 25s ease-in-out infinite reverse}
+.hero-bg-horizon{position:absolute;left:0;right:0;top:49%;height:8%;background:radial-gradient(ellipse 80% 100% at 50% 50%,rgba(255,140,0,.42),rgba(255,60,0,.18) 45%,transparent 75%);filter:blur(4px)}
+.hero-bg-city{position:absolute;bottom:0;left:0;right:0;height:38%;background:linear-gradient(180deg,transparent 0%,rgba(4,0,12,.7) 20%,#030008 55%,#030008 100%)}
+.hero-bg-city::before{content:'';position:absolute;inset:0;background-image:linear-gradient(to top,#030008 0%,#030008 70%,transparent 70%),linear-gradient(to top,#030008 0%,#030008 55%,transparent 55%),linear-gradient(to top,#030008 0%,#030008 85%,transparent 85%),linear-gradient(to top,#030008 0%,#030008 60%,transparent 60%),linear-gradient(to top,#030008 0%,#030008 45%,transparent 45%),linear-gradient(to top,#030008 0%,#030008 78%,transparent 78%),linear-gradient(to top,#030008 0%,#030008 65%,transparent 65%);background-size:8% 100%,9% 100%,7% 100%,11% 100%,8% 100%,10% 100%,9% 100%;background-position:2% bottom,11% bottom,21% bottom,29% bottom,41% bottom,50% bottom,60% bottom;background-repeat:no-repeat;opacity:.9}
+.hero-bg-city::after{content:'';position:absolute;top:-1px;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent 0%,rgba(200,30,80,.6) 20%,rgba(255,100,0,.8) 35%,rgba(200,30,200,.7) 50%,rgba(0,150,255,.6) 65%,rgba(255,50,100,.7) 80%,transparent 100%);filter:blur(1px);animation:cityGlow 4s ease-in-out infinite}
+.hero-bg-scan{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,rgba(200,100,255,.4),transparent);filter:blur(1px);animation:scanSweep 6s linear infinite;z-index:2}
+.hero-bg-lines{position:absolute;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(120,80,255,.012) 3px,rgba(120,80,255,.012) 4px);z-index:1}
 .panel-fx{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:3}
 .rain{position:absolute;width:1px;background:linear-gradient(180deg,transparent,rgba(160,100,255,.65),rgba(255,140,0,.3),transparent);animation:rainFall linear infinite}
-.sakura{position:absolute;border-radius:50% 0 50% 0;background:rgba(255,200,220,.8);animation:sakuraFall linear infinite}
-
-/* Text vignette — dark only at very edges */
-.hero-vignette{
-  position:absolute;inset:0;z-index:4;pointer-events:none;
-  background:
-    radial-gradient(ellipse 90% 80% at 50% 50%,transparent 0%,transparent 45%,rgba(3,0,8,.6) 75%,rgba(3,0,8,.9) 100%);
-}
-
+.hero-vignette{position:absolute;inset:0;z-index:4;pointer-events:none;background:radial-gradient(ellipse 90% 80% at 50% 50%,transparent 0%,transparent 42%,rgba(3,0,8,.55) 72%,rgba(3,0,8,.88) 100%)}
 .hero>*:not(.hero-bg):not(.hero-vignette){position:relative;z-index:5}
 .badge{display:inline-flex;align-items:center;gap:7px;background:rgba(99,102,241,.12);border:1px solid rgba(99,102,241,.3);border-radius:6px;padding:5px 13px;font-size:12px;color:var(--acc3);font-weight:600;letter-spacing:.03em;margin-bottom:32px;animation:fadeUp .6s ease both}
 .badge-dot{width:6px;height:6px;border-radius:50%;background:var(--acc3);animation:antPulse 2s ease-in-out infinite}
@@ -182,9 +84,7 @@ h1.ht{font-size:clamp(44px,7vw,88px);font-weight:900;line-height:1;letter-spacin
 .hero-meta{display:flex;gap:28px;flex-wrap:wrap;justify-content:center;animation:fadeUp .6s .4s ease both}
 .hero-meta-i{font-size:12px;color:rgba(255,255,255,.4);display:flex;align-items:center;gap:6px;font-weight:500}
 .hero-meta-i::before{content:'';width:4px;height:4px;border-radius:50%;background:rgba(255,140,80,.7);flex-shrink:0}
-
-/* Terminal */
-.term-wrap{width:100%;max-width:680px;margin:56px auto 0;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(3,0,12,.75);backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.6),0 0 0 1px rgba(255,140,80,.08),inset 0 1px 0 rgba(255,255,255,.07);animation:fadeUp .6s .5s ease both}
+.term-wrap{width:100%;max-width:680px;margin:56px auto 0;border-radius:14px;border:1px solid rgba(255,255,255,.1);background:rgba(3,0,12,.78);backdrop-filter:blur(20px);overflow:hidden;box-shadow:0 32px 80px rgba(0,0,0,.6),inset 0 1px 0 rgba(255,255,255,.07);animation:fadeUp .6s .5s ease both}
 .term-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(255,255,255,.025)}
 .tdot{width:11px;height:11px;border-radius:50%}
 .term-title{flex:1;text-align:center;font-size:11px;color:var(--txt3);font-family:'SF Mono','Fira Code',monospace}
@@ -200,46 +100,26 @@ h1.ht{font-size:clamp(44px,7vw,88px);font-weight:900;line-height:1;letter-spacin
 .pit-msg{font-family:-apple-system,sans-serif;font-size:13px;color:var(--txt2);line-height:1.6}
 .pit-msg b{color:var(--txt);font-weight:600}
 
-/* ═══════════════════════════════════════
-   FEATURES — Japan Cherry Blossom Photo
-═══════════════════════════════════════ */
+/* ═══ FEATURES — Cherry Blossom Blood Red ═══ */
 .jp-section{position:relative;background:var(--bg)}
-.jp-bg{
-  position:absolute;inset:8px;
-  border-radius:20px;overflow:hidden;
-  z-index:0;pointer-events:none;
-}
-/* Cherry blossom / Japan garden photo */
+.jp-bg{position:absolute;inset:10px;border-radius:20px;overflow:hidden;z-index:0;pointer-events:none}
 .jp-bg-img{
   position:absolute;inset:0;
-  background-color:#0f0308;
-  background-image:
-    /* Very light overlay for glass effect on content */
-    linear-gradient(180deg,rgba(8,2,12,.28) 0%,rgba(8,2,12,.05) 30%,rgba(8,2,12,.05) 70%,rgba(8,2,12,.35) 100%),
-    url('https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=90') center/cover no-repeat;
-  animation:jpReveal .8s ease both;
+  background-color:#3d0010;
+  background-image:url('https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1600&q=90') center/cover no-repeat;
+  /* Shift pink→blood red, high saturation, bright */
+  filter:hue-rotate(330deg) saturate(280%) brightness(1.08) contrast(1.05);
 }
-/* Sakura particles */
-.jp-bg .panel-fx{z-index:2}
+/* No dark overlay — just a slight vignette at outer edge for blending */
+.jp-bg::after{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 96% 92% at 50% 50%,transparent 58%,rgba(6,6,9,.7) 100%)}
+.sakura{position:absolute;border-radius:50% 0 50% 0;background:rgba(220,0,40,.85);animation:sakuraFall linear infinite}
+.jp-content{position:relative;z-index:2}
+.jp-section .bcard{background:rgba(20,4,8,.78);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:rgba(220,0,40,.15)}
+.jp-section .bcard:hover{background:rgba(30,6,12,.88)}
+.jp-section .bcard-tag,.jp-section .tag.acc{color:#ff8080}
+.jp-section .tag.acc{background:rgba(200,0,40,.1);border-color:rgba(200,0,40,.3)}
 
-/* Edge vignette for blending */
-.jp-bg::after{
-  content:'';position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:radial-gradient(ellipse 95% 90% at 50% 50%,transparent 55%,rgba(6,6,9,.75) 100%);
-}
-
-.jp-content{position:relative;z-index:1}
-
-/* Glassmorphism on bento cards */
-.jp-section .bcard{
-  background:rgba(6,6,9,.76);
-  backdrop-filter:blur(16px);
-  -webkit-backdrop-filter:blur(16px);
-  border-color:rgba(255,255,255,.1);
-}
-.jp-section .bcard:hover{background:rgba(10,10,20,.88)}
-
-/* ── BENTO ── */
+/* ═══ SHARED WRAP & CARDS ═══ */
 .wrap{max-width:1160px;margin:0 auto;padding:100px 40px}
 .section-tag{font-size:11px;font-weight:700;color:var(--acc3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
 h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spacing:-0.03em;margin-bottom:14px}
@@ -263,6 +143,23 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .tag-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}
 .tag{display:inline-flex;align-items:center;gap:5px;background:rgba(255,255,255,.04);border:1px solid var(--brd);padding:4px 10px;border-radius:6px;font-size:12px;color:var(--txt2);font-weight:500}
 .tag.acc{background:rgba(99,102,241,.1);border-color:rgba(99,102,241,.25);color:var(--acc3)}
+
+/* ═══ NATURE WRAPPER (Forest + Mountain) ═══ */
+.nature-wrapper{position:relative;overflow:hidden}
+/* Falling leaves span entire nature-wrapper */
+.leaves-field{position:absolute;inset:0;z-index:20;pointer-events:none;overflow:hidden}
+.falling-leaf{position:absolute;border-radius:50% 0 50% 0;opacity:0;animation:leafFall var(--ldur) var(--ldelay) ease-in infinite}
+
+/* ── TREES SECTION ── */
+.trees-section{position:relative;background:var(--bg)}
+.trees-bg{position:absolute;inset:10px;border-radius:20px;overflow:hidden;z-index:0}
+#forestCanvas{width:100%;height:100%;display:block}
+.trees-content{position:relative;z-index:1}
+/* Glass cards on forest background */
+.trees-section .how-card{background:rgba(4,10,4,.7);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:rgba(255,255,255,.09)}
+.trees-section .pit-section{background:rgba(4,10,4,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.09);border-radius:20px}
+.trees-section .pcard{background:rgba(4,10,4,.72);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-color:rgba(255,255,255,.09)}
+.trees-section .pcard.pop{background:rgba(8,16,8,.85);border-color:rgba(99,102,241,.4)}
 
 /* ── HOW ── */
 .how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;margin-top:48px}
@@ -307,16 +204,34 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .plist{list-style:none;margin-bottom:28px;display:flex;flex-direction:column;gap:10px}
 .plist li{font-size:13px;color:var(--txt2);display:flex;gap:9px;align-items:flex-start;line-height:1.5}
 .plist li::before{content:'';width:15px;height:15px;border-radius:50%;flex-shrink:0;margin-top:1px;background:rgba(99,102,241,.12) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 6l3 3 5-5' stroke='%236366f1' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center/10px;border:1px solid rgba(99,102,241,.3)}
-.plist li.dim::before{opacity:.25}
-.plist li.dim{color:var(--txt3)}
+.plist li.dim::before{opacity:.25}.plist li.dim{color:var(--txt3)}
 .pbtn{display:block;width:100%;padding:11px;border-radius:9px;text-align:center;font-weight:600;font-size:13px;border:1px solid var(--brd);background:rgba(255,255,255,.04);color:var(--txt2);text-decoration:none;transition:all .15s;font-family:inherit;cursor:pointer}
 .pbtn:hover{background:rgba(255,255,255,.08);color:var(--txt)}
 .pbtn.prim{background:var(--acc);border-color:transparent;color:#fff}
 .pbtn.prim:hover{background:#5558e8}
 
-/* ═══════════════════════════════════
-   ELEVATOR CTA
-═══════════════════════════════════ */
+/* ── MOUNTAIN + LAKE ── */
+.mountain-section{position:relative;height:56vh;min-height:380px;background:var(--bg)}
+.mountain-bg{position:absolute;inset:10px;border-radius:20px;overflow:hidden;z-index:0}
+.mountain-bg-inner{
+  position:absolute;inset:0;
+  /* CSS gradient mountain + lake (no darkening, vivid) */
+  background:
+    url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=90') center/cover no-repeat,
+    linear-gradient(180deg,
+      #a8d4f0 0%,#c4e4f8 12%,
+      #96b8d8 22%,#7898b8 26%,
+      #e8f0f8 27%,#7898b8 28%,
+      #3a5a2a 36%,#2a4a1a 43%,
+      #1a2818 46%,
+      #2e7a68 48%,#3a8878 52%,
+      #2a7060 55%,#2a4a1a 62%,
+      #3a5a2a 68%,#7898b8 76%,
+      #c4e4f8 88%,#a8d4f0 100%
+    );
+}
+
+/* ═══ ELEVATOR CTA ═══ */
 .lift-section{padding:40px 0 88px}
 .lift-inner{max-width:860px;margin:0 auto;padding:0 40px}
 .lift-header{text-align:center;margin-bottom:52px}
@@ -329,7 +244,7 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .rail-l{left:24px}.rail-r{right:24px}
 .shaft-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px);background-size:100% 48px;z-index:0;pointer-events:none}
 .floor-display{position:absolute;top:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid rgba(99,102,241,.3);border-radius:10px;padding:8px 20px;z-index:10;box-shadow:0 0 20px rgba(99,102,241,.15)}
-.floor-digit{font-family:'SF Mono','Fira Code','Courier New',monospace;font-size:24px;font-weight:900;color:var(--acc3);letter-spacing:.08em;min-width:24px;text-align:center;transition:opacity .15s}
+.floor-digit{font-family:'SF Mono','Fira Code','Courier New',monospace;font-size:24px;font-weight:900;color:var(--acc3);letter-spacing:.08em;min-width:24px;text-align:center}
 .floor-label{font-size:11px;color:var(--txt3);font-weight:600;letter-spacing:.08em}
 .floor-arrow{font-size:12px;color:var(--acc3)}
 .lift-car{position:absolute;left:72px;right:72px;background:var(--bg1);border:1px solid rgba(99,102,241,.28);border-radius:12px;overflow:hidden;z-index:5;box-shadow:0 0 0 1px rgba(255,255,255,.04),0 12px 40px rgba(0,0,0,.6)}
@@ -360,14 +275,12 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .lobby{position:absolute;bottom:0;left:0;right:0;height:16px;background:linear-gradient(180deg,var(--brd2),var(--brd));z-index:3}
 .lobby::before{content:'▲ LOBBY';position:absolute;top:-20px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:700;color:var(--acc3);letter-spacing:.15em;opacity:.6;white-space:nowrap}
 
-/* ── FOOTER ── */
 footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px}
 .flinks{display:flex;gap:24px;flex-wrap:wrap}
 .flinks a{font-size:13px;color:var(--txt3);text-decoration:none;transition:color .15s;font-weight:500}
 .flinks a:hover{color:var(--txt2)}
 .fcopy{font-size:12px;color:var(--txt3)}
 
-/* Reveal */
 .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
 .reveal.vis{opacity:1;transform:translateY(0)}
 .reveal-scale{opacity:0;transform:scale(.97);transition:opacity .5s ease,transform .5s ease}
@@ -375,8 +288,8 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 
 @media(max-width:960px){
   nav{padding:0 20px}.nav-links{display:none}
-  .hero{padding:100px 20px 60px}
-  .hero-bg{inset:6px}.jp-bg{inset:6px}
+  .hero{padding:100px 20px 60px}.hero-bg{inset:6px}.jp-bg{inset:6px}
+  .trees-bg{inset:6px}.mountain-bg{inset:6px}
   .wrap{padding:70px 20px}
   .bento{grid-template-columns:1fr 1fr}
   .b-wide,.b-narrow,.b-half{grid-column:span 2}.b-third{grid-column:span 1}
@@ -385,17 +298,14 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   .pit-chat{max-width:100%}
   .pgrid{grid-template-columns:1fr 1fr}
   footer{padding:28px 20px}
-  .lift-inner{padding:0 20px}
-  .lift-car{left:48px;right:48px}
+  .lift-inner{padding:0 20px}.lift-car{left:48px;right:48px}
   .rail-l{left:16px}.rail-r{right:16px}
-  .shaft::before,.shaft::after{width:40px}
-  .car-cta{padding:24px 20px}
+  .shaft::before,.shaft::after{width:40px}.car-cta{padding:24px 20px}
 }
 @media(max-width:560px){
   .pgrid{grid-template-columns:1fr}
   .hero-actions,.car-cta-btns{flex-direction:column}
-  .term-wrap{display:none}
-  .bento{grid-template-columns:1fr}
+  .term-wrap{display:none}.bento{grid-template-columns:1fr}
   .lift-car{left:32px;right:32px}
 }
 </style>
@@ -415,31 +325,21 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </nav>
 
-<!-- ═══ HERO — Cyberpunk Sunset ═══ -->
+<!-- HERO — Cyberpunk Sunset -->
 <section class="hero" id="home">
   <div class="hero-bg">
-    <!-- Sky + horizon gradient -->
     <div class="hero-bg-sky"></div>
-    <!-- Glowing neon blobs (city lights) -->
     <div class="hero-bg-blobs">
-      <div class="gblob gblob-1"></div>
-      <div class="gblob gblob-2"></div>
-      <div class="gblob gblob-3"></div>
-      <div class="gblob gblob-4"></div>
+      <div class="gblob gblob-1"></div><div class="gblob gblob-2"></div>
+      <div class="gblob gblob-3"></div><div class="gblob gblob-4"></div>
     </div>
-    <!-- Horizon glow line -->
     <div class="hero-bg-horizon"></div>
-    <!-- City silhouette -->
     <div class="hero-bg-city"></div>
-    <!-- Scan line sweep -->
     <div class="hero-bg-scan"></div>
-    <!-- Scanline texture -->
     <div class="hero-bg-lines"></div>
-    <!-- Rain particles -->
     <div class="panel-fx" id="cyFx"></div>
   </div>
   <div class="hero-vignette"></div>
-
   <div class="badge"><div class="badge-dot"></div>AI-платформа для команд</div>
   <h1 class="ht">1-on-1<br><span class="grad">встречи нового</span><br>поколения</h1>
   <p class="hero-sub">Умное расписание, AI-ассистент Пит, аналитика команды и трекинг задач — всё в одном инструменте.</p>
@@ -452,7 +352,6 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
     <div class="hero-meta-i">AI включён</div>
     <div class="hero-meta-i">Деплой в облаке</div>
   </div>
-
   <div class="term-wrap">
     <div class="term-bar">
       <div class="tdot" style="background:#ff5f57"></div>
@@ -477,7 +376,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </section>
 
-<!-- ═══ FEATURES — Japan Cherry Blossom ═══ -->
+<!-- FEATURES — Cherry Blossom Blood Red -->
 <div class="jp-section" id="features">
   <div class="jp-bg">
     <div class="jp-bg-img"></div>
@@ -513,7 +412,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
       <div class="bcard b-third" style="min-height:180px"><div class="bcard-tag">04 — Время</div><h3>Учёт рабочего времени</h3><p>Кнопки прихода и ухода. Тимлид видит статистику по команде в аналитике.</p></div>
       <div class="bcard b-half" style="min-height:180px">
         <div class="bcard-tag">05 — Аналитика</div><h3>Дашборд тимлида</h3>
-        <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV. Всё на одном экране.</p>
+        <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV.</p>
         <div class="tag-row" style="margin-top:auto;padding-top:16px"><span class="tag acc">CSV экспорт</span><span class="tag">Зоны риска</span><span class="tag">12 недель</span></div>
       </div>
       <div class="bcard b-half" style="min-height:180px"><div class="bcard-tag">06 — Уведомления</div><h3>Умные уведомления</h3><p>Напоминания о встречах, статусы задач, изменения настроения. Только важное.</p></div>
@@ -521,78 +420,72 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </div>
 
-<!-- ═══ HOW IT WORKS — Dark ═══ -->
-<div class="wrap" id="how" style="padding-top:88px">
-  <div class="reveal"><div class="section-tag">Как работает</div><h2 class="st">Три шага до первой встречи</h2></div>
-  <div class="how-grid reveal">
-    <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 01</div><h3>Создайте команду</h3><p>Зарегистрируйтесь и создайте команду. Участники присоединяются по инвайт-коду — без сложных настроек.</p></div>
-    <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 02</div><h3>Запланируйте встречу</h3><p>AI предложит оптимальное время. Подтвердите — встреча создана с уведомлениями и календарной ссылкой.</p></div>
-    <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 03</div><h3>Развивайте команду</h3><p>Аналитика покажет прогресс каждого. Задачи, настроение и статистика — в одном окне.</p></div>
-  </div>
-</div>
+<!-- NATURE WRAPPER: animated forest + mountain + falling leaves -->
+<div class="nature-wrapper" id="natureWrapper">
+  <div class="leaves-field" id="leavesField"></div>
 
-<!-- ═══ PIT — Dark ═══ -->
-<div class="wrap" style="padding-top:0">
-  <div class="pit-section reveal-scale">
-    <div class="pit-section-left">
-      <div class="section-tag">AI-ассистент</div>
-      <h2 class="st">Познакомьтесь<br>с Питом</h2>
-      <p style="font-size:16px;color:var(--txt2);margin-bottom:28px;font-weight:400;line-height:1.65">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
-      <div class="pit-chat">
-        <div class="chat-bubble chat-user">Кто из команды не встречался со мной больше 2 недель?</div>
-        <div class="chat-bubble chat-pit"><div class="chat-pit-face"></div><span>Максим и Ольга — последняя встреча 18 и 22 дня назад. Рекомендую запланировать встречи на следующей неделе.</span></div>
-        <div class="chat-bubble chat-user">Создай задачу Максиму — подготовить квартальный отчёт</div>
-        <div class="chat-bubble chat-pit"><div class="chat-pit-face"></div><span>Задача создана: «Квартальный отчёт» → Максим. Дедлайн — конец недели, разбил на 3 подзадачи.</span></div>
-      </div>
-    </div>
-    <div class="pit-section-right">
-      <div class="pit-big-wrap">
-        <div class="pit-big">
-          <div class="pit-antenna"></div><div class="pit-shine"></div>
-          <div class="peye" style="top:32%;left:20%;width:15px;height:15px;animation:pitBlink 4.5s ease-in-out infinite;box-shadow:0 0 8px rgba(199,210,254,.9)"><div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div></div>
-          <div class="peye" style="top:32%;right:20%;width:15px;height:15px;animation:pitBlink 4.5s ease-in-out infinite .18s;box-shadow:0 0 8px rgba(199,210,254,.9)"><div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div></div>
-          <div class="pmouth"></div>
+  <!-- TREES — How + Pit + Pricing -->
+  <div class="trees-section">
+    <div class="trees-bg"><canvas id="forestCanvas"></canvas></div>
+    <div class="trees-content">
+      <div class="wrap" id="how" style="padding-top:88px">
+        <div class="reveal"><div class="section-tag">Как работает</div><h2 class="st">Три шага до первой встречи</h2></div>
+        <div class="how-grid reveal">
+          <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 01</div><h3>Создайте команду</h3><p>Зарегистрируйтесь и создайте команду. Участники присоединяются по инвайт-коду — без сложных настроек.</p></div>
+          <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 02</div><h3>Запланируйте встречу</h3><p>AI предложит оптимальное время. Подтвердите — встреча создана с уведомлениями и календарной ссылкой.</p></div>
+          <div class="how-card"><div class="how-line"></div><div class="how-num">Шаг 03</div><h3>Развивайте команду</h3><p>Аналитика покажет прогресс каждого. Задачи, настроение и статистика — в одном окне.</p></div>
         </div>
       </div>
-      <div class="pit-label">Пит — AI-ассистент</div>
-      <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc" style="margin-top:8px">Попробовать</a>
+      <div class="wrap" style="padding-top:0">
+        <div class="pit-section reveal-scale">
+          <div class="pit-section-left">
+            <div class="section-tag">AI-ассистент</div>
+            <h2 class="st">Познакомьтесь<br>с Питом</h2>
+            <p style="font-size:16px;color:var(--txt2);margin-bottom:28px;font-weight:400;line-height:1.65">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
+            <div class="pit-chat">
+              <div class="chat-bubble chat-user">Кто из команды не встречался со мной больше 2 недель?</div>
+              <div class="chat-bubble chat-pit"><div class="chat-pit-face"></div><span>Максим и Ольга — последняя встреча 18 и 22 дня назад. Рекомендую запланировать встречи на следующей неделе.</span></div>
+              <div class="chat-bubble chat-user">Создай задачу Максиму — подготовить квартальный отчёт</div>
+              <div class="chat-bubble chat-pit"><div class="chat-pit-face"></div><span>Задача создана: «Квартальный отчёт» → Максим. Дедлайн — конец недели, разбил на 3 подзадачи.</span></div>
+            </div>
+          </div>
+          <div class="pit-section-right">
+            <div class="pit-big-wrap">
+              <div class="pit-big">
+                <div class="pit-antenna"></div><div class="pit-shine"></div>
+                <div class="peye" style="top:32%;left:20%;width:15px;height:15px;animation:pitBlink 4.5s ease-in-out infinite;box-shadow:0 0 8px rgba(199,210,254,.9)"><div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div></div>
+                <div class="peye" style="top:32%;right:20%;width:15px;height:15px;animation:pitBlink 4.5s ease-in-out infinite .18s;box-shadow:0 0 8px rgba(199,210,254,.9)"><div style="position:absolute;bottom:3px;right:3px;width:6px;height:6px;background:#1e1b4b;border-radius:50%"></div></div>
+                <div class="pmouth"></div>
+              </div>
+            </div>
+            <div class="pit-label">Пит — AI-ассистент</div>
+            <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc" style="margin-top:8px">Попробовать</a>
+          </div>
+        </div>
+      </div>
+      <div class="wrap" id="pricing" style="padding-top:0">
+        <div class="reveal" style="text-align:center">
+          <div class="section-tag" style="justify-content:center;display:flex">Тарифы</div>
+          <h2 class="st" style="margin:0 auto 12px">Выберите свой план</h2>
+          <p class="st-sub" style="margin:0 auto">Начните бесплатно, масштабируйтесь по мере роста.</p>
+        </div>
+        <div class="pgrid reveal">
+          <div class="pcard"><div class="pname">Free</div><div class="pprice">0₽ <small>/мес</small></div><div class="pdesc">Для старта</div><ul class="plist"><li>1 команда</li><li>До 5 участников</li><li>Базовые встречи</li><li>История 30 дней</li><li class="dim">AI-ассистент</li><li class="dim">Аналитика</li></ul><a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Начать бесплатно</a></div>
+          <div class="pcard pop"><div class="pbadge">Популярный</div><div class="pname acc">Pro</div><div class="pprice">990₽ <small>/мес</small></div><div class="pdesc">Для активных команд</div><ul class="plist"><li>3 команды</li><li>До 20 участников</li><li>AI-советы по задачам</li><li>Полная аналитика</li><li>Mood tracking</li><li>История без ограничений</li></ul><a href="https://1on1-production-bb3b.up.railway.app" class="pbtn prim">Выбрать Pro</a></div>
+          <div class="pcard"><div class="pname">Max</div><div class="pprice">2490₽ <small>/мес</small></div><div class="pdesc">Для больших команд</div><ul class="plist"><li>10 команд</li><li>До 100 участников</li><li>Всё из Pro</li><li>Видеозвонки</li><li>Транскрипты встреч</li><li>Учёт рабочего времени</li></ul><a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Выбрать Max</a></div>
+          <div class="pcard" style="border-color:rgba(167,139,250,.2)"><div class="pname" style="color:#c084fc">Enterprise</div><div class="pprice" style="font-size:24px">По запросу</div><div class="pdesc">Для организаций</div><ul class="plist"><li>Неограниченно</li><li>SLA 99.9%</li><li>On-premise деплой</li><li>SSO / SAML</li><li>Поддержка 24/7</li><li>Кастомная интеграция</li></ul><a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(167,139,250,.25);color:#c084fc">Связаться</a></div>
+        </div>
+      </div>
     </div>
+  </div>
+
+  <!-- MOUNTAIN + LAKE -->
+  <div class="mountain-section">
+    <div class="mountain-bg"><div class="mountain-bg-inner"></div></div>
   </div>
 </div>
 
-<!-- ═══ PRICING — Dark ═══ -->
-<div class="wrap" id="pricing" style="padding-top:0">
-  <div class="reveal" style="text-align:center">
-    <div class="section-tag" style="justify-content:center;display:flex">Тарифы</div>
-    <h2 class="st" style="margin:0 auto 12px">Выберите свой план</h2>
-    <p class="st-sub" style="margin:0 auto">Начните бесплатно, масштабируйтесь по мере роста.</p>
-  </div>
-  <div class="pgrid reveal">
-    <div class="pcard">
-      <div class="pname">Free</div><div class="pprice">0₽ <small>/мес</small></div><div class="pdesc">Для старта</div>
-      <ul class="plist"><li>1 команда</li><li>До 5 участников</li><li>Базовые встречи</li><li>История 30 дней</li><li class="dim">AI-ассистент</li><li class="dim">Аналитика</li></ul>
-      <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Начать бесплатно</a>
-    </div>
-    <div class="pcard pop">
-      <div class="pbadge">Популярный</div>
-      <div class="pname acc">Pro</div><div class="pprice">990₽ <small>/мес</small></div><div class="pdesc">Для активных команд</div>
-      <ul class="plist"><li>3 команды</li><li>До 20 участников</li><li>AI-советы по задачам</li><li>Полная аналитика</li><li>Mood tracking</li><li>История без ограничений</li></ul>
-      <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn prim">Выбрать Pro</a>
-    </div>
-    <div class="pcard">
-      <div class="pname">Max</div><div class="pprice">2490₽ <small>/мес</small></div><div class="pdesc">Для больших команд</div>
-      <ul class="plist"><li>10 команд</li><li>До 100 участников</li><li>Всё из Pro</li><li>Видеозвонки</li><li>Транскрипты встреч</li><li>Учёт рабочего времени</li></ul>
-      <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Выбрать Max</a>
-    </div>
-    <div class="pcard" style="border-color:rgba(167,139,250,.2)">
-      <div class="pname" style="color:#c084fc">Enterprise</div><div class="pprice" style="font-size:24px">По запросу</div><div class="pdesc">Для организаций</div>
-      <ul class="plist"><li>Неограниченно</li><li>SLA 99.9%</li><li>On-premise деплой</li><li>SSO / SAML</li><li>Поддержка 24/7</li><li>Кастомная интеграция</li></ul>
-      <a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(167,139,250,.25);color:#c084fc">Связаться</a>
-    </div>
-  </div>
-</div>
-
-<!-- ═══ ELEVATOR CTA ═══ -->
+<!-- ELEVATOR CTA -->
 <div class="lift-section">
   <div class="lift-inner">
     <div class="lift-header reveal">
@@ -602,8 +495,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
     <div class="shaft-wrap reveal-scale">
       <div class="shaft" id="liftShaft">
         <div class="shaft-grid"></div>
-        <div class="rail rail-l"></div>
-        <div class="rail rail-r"></div>
+        <div class="rail rail-l"></div><div class="rail rail-r"></div>
         <div class="floor-display">
           <div class="floor-digit" id="floorNum">3</div>
           <div class="floor-label">ЭТАЖ</div>
@@ -611,14 +503,12 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         </div>
         <div class="lift-car" id="liftCar">
           <div class="car-ceiling">
-            <div class="car-light on"></div>
-            <div class="car-light"></div>
+            <div class="car-light on"></div><div class="car-light"></div>
             <div class="car-pit-win">
               <div class="car-pit-eye" style="top:26%;left:16%"></div>
               <div class="car-pit-eye" style="top:26%;right:16%;animation-delay:.18s"></div>
             </div>
-            <div class="car-light"></div>
-            <div class="car-light on"></div>
+            <div class="car-light"></div><div class="car-light on"></div>
             <div class="car-num-badge">ЛИФТ № 1</div>
           </div>
           <div class="door-zone">
@@ -654,83 +544,218 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 
 <script>
 // Scroll reveal
-const revIo = new IntersectionObserver(entries => {
-  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('vis'); revIo.unobserve(e.target) } })
-}, { threshold: .1 })
+const revIo = new IntersectionObserver(e => {
+  e.forEach(x => { if (x.isIntersecting) { x.target.classList.add('vis'); revIo.unobserve(x.target) } })
+}, { threshold:.1 })
 document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(el))
 
-// Rain drops — cyberpunk hero
+// Rain — hero cyberpunk
 ;(function(){
   const fx = document.getElementById('cyFx')
-  if (!fx) return
-  for (let i = 0; i < 35; i++) {
-    const r = document.createElement('div')
-    r.className = 'rain'
-    const left = Math.random() * 100
-    const dur = 0.6 + Math.random() * 1.0
-    const delay = Math.random() * 5
-    const h = 30 + Math.random() * 50
-    r.style.cssText = `left:${left}%;top:${Math.random()*75}%;height:${h}px;animation-duration:${dur}s;animation-delay:-${delay}s`
+  if(!fx) return
+  for(let i=0;i<35;i++){
+    const r=document.createElement('div'); r.className='rain'
+    r.style.cssText=`left:${Math.random()*100}%;top:${Math.random()*75}%;height:${30+Math.random()*50}px;animation-duration:${0.6+Math.random()}s;animation-delay:-${Math.random()*5}s`
     fx.appendChild(r)
   }
 })()
 
-// Sakura petals — Japan section
+// Sakura — cherry blossom section
 ;(function(){
   const fx = document.getElementById('jpFx')
-  if (!fx) return
-  for (let i = 0; i < 18; i++) {
-    const p = document.createElement('div')
-    p.className = 'sakura'
-    const size = 5 + Math.random() * 7
-    const left = 3 + Math.random() * 94
-    const dur = 7 + Math.random() * 10
-    const delay = Math.random() * 14
-    p.style.cssText = `left:${left}%;top:${Math.random()*50}%;width:${size}px;height:${size}px;animation-duration:${dur}s;animation-delay:-${delay}s`
+  if(!fx) return
+  for(let i=0;i<20;i++){
+    const p=document.createElement('div'); p.className='sakura'
+    const sz=5+Math.random()*7
+    p.style.cssText=`left:${3+Math.random()*94}%;top:${Math.random()*50}%;width:${sz}px;height:${sz}px;animation-duration:${7+Math.random()*10}s;animation-delay:-${Math.random()*14}s`
     fx.appendChild(p)
   }
 })()
 
-// Elevator
+// ── Canvas Forest Animation
 ;(function(){
-  const shaft = document.getElementById('liftShaft')
-  const car   = document.getElementById('liftCar')
-  const numEl = document.getElementById('floorNum')
-  const arrEl = document.getElementById('floorArrow')
-  if (!shaft || !car) return
+  const canvas = document.getElementById('forestCanvas')
+  if(!canvas) return
+  const ctx = canvas.getContext('2d')
 
-  car.style.top = '-300px'
-  car.style.transition = 'none'
-  let triggered = false
+  const PALETTES = [
+    { trunk:'#3a1a08', c:['#6B0F0F','#8B1A1A','#A52020','#8B1A1A','#B83030','#A01010','#CC2800'] },
+    { trunk:'#4a2808', c:['#AA5500','#CC6600','#DD7722','#BB4400','#E08000','#CC5500','#FF6600'] },
+    { trunk:'#302010', c:['#886600','#AA8800','#CCAA00','#998800','#BB9900','#DD9900','#FFAA00'] },
+    { trunk:'#3a1a08', c:['#882200','#AA3300','#CC5500','#AA4400','#DD4400','#BB3300','#FF4400'] },
+  ]
 
-  const io = new IntersectionObserver(entries => {
-    if (!entries[0].isIntersecting || triggered) return
-    triggered = true; io.disconnect()
+  let trees=[], W=0, H=0
 
-    const lobbyTop = shaft.offsetHeight - 16 - car.offsetHeight
-    setTimeout(() => {
-      car.style.transition = 'top 1.2s cubic-bezier(0.16,1,0.3,1)'
-      car.style.top = lobbyTop + 'px'
-      const floors = ['3','2','1','G']
-      floors.forEach((f, i) => {
-        setTimeout(() => {
-          numEl.textContent = f
-          if (f === 'G') { numEl.style.color = '#86efac'; arrEl.textContent = '▶'; arrEl.style.opacity = '0' }
-        }, i * 280)
-      })
-    }, 300)
+  function resize(){
+    W = canvas.width  = canvas.offsetWidth
+    H = canvas.height = canvas.offsetHeight
+    buildTrees()
+  }
 
-    setTimeout(() => {
-      car.classList.add('bouncing')
-      setTimeout(() => {
-        car.classList.add('open')
-        document.querySelectorAll('.car-light').forEach((l, i) => {
-          setTimeout(() => l.classList.toggle('on'), i * 80)
+  function buildTrees(){
+    trees=[]
+    const layers = [
+      { count:9, yFrac:0.72, scaleLo:0.35, scaleHi:0.52, amp:0.7, freq:[0.5,0.9] },
+      { count:7, yFrac:0.86, scaleLo:0.60, scaleHi:0.80, amp:1.1, freq:[0.4,0.7] },
+      { count:5, yFrac:1.00, scaleLo:0.85, scaleHi:1.10, amp:1.5, freq:[0.3,0.55] },
+    ]
+    layers.forEach((l,li) => {
+      for(let i=0;i<l.count;i++){
+        const spread = W / l.count
+        trees.push({
+          x: spread*(i+0.2) + (Math.random()-0.5)*spread*0.7,
+          y: H*l.yFrac,
+          scale: l.scaleLo + Math.random()*(l.scaleHi-l.scaleLo),
+          amp: l.amp,
+          freq: l.freq[0] + Math.random()*(l.freq[1]-l.freq[0]),
+          phase: Math.random()*Math.PI*2,
+          pal: PALETTES[Math.floor(Math.random()*PALETTES.length)],
+          layer: li
         })
-      }, 420)
-    }, 1600)
-  }, { threshold: 0.3 })
+      }
+    })
+    trees.sort((a,b)=>a.layer-b.layer)
+  }
 
+  function drawTree(x, groundY, scale, pal, sway){
+    ctx.save()
+    ctx.translate(x, groundY)
+    ctx.rotate(sway*Math.PI/180)
+
+    const h = 140*scale, tw = 6.5*scale
+
+    // Trunk
+    ctx.fillStyle = pal.trunk
+    ctx.beginPath()
+    ctx.moveTo(-tw, 0)
+    ctx.quadraticCurveTo(-tw*0.6,-h*0.3,-tw*0.25,-h*0.46)
+    ctx.lineTo(tw*0.25,-h*0.46)
+    ctx.quadraticCurveTo(tw*0.6,-h*0.3,tw,0)
+    ctx.closePath()
+    ctx.fill()
+
+    // Canopy clusters — autumn maple shape
+    const cy=-h*0.5
+    const cls=[
+      [0,       0,      h*0.30, h*0.38],
+      [-h*0.20, h*0.10, h*0.22, h*0.28],
+      [ h*0.20, h*0.08, h*0.22, h*0.28],
+      [ 0,      h*0.16, h*0.18, h*0.22],
+      [-h*0.10,-h*0.10, h*0.17, h*0.20],
+      [ h*0.10,-h*0.08, h*0.17, h*0.20],
+      [ 0,     -h*0.20, h*0.13, h*0.17],
+      [-h*0.07,-h*0.28, h*0.10, h*0.13],
+      [ h*0.07,-h*0.26, h*0.10, h*0.13],
+      [ 0,     -h*0.35, h*0.08, h*0.10],
+    ]
+    cls.forEach(([dx,dy,rx,ry],i)=>{
+      ctx.fillStyle = pal.c[Math.min(i,pal.c.length-1)]
+      ctx.beginPath()
+      ctx.ellipse(dx, cy+dy, rx, ry, 0, 0, Math.PI*2)
+      ctx.fill()
+    })
+
+    ctx.restore()
+  }
+
+  let raf
+  function render(){
+    const t = Date.now()/1000
+    ctx.clearRect(0,0,W,H)
+
+    // Sky gradient — vivid, no darkening
+    const sky = ctx.createLinearGradient(0,0,0,H)
+    sky.addColorStop(0,   '#a0c8e8')
+    sky.addColorStop(0.18,'#b8d8f8')
+    sky.addColorStop(0.35,'#d4eec0')
+    sky.addColorStop(0.52,'#78b840')
+    sky.addColorStop(0.70,'#4e8e20')
+    sky.addColorStop(0.85,'#3a6e14')
+    sky.addColorStop(1,   '#2a520e')
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,H)
+
+    // Soft ground haze
+    const grd = ctx.createLinearGradient(0,H*0.75,0,H)
+    grd.addColorStop(0,'rgba(20,50,8,0)')
+    grd.addColorStop(1,'rgba(10,30,4,0.55)')
+    ctx.fillStyle=grd; ctx.fillRect(0,H*0.75,W,H*0.25)
+
+    trees.forEach(tr=>{
+      const sway = Math.sin(t*tr.freq+tr.phase)*tr.amp
+      drawTree(tr.x, tr.y, tr.scale, tr.pal, sway)
+    })
+
+    raf = requestAnimationFrame(render)
+  }
+
+  resize()
+  window.addEventListener('resize',()=>{ cancelAnimationFrame(raf); resize(); render() })
+  render()
+})()
+
+// ── Falling Leaves (span entire nature-wrapper: forest + mountain)
+;(function(){
+  const field = document.getElementById('leavesField')
+  if(!field) return
+
+  const colors=['#8B1A1A','#B22222','#CC3300','#AA5500','#CC6600','#886600','#AA8800','#CC4400','#993300','#771100']
+  const COUNT = 65
+
+  for(let i=0;i<COUNT;i++){
+    const leaf = document.createElement('div')
+    leaf.className = 'falling-leaf'
+    const size  = 9 + Math.random()*11
+    const left  = Math.random()*100
+    const top   = Math.random()*90         // start at random height in wrapper
+    const dur   = 10 + Math.random()*14
+    const delay = -(Math.random()*20)       // negative = already mid-animation
+    const drift = (Math.random()-0.5)*220
+    const spin  = (Math.random()-0.5)*760
+    const color = colors[Math.floor(Math.random()*colors.length)]
+
+    leaf.style.cssText=`
+      left:${left}%;top:${top}%;
+      width:${size}px;height:${size*0.65}px;
+      background:${color};
+      --ldrift:${drift}px;
+      --lspin:${spin}deg;
+      --ldur:${dur}s;
+      --ldelay:${delay}s;
+    `
+    field.appendChild(leaf)
+  }
+})()
+
+// ── Elevator
+;(function(){
+  const shaft=document.getElementById('liftShaft')
+  const car=document.getElementById('liftCar')
+  const numEl=document.getElementById('floorNum')
+  const arrEl=document.getElementById('floorArrow')
+  if(!shaft||!car) return
+  car.style.top='-300px'; car.style.transition='none'
+  let done=false
+  const io=new IntersectionObserver(e=>{
+    if(!e[0].isIntersecting||done) return
+    done=true; io.disconnect()
+    const lobbyTop=shaft.offsetHeight-16-car.offsetHeight
+    setTimeout(()=>{
+      car.style.transition='top 1.2s cubic-bezier(0.16,1,0.3,1)'
+      car.style.top=lobbyTop+'px'
+      ['3','2','1','G'].forEach((f,i)=>setTimeout(()=>{
+        numEl.textContent=f
+        if(f==='G'){numEl.style.color='#86efac';arrEl.textContent='▶';arrEl.style.opacity='0'}
+      },i*280))
+    },300)
+    setTimeout(()=>{
+      car.classList.add('bouncing')
+      setTimeout(()=>{
+        car.classList.add('open')
+        document.querySelectorAll('.car-light').forEach((l,i)=>setTimeout(()=>l.classList.toggle('on'),i*80))
+      },420)
+    },1600)
+  },{threshold:0.3})
   io.observe(shaft)
 })()
 </script>
