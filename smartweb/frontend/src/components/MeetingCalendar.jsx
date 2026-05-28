@@ -65,9 +65,9 @@ export default function MeetingCalendar({ meetings, renderCard }) {
   const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate() + 7)
   const visibleMeetings = selectedDay
     ? meetings.filter(m => sameDay(new Date(m.scheduled_date), selectedDay))
-        .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
+        .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
     : meetings.filter(m => { const d = new Date(m.scheduled_date); return d >= weekStart && d < weekEnd })
-        .sort((a, b) => new Date(a.scheduled_date) - new Date(b.scheduled_date))
+        .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
   const weekLabel = `${days[0].getDate()} ${MONTH_SHORT[days[0].getMonth()]} — ${days[6].getDate()} ${MONTH_SHORT[days[6].getMonth()]}`
 
   // ── MONTH VIEW data ──
