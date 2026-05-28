@@ -13,8 +13,8 @@ def run_migrations():
     from alembic.config import Config
     from alembic import command
     import os
-    cfg = Config(os.path.join(os.path.dirname(__file__), "../../alembic.ini"))
-    cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "../../alembic"))
+    cfg = Config(os.path.join(os.path.dirname(__file__), "../alembic.ini"))
+    cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "../alembic"))
     command.upgrade(cfg, "head")
 
 _origins_env = os.getenv("CORS_ORIGINS", "")
