@@ -136,12 +136,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const loadMeetings = useCallback(async () => {
     if (!teamId) return
-    try { const { data } = await getMeetings({ member_id: user.id }); setMeetings(data || []) }
+    try { const { data } = await getMeetings({ member_id: user.id }); setMeetings((data || []).sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))) }
     catch { setMeetings([]) }
   }, [teamId, user.id])
 
   const loadTasks = useCallback(async () => {
-    try { const { data } = await getTasks({ assigned_to: user.id }); setTasks(data || []) }
+    try { const { data } = await getTasks({ assigned_to: user.id }); setTasks((data || []).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))) }
     catch { setTasks([]) }
   }, [user.id])
 

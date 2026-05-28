@@ -98,8 +98,28 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [newNoteText, setNewNoteText] = useState('')
   const [noteLoading, setNoteLoading] = useState(false)
 
-  // Lead personal tasks
-  const [myTasks, setMyTasks] = useState([])
+  const [calPopup, setCalPopup] = useState(null) // meeting id
+
+  const openGcal = (m, name) => {
+    const d = new Date(m.scheduled_date)
+    const end = new Date(d.getTime() + 3600000)
+    const fmt = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    const t = encodeURIComponent(`1-on-1: ${name}`)
+    const det = encodeURIComponent(m.agenda || '')
+    window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${t}&dates=${fmt(d)}/${fmt(end)}&details=${det}`, '_blank')
+    setCalPopup(null)
+  }
+  const downloadICS = (m, name) => {
+    const d = new Date(m.scheduled_date)
+    const end = new Date(d.getTime() + 3600000)
+    const fmt = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+    const ics = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nBEGIN:VEVENT\r\nDTSTART:${fmt(d)}\r\nDTEND:${fmt(end)}\r\nSUMMARY:1-on-1: ${name}\r\nDESCRIPTION:${m.agenda || ''}\r\nEND:VEVENT\r\nEND:VCALENDAR`
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }))
+    a.download = `meeting_${m.id}.ics`; a.click()
+    setCalPopup(null)
+  }
+
   const [myTaskForm, setMyTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
 
   // Tasks sub-tab: 'mine' | 'members'
@@ -207,7 +227,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         getMeetings({ team_lead_id: user.id }),
         getUsers(),
       ])
-      setMyMeetings(meetings || [])
+      setMyMeetings((meetings || []).sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date)))
       const map = {}
       for (const u of (users || [])) map[u.id] = u
       setUsersMap(map)
@@ -224,7 +244,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }, [user.id])
 
   const loadMyTasks = useCallback(async () => {
-    try { const { data } = await getMyLeadTasks(user.id); setMyTasks(data || []) }
+    try { const { data } = await getMyLeadTasks(user.id); setMyTasks((data || []).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))) }
     catch { setMyTasks([]) }
   }, [user.id])
 
@@ -363,7 +383,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const loadMemberTasks = useCallback(async (memberId, teamId) => {
     try {
       const { data } = await getTasks({ assigned_to: memberId, team_id: teamId })
-      setMemberTasks((prev) => ({ ...prev, [memberId]: data || [] }))
+      setMemberTasks((prev) => ({ ...prev, [memberId]: (data || []).sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)) }))
     } catch {
       setMemberTasks((prev) => ({ ...prev, [memberId]: [] }))
     }
@@ -532,15 +552,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {stLabel[m.status] || m.status}
           </span>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-              <button onClick={() => {
-                const d = new Date(m.scheduled_date)
-                const fmt = dt => dt.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z/, 'Z')
-                const end = new Date(d.getTime() + 60 * 60 * 1000)
-                const title = encodeURIComponent(`1-on-1: ${memberName}`)
-                const details = encodeURIComponent(m.agenda || m.topic || '')
-                window.open(`https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${fmt(d)}/${fmt(end)}&details=${details}`, '_blank')
-              }} style={{ fontSize: 11, fontWeight: 600, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }} title="Добавить в Google Calendar">📅</button>
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0, position: 'relative' }}>
+              <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                В календарь
+              </button>
+              {calPopup === m.id && (
+                <div style={{ position: 'absolute', top: '110%', right: 0, zIndex: 100, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 170 }}>
+                  <button onClick={() => openGcal(m, memberName)} style={{ textAlign: 'left', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)', borderRadius: 6 }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--color-bg)'}
+                    onMouseLeave={e => e.currentTarget.style.background='none'}>Google Calendar</button>
+                  <button onClick={() => downloadICS(m, memberName)} style={{ textAlign: 'left', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)', borderRadius: 6 }}
+                    onMouseEnter={e => e.currentTarget.style.background='var(--color-bg)'}
+                    onMouseLeave={e => e.currentTarget.style.background='none'}>Яндекс Календарь</button>
+                </div>
+              )}
               <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
               <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
             </div>
