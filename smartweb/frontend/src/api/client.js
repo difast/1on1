@@ -74,6 +74,7 @@ export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
 export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
+export const getUserStats = (userId) => api.get(`/users/${userId}/stats`)
 
 // Admin
 export const getAdminStats = () => api.get('/users/admin/stats')

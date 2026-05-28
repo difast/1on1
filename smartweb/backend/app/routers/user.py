@@ -177,6 +177,17 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="User not found")
     return user
 
+@router.get("/{user_id}/stats")
+def get_user_stats(user_id: int, db: Session = Depends(get_db)):
+    from app.models.team import TeamMember
+    meetings = db.query(Meeting).filter(
+        (Meeting.member_id == user_id) | (Meeting.team_lead_id == user_id),
+        Meeting.status.notin_(["cancelled"]),
+    ).count()
+    tasks_done = db.query(Task).filter(Task.assigned_to == user_id, Task.completed == True).count()
+    teams = db.query(TeamMember).filter(TeamMember.user_id == user_id).count()
+    return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams}
+
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()

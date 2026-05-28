@@ -1,4 +1,14 @@
+import { useState, useEffect } from 'react'
+import { getUserStats } from '../api/client'
+
 export default function UserCard({ user, onClose }) {
+  const [stats, setStats] = useState(null)
+
+  useEffect(() => {
+    if (!user?.id) return
+    getUserStats(user.id).then(r => setStats(r.data)).catch(() => {})
+  }, [user?.id])
+
   if (!user) return null
 
   const initial = (user.user_name || user.name || '?').charAt(0).toUpperCase()
@@ -21,7 +31,6 @@ export default function UserCard({ user, onClose }) {
         className="bg-white rounded-2xl shadow-xl w-full max-w-sm p-6 relative"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Close button */}
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl leading-none w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
@@ -43,95 +52,51 @@ export default function UserCard({ user, onClose }) {
           )}
         </div>
 
-        {/* Stubs: Knowledge Base + Payment */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f5f3ff', border: '1px solid #ede9fe' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="2" y="1" width="9" height="12" rx="1.5" stroke="#7c3aed" strokeWidth="1.4"/>
-              <path d="M5 4h4M5 7h4M5 10h2" stroke="#7c3aed" strokeWidth="1.2" strokeLinecap="round"/>
-              <path d="M11 5v8" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/>
-            </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', margin: 0 }}>База знаний</p>
-              <p style={{ fontSize: 11, color: '#a78bfa', margin: 0 }}>Скоро будет доступна</p>
+        {/* Stats */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
+          {[
+            { value: stats?.meetings, label: 'Встреч', color: '#4f46e5', bg: '#eef2ff' },
+            { value: stats?.teams, label: 'Команд', color: '#0891b2', bg: '#ecfeff' },
+            { value: stats?.tasks_done, label: 'Задач', color: '#16a34a', bg: '#f0fdf4' },
+          ].map(s => (
+            <div key={s.label} style={{ background: s.bg, borderRadius: 12, padding: '10px 6px', textAlign: 'center' }}>
+              <p style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1.1 }}>
+                {stats ? (s.value ?? 0) : '—'}
+              </p>
+              <p style={{ fontSize: 11, color: '#64748b', marginTop: 3 }}>{s.label}</p>
             </div>
-            <span style={{ fontSize: 10, color: '#c4b5fd', background: '#ede9fe', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f0fdf4', border: '1px solid #dcfce7' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="1.5" y="3.5" width="13" height="9" rx="2" stroke="#16a34a" strokeWidth="1.4"/>
-              <path d="M1.5 6.5h13" stroke="#16a34a" strokeWidth="1.2"/>
-              <rect x="3.5" y="9" width="3" height="1.5" rx="0.5" fill="#16a34a"/>
-            </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', margin: 0 }}>Оплата</p>
-              <p style={{ fontSize: 11, color: '#4ade80', margin: 0 }}>Скоро будет доступна</p>
-            </div>
-            <span style={{ fontSize: 10, color: '#86efac', background: '#dcfce7', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <circle cx="8" cy="8" r="6.5" stroke="#64748b" strokeWidth="1.4"/>
-              <path d="M8 9V8.5C8 7.5 9.5 7 9.5 5.5C9.5 4.67 8.83 4 8 4C7.17 4 6.5 4.67 6.5 5.5" stroke="#64748b" strokeWidth="1.3" strokeLinecap="round"/>
-              <circle cx="8" cy="11" r="0.75" fill="#64748b"/>
-            </svg>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: 12, fontWeight: 600, color: '#475569', margin: 0 }}>Помощь</p>
-              <p style={{ fontSize: 11, color: '#94a3b8', margin: 0 }}>Скоро будет доступна</p>
-            </div>
-            <span style={{ fontSize: 10, color: '#94a3b8', background: '#f1f5f9', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
-          </div>
+          ))}
         </div>
 
         {/* Social links */}
         <div className="space-y-2">
-          {/* Telegram */}
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center">✈</span>
             <span className="text-sm font-medium text-gray-500 w-20">Telegram</span>
             {user.telegram ? (
-              <a
-                href={`https://t.me/${user.telegram.replace(/^@/, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-indigo-600 hover:underline truncate"
-              >
+              <a href={`https://t.me/${user.telegram.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
                 @{user.telegram.replace(/^@/, '')}
               </a>
             ) : (
               <span className="text-sm text-gray-300">не указан</span>
             )}
           </div>
-
-          {/* LinkedIn */}
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center">in</span>
             <span className="text-sm font-medium text-gray-500 w-20">LinkedIn</span>
             {user.linkedin ? (
-              <a
-                href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-indigo-600 hover:underline truncate"
-              >
+              <a href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
                 {user.linkedin}
               </a>
             ) : (
               <span className="text-sm text-gray-300">не указан</span>
             )}
           </div>
-
-          {/* GitHub */}
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center font-bold">{'<>'}</span>
             <span className="text-sm font-medium text-gray-500 w-20">GitHub</span>
             {user.github ? (
-              <a
-                href={`https://github.com/${user.github.replace(/^@/, '')}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-sm text-indigo-600 hover:underline truncate"
-              >
+              <a href={`https://github.com/${user.github.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
                 {user.github}
               </a>
             ) : (

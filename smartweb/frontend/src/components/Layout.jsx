@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
@@ -46,6 +46,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
   // Profile sidebar edit state
   const [editing, setEditing] = useState(false)
+  const [sidebarStats, setSidebarStats] = useState(null)
   const [profileForm, setProfileForm] = useState({
     title: currentUser?.title || '',
     telegram: currentUser?.telegram || '',
@@ -120,6 +121,11 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     if (isDark) document.documentElement.classList.add('dark')
     else document.documentElement.classList.remove('dark')
   }, [isDark])
+
+  useEffect(() => {
+    if (!user?.id) return
+    getUserStats(user.id).then(r => setSidebarStats(r.data)).catch(() => {})
+  }, [user?.id])
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -603,7 +609,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             }
           </div>
 
-          {/* Social links */}
+          {/* Social links + stats */}
           {!editing && (
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
               <SocialLink icon="✈" label="Telegram" value={user?.telegram}
@@ -616,6 +622,27 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <SocialLink icon="⌥" label="GitHub" value={user?.github}
                 href={user?.github ? `https://github.com/${user.github.replace(/^@/, '')}` : null}
                 display={user?.github} placeholder="не указан" />
+
+              {/* Mini stats */}
+              <div style={{ marginTop: 6, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
+                  Статистика
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
+                  {[
+                    { value: sidebarStats?.meetings, label: 'Встреч', color: '#4f46e5', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                    { value: sidebarStats?.teams, label: 'Команд', color: '#0891b2', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                    { value: sidebarStats?.tasks_done, label: 'Задач', color: '#16a34a', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                  ].map(s => (
+                    <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: '9px 4px', textAlign: 'center', border: '1px solid var(--color-border)' }}>
+                      <p style={{ fontSize: 17, fontWeight: 800, color: s.color, lineHeight: 1.1 }}>
+                        {sidebarStats ? (s.value ?? 0) : '—'}
+                      </p>
+                      <p style={{ fontSize: 10, color: 'var(--color-text-muted)', marginTop: 2 }}>{s.label}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
 

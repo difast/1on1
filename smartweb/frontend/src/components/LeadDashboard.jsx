@@ -86,6 +86,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [memberTasks, setMemberTasks] = useState({})
   const [expandedTasks, setExpandedTasks] = useState(new Set())
   const [taskForms, setTaskForms] = useState({})
+  const [editingTask, setEditingTask] = useState(null)
 
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -244,6 +245,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     } catch {} finally {
       setMeetingAction(prev => ({ ...prev, [meetingId]: false }))
     }
+  }
+
+  const handleUpdateMeetingStatus = async (meetingId, newStatus) => {
+    try {
+      await updateMeeting(meetingId, { status: newStatus })
+      setMyMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, status: newStatus } : m))
+    } catch {}
   }
 
   const handleOpenReschedule = async (meeting) => {
@@ -522,6 +530,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <span className={`badge ${stBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
             {stLabel[m.status] || m.status}
           </span>
+          {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
+              <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
+            </div>
+          )}
           {isRequest && (
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
               <button onClick={() => handleConfirmMeeting(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
@@ -842,43 +856,54 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {myTasks.map(task => (
-                    <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{
-                          fontWeight: 500, fontSize: 14,
-                          color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                          textDecoration: task.completed ? 'line-through' : 'none',
-                        }}>
-                          {task.title || task.description}
-                        </p>
-                        {task.due_date && (() => {
-                          const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
-                          return (
-                            <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                              {overdue ? 'Просрочено · ' : 'до '}
-                              {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                            </p>
-                          )
-                        })()}
-                      </div>
-                      <TaskStatusSelect
-                        status={task.status || 'in_progress'}
-                        onChange={async (newStatus) => {
+                    <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {editingTask?.id === task.id ? (
+                        <form onSubmit={async e => {
+                          e.preventDefault()
                           try {
-                            await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
-                            setMyTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t))
+                            await updateTask(task.id, { title: editingTask.title, due_date: editingTask.due_date || null })
+                            setMyTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: editingTask.title, due_date: editingTask.due_date || null } : t))
+                            setEditingTask(null)
                           } catch {}
-                        }}
-                        canMarkDone={true}
-                      />
-                      <button
-                        onClick={() => handleDeleteMyTask(task.id)}
-                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
-                        onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
-                        onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                        title="Удалить"
-                      >✕</button>
-                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                        }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                          <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
+                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 500, fontSize: 14, color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                              {task.title || task.description}
+                            </p>
+                            {task.due_date && (() => {
+                              const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                              return (
+                                <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                  {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                </p>
+                              )
+                            })()}
+                          </div>
+                          <TaskStatusSelect status={task.status || 'in_progress'} onChange={async (newStatus) => {
+                            try {
+                              await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                              setMyTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t))
+                            } catch {}
+                          }} canMarkDone={true} />
+                          <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать">✎</button>
+                          <button onClick={() => handleDeleteMyTask(task.id)}
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                            onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                            title="Удалить">✕</button>
+                          {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -922,41 +947,49 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 4 }}>
                               {tasks === undefined && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Загрузка...</p>}
                               {tasks !== undefined && tasks.map(task => (
-                                <div key={task.id} className="card" style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                                  <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{
-                                      fontWeight: 500, fontSize: 13,
-                                      color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                                      textDecoration: task.completed ? 'line-through' : 'none',
-                                    }}>
-                                      {task.title || task.description}
-                                    </p>
-                                    {task.due_date && (() => {
-                                      const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
-                                      return (
-                                        <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                          {overdue ? 'Просрочено · ' : 'до '}
-                                          {new Date(task.due_date).toLocaleDateString('ru-RU')}
-                                        </p>
-                                      )
-                                    })()}
-                                  </div>
-                                  <TaskStatusSelect
-                                    status={task.status || 'in_progress'}
-                                    onChange={async (newStatus) => {
+                                <div key={task.id} className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                  {editingTask?.id === task.id ? (
+                                    <form onSubmit={async e => {
+                                      e.preventDefault()
                                       try {
-                                        await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
-                                        setMemberTasks(prev => ({
-                                          ...prev,
-                                          [member.user_id]: (prev[member.user_id] || []).map(t =>
-                                            t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
-                                          ),
-                                        }))
+                                        await updateTask(task.id, { title: editingTask.title, due_date: editingTask.due_date || null })
+                                        setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(t => t.id === task.id ? { ...t, title: editingTask.title, due_date: editingTask.due_date || null } : t) }))
+                                        setEditingTask(null)
                                       } catch {}
-                                    }}
-                                    canMarkDone={true}
-                                  />
-                                  {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                                    }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                                      <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                                      <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
+                                      <div style={{ display: 'flex', gap: 6 }}>
+                                        <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
+                                        <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                                      </div>
+                                    </form>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                                      <div style={{ flex: 1, minWidth: 0 }}>
+                                        <p style={{ fontWeight: 500, fontSize: 13, color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                                          {task.title || task.description}
+                                        </p>
+                                        {task.due_date && (() => {
+                                          const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                                          return (
+                                            <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                              {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                            </p>
+                                          )
+                                        })()}
+                                      </div>
+                                      <TaskStatusSelect status={task.status || 'in_progress'} onChange={async (newStatus) => {
+                                        try {
+                                          await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                          setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t) }))
+                                        } catch {}
+                                      }} canMarkDone={true} />
+                                      <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
+                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
+                                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
+                                    </div>
+                                  )}
                                 </div>
                               ))}
                               {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
@@ -1535,13 +1568,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 <input type={f.type} value={newMember[f.key]} onChange={e => setNewMember(p => ({ ...p, [f.key]: e.target.value }))} placeholder={f.placeholder} className="input" />
               </div>
             ))}
-            <div className="form-group">
-              <label className="form-label">Роль</label>
-              <select value={newMember.role} onChange={e => setNewMember(p => ({ ...p, role: e.target.value }))} className="input">
-                <option value="member">Участник</option>
-                <option value="team_lead">Тимлид</option>
-              </select>
-            </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
               <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Добавление...' : 'Добавить'}</button>

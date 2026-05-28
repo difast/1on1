@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
@@ -35,6 +35,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [tasks, setTasks] = useState([])
   const [selfTaskForm, setSelfTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
+  const [editingTask, setEditingTask] = useState(null)
 
   // Notes state
   const [notes, setNotes] = useState([])
@@ -173,6 +174,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     try {
       await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t))
+    } catch {}
+  }
+
+  const handleUpdateMeetingStatus = async (meetingId, newStatus) => {
+    try {
+      await updateMeeting(meetingId, { status: newStatus })
+      setMeetings(prev => prev.map(m => m.id === meetingId ? { ...m, status: newStatus } : m))
     } catch {}
   }
 
@@ -549,6 +557,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
                         {statusLabel[m.status] || m.status}
                       </span>
+                      {!['completed', 'cancelled', 'declined'].includes(m.status) && (
+                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
+                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
+                        </div>
+                      )}
                       {!isPast && (
                         <button
                           onClick={() => handleStartCall(m.id)}
@@ -684,40 +698,51 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 {tasks.map(task => {
                   const isSelf = task.assigned_by === user.id
                   return (
-                    <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{
-                          fontWeight: 500, fontSize: 14,
-                          color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
-                          textDecoration: task.completed ? 'line-through' : 'none',
-                        }}>
-                          {task.title || task.description}
-                        </p>
-                        {task.due_date && (() => {
-                          const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
-                          return (
-                            <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                              {overdue ? 'Просрочено · ' : 'до '}
-                              {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                    <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {editingTask?.id === task.id ? (
+                        <form onSubmit={async e => {
+                          e.preventDefault()
+                          try {
+                            await updateTask(task.id, { title: editingTask.title, due_date: editingTask.due_date || null })
+                            setTasks(prev => prev.map(t => t.id === task.id ? { ...t, title: editingTask.title, due_date: editingTask.due_date || null } : t))
+                            setEditingTask(null)
+                          } catch {}
+                        }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                          <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
+                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                          </div>
+                        </form>
+                      ) : (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 500, fontSize: 14, color: task.completed ? 'var(--color-text-muted)' : 'var(--color-text-primary)', textDecoration: task.completed ? 'line-through' : 'none' }}>
+                              {task.title || task.description}
                             </p>
-                          )
-                        })()}
-                      </div>
-                      <TaskStatusSelect
-                        status={task.status || 'in_progress'}
-                        onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)}
-                        canMarkDone={false}
-                      />
-                      {isSelf && (
-                        <button
-                          onClick={() => handleDeleteTask(task.id)}
-                          style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
-                          onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
-                          onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                          title="Удалить"
-                        >✕</button>
+                            {task.due_date && (() => {
+                              const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
+                              return (
+                                <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
+                                  {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                </p>
+                              )
+                            })()}
+                          </div>
+                          <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
+                          <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
+                          {isSelf && (
+                            <button onClick={() => handleDeleteTask(task.id)}
+                              style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
+                              onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
+                              onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
+                              title="Удалить">✕</button>
+                          )}
+                          {!task.completed && <TaskAIHelper task={task} role="member" />}
+                        </div>
                       )}
-                      {!task.completed && <TaskAIHelper task={task} role="member" />}
                     </div>
                   )
                 })}
@@ -820,7 +845,20 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {activeTab === 'analytics' && <MemberAnalytics user={user} />}
 
         {activeTab === 'knowledge' && (
-          <KnowledgeBase teamId={teamId} userId={user.id} canEdit={false} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '80px 24px', textAlign: 'center' }}>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: '#f5f3ff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
+              <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+                <rect x="4" y="2" width="16" height="22" rx="2.5" stroke="#7c3aed" strokeWidth="1.8"/>
+                <path d="M8 8h8M8 13h8M8 18h5" stroke="#7c3aed" strokeWidth="1.6" strokeLinecap="round"/>
+                <path d="M20 10v14" stroke="#a78bfa" strokeWidth="1.6" strokeLinecap="round"/>
+              </svg>
+            </div>
+            <p style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 8 }}>База знаний</p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', maxWidth: 340, lineHeight: 1.6 }}>
+              Здесь будут храниться документы и материалы вашей команды. Раздел находится в разработке.
+            </p>
+            <span style={{ marginTop: 20, fontSize: 12, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ede9fe', borderRadius: 8, padding: '4px 14px', letterSpacing: '0.04em' }}>СКОРО</span>
+          </div>
         )}
       </div>
 
