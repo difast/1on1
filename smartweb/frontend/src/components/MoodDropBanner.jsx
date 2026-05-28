@@ -31,7 +31,10 @@ export default function MoodDropBanner({ teamId }) {
       minWidth: 270, maxWidth: 340,
       animation: 'popIn 0.25s var(--ease-spring)',
     }}>
-      <span style={{ fontSize: 22 }}>📉</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+        <polyline points="2,5 7,13 12,9 18,17" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <polyline points="14,17 18,17 18,13" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)', margin: 0 }}>
           Настроение падает 3 дня подряд

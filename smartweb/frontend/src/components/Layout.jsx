@@ -4,11 +4,11 @@ import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
 const TOAST_META = {
-  new_task:           { icon: '📋', color: '#4f46e5' },
-  meeting_scheduled:  { icon: '📅', color: '#0061ff' },
-  meeting_confirmed:  { icon: '✅', color: '#15803d' },
-  meeting_requested:  { icon: '🗓', color: '#b45309' },
-  meeting_declined:   { icon: '❌', color: '#dc2626' },
+  new_task:           { icon: '+', color: '#4f46e5' },
+  meeting_scheduled:  { icon: '◎', color: '#0061ff' },
+  meeting_confirmed:  { icon: '✓', color: '#15803d' },
+  meeting_requested:  { icon: '◎', color: '#b45309' },
+  meeting_declined:   { icon: '✕', color: '#dc2626' },
 }
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, onKnowledgeBase }) {
@@ -372,20 +372,20 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   🔑 Сменить пароль
                 </MenuItemBtn>
                 <MenuItemBtn onClick={toggleDark}>
-                  {isDark ? '☀️ Светлая тема' : '🌙 Тёмная тема'}
+                  {isDark ? 'Светлая тема' : 'Тёмная тема'}
                 </MenuItemBtn>
                 <MenuItemBtn onClick={handleSwitchRole}>
-                  {switchingRole ? '⏳ Переключение...' : currentUser?.role === 'team_lead' ? '👤 Войти как участник' : '👑 Войти как тимлид'}
+                  {switchingRole ? 'Переключение...' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
                 </MenuItemBtn>
                 <MenuItemBtn onClick={() => { setShowUserMenu(false); onKnowledgeBase?.() }}>
-                  📚 База знаний
+                  База знаний
                 </MenuItemBtn>
                 <MenuItemBtn onClick={() => setShowUserMenu(false)}>
-                  ❓ Помощь
+                  Помощь
                 </MenuItemBtn>
                 <div style={{ height: 1, background: 'var(--color-border)', margin: '3px 0' }} />
                 <MenuItemBtn danger onClick={() => { setShowUserMenu(false); onLogout?.() }}>
-                  🚪 Выйти
+                  Выйти
                 </MenuItemBtn>
               </div>
             )}

@@ -43,14 +43,32 @@ export default function UserCard({ user, onClose }) {
           )}
         </div>
 
-        {/* Knowledge base stub */}
-        <div className="flex items-center gap-2 mb-4 px-3 py-2 rounded-xl" style={{ background: '#f5f3ff', border: '1px solid #ede9fe' }}>
-          <span style={{ fontSize: 16 }}>📚</span>
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', margin: 0 }}>База знаний</p>
-            <p style={{ fontSize: 11, color: '#a78bfa', margin: 0 }}>Скоро будет доступна</p>
+        {/* Stubs: Knowledge Base + Payment */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f5f3ff', border: '1px solid #ede9fe' }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="2" y="1" width="9" height="12" rx="1.5" stroke="#7c3aed" strokeWidth="1.4"/>
+              <path d="M5 4h4M5 7h4M5 10h2" stroke="#7c3aed" strokeWidth="1.2" strokeLinecap="round"/>
+              <path d="M11 5v8" stroke="#a78bfa" strokeWidth="1.2" strokeLinecap="round"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#7c3aed', margin: 0 }}>База знаний</p>
+              <p style={{ fontSize: 11, color: '#a78bfa', margin: 0 }}>Скоро будет доступна</p>
+            </div>
+            <span style={{ fontSize: 10, color: '#c4b5fd', background: '#ede9fe', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
           </div>
-          <span style={{ fontSize: 11, color: '#c4b5fd', background: '#ede9fe', borderRadius: 8, padding: '2px 8px', fontWeight: 500 }}>Soon</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', borderRadius: 12, background: '#f0fdf4', border: '1px solid #dcfce7' }}>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+              <rect x="1.5" y="3.5" width="13" height="9" rx="2" stroke="#16a34a" strokeWidth="1.4"/>
+              <path d="M1.5 6.5h13" stroke="#16a34a" strokeWidth="1.2"/>
+              <rect x="3.5" y="9" width="3" height="1.5" rx="0.5" fill="#16a34a"/>
+            </svg>
+            <div style={{ flex: 1 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: '#16a34a', margin: 0 }}>Оплата</p>
+              <p style={{ fontSize: 11, color: '#4ade80', margin: 0 }}>Скоро будет доступна</p>
+            </div>
+            <span style={{ fontSize: 10, color: '#86efac', background: '#dcfce7', borderRadius: 6, padding: '2px 7px', fontWeight: 600, letterSpacing: '0.03em' }}>SOON</span>
+          </div>
         </div>
 
         {/* Social links */}

@@ -27,17 +27,20 @@ def get_task_ai_advice(data: TaskAIRequest):
     status_map = {"in_progress": "в работе", "review": "на ревью", "blocked": "заблокирована", "done": "выполнена"}
     status_label = status_map.get(data.status or "in_progress", "в работе")
     prompt = (
-        f"Ты опытный {role_ctx} в IT-команде. Задача: \"{data.title}\". "
-        f"Статус: {status_label}.{due_ctx} "
-        f"Разбей эту конкретную задачу на 3-5 чётких подзадач. "
-        f"Каждая подзадача должна быть конкретным действием именно для этой задачи (не общие советы). "
-        f"Начинай каждый шаг с глагола действия. Ответ ТОЛЬКО JSON: {{\"steps\": [\"шаг 1\", \"шаг 2\", ...]}}"
+        f"Ты {role_ctx} в IT-команде.\n"
+        f"Задача: \"{data.title}\". Статус: {status_label}.{due_ctx}\n"
+        f"Составь 4–5 конкретных последовательных шагов выполнения ИМЕННО ЭТОЙ задачи. "
+        f"Категорически запрещены общие фразы вроде 'уточни требования', 'разбей на подзадачи', 'обсудись с командой' — они не несут смысла. "
+        f"Каждый шаг должен прямо вытекать из названия задачи и описывать конкретное физическое или умственное действие. "
+        f"Пример: задача 'Купить помидоры в Петербурге' → шаги: Забронировать билет Москва–Петербург, Найти ближайший рынок по адресу, Купить помидоры нужного сорта и количества, Упаковать товар для перевозки, Вернуться в Москву. "
+        f"Начинай каждый шаг с глагола. "
+        f"Ответ ТОЛЬКО JSON без каких-либо пояснений: {{\"steps\": [\"шаг 1\", \"шаг 2\", \"шаг 3\", \"шаг 4\"]}}"
     )
     try:
         resp = httpx.post(
             "https://api.aitunnel.ru/v1/chat/completions",
             headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 300,
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 400,
                   "messages": [{"role": "user", "content": prompt}]},
             timeout=20,
         )
@@ -47,7 +50,7 @@ def get_task_ai_advice(data: TaskAIRequest):
         result = json.loads(text)
         return {"steps": result.get("steps", [])}
     except Exception:
-        return {"steps": ["Уточните требования к задаче", "Разбейте на подзадачи", "Обсудите приоритеты с командой"]}
+        raise HTTPException(status_code=503, detail="AI service unavailable")
 
 @router.post("/", response_model=TaskOut)
 def create_task(data: TaskCreate, db: Session = Depends(get_db)):

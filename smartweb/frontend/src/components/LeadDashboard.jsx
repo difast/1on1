@@ -515,7 +515,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
             {!isPast && !isRequest && m.context_from_last && (
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: 'italic' }}>
-                💬 {m.context_from_last}
+                {m.context_from_last}
               </p>
             )}
           </div>
@@ -835,7 +835,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               )}
               {myTasks.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">✅</div>
+                  <div className="empty-icon">○</div>
                   <p className="empty-title">Нет задач</p>
                   <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
                 </div>
@@ -890,7 +890,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <div>
                 {teams.length === 0 ? (
                   <div className="empty-state">
-                    <div className="empty-icon">👥</div>
+                    <div className="empty-icon">◎</div>
                     <p className="empty-title">Нет команд</p>
                     <p className="empty-desc">Создайте команду, чтобы видеть задачи участников</p>
                   </div>
@@ -999,7 +999,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     })}
                     {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
                       <div className="empty-state">
-                        <div className="empty-icon">👤</div>
+                        <div className="empty-icon">◎</div>
                         <p className="empty-title">Нет участников</p>
                         <p className="empty-desc">Добавьте участников в команду</p>
                       </div>
@@ -1071,7 +1071,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
           {teams.length === 0 && (
             <div className="empty-state">
-              <div className="empty-icon">👥</div>
+              <div className="empty-icon">◎</div>
               <p className="empty-title">Нет команд</p>
               <p className="empty-desc">Создайте первую команду, чтобы начать</p>
             </div>
@@ -1337,7 +1337,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     </div>
                   ) : (
                     <div className="empty-state">
-                      <div className="empty-icon">👤</div>
+                      <div className="empty-icon">◎</div>
                       <p className="empty-title">{searchQuery ? 'Участники не найдены' : 'Нет участников'}</p>
                       <p className="empty-desc">{searchQuery ? 'Попробуйте изменить запрос' : 'Добавьте первого участника в команду'}</p>
                       {!searchQuery && (
@@ -1448,7 +1448,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           {/* Step 3: done — show invite link */}
           {callStep === 'done' && callResult && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div style={{ textAlign: 'center', fontSize: 40 }}>🎉</div>
+              <div style={{ textAlign: 'center' }}>
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ display: 'inline-block' }}>
+                  <circle cx="20" cy="20" r="18" stroke="#4f46e5" strokeWidth="2"/>
+                  <path d="M12 20l6 6 10-12" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', margin: 0 }}>
                 Комната создана! Участники получили уведомления.
               </p>
@@ -1472,7 +1477,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className={roomUrlCopied ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
                 style={{ gap: 8 }}
               >
-                {roomUrlCopied ? '✓ Скопировано!' : '📋 Копировать ссылку'}
+                {roomUrlCopied ? '✓ Скопировано!' : 'Копировать ссылку'}
               </button>
               <button
                 onClick={() => {

@@ -33,7 +33,10 @@ export default function DeadlineBanner({ tasks }) {
       minWidth: 270, maxWidth: 340,
       animation: 'popIn 0.25s var(--ease-spring)',
     }}>
-      <span style={{ fontSize: 22 }}>⏰</span>
+      <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+        <circle cx="10" cy="10" r="8.5" stroke="#f59e0b" strokeWidth="1.5"/>
+        <path d="M10 6V10.5L13 12.5" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
       <div style={{ flex: 1, minWidth: 0 }}>
         <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>
           {upcoming.length === 1
