@@ -170,9 +170,14 @@ button { cursor: pointer; border: none; background: none; }
   50%       { border-color: var(--blue-400); }
 }
 @keyframes aiPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.5); }
-  70%  { box-shadow: 0 0 0 6px rgba(139, 92, 246, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0); }
+  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6), 0 0 12px rgba(139,92,246,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0), 0 0 12px rgba(139,92,246,0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0), 0 0 12px rgba(139,92,246,0.4); }
+}
+@keyframes aiGradient {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 .anim-fade   { animation: fadeUp var(--dur-slow) var(--ease-spring) both; }

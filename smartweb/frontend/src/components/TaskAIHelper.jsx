@@ -19,7 +19,7 @@ export default function TaskAIHelper({ task, role = 'member' }) {
       })
       setSteps(data.steps || [])
     } catch {
-      setSteps(['Уточните требования к задаче', 'Разбейте на подзадачи', 'Обсудите приоритеты с командой'])
+      setSteps(null)
     } finally {
       setLoading(false)
     }
@@ -31,55 +31,75 @@ export default function TaskAIHelper({ task, role = 'member' }) {
         onClick={handleOpen}
         title="AI-подсказка по задаче"
         style={{
-          width: 26, height: 26, borderRadius: '50%',
-          background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
-          border: 'none', cursor: 'pointer', flexShrink: 0,
+          width: 32, height: 32, borderRadius: '50%',
+          background: 'linear-gradient(135deg, #a855f7, #6366f1, #3b82f6)',
+          backgroundSize: '200% 200%',
+          border: '2px solid rgba(255,255,255,0.3)',
+          cursor: 'pointer', flexShrink: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: 9, color: 'white', fontWeight: 800, letterSpacing: '-0.5px',
-          animation: 'aiPulse 2.5s infinite',
-          transition: 'transform 0.15s',
+          fontSize: 11, color: 'white', fontWeight: 900, letterSpacing: '-0.5px',
+          animation: 'aiPulse 2s infinite, aiSpin 4s linear infinite',
+          boxShadow: '0 0 12px rgba(139,92,246,0.5)',
+          transition: 'transform 0.15s, box-shadow 0.15s',
+          position: 'relative',
         }}
-        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.15)'}
-        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(139,92,246,0.8)' }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(139,92,246,0.5)' }}
       >
-        AI
+        ✦
       </button>
 
       {open && (
         <div className="overlay-center" onClick={() => setOpen(false)}>
-          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420, width: '90vw' }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 440, width: '90vw' }}>
             <div className="modal-header" style={{ paddingBottom: 12 }}>
               <div>
-                <span className="modal-title">✨ AI-помощник</span>
-                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>Рекомендации по задаче</p>
+                <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{
+                    width: 28, height: 28, borderRadius: '50%',
+                    background: 'linear-gradient(135deg, #a855f7, #6366f1)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: 14, flexShrink: 0,
+                  }}>✦</span>
+                  AI-помощник
+                </span>
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>Конкретные шаги по выполнению задачи</p>
               </div>
               <button className="modal-close" onClick={() => setOpen(false)}>✕</button>
             </div>
 
-            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, fontStyle: 'italic', lineHeight: 1.4 }}>
-              «{task.title || task.description}»
-            </p>
+            <div style={{
+              background: 'linear-gradient(135deg, #f5f3ff, #ede9fe)',
+              borderRadius: 10, padding: '10px 14px', marginBottom: 16,
+              border: '1px solid #ddd6fe',
+            }}>
+              <p style={{ fontSize: 13, color: '#7c3aed', fontWeight: 600, margin: 0, lineHeight: 1.4 }}>
+                {task.title || task.description}
+              </p>
+            </div>
 
             {loading ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '16px 0' }}>
-                <div className="spinner" />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 0' }}>
+                <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#8b5cf6' }} />
                 <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI анализирует задачу...</span>
               </div>
-            ) : steps && (
+            ) : steps ? (
               <ol style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingLeft: 0, listStyle: 'none', paddingBottom: 4 }}>
                 {steps.map((step, i) => (
                   <li key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                     <span style={{
-                      width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
-                      background: 'linear-gradient(135deg, #8b5cf6, #6366f1)',
+                      width: 24, height: 24, borderRadius: '50%', flexShrink: 0,
+                      background: 'linear-gradient(135deg, #a855f7, #6366f1)',
                       color: 'white', fontSize: 11, fontWeight: 700,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                       marginTop: 1,
                     }}>{i + 1}</span>
-                    <span style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.5 }}>{step}</span>
+                    <span style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.6 }}>{step}</span>
                   </li>
                 ))}
               </ol>
+            ) : (
+              <p style={{ fontSize: 13, color: 'var(--color-danger)', padding: '8px 0' }}>Не удалось получить подсказку. Попробуйте ещё раз.</p>
             )}
           </div>
         </div>

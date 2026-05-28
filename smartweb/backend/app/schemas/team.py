@@ -31,6 +31,7 @@ class TeamMemberOut(BaseModel):
     last_meeting_date: Optional[datetime] = None
     status_color: str = "green"  # green, yellow, red
     is_registered: bool = True
+    is_online: bool = False
 
     class Config:
         from_attributes = True

@@ -34,6 +34,7 @@ export const updateMeeting = (id, data) => api.patch(`/meetings/${id}`, data)
 export const requestMeeting = (data) => api.post('/meetings/request', data)
 export const confirmMeeting = (id) => api.post(`/meetings/${id}/confirm`)
 export const declineMeeting = (id) => api.post(`/meetings/${id}/decline`)
+export const getMeetingAISlots = (data) => api.post('/meetings/ai-slots', data)
 export const startCall = (meetingId, userId) =>
   api.post(`/meetings/${meetingId}/start-call`, null, { params: { user_id: userId } })
 export const startSpontaneousCall = (data) => api.post('/video/start-call', data)
@@ -71,6 +72,8 @@ export const getNotes = (userId) => api.get('/notes/', { params: { user_id: user
 export const createNote = (data) => api.post('/notes/', data)
 export const updateNote = (id, data) => api.patch(`/notes/${id}`, data)
 export const deleteNote = (id) => api.delete(`/notes/${id}`)
+
+export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
 
 // Admin
 export const getAdminStats = () => api.get('/users/admin/stats')

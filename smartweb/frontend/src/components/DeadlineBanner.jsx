@@ -22,7 +22,7 @@ export default function DeadlineBanner({ tasks }) {
 
   return (
     <div style={{
-      position: 'fixed', bottom: 24, left: 24, zIndex: 9090,
+      position: 'fixed', bottom: 96, right: 24, zIndex: 9095,
       display: 'flex', alignItems: 'center', gap: 12,
       background: 'var(--color-surface)',
       border: '1px solid var(--color-border)',

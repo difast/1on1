@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
 import Layout from './Layout'
 
 const STATUS_CYCLE = { in_progress: 'review', review: 'done', done: 'in_progress', blocked: 'in_progress' }
@@ -14,6 +14,7 @@ import JitsiCall from './JitsiCall'
 import KnowledgeBase from './KnowledgeBase'
 import TaskAIHelper from './TaskAIHelper'
 import DeadlineBanner from './DeadlineBanner'
+import MoodDropBanner from './MoodDropBanner'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -101,6 +102,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Tasks sub-tab: 'mine' | 'members'
   const [tasksSubTab, setTasksSubTab] = useState('mine')
+
+  // Reschedule AI slots modal
+  const [rescheduleModal, setRescheduleModal] = useState(null) // { meetingId, memberName, cadence }
+  const [aiSlots, setAiSlots] = useState([])
+  const [slotsLoading, setSlotsLoading] = useState(false)
 
   // Analytics force-refresh key
   const [analyticsKey, setAnalyticsKey] = useState(0)
@@ -238,6 +244,28 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     } catch {} finally {
       setMeetingAction(prev => ({ ...prev, [meetingId]: false }))
     }
+  }
+
+  const handleOpenReschedule = async (meeting) => {
+    const member = teamDetail?.members?.find(m => m.user_id === meeting.member_id)
+    const cadence = member?.cadence_days || 14
+    setRescheduleModal({ meetingId: meeting.id, memberName: usersMap[meeting.member_id]?.name || 'Участник', cadence })
+    setAiSlots([])
+    setSlotsLoading(true)
+    try {
+      const { data } = await getMeetingAISlots({ meeting_id: meeting.id, cadence_days: cadence })
+      setAiSlots(data.slots || [])
+    } catch { setAiSlots([]) }
+    finally { setSlotsLoading(false) }
+  }
+
+  const handleRescheduleSelect = async (slot) => {
+    if (!rescheduleModal) return
+    try {
+      await updateMeeting(rescheduleModal.meetingId, { scheduled_date: slot })
+      setMyMeetings(prev => prev.map(m => m.id === rescheduleModal.meetingId ? { ...m, scheduled_date: slot } : m))
+      setRescheduleModal(null)
+    } catch {}
   }
 
   const handleToggleMeetingNote = (meeting) => {
@@ -536,13 +564,21 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </span>
           )}
           {!isPast && !isRequest && (
-            <button
-              onClick={() => handleStartCall(m.id)}
-              disabled={callLoading[m.id]}
-              style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
-            >
-              {callLoading[m.id] ? '...' : '📹 Созвон'}
-            </button>
+            <>
+              <button
+                onClick={() => handleOpenReschedule(m)}
+                style={{ fontSize: 12, fontWeight: 500, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 9px', flexShrink: 0 }}
+              >
+                ✦ Перенести
+              </button>
+              <button
+                onClick={() => handleStartCall(m.id)}
+                disabled={callLoading[m.id]}
+                style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
+              >
+                {callLoading[m.id] ? '...' : '📹 Созвон'}
+              </button>
+            </>
           )}
         </div>
         {noteState?.expanded && (
@@ -835,7 +871,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         }}
                         canMarkDone={true}
                       />
-                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
                       <button
                         onClick={() => handleDeleteMyTask(task.id)}
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
@@ -843,6 +878,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                         title="Удалить"
                       >✕</button>
+                      {!task.completed && <TaskAIHelper task={task} role="lead" />}
                     </div>
                   ))}
                 </div>
@@ -1126,8 +1162,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                   <div style={{
                                     position: 'absolute', bottom: -1, right: -1,
                                     width: 11, height: 11, borderRadius: '50%',
-                                    background: 'var(--color-success)', border: '2px solid var(--color-surface)',
-                                  }} />
+                                    background: member.is_online ? 'var(--color-success)' : 'var(--gray-300)',
+                                    border: '2px solid var(--color-surface)',
+                                    transition: 'background 0.3s',
+                                  }} title={member.is_online ? 'Онлайн' : 'Не в сети'} />
                                 )}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1532,6 +1570,67 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <DeadlineBanner tasks={myTasks} />
+    <MoodDropBanner teamId={selectedTeamId} />
+
+    {rescheduleModal && (
+      <div className="overlay-center" onClick={() => setRescheduleModal(null)}>
+        <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, width: '90vw' }}>
+          <div className="modal-header" style={{ paddingBottom: 12 }}>
+            <div>
+              <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #a855f7, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✦</span>
+                AI предлагает слоты
+              </span>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
+              </p>
+            </div>
+            <button className="modal-close" onClick={() => setRescheduleModal(null)}>✕</button>
+          </div>
+          {slotsLoading ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
+              <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#8b5cf6' }} />
+              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI подбирает слоты...</span>
+            </div>
+          ) : aiSlots.length > 0 ? (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {aiSlots.map((slot, i) => {
+                const dt = new Date(slot)
+                return (
+                  <button
+                    key={i}
+                    onClick={() => handleRescheduleSelect(slot)}
+                    style={{
+                      display: 'flex', alignItems: 'center', gap: 12,
+                      padding: '12px 16px', borderRadius: 10,
+                      background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
+                      cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s',
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--blue-100)'; e.currentTarget.style.borderColor = 'var(--color-accent)' }}
+                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--blue-50)'; e.currentTarget.style.borderColor = 'var(--blue-200)' }}
+                  >
+                    <div style={{ width: 42, height: 42, background: 'var(--color-accent)', borderRadius: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      <span style={{ fontSize: 11, color: 'white', fontWeight: 700 }}>{dt.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}</span>
+                      <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.8)' }}>{dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    <div>
+                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', margin: 0 }}>
+                        {dt.toLocaleDateString('ru-RU', { weekday: 'long', day: '2-digit', month: 'long' })}
+                      </p>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
+                        {dt.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+          ) : (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Не удалось получить слоты</p>
+          )}
+        </div>
+      </div>
+    )}
     </>
   )
 }

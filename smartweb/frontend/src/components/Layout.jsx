@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 
@@ -140,6 +140,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     }, 1000)
     return () => clearInterval(timer)
   }, [toasts.length])
+
+  useEffect(() => {
+    if (!currentUser?.id) return
+    heartbeat(currentUser.id).catch(() => {})
+    const t = setInterval(() => heartbeat(currentUser.id).catch(() => {}), 60000)
+    return () => clearInterval(t)
+  }, [currentUser?.id])
 
   const handleSwitchRole = async () => {
     if (!currentUser?.id || switchingRole) return

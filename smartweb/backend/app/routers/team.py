@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models.team import Team, TeamMember
 from app.models.user import User
 from app.models.meeting import Meeting
+from app import online as online_cache
 from app.schemas.team import TeamCreate, TeamOut, TeamDetailOut, TeamMemberOut, JoinByCode
 
 router = APIRouter()
@@ -70,6 +71,7 @@ def build_team_detail(team: Team, team_id: int, db: Session) -> TeamDetailOut:
             last_meeting_date=last_date,
             status_color=color,
             is_registered=user is not None,
+            is_online=online_cache.is_online(tm.user_id) if user else False,
         ))
 
     return TeamDetailOut(

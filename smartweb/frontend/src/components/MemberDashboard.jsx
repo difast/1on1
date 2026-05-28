@@ -476,8 +476,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           <div style={{
                             position: 'absolute', bottom: -1, right: -1,
                             width: 9, height: 9, borderRadius: '50%',
-                            background: 'var(--color-success)', border: '2px solid var(--color-surface)',
-                          }} />
+                            background: m.is_online ? 'var(--color-success)' : 'var(--gray-300)',
+                            border: '2px solid var(--color-surface)',
+                            transition: 'background 0.3s',
+                          }} title={m.is_online ? 'Онлайн' : 'Не в сети'} />
                         )}
                       </div>
                       <div style={{ minWidth: 0 }}>
@@ -696,7 +698,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)}
                         canMarkDone={false}
                       />
-                      {!task.completed && <TaskAIHelper task={task} role="member" />}
                       {isSelf && (
                         <button
                           onClick={() => handleDeleteTask(task.id)}
@@ -706,6 +707,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           title="Удалить"
                         >✕</button>
                       )}
+                      {!task.completed && <TaskAIHelper task={task} role="member" />}
                     </div>
                   )
                 })}

@@ -1,8 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
-from datetime import datetime
-import uuid
+from datetime import datetime, timedelta
+import uuid, httpx, json
+from pydantic import BaseModel as PydanticBase
 from app.database import get_db
 from app.models.meeting import Meeting
 from app.models.team import Team, TeamMember
@@ -169,3 +170,49 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
     NotificationService(db).meeting_declined(meeting.member_id, lead_name, meeting.id)
 
     return meeting
+
+AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+
+class SlotRequest(PydanticBase):
+    meeting_id: int
+    cadence_days: int = 14
+
+@router.post("/ai-slots")
+def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db)):
+    meeting = db.query(Meeting).filter(Meeting.id == data.meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+
+    orig_dt = meeting.scheduled_date
+    now = datetime.utcnow()
+    cadence = data.cadence_days or 14
+    base_dt = max(orig_dt, now + timedelta(days=1))
+
+    prompt = (
+        f"Тимлид переносит встречу. Текущая дата: {now.strftime('%Y-%m-%d')}. "
+        f"Каденция встреч: каждые {cadence} дней. "
+        f"Предложи ровно 3 варианта новой даты и времени встречи. "
+        f"Учти рабочие часы (9:00-18:00), рабочие дни (пн-пт). "
+        f"Ответ ТОЛЬКО JSON: {{\"slots\": [\"2025-06-02T10:00\", \"2025-06-03T14:00\", \"2025-06-04T11:00\"]}}"
+    )
+    try:
+        resp = httpx.post(
+            "https://api.aitunnel.ru/v1/chat/completions",
+            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
+            json={"model": "claude-haiku-4-5-20251001", "max_tokens": 150,
+                  "messages": [{"role": "user", "content": prompt}]},
+            timeout=15,
+        )
+        text = resp.json()["choices"][0]["message"]["content"].strip()
+        if "```" in text:
+            text = text.split("```")[1].lstrip("json").strip()
+        result = json.loads(text)
+        return {"slots": result.get("slots", [])}
+    except Exception:
+        slots = []
+        for i in [1, cadence // 2, cadence]:
+            dt = base_dt + timedelta(days=i)
+            while dt.weekday() >= 5:
+                dt += timedelta(days=1)
+            slots.append(dt.replace(hour=10, minute=0, second=0, microsecond=0).isoformat())
+        return {"slots": slots[:3]}

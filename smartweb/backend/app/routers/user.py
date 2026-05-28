@@ -13,8 +13,14 @@ from app.models.notification import Notification
 from app.models.mood import MoodEntry
 from app.models.knowledge import KnowledgeArticle
 from app.schemas.user import UserCreate, UserOut, UserUpdate
+from app import online as online_cache
 
 router = APIRouter()
+
+@router.post("/{user_id}/heartbeat")
+def heartbeat(user_id: int):
+    online_cache.ping(user_id)
+    return {"ok": True}
 
 @router.get("/by-email/{email}", response_model=UserOut)
 def get_user_by_email(email: str, db: Session = Depends(get_db)):
