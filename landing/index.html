@@ -7,382 +7,268 @@
 <meta name="description" content="Умные 1-on-1 встречи с AI-ассистентом, аналитикой команды и трекингом задач.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,800;0,900;1,400;1,700;1,800;1,900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800;1,900&display=swap" rel="stylesheet">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#000;
-  --bg1:#0a0a0a;
-  --bg2:#111;
-  --acc:#6366f1;
-  --acc2:#4f46e5;
+  --bg:#0a2020;
+  --bg1:#102a2a;
+  --bg2:#163434;
+  --acc:#2dd4bf;
+  --acc2:#14b8a6;
   --txt:#fff;
-  --txt2:rgba(255,255,255,.52);
-  --txt3:rgba(255,255,255,.22);
-  --brd:rgba(255,255,255,.07);
-  --brd2:rgba(255,255,255,.14);
+  --txt2:rgba(255,255,255,.58);
+  --txt3:rgba(255,255,255,.28);
+  --brd:rgba(255,255,255,.1);
+  --brd2:rgba(255,255,255,.18);
 }
 html{scroll-behavior:smooth}
 body{font-family:'Playfair Display',Georgia,serif;background:var(--bg);color:var(--txt);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
 
-/* ─── NAV ─── */
+/* ── NAV */
 nav{
   position:fixed;inset:0 0 auto;z-index:200;
   display:flex;align-items:center;justify-content:space-between;
   padding:0 48px;height:64px;
   border-bottom:1px solid var(--brd);
-  background:rgba(0,0,0,.85);
-  backdrop-filter:blur(24px);
-  -webkit-backdrop-filter:blur(24px);
+  background:rgba(10,32,32,.88);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
 }
-.logo{font-size:15px;font-weight:800;color:var(--txt);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
-.logo-mark{width:28px;height:28px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#fff;flex-shrink:0}
-.nav-links a{font-size:12px;color:var(--txt3);text-decoration:none;padding:8px 16px;transition:color .15s;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.logo{font-size:15px;font-weight:700;color:var(--txt);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
+.logo-mark{width:28px;height:28px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#0a2020;flex-shrink:0}
+.nav-links a{font-size:12px;color:var(--txt3);text-decoration:none;padding:8px 16px;transition:color .15s;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .nav-links a:hover{color:var(--txt)}
 .nav-r{display:flex;gap:8px}
-.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 22px;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s;text-decoration:none;border:none;font-family:'Playfair Display',Georgia,serif;white-space:nowrap;letter-spacing:.04em;text-transform:uppercase}
+.btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 22px;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s;text-decoration:none;border:none;font-family:'Playfair Display',Georgia,serif;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
 .btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--brd2)}
-.btn-ghost:hover{background:rgba(255,255,255,.05);color:var(--txt);border-color:var(--brd2)}
-.btn-acc{background:var(--acc);color:#fff}
+.btn-ghost:hover{background:rgba(255,255,255,.06);color:var(--txt)}
+.btn-acc{background:var(--acc);color:#0a2020}
 .btn-acc:hover{background:var(--acc2);transform:translateY(-1px)}
 .btn-lg{padding:13px 32px;font-size:13px}
 .btn-xl{padding:16px 40px;font-size:14px}
 
-/* ─── HERO ─── */
+/* ── HERO */
 .hero{
-  min-height:100vh;
+  position:relative;min-height:100vh;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  text-align:center;padding:120px 40px 80px;
-  position:relative;overflow:hidden;
-  background:#000;
+  text-align:center;padding:100px 40px 80px;overflow:hidden;
 }
-.hero-noise{
-  position:absolute;inset:0;pointer-events:none;
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-  background-size:300px 300px;
-  opacity:.025;
+.hero-img{
+  position:absolute;inset:0;z-index:0;
+  background:url('./images/hero.jpg') center/cover no-repeat,
+             linear-gradient(135deg,#1a8c8c 0%,#0d5555 40%,#063030 100%);
+  will-change:transform;
 }
-.hero-glow{
-  position:absolute;
-  width:800px;height:400px;
-  top:50%;left:50%;
-  transform:translate(-50%,-55%);
-  background:radial-gradient(ellipse at center,rgba(99,102,241,.07) 0%,transparent 70%);
-  pointer-events:none;
+.hero-overlay{
+  position:absolute;inset:0;z-index:1;
+  background:linear-gradient(180deg,
+    rgba(8,28,28,.78) 0%,
+    rgba(8,28,28,.55) 40%,
+    rgba(8,28,28,.82) 100%);
 }
-.hero>*:not(.hero-noise):not(.hero-glow){position:relative;z-index:1}
+.hero>*:not(.hero-img):not(.hero-overlay){position:relative;z-index:2}
+
 .hero-eyebrow{
-  font-size:10px;font-weight:700;
-  color:var(--acc);letter-spacing:.25em;text-transform:uppercase;
-  margin-bottom:40px;
-  opacity:0;
+  font-size:10px;font-weight:700;color:var(--acc);
+  letter-spacing:.28em;text-transform:uppercase;
+  margin-bottom:32px;opacity:0;
 }
 h1.ht{
-  font-size:clamp(68px,11.5vw,160px);
-  font-weight:900;line-height:.9;letter-spacing:-.04em;
-  margin-bottom:40px;
-  opacity:0;
+  font-size:clamp(44px,6.5vw,96px);
+  font-weight:700;line-height:.96;letter-spacing:-.03em;
+  margin-bottom:32px;opacity:0;
 }
-.ht-em{font-style:italic;color:var(--acc)}
+.ht em{font-style:italic;color:var(--acc)}
 .hero-sub{
   font-size:17px;color:var(--txt2);
-  max-width:420px;line-height:1.75;font-weight:400;
-  margin:0 auto 48px;
-  opacity:0;
+  max-width:440px;line-height:1.75;font-weight:700;
+  margin:0 auto 44px;opacity:0;
 }
-.hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:0;opacity:0}
+.hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;opacity:0}
 .scroll-hint{
-  position:absolute;bottom:36px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:10px;
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:10px;z-index:2;
   opacity:0;
 }
-.scroll-line{
-  width:1px;height:52px;
-  background:linear-gradient(to bottom,transparent,rgba(255,255,255,.35),transparent);
-  animation:sline 2.4s ease-in-out infinite;
-}
-.scroll-text{font-size:9px;color:var(--txt3);letter-spacing:.22em;text-transform:uppercase}
+.scroll-line{width:1px;height:50px;background:linear-gradient(to bottom,transparent,rgba(45,212,191,.5),transparent);animation:sline 2.4s ease-in-out infinite}
+.scroll-text{font-size:9px;color:rgba(45,212,191,.5);letter-spacing:.22em;text-transform:uppercase}
 @keyframes sline{0%,100%{opacity:.3}50%{opacity:1}}
 
-/* ─── SHARED ─── */
+/* ── SHARED */
 .section{padding:120px 0}
 .wrap{max-width:1100px;margin:0 auto;padding:0 48px}
 .sec-label{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.24em;text-transform:uppercase;
-  margin-bottom:28px;
-  display:flex;align-items:center;gap:16px;
+  font-size:9px;font-weight:700;color:var(--acc);
+  letter-spacing:.26em;text-transform:uppercase;
+  margin-bottom:28px;display:flex;align-items:center;gap:16px;
 }
-.sec-label::after{content:'';flex:1;height:1px;background:var(--brd);max-width:80px}
+.sec-label::after{content:'';flex:1;height:1px;background:rgba(45,212,191,.2);max-width:64px}
 h2.st{
-  font-size:clamp(40px,5.5vw,74px);
-  font-weight:900;line-height:.92;letter-spacing:-.04em;
-  margin-bottom:20px;
+  font-size:clamp(36px,4.8vw,66px);
+  font-weight:700;line-height:.94;letter-spacing:-.03em;margin-bottom:20px;
+  overflow:hidden;
 }
-.st-sub{font-size:16px;color:var(--txt2);max-width:400px;line-height:1.75;font-weight:400}
-.sec-divider{width:100%;height:1px;background:var(--brd)}
+.st-sub{font-size:16px;color:var(--txt2);max-width:400px;line-height:1.75;font-weight:700}
 
-/* ─── FEATURES ─── */
-.feat-section{background:#000;border-top:1px solid var(--brd)}
-.feat-intro{margin-bottom:0}
+/* ── FEATURES */
+.feat-section{background:var(--bg);border-top:1px solid var(--brd)}
 .feat-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--brd);
-  margin-top:72px;
-  gap:0;
+  border:1px solid var(--brd);margin-top:72px;
 }
 .feat-item{
-  padding:52px 40px;
-  border-right:1px solid var(--brd);
-  border-bottom:1px solid var(--brd);
-  position:relative;overflow:hidden;
-  transition:background .25s;
+  padding:52px 36px;border-right:1px solid var(--brd);border-bottom:1px solid var(--brd);
+  position:relative;overflow:hidden;transition:background .25s;
 }
 .feat-item:nth-child(3n){border-right:none}
 .feat-item:nth-child(n+4){border-bottom:none}
 .feat-item:hover{background:var(--bg1)}
 .feat-item::before{
   content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 20% 20%,rgba(99,102,241,.04),transparent 60%);
+  background:radial-gradient(ellipse at 20% 20%,rgba(45,212,191,.06),transparent 65%);
   opacity:0;transition:opacity .3s;pointer-events:none;
 }
 .feat-item:hover::before{opacity:1}
-.feat-num{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.18em;text-transform:uppercase;margin-bottom:32px;
-}
+.feat-num{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:32px}
 .feat-ghost{
-  position:absolute;right:24px;bottom:16px;
-  font-size:clamp(64px,8vw,96px);font-weight:900;
-  color:rgba(255,255,255,.03);letter-spacing:-.06em;
-  line-height:1;font-style:italic;
-  transition:color .3s;pointer-events:none;
-  user-select:none;
+  position:absolute;right:20px;bottom:12px;
+  font-size:clamp(60px,8vw,88px);font-weight:700;font-style:italic;
+  color:rgba(45,212,191,.04);letter-spacing:-.06em;line-height:1;
+  transition:color .3s;pointer-events:none;user-select:none;
 }
-.feat-item:hover .feat-ghost{color:rgba(99,102,241,.07)}
-.feat-item h3{
-  font-size:clamp(18px,1.9vw,24px);font-weight:800;
-  letter-spacing:-.03em;margin-bottom:16px;line-height:1.1;
-}
+.feat-item:hover .feat-ghost{color:rgba(45,212,191,.09)}
+.feat-item h3{font-size:clamp(17px,1.8vw,22px);font-weight:700;letter-spacing:-.02em;margin-bottom:14px;line-height:1.1}
 .feat-item p{font-size:14px;color:var(--txt2);line-height:1.8}
-.feat-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:24px}
+.feat-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:22px}
 .feat-tag{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.1em;border:1px solid var(--brd);
+  font-size:9px;font-weight:700;color:rgba(45,212,191,.5);
+  letter-spacing:.1em;border:1px solid rgba(45,212,191,.18);
   padding:4px 10px;border-radius:3px;text-transform:uppercase;
   transition:all .2s;
 }
-.feat-item:hover .feat-tag{border-color:rgba(99,102,241,.25);color:rgba(165,180,252,.7)}
+.feat-item:hover .feat-tag{border-color:rgba(45,212,191,.4);color:var(--acc)}
 
-/* ─── HOW ─── */
-.how-section{background:#000;border-top:1px solid var(--brd)}
+/* ── HOW */
+.how-section{background:var(--bg1);border-top:1px solid var(--brd)}
 .how-grid{
   display:grid;grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--brd);
-  margin-top:72px;
+  border:1px solid var(--brd);margin-top:72px;
 }
 .how-item{
-  padding:52px 40px 64px;
-  border-right:1px solid var(--brd);
-  transition:background .25s;
+  padding:52px 36px 64px;border-right:1px solid var(--brd);
+  transition:background .25s;overflow:hidden;
 }
 .how-item:last-child{border-right:none}
-.how-item:hover{background:var(--bg1)}
+.how-item:hover{background:var(--bg2)}
 .how-big{
-  font-size:clamp(72px,10vw,128px);
-  font-weight:900;font-style:italic;
-  color:rgba(255,255,255,.04);
-  letter-spacing:-.07em;line-height:1;
-  margin-bottom:36px;
-  transition:color .3s;
+  font-size:clamp(68px,9vw,120px);font-weight:700;font-style:italic;
+  color:rgba(45,212,191,.05);letter-spacing:-.07em;line-height:1;
+  margin-bottom:32px;transition:color .3s;
+  overflow:hidden;
 }
-.how-item:hover .how-big{color:rgba(99,102,241,.09)}
-.how-item h3{font-size:20px;font-weight:800;letter-spacing:-.02em;margin-bottom:16px}
+.how-item:hover .how-big{color:rgba(45,212,191,.11)}
+.how-item h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:14px}
 .how-item p{font-size:14px;color:var(--txt2);line-height:1.8}
 
-/* ─── PIT ─── */
-.pit-section{background:#000;border-top:1px solid var(--brd)}
+/* ── PIT */
+.pit-section{background:var(--bg);border-top:1px solid var(--brd)}
 .pit-inner{
-  display:grid;grid-template-columns:1fr 1fr;
-  gap:80px;align-items:center;
-  padding:120px 48px;max-width:1100px;margin:0 auto;
+  display:grid;grid-template-columns:1fr 1fr;gap:72px;
+  align-items:center;padding:120px 48px;max-width:1100px;margin:0 auto;
 }
-.pit-left .sec-label{margin-bottom:28px}
-.pit-heading{
-  font-size:clamp(36px,4.5vw,62px);
-  font-weight:900;letter-spacing:-.04em;
-  line-height:.93;margin-bottom:28px;
-}
-.pit-desc{font-size:16px;color:var(--txt2);line-height:1.8;margin-bottom:44px;max-width:360px}
+.pit-heading{font-size:clamp(32px,4vw,56px);font-weight:700;letter-spacing:-.03em;line-height:.95;margin-bottom:24px}
+.pit-desc{font-size:16px;color:var(--txt2);line-height:1.8;margin-bottom:40px;max-width:360px;font-weight:700}
 .pit-chat{display:flex;flex-direction:column;gap:10px}
-.chat-bubble{
-  padding:14px 18px;border-radius:8px;
-  font-size:14px;line-height:1.7;border:1px solid var(--brd);
-}
-.chat-user{background:var(--bg1);color:var(--txt2);align-self:flex-start}
-.chat-pit{
-  background:rgba(99,102,241,.05);
-  border-color:rgba(99,102,241,.18);color:var(--txt);
-  display:flex;gap:12px;align-items:flex-start;
-}
-.pit-icon{
-  width:26px;height:26px;border-radius:50%;
-  background:var(--acc);
-  display:flex;align-items:center;justify-content:center;
-  font-size:11px;font-weight:900;color:#fff;flex-shrink:0;margin-top:1px;
-}
+.chat-bubble{padding:13px 17px;border-radius:8px;font-size:14px;line-height:1.7;border:1px solid var(--brd)}
+.chat-user{background:var(--bg1);color:var(--txt2)}
+.chat-pit{background:rgba(45,212,191,.05);border-color:rgba(45,212,191,.2);color:var(--txt);display:flex;gap:11px;align-items:flex-start}
+.pit-icon{width:25px;height:25px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#0a2020;flex-shrink:0;margin-top:1px}
 .pit-visual{
-  display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:24px;
-  padding:56px 40px;
-  border:1px solid var(--brd);
-  background:var(--bg1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
+  padding:52px 36px;border:1px solid var(--brd);background:var(--bg1);
   position:relative;overflow:hidden;
 }
 .pit-visual::before{
   content:'';position:absolute;
-  width:280px;height:280px;
-  background:radial-gradient(ellipse,rgba(99,102,241,.1),transparent 65%);
+  width:260px;height:260px;
+  background:radial-gradient(ellipse,rgba(45,212,191,.1),transparent 65%);
   border-radius:50%;pointer-events:none;
 }
 .pit-avatar{
-  width:112px;height:112px;border-radius:50%;
-  background:radial-gradient(ellipse at 35% 28%,#c7d2fe 0%,#6366f1 40%,#3730a3 70%,#1e1b4b 100%);
+  width:108px;height:108px;border-radius:50%;
+  background:radial-gradient(ellipse at 35% 28%,#a7f3d0 0%,#2dd4bf 40%,#0d9488 70%,#064e3b 100%);
   position:relative;animation:pitfloat 4s ease-in-out infinite;
-  box-shadow:0 0 40px rgba(99,102,241,.25);
+  box-shadow:0 0 40px rgba(45,212,191,.22);z-index:1;
 }
 @keyframes pitfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.peye{
-  position:absolute;border-radius:50%;background:#fff;
-  animation:pitblink 4.5s ease-in-out infinite;
-}
+.peye{position:absolute;border-radius:50%;background:#fff;animation:pitblink 4.5s ease-in-out infinite}
 @keyframes pitblink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.06)}}
-.pmouth{
-  position:absolute;bottom:26%;left:50%;transform:translateX(-50%);
-  width:28px;height:12px;
-  border-bottom:2.5px solid rgba(255,255,255,.7);
-  border-radius:0 0 28px 28px;
-}
-.pit-label{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.2em;text-transform:uppercase;
-  position:relative;z-index:1;
-}
+.pmouth{position:absolute;bottom:26%;left:50%;transform:translateX(-50%);width:26px;height:11px;border-bottom:2.5px solid rgba(255,255,255,.75);border-radius:0 0 26px 26px}
+.pit-label{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:.2em;text-transform:uppercase;z-index:1}
 
-/* ─── PRICING ─── */
-.pricing-section{background:#000;border-top:1px solid var(--brd)}
-.pgrid{
-  display:grid;grid-template-columns:repeat(4,1fr);
-  border:1px solid var(--brd);margin-top:72px;
-}
-.pcard{
-  padding:36px 28px 44px;
-  border-right:1px solid var(--brd);
-  position:relative;transition:background .25s;
-}
+/* ── PRICING */
+.pricing-section{background:var(--bg1);border-top:1px solid var(--brd)}
+.pgrid{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--brd);margin-top:72px}
+.pcard{padding:36px 26px 44px;border-right:1px solid var(--brd);position:relative;transition:background .25s}
 .pcard:last-child{border-right:none}
-.pcard:hover{background:var(--bg1)}
-.pcard.pop{background:var(--bg1)}
-.pcard.pop:hover{background:var(--bg2)}
-.pbadge{
-  font-size:8px;font-weight:700;
-  color:rgba(165,180,252,.85);
-  letter-spacing:.2em;text-transform:uppercase;
-  margin-bottom:16px;display:block;
-}
-.pname{
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.2em;text-transform:uppercase;margin-bottom:24px;
-}
-.pname.acc{color:rgba(165,180,252,.8)}
-.pprice{
-  font-size:46px;font-weight:900;letter-spacing:-.05em;
-  line-height:1;margin-bottom:6px;
-}
-.pprice small{font-size:13px;font-weight:400;color:var(--txt3)}
-.pdesc{font-size:12px;color:var(--txt3);margin-bottom:32px}
-.plist{list-style:none;margin-bottom:36px;display:flex;flex-direction:column;gap:11px}
-.plist li{
-  font-size:13px;color:var(--txt2);
-  display:flex;gap:10px;align-items:flex-start;line-height:1.5;
-}
-.plist li::before{content:'—';color:var(--txt3);flex-shrink:0;font-size:12px;margin-top:1px}
+.pcard:hover{background:var(--bg2)}
+.pcard.pop{background:var(--bg2)}
+.pcard.pop:hover{background:var(--bg)}
+.pbadge{font-size:8px;font-weight:700;color:var(--acc);letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;display:block}
+.pname{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:.2em;text-transform:uppercase;margin-bottom:22px}
+.pname.acc{color:var(--acc)}
+.pprice{font-size:44px;font-weight:700;letter-spacing:-.05em;line-height:1;margin-bottom:6px}
+.pprice small{font-size:13px;font-weight:700;color:var(--txt3)}
+.pdesc{font-size:12px;color:var(--txt3);margin-bottom:30px;font-weight:700}
+.plist{list-style:none;margin-bottom:34px;display:flex;flex-direction:column;gap:10px}
+.plist li{font-size:13px;color:var(--txt2);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.plist li::before{content:'—';color:rgba(45,212,191,.4);flex-shrink:0;font-size:12px;margin-top:1px}
 .plist li.dim{color:var(--txt3);opacity:.5}
-.pbtn{
-  display:block;width:100%;padding:12px;border-radius:4px;
-  text-align:center;font-weight:700;font-size:12px;
-  border:1px solid var(--brd2);background:transparent;color:var(--txt2);
-  text-decoration:none;transition:all .18s;
-  font-family:'Playfair Display',Georgia,serif;
-  cursor:pointer;letter-spacing:.06em;text-transform:uppercase;
-}
-.pbtn:hover{background:rgba(255,255,255,.05);color:var(--txt);border-color:var(--brd2)}
-.pbtn.prim{background:var(--acc);border-color:transparent;color:#fff}
+.pbtn{display:block;width:100%;padding:12px;border-radius:4px;text-align:center;font-weight:700;font-size:12px;border:1px solid var(--brd2);background:transparent;color:var(--txt2);text-decoration:none;transition:all .18s;font-family:'Playfair Display',Georgia,serif;cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+.pbtn:hover{background:rgba(255,255,255,.05);color:var(--txt)}
+.pbtn.prim{background:var(--acc);border-color:transparent;color:#0a2020}
 .pbtn.prim:hover{background:var(--acc2)}
 
-/* ─── LIZARD ─── */
-.lizard-section{
-  position:relative;height:70vh;min-height:520px;
-  background:#000;border-top:1px solid var(--brd);
-}
-#lizardContainer{position:absolute;inset:0;overflow:hidden}
-#lizardContainer canvas{display:block}
-.lizard-label{
-  position:absolute;bottom:32px;left:48px;z-index:10;
-  font-size:9px;font-weight:700;color:var(--txt3);
-  letter-spacing:.22em;text-transform:uppercase;
-}
-
-/* ─── CTA ─── */
+/* ── CTA */
 .cta-section{
   padding:160px 40px;text-align:center;
-  background:#000;border-top:1px solid var(--brd);
+  background:var(--bg);border-top:1px solid var(--brd);
   position:relative;overflow:hidden;
 }
 .cta-section::before{
-  content:'';position:absolute;
-  top:50%;left:50%;transform:translate(-50%,-50%);
+  content:'';position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
   width:700px;height:400px;
-  background:radial-gradient(ellipse,rgba(99,102,241,.07),transparent 68%);
+  background:radial-gradient(ellipse,rgba(45,212,191,.08),transparent 68%);
   pointer-events:none;
 }
 .cta-section>*{position:relative;z-index:1}
-.cta-h{
-  font-size:clamp(56px,10vw,130px);
-  font-weight:900;letter-spacing:-.05em;
-  line-height:.88;margin-bottom:48px;
-}
+.cta-h{font-size:clamp(52px,9vw,120px);font-weight:700;letter-spacing:-.05em;line-height:.9;margin-bottom:44px;overflow:hidden}
 .cta-em{font-style:italic;color:var(--acc)}
-.cta-sub{
-  font-size:16px;color:var(--txt2);
-  margin-bottom:52px;line-height:1.75;
-}
+.cta-sub{font-size:16px;color:var(--txt2);margin-bottom:48px;line-height:1.75;font-weight:700}
 .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 
-/* ─── FOOTER ─── */
-footer{
-  border-top:1px solid var(--brd);
-  padding:40px 48px;
-  display:flex;align-items:center;justify-content:space-between;
-  flex-wrap:wrap;gap:20px;
-}
+/* ── FOOTER */
+footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;background:var(--bg)}
 .flinks{display:flex;gap:24px;flex-wrap:wrap}
-.flinks a{font-size:12px;color:var(--txt3);text-decoration:none;transition:color .15s;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.flinks a{font-size:11px;color:var(--txt3);text-decoration:none;transition:color .15s;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
 .flinks a:hover{color:var(--txt2)}
-.fcopy{font-size:11px;color:var(--txt3)}
+.fcopy{font-size:11px;color:var(--txt3);font-weight:700}
 
-/* ─── REVEAL ─── */
-.reveal{opacity:0;transform:translateY(36px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+/* ── REVEAL (for non-char elements) */
+.reveal{opacity:0;transform:translateY(32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal.vis{opacity:1;transform:translateY(0)}
-.reveal-l{opacity:0;transform:translateX(-36px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.reveal-l{opacity:0;transform:translateX(-32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal-l.vis{opacity:1;transform:translateX(0)}
-.reveal-r{opacity:0;transform:translateX(36px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
+.reveal-r{opacity:0;transform:translateX(32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal-r.vis{opacity:1;transform:translateX(0)}
 
-/* ─── RESPONSIVE ─── */
+/* char spans injected by JS */
+.char{display:inline-block;will-change:transform,opacity}
+
+/* ── RESPONSIVE */
 @media(max-width:960px){
   nav{padding:0 24px}.nav-links{display:none}
-  h1.ht{font-size:clamp(56px,14vw,120px)}
   .wrap{padding:0 24px}
   .feat-grid{grid-template-columns:1fr 1fr}
   .feat-item:nth-child(3n){border-right:1px solid var(--brd)}
@@ -392,13 +278,12 @@ footer{
   .how-grid{grid-template-columns:1fr}
   .how-item{border-right:none;border-bottom:1px solid var(--brd)}
   .how-item:last-child{border-bottom:none}
-  .pit-inner{grid-template-columns:1fr;gap:48px;padding:80px 24px}
+  .pit-inner{grid-template-columns:1fr;gap:40px;padding:80px 24px}
   .pgrid{grid-template-columns:1fr 1fr}
   .pcard:nth-child(2n){border-right:none}
   .pcard:nth-child(1),.pcard:nth-child(2){border-bottom:1px solid var(--brd)}
   .cta-section{padding:100px 24px}
   footer{padding:32px 24px}
-  .lizard-label{left:24px}
 }
 @media(max-width:560px){
   .pgrid{grid-template-columns:1fr}
@@ -406,20 +291,16 @@ footer{
   .pcard:last-child{border-bottom:none}
   .hero-actions,.cta-btns{flex-direction:column;align-items:center}
   .feat-grid{grid-template-columns:1fr}
-  .feat-item{border-right:none}
-  .feat-item:nth-child(n+6){border-bottom:none}
-  .feat-item{border-bottom:1px solid var(--brd)}
+  .feat-item{border-right:none;border-bottom:1px solid var(--brd)}
   .feat-item:last-child{border-bottom:none}
 }
 </style>
 </head>
 <body>
 
-<!-- NAV -->
 <nav>
   <a href="#" class="logo">
-    <div class="logo-mark">1:1</div>
-    OneOnOne
+    <div class="logo-mark">1:1</div>OneOnOne
   </a>
   <div class="nav-links">
     <a href="#features">Возможности</a>
@@ -434,14 +315,11 @@ footer{
 
 <!-- HERO -->
 <section class="hero" id="home">
-  <div class="hero-noise"></div>
-  <div class="hero-glow"></div>
+  <div class="hero-img" id="heroImg"></div>
+  <div class="hero-overlay"></div>
   <div class="hero-eyebrow" id="heroEyebrow">AI-платформа для команд</div>
   <h1 class="ht" id="heroTitle">
-    1-on-1<br>
-    <span class="ht-em">встречи</span><br>
-    нового<br>
-    поколения
+    1-on-1 <em>встречи</em><br>нового поколения
   </h1>
   <p class="hero-sub" id="heroSub">Умное расписание, AI-ассистент Пит, аналитика команды и трекинг задач — всё в одном инструменте.</p>
   <div class="hero-actions" id="heroActions">
@@ -457,54 +335,47 @@ footer{
 <!-- FEATURES -->
 <section class="feat-section section" id="features">
   <div class="wrap">
-    <div class="feat-intro reveal">
+    <div class="reveal">
       <div class="sec-label">Возможности</div>
-      <h2 class="st">Всё для эффективных<br>команд</h2>
-      <p class="st-sub">Встречи, задачи, аналитика — единая система в одном окне.</p>
+      <h2 class="st split-chars">Всё для эффективных команд</h2>
+      <p class="st-sub" style="margin-top:16px">Встречи, задачи, аналитика — единая система в одном окне.</p>
     </div>
-    <div class="feat-grid reveal">
-      <div class="feat-item">
+    <div class="feat-grid">
+      <div class="feat-item reveal">
         <div class="feat-num">01 — Встречи</div>
-        <h3>Умное расписание<br>с AI</h3>
+        <h3>Умное расписание с AI</h3>
         <p>AI предложит оптимальное время на основе загрузки команды. Транскрипты, заметки и история — в одном месте.</p>
-        <div class="feat-tags">
-          <span class="feat-tag">AI слоты</span>
-          <span class="feat-tag">Транскрипты</span>
-          <span class="feat-tag">Календарь</span>
-        </div>
+        <div class="feat-tags"><span class="feat-tag">AI слоты</span><span class="feat-tag">Транскрипты</span><span class="feat-tag">Календарь</span></div>
         <div class="feat-ghost">94%</div>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal" style="transition-delay:.07s">
         <div class="feat-num">02 — Задачи</div>
-        <h3>Задачи и<br>подзадачи</h3>
+        <h3>Задачи и подзадачи</h3>
         <p>Ставьте на встречах. AI декомпозирует на шаги. Авто-завершение при выполнении всех подзадач.</p>
         <div class="feat-ghost">∞</div>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal" style="transition-delay:.14s">
         <div class="feat-num">03 — Настроение</div>
-        <h3>Mood<br>tracking</h3>
+        <h3>Mood tracking</h3>
         <p>Ежедневные опросы, AI-анализ ответов, тренды за 12 недель и алерты при снижении настроения.</p>
         <div class="feat-ghost">12W</div>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal" style="transition-delay:.07s">
         <div class="feat-num">04 — Аналитика</div>
-        <h3>Дашборд<br>тимлида</h3>
+        <h3>Дашборд тимлида</h3>
         <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV.</p>
-        <div class="feat-tags">
-          <span class="feat-tag">CSV</span>
-          <span class="feat-tag">Зоны риска</span>
-        </div>
+        <div class="feat-tags"><span class="feat-tag">CSV</span><span class="feat-tag">Зоны риска</span></div>
         <div class="feat-ghost">→</div>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal" style="transition-delay:.14s">
         <div class="feat-num">05 — Время</div>
-        <h3>Учёт рабочего<br>времени</h3>
+        <h3>Учёт рабочего времени</h3>
         <p>Кнопки прихода и ухода. Тимлид видит статистику по команде в аналитике.</p>
         <div class="feat-ghost">8H</div>
       </div>
-      <div class="feat-item">
+      <div class="feat-item reveal" style="transition-delay:.21s">
         <div class="feat-num">06 — Уведомления</div>
-        <h3>Умные<br>уведомления</h3>
+        <h3>Умные уведомления</h3>
         <p>Напоминания о встречах, статусы задач, изменения настроения. Только важное.</p>
         <div class="feat-ghost">!</div>
       </div>
@@ -517,7 +388,7 @@ footer{
   <div class="wrap">
     <div class="reveal">
       <div class="sec-label">Как работает</div>
-      <h2 class="st">Три шага<br>до первой встречи</h2>
+      <h2 class="st split-chars">Три шага до первой встречи</h2>
     </div>
     <div class="how-grid">
       <div class="how-item reveal">
@@ -525,12 +396,12 @@ footer{
         <h3>Создайте команду</h3>
         <p>Зарегистрируйтесь и создайте команду. Участники присоединяются по инвайт-коду — без сложных настроек.</p>
       </div>
-      <div class="how-item reveal" style="transition-delay:.12s">
+      <div class="how-item reveal" style="transition-delay:.1s">
         <div class="how-big">02</div>
         <h3>Запланируйте встречу</h3>
         <p>AI предложит оптимальное время. Подтвердите — встреча создана с уведомлениями и календарной ссылкой.</p>
       </div>
-      <div class="how-item reveal" style="transition-delay:.24s">
+      <div class="how-item reveal" style="transition-delay:.2s">
         <div class="how-big">03</div>
         <h3>Развивайте команду</h3>
         <p>Аналитика покажет прогресс каждого. Задачи, настроение и статистика — в одном окне.</p>
@@ -542,25 +413,22 @@ footer{
 <!-- PIT AI -->
 <section class="pit-section" id="pit">
   <div class="pit-inner">
-    <div class="pit-left reveal-l">
+    <div class="reveal-l">
       <div class="sec-label">AI-ассистент</div>
-      <h2 class="pit-heading">
-        Познакомьтесь<br>
-        с <em style="color:var(--acc);font-style:italic">Питом</em>
-      </h2>
+      <h2 class="pit-heading split-chars">Познакомьтесь с <em style="color:var(--acc)">Питом</em></h2>
       <p class="pit-desc">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
       <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-lg">Попробовать Пита</a>
     </div>
-    <div class="pit-right reveal-r">
+    <div class="reveal-r">
       <div class="pit-visual">
         <div class="pit-avatar">
-          <div class="peye" style="top:30%;left:20%;width:16px;height:16px"></div>
-          <div class="peye" style="top:30%;right:20%;width:16px;height:16px;animation-delay:.18s"></div>
+          <div class="peye" style="top:30%;left:20%;width:15px;height:15px"></div>
+          <div class="peye" style="top:30%;right:20%;width:15px;height:15px;animation-delay:.18s"></div>
           <div class="pmouth"></div>
         </div>
         <div class="pit-label">Пит — AI-ассистент на Claude</div>
       </div>
-      <div class="pit-chat" style="margin-top:16px">
+      <div class="pit-chat" style="margin-top:14px">
         <div class="chat-bubble chat-user">Кто из команды не встречался со мной больше 2 недель?</div>
         <div class="chat-bubble chat-pit">
           <div class="pit-icon">П</div>
@@ -581,7 +449,7 @@ footer{
   <div class="wrap">
     <div class="reveal" style="text-align:center">
       <div class="sec-label" style="justify-content:center">Тарифы</div>
-      <h2 class="st" style="margin:0 auto">Выберите<br>свой план</h2>
+      <h2 class="st split-chars" style="margin:0 auto">Выберите свой план</h2>
       <p class="st-sub" style="margin:16px auto 0">Начните бесплатно, масштабируйтесь по мере роста.</p>
     </div>
     <div class="pgrid reveal">
@@ -590,12 +458,8 @@ footer{
         <div class="pprice">0₽ <small>/мес</small></div>
         <div class="pdesc">Для старта</div>
         <ul class="plist">
-          <li>1 команда</li>
-          <li>До 5 участников</li>
-          <li>Базовые встречи</li>
-          <li>История 30 дней</li>
-          <li class="dim">AI-ассистент</li>
-          <li class="dim">Аналитика</li>
+          <li>1 команда</li><li>До 5 участников</li><li>Базовые встречи</li>
+          <li>История 30 дней</li><li class="dim">AI-ассистент</li><li class="dim">Аналитика</li>
         </ul>
         <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Начать бесплатно</a>
       </div>
@@ -605,12 +469,8 @@ footer{
         <div class="pprice">990₽ <small>/мес</small></div>
         <div class="pdesc">Для активных команд</div>
         <ul class="plist">
-          <li>3 команды</li>
-          <li>До 20 участников</li>
-          <li>AI-советы по задачам</li>
-          <li>Полная аналитика</li>
-          <li>Mood tracking</li>
-          <li>История без ограничений</li>
+          <li>3 команды</li><li>До 20 участников</li><li>AI-советы по задачам</li>
+          <li>Полная аналитика</li><li>Mood tracking</li><li>История без ограничений</li>
         </ul>
         <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn prim">Выбрать Pro</a>
       </div>
@@ -619,26 +479,18 @@ footer{
         <div class="pprice">2490₽ <small>/мес</small></div>
         <div class="pdesc">Для больших команд</div>
         <ul class="plist">
-          <li>10 команд</li>
-          <li>До 100 участников</li>
-          <li>Всё из Pro</li>
-          <li>Видеозвонки</li>
-          <li>Транскрипты встреч</li>
-          <li>Учёт рабочего времени</li>
+          <li>10 команд</li><li>До 100 участников</li><li>Всё из Pro</li>
+          <li>Видеозвонки</li><li>Транскрипты встреч</li><li>Учёт рабочего времени</li>
         </ul>
         <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Выбрать Max</a>
       </div>
       <div class="pcard">
         <div class="pname" style="color:rgba(167,139,250,.75)">Enterprise</div>
-        <div class="pprice" style="font-size:30px;margin-top:10px">По<br>запросу</div>
+        <div class="pprice" style="font-size:28px;margin-top:10px">По запросу</div>
         <div class="pdesc">Для организаций</div>
         <ul class="plist">
-          <li>Неограниченно</li>
-          <li>SLA 99.9%</li>
-          <li>On-premise деплой</li>
-          <li>SSO / SAML</li>
-          <li>Поддержка 24/7</li>
-          <li>Кастомная интеграция</li>
+          <li>Неограниченно</li><li>SLA 99.9%</li><li>On-premise деплой</li>
+          <li>SSO / SAML</li><li>Поддержка 24/7</li><li>Кастомная интеграция</li>
         </ul>
         <a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(167,139,250,.2);color:rgba(167,139,250,.7)">Связаться</a>
       </div>
@@ -646,20 +498,10 @@ footer{
   </div>
 </section>
 
-<!-- CYBER LIZARD 3D -->
-<div class="lizard-section">
-  <div id="lizardContainer"></div>
-  <div class="lizard-label">Cyber Lizard — Three.js</div>
-</div>
-
 <!-- CTA -->
 <section class="cta-section">
-  <div class="cta-h reveal">
-    Начните<br>
-    <span class="cta-em">прямо</span><br>
-    сейчас.
-  </div>
-  <p class="cta-sub reveal" style="transition-delay:.1s">Первая встреча — через пять минут.<br>Никаких сложных настроек.</p>
+  <div class="cta-h reveal split-chars">Начните прямо <span class="cta-em">сейчас.</span></div>
+  <p class="cta-sub reveal" style="transition-delay:.1s">Первая встреча — через пять минут. Никаких сложных настроек.</p>
   <div class="cta-btns reveal" style="transition-delay:.2s">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Создать аккаунт</a>
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost btn-lg">Войти</a>
@@ -669,8 +511,7 @@ footer{
 <footer>
   <a href="#" class="logo"><div class="logo-mark">1:1</div>OneOnOne</a>
   <div class="flinks">
-    <a href="#features">Возможности</a>
-    <a href="#pricing">Тарифы</a>
+    <a href="#features">Возможности</a><a href="#pricing">Тарифы</a>
     <a href="#how">Как работает</a>
     <a href="https://1on1-production-bb3b.up.railway.app">Войти</a>
     <a href="https://1on1-production-bb3b.up.railway.app">Зарегистрироваться</a>
@@ -678,300 +519,119 @@ footer{
   <div class="fcopy">© 2026 OneOnOne</div>
 </footer>
 
-<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
-// ── HERO — Anime.js entrance
+// ── 1. HERO PARALLAX (scroll-driven)
+const heroImg = document.getElementById('heroImg')
+let ticking = false
+function onScroll(){
+  if(!ticking){
+    requestAnimationFrame(()=>{
+      const y = window.scrollY
+      heroImg.style.transform = `translateY(${y * 0.38}px)`
+      ticking = false
+    })
+    ticking = true
+  }
+}
+window.addEventListener('scroll', onScroll, {passive:true})
+
+// ── 2. HERO ENTRANCE (Anime.js)
 ;(function(){
   if(typeof anime === 'undefined') return
   anime.timeline({easing:'easeOutExpo'})
-    .add({targets:'#heroEyebrow',opacity:[0,1],translateY:[16,0],duration:900,delay:300})
-    .add({targets:'#heroTitle',opacity:[0,1],translateY:[48,0],duration:1100},'-=550')
-    .add({targets:'#heroSub',opacity:[0,1],translateY:[24,0],duration:800},'-=700')
-    .add({targets:'#heroActions',opacity:[0,1],translateY:[20,0],duration:700},'-=550')
-    .add({targets:'#scrollHint',opacity:[0,.55],duration:1000},'-=300')
+    .add({targets:'#heroEyebrow',opacity:[0,1],translateY:[14,0],duration:800,delay:200})
+    .add({targets:'#heroTitle',opacity:[0,1],translateY:[36,0],duration:1000},'-=500')
+    .add({targets:'#heroSub',opacity:[0,1],translateY:[20,0],duration:800},'-=600')
+    .add({targets:'#heroActions',opacity:[0,1],translateY:[16,0],duration:700},'-=550')
+    .add({targets:'#scrollHint',opacity:[0,.6],duration:900},'-=300')
 })()
 
-// ── SCROLL REVEAL
-const revIo = new IntersectionObserver(e => {
-  e.forEach(x => { if(x.isIntersecting){ x.target.classList.add('vis'); revIo.unobserve(x.target) } })
-}, {threshold:.07})
-document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el => revIo.observe(el))
-
-// ── CYBER LIZARD (Three.js) ─────────────────────────────────────────────────
-;(function(){
-  const container = document.getElementById('lizardContainer')
-  if(!container || typeof THREE === 'undefined') return
-
-  const W = ()=>container.clientWidth
-  const H = ()=>container.clientHeight
-
-  const renderer = new THREE.WebGLRenderer({antialias:true})
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
-  renderer.setSize(W(),H())
-  renderer.shadowMap.enabled = true
-  renderer.shadowMap.type = THREE.PCFSoftShadowMap
-  renderer.toneMapping = THREE.ACESFilmicToneMapping
-  renderer.toneMappingExposure = 1.3
-  container.appendChild(renderer.domElement)
-
-  const scene = new THREE.Scene()
-  scene.background = new THREE.Color(0x000000)
-  scene.fog = new THREE.FogExp2(0x000000, 0.020)
-
-  const camera = new THREE.PerspectiveCamera(60, W()/H(), 0.1, 200)
-  camera.position.set(0, 2.5, 12)
-  camera.lookAt(0, 0.5, 0)
-
-  // Ground
-  const ground = new THREE.Mesh(
-    new THREE.PlaneGeometry(100,100),
-    new THREE.MeshStandardMaterial({color:0x060d0a,roughness:1,metalness:0})
-  )
-  ground.rotation.x = -Math.PI/2
-  ground.receiveShadow = true
-  scene.add(ground)
-
-  // Neon grid
-  const gPts = []
-  for(let i=-20;i<=20;i++){
-    gPts.push(-50,0.006,i*2.5, 50,0.006,i*2.5)
-    gPts.push(i*2.5,0.006,-50, i*2.5,0.006,50)
-  }
-  const gridGeo = new THREE.BufferGeometry()
-  gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gPts,3))
-  scene.add(new THREE.LineSegments(gridGeo,
-    new THREE.LineBasicMaterial({color:0x003a18,transparent:true,opacity:0.45})
-  ))
-
-  // Materials
-  const Mbody  = new THREE.MeshPhysicalMaterial({color:0x0d2e1a,roughness:0.22,metalness:0.78,emissive:0x001208,emissiveIntensity:0.35})
-  const Mbelly = new THREE.MeshPhysicalMaterial({color:0x091f10,roughness:0.45,metalness:0.35,emissive:0x000e06,emissiveIntensity:0.2})
-  const Maccent= new THREE.MeshPhysicalMaterial({color:0x00ff88,roughness:0.05,metalness:0.95,emissive:0x00ff66,emissiveIntensity:1.2})
-  const Meye   = new THREE.MeshPhysicalMaterial({color:0x00ffcc,roughness:0,metalness:1,emissive:0x00ffcc,emissiveIntensity:2.5})
-  const Mspine = new THREE.MeshPhysicalMaterial({color:0x00ff88,emissive:0x00ff44,emissiveIntensity:0.9,roughness:0.15,metalness:0.85})
-
-  // ── LIZARD
-  const lizard = new THREE.Group()
-  scene.add(lizard)
-
-  // Body (capsule along Z)
-  const bodyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.54,2.2,8,20), Mbody)
-  bodyM.rotation.x = Math.PI/2
-  bodyM.castShadow = true
-  lizard.add(bodyM)
-
-  // Belly
-  const bellyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.38,1.9,6,16), Mbelly)
-  bellyM.rotation.x = Math.PI/2
-  bellyM.position.set(0,-0.15,0)
-  bellyM.scale.x = 0.82
-  lizard.add(bellyM)
-
-  // Neck
-  const neckM = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.34,0.72,12), Mbody)
-  neckM.position.set(0,0.08,1.42)
-  neckM.rotation.x = -0.35
-  neckM.castShadow = true
-  lizard.add(neckM)
-
-  // Head group
-  const headGrp = new THREE.Group()
-  headGrp.position.set(0,0.26,1.95)
-  lizard.add(headGrp)
-
-  const craniumM = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.42,0.80), Mbody)
-  craniumM.castShadow = true
-  headGrp.add(craniumM)
-
-  const snoutM = new THREE.Mesh(new THREE.BoxGeometry(0.50,0.26,0.58), Mbody)
-  snoutM.position.set(0,-0.06,0.58)
-  snoutM.castShadow = true
-  headGrp.add(snoutM)
-
-  const jawM = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.12,0.55), Mbelly)
-  jawM.position.set(0,-0.20,0.52)
-  headGrp.add(jawM)
-
-  // Eyes + glow halos
-  for(const ex of [-0.28,0.28]){
-    const eyeM = new THREE.Mesh(new THREE.SphereGeometry(0.10,16,12), Meye)
-    eyeM.position.set(ex,0.16,0.20)
-    headGrp.add(eyeM)
-    const haloM = new THREE.Mesh(new THREE.SphereGeometry(0.15,16,12),
-      new THREE.MeshBasicMaterial({color:0x00ffcc,transparent:true,opacity:0.13,side:THREE.BackSide}))
-    haloM.position.set(ex,0.16,0.20)
-    headGrp.add(haloM)
-  }
-
-  // Dorsal spines
-  const SPINEZ = [-1.1,-0.75,-0.4,-0.05,0.3,0.65,1.0,1.32]
-  const SPINEH = [0.20, 0.30, 0.42, 0.50, 0.47,0.38,0.28,0.16]
-  SPINEZ.forEach((z,i)=>{
-    const h = SPINEH[i]
-    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.055,h,6), Mspine)
-    sp.position.set(0, 0.50+h/2, z)
-    lizard.add(sp)
-  })
-
-  // Tail (7 tapering segments)
-  const tailGrp = new THREE.Group()
-  lizard.add(tailGrp)
-  const TAIL = [
-    [0.40,0.32,0.52,-1.18],[0.32,0.24,0.52,-1.70],[0.24,0.17,0.50,-2.22],
-    [0.17,0.11,0.48,-2.72],[0.11,0.07,0.44,-3.20],[0.07,0.04,0.38,-3.64],[0.04,0.02,0.32,-4.02],
-  ]
-  const tailSegs = TAIL.map(([r1,r2,len,z])=>{
-    const s = new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,10), Mbody)
-    s.rotation.x = Math.PI/2
-    s.position.z = z - len/2
-    s.castShadow = true
-    tailGrp.add(s)
-    return s
-  })
-
-  // Circuit tubes
-  function addCircuit(pts, col, op){
-    col = col||0x00ff66; op = (op===undefined)?0.75:op
-    const crv = new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1],p[2])))
-    lizard.add(new THREE.Mesh(
-      new THREE.TubeGeometry(crv,20,0.018,5),
-      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op})
-    ))
-  }
-  addCircuit([[-0.50,0.28,-0.7],[-0.53,0.22,-0.2],[-0.55,0.17,0.3],[-0.52,0.17,0.8],[-0.46,0.25,1.3],[-0.40,0.32,1.55]])
-  addCircuit([[0.50,0.28,-0.7],[0.53,0.22,-0.2],[0.55,0.17,0.3],[0.52,0.17,0.8],[0.46,0.25,1.3],[0.40,0.32,1.55]])
-  addCircuit([[0,0.51,-1.0],[0,0.55,-0.5],[0,0.57,0.0],[0,0.55,0.5],[0,0.51,1.0]],0x00ffaa,0.9)
-  addCircuit([[-0.55,0.17,0.2],[-0.28,0.0,0.2],[0,-0.10,0.2],[0.28,0.0,0.2],[0.55,0.17,0.2]],0x00ff44,0.5)
-
-  // Legs (diagonal gait: FL+BR=phase0, FR+BL=phasePI)
-  const LEG_DEFS = [
-    {sx:1, fwd:1, phase:0},
-    {sx:-1,fwd:1, phase:Math.PI},
-    {sx:1, fwd:-1,phase:Math.PI},
-    {sx:-1,fwd:-1,phase:0},
-  ]
-  const legObjs = LEG_DEFS.map(d=>{
-    const hip = new THREE.Group()
-    hip.position.set(d.sx*0.50,-0.18,d.fwd*0.85)
-    lizard.add(hip)
-
-    const thighM = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.07,0.52,8), Mbody)
-    thighM.position.set(d.sx*0.24,-0.12,0)
-    thighM.rotation.z = d.sx * -0.65
-    thighM.castShadow = true
-    hip.add(thighM)
-
-    const knee = new THREE.Group()
-    knee.position.set(d.sx*0.52,-0.30,0)
-    hip.add(knee)
-
-    const shinM = new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.048,0.48,8), Mbody)
-    shinM.position.set(0,-0.27,0)
-    shinM.castShadow = true
-    knee.add(shinM)
-
-    const footM = new THREE.Mesh(new THREE.BoxGeometry(0.11,0.055,0.20), Mbody)
-    footM.position.set(0,-0.50,0.06)
-    knee.add(footM)
-
-    for(let c=0;c<3;c++){
-      const clawM = new THREE.Mesh(new THREE.ConeGeometry(0.022,0.11,5), Maccent)
-      clawM.position.set((c-1)*0.045,-0.54,0.15)
-      clawM.rotation.x = 0.45
-      knee.add(clawM)
+// ── 3. SPLIT CHARS — inject <span class="char"> around each character
+function splitChars(el){
+  const html = el.innerHTML
+  // preserve existing HTML tags (like <em>), split only text nodes
+  const tmp = document.createElement('div')
+  tmp.innerHTML = html
+  function processNode(node){
+    if(node.nodeType === 3){ // text
+      const frag = document.createDocumentFragment()
+      node.textContent.split('').forEach(ch => {
+        if(ch === ' ' || ch === '\n'){
+          frag.appendChild(document.createTextNode(ch))
+        } else {
+          const s = document.createElement('span')
+          s.className = 'char'
+          s.textContent = ch
+          frag.appendChild(s)
+        }
+      })
+      node.parentNode.replaceChild(frag, node)
+    } else if(node.nodeType === 1){
+      Array.from(node.childNodes).forEach(processNode)
     }
-
-    return {hip, knee, phase:d.phase}
-  })
-
-  // Lights
-  scene.add(new THREE.AmbientLight(0x040810, 1.2))
-
-  const rimL = new THREE.DirectionalLight(0x2244ff, 2.5)
-  rimL.position.set(-5,9,-8)
-  rimL.castShadow = true
-  rimL.shadow.mapSize.set(1024,1024)
-  scene.add(rimL)
-
-  const purpleL = new THREE.PointLight(0x8800ff,4,35)
-  purpleL.position.set(0,9,-16)
-  scene.add(purpleL)
-
-  const redL = new THREE.PointLight(0xff0066,3,28)
-  redL.position.set(9,4,-4)
-  scene.add(redL)
-
-  const bodyGlow = new THREE.PointLight(0x00ffaa,10,12)
-  scene.add(bodyGlow)
-
-  const eyeGlow = new THREE.PointLight(0x00ff66,6,8)
-  scene.add(eyeGlow)
-
-  // Ground neon strips
-  for(let i=0;i<6;i++){
-    const strip = new THREE.Mesh(
-      new THREE.BoxGeometry(0.025,0.01,55),
-      new THREE.MeshBasicMaterial({color:0x00ff33,transparent:true,opacity:0.11-i*0.013})
-    )
-    strip.position.set((i-2.5)*3.2, 0.005, -8)
-    scene.add(strip)
   }
+  Array.from(tmp.childNodes).forEach(processNode)
+  el.innerHTML = tmp.innerHTML
+}
 
-  // Resize
-  window.addEventListener('resize',()=>{
-    const w=W(), h=H()
-    camera.aspect=w/h
-    camera.updateProjectionMatrix()
-    renderer.setSize(w,h)
+document.querySelectorAll('.split-chars').forEach(el => splitChars(el))
+
+// ── 4. SCROLL-TRIGGERED CHAR ANIMATIONS + REVEAL
+const animQueue = new Set()
+const mainIo = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(!entry.isIntersecting) return
+    const el = entry.target
+    mainIo.unobserve(el)
+
+    if(el.classList.contains('split-chars')){
+      const chars = el.querySelectorAll('.char')
+      if(chars.length && typeof anime !== 'undefined'){
+        anime({
+          targets: chars,
+          opacity: [0, 1],
+          translateY: [28, 0],
+          rotateZ: [4, 0],
+          duration: 700,
+          delay: anime.stagger(22, {start: 80}),
+          easing: 'easeOutExpo',
+        })
+      }
+    } else {
+      el.classList.add('vis')
+    }
   })
+}, {threshold: 0.08})
 
-  // Animation loop
-  let running=false, rafId
+document.querySelectorAll('.reveal, .reveal-l, .reveal-r, .split-chars').forEach(el => mainIo.observe(el))
 
-  function tick(){
-    if(!running) return
-    rafId = requestAnimationFrame(tick)
-
-    const t    = performance.now()/1000
-    const walk = t * 3.2
-
-    const SPEED=1.6, RANGE=28
-    const cyc = (t*SPEED) % RANGE
-    lizard.position.z = cyc < 24 ? -20+cyc : -20
-    lizard.position.y = 0.70 + Math.sin(walk)*0.018
-
-    lizard.rotation.z = Math.sin(walk*0.5)*0.055
-    lizard.rotation.y = Math.sin(walk*0.25)*0.04
-
-    headGrp.rotation.x = Math.sin(walk*0.5)*0.09 - 0.12
-    headGrp.position.y  = 0.26 + Math.sin(walk*0.5)*0.035
-
-    tailGrp.rotation.y = Math.sin(walk*0.55)*0.28
-    tailSegs.forEach((s,i)=>{ s.rotation.y = Math.sin(walk*0.55+i*0.35)*(0.12*(i+1)) })
-
-    Mspine.emissiveIntensity = 0.9 + Math.sin(t*2.5)*0.35
-
-    legObjs.forEach(lg=>{
-      const sw = Math.sin(walk+lg.phase)
-      lg.hip.rotation.x  = sw * 0.58
-      lg.knee.rotation.x = Math.max(0,sw) * -0.42
-    })
-
-    bodyGlow.position.set(lizard.position.x, lizard.position.y+0.9, lizard.position.z+0.2)
-    eyeGlow.position.set(lizard.position.x,  lizard.position.y+0.55, lizard.position.z+2.2)
-
-    camera.lookAt(lizard.position.x, lizard.position.y+0.4, lizard.position.z*0.25)
-
-    renderer.render(scene,camera)
-  }
-
-  const lObs = new IntersectionObserver(entries=>{
-    if(entries[0].isIntersecting){ if(!running){running=true;tick()} }
-    else{ running=false; cancelAnimationFrame(rafId) }
-  },{threshold:0.1})
-  lObs.observe(container)
-})()
+// ── 5. STAGGER GRID ITEMS on first view
+const gridIo = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(!entry.isIntersecting) return
+    gridIo.unobserve(entry.target)
+    const items = entry.target.querySelectorAll('.feat-item, .how-item, .pcard')
+    if(items.length && typeof anime !== 'undefined'){
+      anime({
+        targets: items,
+        opacity: [0, 1],
+        translateY: [40, 0],
+        duration: 800,
+        delay: anime.stagger(80),
+        easing: 'easeOutExpo',
+      })
+    }
+  })
+}, {threshold: 0.05})
+document.querySelectorAll('.feat-grid, .how-grid, .pgrid').forEach(g => {
+  // set items invisible initially
+  g.querySelectorAll('.feat-item, .how-item, .pcard').forEach(i => {
+    i.style.opacity = '0'
+    i.classList.remove('reveal') // let gridIo handle these
+  })
+  gridIo.observe(g)
+})
 </script>
 </body>
 </html>
