@@ -154,10 +154,16 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .mtag{font-size:11px;font-weight:600;padding:2px 8px;border-radius:4px}
 
 .bars{display:flex;align-items:flex-end;gap:5px;height:88px;padding-top:8px;width:100%;max-width:280px}
-.bar{border-radius:3px 3px 0 0;flex:1;min-width:12px}
+.bar{border-radius:3px 3px 0 0;flex:1;min-width:12px;transform-origin:bottom}
 
 .mood-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;width:100%;max-width:260px}
 .mood-dot{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px}
+
+@keyframes barBounce{
+  0%,100%{transform:scaleY(1)}
+  50%{transform:scaleY(1.18)}
+}
+.bar-anim{animation:barBounce var(--dur,1.2s) ease-in-out infinite;animation-delay:var(--delay,0s)}
 
 /* ── PRICING */
 .pricing-section{padding:100px 0;background:var(--bg1)}
@@ -282,15 +288,15 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         <div class="panel-text">
           <ul class="flist">
             <li>
-              <div class="flist-icon icon-blue">📅</div>
+              <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
               <div><h4>AI-слоты</h4><p>Анализирует загрузку команды и предлагает лучшее время для встречи автоматически.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-blue">📝</div>
+              <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
               <div><h4>Транскрипты и заметки</h4><p>Автоматическая запись ключевых моментов встречи. История всегда под рукой.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-blue">🔔</div>
+              <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
               <div><h4>Умные уведомления</h4><p>Напоминания участникам, алерт если встреча не проводилась больше N дней.</p></div>
             </li>
           </ul>
@@ -357,15 +363,15 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         <div class="panel-text">
           <ul class="flist">
             <li>
-              <div class="flist-icon icon-green">✅</div>
+              <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
               <div><h4>Создание на встрече</h4><p>Пит слушает разговор и предлагает оформить задачу прямо в ходе встречи.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-green">🔀</div>
+              <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg></div>
               <div><h4>AI-декомпозиция</h4><p>Большие задачи автоматически разбиваются на конкретные подшаги с дедлайнами.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-green">📊</div>
+              <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
               <div><h4>Авто-завершение</h4><p>Задача закрывается автоматически когда выполнены все подзадачи.</p></div>
             </li>
           </ul>
@@ -389,15 +395,15 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         <div class="panel-text">
           <ul class="flist">
             <li>
-              <div class="flist-icon icon-pink">😊</div>
+              <div class="flist-icon icon-pink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
               <div><h4>Ежедневные опросы</h4><p>Короткий check-in каждый день. Занимает 10 секунд, даёт ценные данные.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-pink">📈</div>
+              <div class="flist-icon icon-pink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
               <div><h4>Тренды за 12 недель</h4><p>Видите как менялось настроение команды. Замечайте паттерны до того как они станут проблемой.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-pink">🚨</div>
+              <div class="flist-icon icon-pink"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
               <div><h4>Алерты при снижении</h4><p>Пит уведомит вас если настроение сотрудника снижается несколько дней подряд.</p></div>
             </li>
           </ul>
@@ -410,20 +416,20 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
           <div style="display:flex;flex-direction:column;gap:20px;align-items:center">
             <div style="font-size:11px;font-weight:600;color:var(--txt3);letter-spacing:.1em;text-transform:uppercase">Настроение команды · 7 дней</div>
             <div class="bars">
-              <div class="bar" style="height:55%;background:rgba(236,72,153,.35)"></div>
-              <div class="bar" style="height:70%;background:rgba(236,72,153,.45)"></div>
-              <div class="bar" style="height:60%;background:rgba(236,72,153,.35)"></div>
-              <div class="bar" style="height:85%;background:rgba(236,72,153,.6)"></div>
-              <div class="bar" style="height:75%;background:rgba(236,72,153,.5)"></div>
-              <div class="bar" style="height:90%;background:rgba(236,72,153,.7)"></div>
-              <div class="bar" style="height:88%;background:rgba(236,72,153,.65)"></div>
+              <div class="bar bar-anim" style="height:55%;background:rgba(236,72,153,.35);--dur:1.4s;--delay:0s"></div>
+              <div class="bar bar-anim" style="height:70%;background:rgba(236,72,153,.45);--dur:1.1s;--delay:.15s"></div>
+              <div class="bar bar-anim" style="height:60%;background:rgba(236,72,153,.35);--dur:1.3s;--delay:.3s"></div>
+              <div class="bar bar-anim" style="height:85%;background:rgba(236,72,153,.6);--dur:.95s;--delay:.1s"></div>
+              <div class="bar bar-anim" style="height:75%;background:rgba(236,72,153,.5);--dur:1.2s;--delay:.25s"></div>
+              <div class="bar bar-anim" style="height:90%;background:rgba(236,72,153,.7);--dur:1.05s;--delay:.05s"></div>
+              <div class="bar bar-anim" style="height:88%;background:rgba(236,72,153,.65);--dur:1.15s;--delay:.2s"></div>
             </div>
             <div class="mood-grid">
-              <div class="mood-dot" style="background:rgba(236,72,153,.15)">😴</div>
-              <div class="mood-dot" style="background:rgba(236,72,153,.15)">😕</div>
-              <div class="mood-dot" style="background:rgba(236,72,153,.25)">😐</div>
-              <div class="mood-dot" style="background:rgba(236,72,153,.4)">🙂</div>
-              <div class="mood-dot" style="background:rgba(236,72,153,.55)">😄</div>
+              <div class="mood-dot" style="background:rgba(236,72,153,.12);border:1px solid rgba(236,72,153,.2)"></div>
+              <div class="mood-dot" style="background:rgba(236,72,153,.2);border:1px solid rgba(236,72,153,.3)"></div>
+              <div class="mood-dot" style="background:rgba(236,72,153,.32);border:1px solid rgba(236,72,153,.45)"></div>
+              <div class="mood-dot" style="background:rgba(236,72,153,.5);border:1px solid rgba(236,72,153,.65)"></div>
+              <div class="mood-dot" style="background:rgba(236,72,153,.75);border:1px solid rgba(236,72,153,.9)"></div>
             </div>
           </div>
         </div>
@@ -457,14 +463,14 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
             <div style="background:rgba(255,255,255,.03);border:1px solid var(--brd2);border-radius:10px;padding:16px">
               <div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:12px">Активность 12 нед.</div>
               <div class="bars" style="height:60px;max-width:100%">
-                <div class="bar" style="height:40%;background:rgba(6,182,212,.3)"></div>
-                <div class="bar" style="height:65%;background:rgba(6,182,212,.4)"></div>
-                <div class="bar" style="height:50%;background:rgba(6,182,212,.3)"></div>
-                <div class="bar" style="height:80%;background:rgba(6,182,212,.55)"></div>
-                <div class="bar" style="height:70%;background:rgba(6,182,212,.45)"></div>
-                <div class="bar" style="height:90%;background:rgba(6,182,212,.65)"></div>
-                <div class="bar" style="height:85%;background:rgba(6,182,212,.6)"></div>
-                <div class="bar" style="height:95%;background:rgba(6,182,212,.7)"></div>
+                <div class="bar bar-anim" style="height:40%;background:rgba(6,182,212,.3);--dur:1.3s;--delay:0s"></div>
+                <div class="bar bar-anim" style="height:65%;background:rgba(6,182,212,.4);--dur:1.0s;--delay:.18s"></div>
+                <div class="bar bar-anim" style="height:50%;background:rgba(6,182,212,.3);--dur:1.4s;--delay:.08s"></div>
+                <div class="bar bar-anim" style="height:80%;background:rgba(6,182,212,.55);--dur:.9s;--delay:.25s"></div>
+                <div class="bar bar-anim" style="height:70%;background:rgba(6,182,212,.45);--dur:1.15s;--delay:.12s"></div>
+                <div class="bar bar-anim" style="height:90%;background:rgba(6,182,212,.65);--dur:1.05s;--delay:.3s"></div>
+                <div class="bar bar-anim" style="height:85%;background:rgba(6,182,212,.6);--dur:1.2s;--delay:.06s"></div>
+                <div class="bar bar-anim" style="height:95%;background:rgba(6,182,212,.7);--dur:.95s;--delay:.22s"></div>
               </div>
             </div>
           </div>
@@ -472,15 +478,15 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         <div class="panel-text">
           <ul class="flist">
             <li>
-              <div class="flist-icon icon-cyan">📊</div>
+              <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
               <div><h4>Зоны риска</h4><p>Пит выделяет сотрудников с которыми давно не было встреч или снизилась продуктивность.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-cyan">📥</div>
+              <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
               <div><h4>Экспорт CSV</h4><p>Все данные можно выгрузить для отчётов HR или руководству. Без ограничений.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-cyan">⏱</div>
+              <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
               <div><h4>Учёт рабочего времени</h4><p>Кнопки прихода и ухода. Статистика присутствия в дашборде тимлида.</p></div>
             </li>
           </ul>
@@ -504,15 +510,15 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
         <div class="panel-text">
           <ul class="flist">
             <li>
-              <div class="flist-icon icon-purple">🧠</div>
+              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2"/></svg></div>
               <div><h4>Знает контекст команды</h4><p>Пит помнит все встречи, задачи и настроение каждого участника команды.</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-purple">💬</div>
+              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
               <div><h4>Общение на русском</h4><p>Спрашивайте как коллегу: «Кто давно не встречался?» или «Создай задачу Максиму».</p></div>
             </li>
             <li>
-              <div class="flist-icon icon-purple">⚡</div>
+              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
               <div><h4>Действует, не только отвечает</h4><p>Пит создаёт встречи, ставит задачи, анализирует тренды — не просто информирует.</p></div>
             </li>
           </ul>
