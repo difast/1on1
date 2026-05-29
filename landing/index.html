@@ -291,23 +291,29 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Начать бесплатно →</a>
     <a href="#features" class="btn btn-ghost-hero btn-lg">Смотреть возможности</a>
   </div>
-  <div class="hero-term" id="heroTerm">
-    <div class="tbar">
-      <div class="td" style="background:#ff5f57"></div>
-      <div class="td" style="background:#ffbd2e"></div>
-      <div class="td" style="background:#28c840"></div>
-      <span class="ttitle">oneonone · pit assistant</span>
-    </div>
-    <div class="tbody">
-      <div class="tl"><span class="tp">$</span><span class="tc">oneonone meeting create --team "Backend" --with "alex"</span></div>
-      <div class="to">✓ AI выбрал оптимальное время: Пт 15:00</div>
-      <div class="tod">Уведомление отправлено · Добавлено в календарь</div>
-      <div class="tl" style="margin-top:6px"><span class="tp">$</span><span class="tc">pit ask "Как дела у команды?"</span></div>
-      <div class="tpit">
-        <div class="tpit-av"></div>
-        <div class="tpit-msg">За неделю проведено <b>4 встречи</b>. Настроение <b>4.3/5</b>. Алексей выполнил 3 из 4 задач. <b>Рекомендую</b> встречу с Максимом — последняя была 3 недели назад.</div>
+</section>
+
+<!-- TERMINAL -->
+<section class="block-card" style="background:#222321;padding:48px 0" id="terminal">
+  <div class="wrap" style="display:flex;justify-content:center">
+    <div class="hero-term reveal" style="opacity:1;max-width:680px;width:100%">
+      <div class="tbar">
+        <div class="td" style="background:#ff5f57"></div>
+        <div class="td" style="background:#ffbd2e"></div>
+        <div class="td" style="background:#28c840"></div>
+        <span class="ttitle">oneonone · pit assistant</span>
       </div>
-      <div class="tl" style="margin-top:10px"><span class="tp">$</span><span class="tcur"></span></div>
+      <div class="tbody">
+        <div class="tl"><span class="tp">$</span><span class="tc">oneonone meeting create --team "Backend" --with "alex"</span></div>
+        <div class="to">✓ AI выбрал оптимальное время: Пт 15:00</div>
+        <div class="tod">Уведомление отправлено · Добавлено в календарь</div>
+        <div class="tl" style="margin-top:6px"><span class="tp">$</span><span class="tc">pit ask "Как дела у команды?"</span></div>
+        <div class="tpit">
+          <div class="tpit-av"></div>
+          <div class="tpit-msg">За неделю проведено <b>4 встречи</b>. Настроение <b>4.3/5</b>. Алексей выполнил 3 из 4 задач. <b>Рекомендую</b> встречу с Максимом — последняя была 3 недели назад.</div>
+        </div>
+        <div class="tl" style="margin-top:10px"><span class="tp">$</span><span class="tcur"></span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -685,7 +691,6 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
     .add({targets:'#heroH',opacity:[0,1],translateY:[40,0],duration:1000},'-=400')
     .add({targets:'#heroSub',opacity:[0,1],translateY:[24,0],duration:800},'-=650')
     .add({targets:'#heroBtns',opacity:[0,1],translateY:[18,0],duration:700},'-=550')
-    .add({targets:'#heroTerm',opacity:[0,1],translateY:[32,0],duration:900},'-=400')
 })()
 
 // ── SCROLL REVEAL
