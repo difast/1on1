@@ -210,26 +210,10 @@ h2.st{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spac
 .pbtn.prim{background:var(--acc);border-color:transparent;color:#fff}
 .pbtn.prim:hover{background:#5558e8}
 
-/* ── MOUNTAIN + LAKE ── */
-.mountain-section{position:relative;height:56vh;min-height:380px;background:var(--bg)}
-.mountain-bg{position:absolute;inset:10px;border-radius:20px;overflow:hidden;z-index:0}
-.mountain-bg-inner{
-  position:absolute;inset:0;
-  /* CSS gradient mountain + lake (no darkening, vivid) */
-  background:
-    url('https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=1600&q=90') center/cover no-repeat,
-    linear-gradient(180deg,
-      #a8d4f0 0%,#c4e4f8 12%,
-      #96b8d8 22%,#7898b8 26%,
-      #e8f0f8 27%,#7898b8 28%,
-      #3a5a2a 36%,#2a4a1a 43%,
-      #1a2818 46%,
-      #2e7a68 48%,#3a8878 52%,
-      #2a7060 55%,#2a4a1a 62%,
-      #3a5a2a 68%,#7898b8 76%,
-      #c4e4f8 88%,#a8d4f0 100%
-    );
-}
+/* ── CYBER LIZARD 3D ── */
+.lizard-section{position:relative;height:70vh;min-height:520px;background:#000508}
+#lizardContainer{position:absolute;inset:10px;border-radius:20px;overflow:hidden;background:#000508}
+#lizardContainer canvas{display:block}
 
 /* ═══ ELEVATOR CTA ═══ */
 .lift-section{padding:40px 0 88px}
@@ -479,9 +463,9 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
     </div>
   </div>
 
-  <!-- MOUNTAIN + LAKE -->
-  <div class="mountain-section">
-    <div class="mountain-bg"><div class="mountain-bg-inner"></div></div>
+  <!-- CYBER LIZARD 3D -->
+  <div class="lizard-section">
+    <div id="lizardContainer"></div>
   </div>
 </div>
 
@@ -542,6 +526,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   <div class="fcopy">© 2026 OneOnOne</div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
 <script>
 // Scroll reveal
 const revIo = new IntersectionObserver(e => {
@@ -725,6 +710,290 @@ document.querySelectorAll('.reveal,.reveal-scale').forEach(el => revIo.observe(e
     `
     field.appendChild(leaf)
   }
+})()
+
+// ── 3D Cyber Lizard ──────────────────────────────────────────────────────────
+;(function(){
+  const container = document.getElementById('lizardContainer')
+  if(!container || typeof THREE === 'undefined') return
+
+  const W = ()=>container.clientWidth
+  const H = ()=>container.clientHeight
+
+  const renderer = new THREE.WebGLRenderer({antialias:true})
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio,2))
+  renderer.setSize(W(),H())
+  renderer.shadowMap.enabled = true
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap
+  renderer.toneMapping = THREE.ACESFilmicToneMapping
+  renderer.toneMappingExposure = 1.3
+  container.appendChild(renderer.domElement)
+
+  const scene = new THREE.Scene()
+  scene.background = new THREE.Color(0x010308)
+  scene.fog = new THREE.FogExp2(0x010308, 0.020)
+
+  const camera = new THREE.PerspectiveCamera(60, W()/H(), 0.1, 200)
+  camera.position.set(0, 2.5, 12)
+  camera.lookAt(0, 0.5, 0)
+
+  // Ground
+  const ground = new THREE.Mesh(
+    new THREE.PlaneGeometry(100,100),
+    new THREE.MeshStandardMaterial({color:0x060d0a,roughness:1,metalness:0})
+  )
+  ground.rotation.x = -Math.PI/2
+  ground.receiveShadow = true
+  scene.add(ground)
+
+  // Neon grid
+  const gPts = []
+  for(let i=-20;i<=20;i++){
+    gPts.push(-50,0.006,i*2.5, 50,0.006,i*2.5)
+    gPts.push(i*2.5,0.006,-50, i*2.5,0.006,50)
+  }
+  const gridGeo = new THREE.BufferGeometry()
+  gridGeo.setAttribute('position', new THREE.Float32BufferAttribute(gPts,3))
+  scene.add(new THREE.LineSegments(gridGeo,
+    new THREE.LineBasicMaterial({color:0x003a18,transparent:true,opacity:0.45})
+  ))
+
+  // Materials
+  const Mbody  = new THREE.MeshPhysicalMaterial({color:0x0d2e1a,roughness:0.22,metalness:0.78,emissive:0x001208,emissiveIntensity:0.35})
+  const Mbelly = new THREE.MeshPhysicalMaterial({color:0x091f10,roughness:0.45,metalness:0.35,emissive:0x000e06,emissiveIntensity:0.2})
+  const Maccent= new THREE.MeshPhysicalMaterial({color:0x00ff88,roughness:0.05,metalness:0.95,emissive:0x00ff66,emissiveIntensity:1.2})
+  const Meye   = new THREE.MeshPhysicalMaterial({color:0x00ffcc,roughness:0,metalness:1,emissive:0x00ffcc,emissiveIntensity:2.5})
+  const Mspine = new THREE.MeshPhysicalMaterial({color:0x00ff88,emissive:0x00ff44,emissiveIntensity:0.9,roughness:0.15,metalness:0.85})
+
+  // ── LIZARD ─────────────────────────────────────────────────────────────────
+  const lizard = new THREE.Group()
+  scene.add(lizard)
+
+  // Body (capsule along Z)
+  const bodyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.54,2.2,8,20), Mbody)
+  bodyM.rotation.x = Math.PI/2
+  bodyM.castShadow = true
+  lizard.add(bodyM)
+
+  // Belly
+  const bellyM = new THREE.Mesh(new THREE.CapsuleGeometry(0.38,1.9,6,16), Mbelly)
+  bellyM.rotation.x = Math.PI/2
+  bellyM.position.set(0,-0.15,0)
+  bellyM.scale.x = 0.82
+  lizard.add(bellyM)
+
+  // Neck
+  const neckM = new THREE.Mesh(new THREE.CylinderGeometry(0.18,0.34,0.72,12), Mbody)
+  neckM.position.set(0,0.08,1.42)
+  neckM.rotation.x = -0.35
+  neckM.castShadow = true
+  lizard.add(neckM)
+
+  // Head group
+  const headGrp = new THREE.Group()
+  headGrp.position.set(0,0.26,1.95)
+  lizard.add(headGrp)
+
+  const craniumM = new THREE.Mesh(new THREE.BoxGeometry(0.72,0.42,0.80), Mbody)
+  craniumM.castShadow = true
+  headGrp.add(craniumM)
+
+  const snoutM = new THREE.Mesh(new THREE.BoxGeometry(0.50,0.26,0.58), Mbody)
+  snoutM.position.set(0,-0.06,0.58)
+  snoutM.castShadow = true
+  headGrp.add(snoutM)
+
+  const jawM = new THREE.Mesh(new THREE.BoxGeometry(0.44,0.12,0.55), Mbelly)
+  jawM.position.set(0,-0.20,0.52)
+  headGrp.add(jawM)
+
+  // Eyes + glow halos
+  for(const ex of [-0.28,0.28]){
+    const eyeM = new THREE.Mesh(new THREE.SphereGeometry(0.10,16,12), Meye)
+    eyeM.position.set(ex,0.16,0.20)
+    headGrp.add(eyeM)
+    const haloM = new THREE.Mesh(new THREE.SphereGeometry(0.15,16,12),
+      new THREE.MeshBasicMaterial({color:0x00ffcc,transparent:true,opacity:0.13,side:THREE.BackSide}))
+    haloM.position.set(ex,0.16,0.20)
+    headGrp.add(haloM)
+  }
+
+  // Dorsal spines
+  const SPINEZ = [-1.1,-0.75,-0.4,-0.05,0.3,0.65,1.0,1.32]
+  const SPINEH = [0.20, 0.30, 0.42, 0.50, 0.47,0.38,0.28,0.16]
+  SPINEZ.forEach((z,i)=>{
+    const h = SPINEH[i]
+    const sp = new THREE.Mesh(new THREE.ConeGeometry(0.055,h,6), Mspine)
+    sp.position.set(0, 0.50+h/2, z)
+    lizard.add(sp)
+  })
+
+  // Tail (7 tapering segments)
+  const tailGrp = new THREE.Group()
+  lizard.add(tailGrp)
+  const TAIL = [
+    [0.40,0.32,0.52,-1.18],[0.32,0.24,0.52,-1.70],[0.24,0.17,0.50,-2.22],
+    [0.17,0.11,0.48,-2.72],[0.11,0.07,0.44,-3.20],[0.07,0.04,0.38,-3.64],[0.04,0.02,0.32,-4.02],
+  ]
+  const tailSegs = TAIL.map(([r1,r2,len,z])=>{
+    const s = new THREE.Mesh(new THREE.CylinderGeometry(r2,r1,len,10), Mbody)
+    s.rotation.x = Math.PI/2
+    s.position.z = z - len/2
+    s.castShadow = true
+    tailGrp.add(s)
+    return s
+  })
+
+  // Circuit tubes
+  function addCircuit(pts, col, op){
+    col = col||0x00ff66; op = (op===undefined)?0.75:op
+    const crv = new THREE.CatmullRomCurve3(pts.map(p=>new THREE.Vector3(p[0],p[1],p[2])))
+    lizard.add(new THREE.Mesh(
+      new THREE.TubeGeometry(crv,20,0.018,5),
+      new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:op})
+    ))
+  }
+  addCircuit([[-0.50,0.28,-0.7],[-0.53,0.22,-0.2],[-0.55,0.17,0.3],[-0.52,0.17,0.8],[-0.46,0.25,1.3],[-0.40,0.32,1.55]])
+  addCircuit([[0.50,0.28,-0.7],[0.53,0.22,-0.2],[0.55,0.17,0.3],[0.52,0.17,0.8],[0.46,0.25,1.3],[0.40,0.32,1.55]])
+  addCircuit([[0,0.51,-1.0],[0,0.55,-0.5],[0,0.57,0.0],[0,0.55,0.5],[0,0.51,1.0]],0x00ffaa,0.9)
+  addCircuit([[-0.55,0.17,0.2],[-0.28,0.0,0.2],[0,-0.10,0.2],[0.28,0.0,0.2],[0.55,0.17,0.2]],0x00ff44,0.5)
+
+  // Legs (diagonal gait: FL+BR=phase0, FR+BL=phasePI)
+  const LEG_DEFS = [
+    {sx:1, fwd:1, phase:0},
+    {sx:-1,fwd:1, phase:Math.PI},
+    {sx:1, fwd:-1,phase:Math.PI},
+    {sx:-1,fwd:-1,phase:0},
+  ]
+  const legObjs = LEG_DEFS.map(d=>{
+    const hip = new THREE.Group()
+    hip.position.set(d.sx*0.50,-0.18,d.fwd*0.85)
+    lizard.add(hip)
+
+    const thighM = new THREE.Mesh(new THREE.CylinderGeometry(0.09,0.07,0.52,8), Mbody)
+    thighM.position.set(d.sx*0.24,-0.12,0)
+    thighM.rotation.z = d.sx * -0.65
+    thighM.castShadow = true
+    hip.add(thighM)
+
+    const knee = new THREE.Group()
+    knee.position.set(d.sx*0.52,-0.30,0)
+    hip.add(knee)
+
+    const shinM = new THREE.Mesh(new THREE.CylinderGeometry(0.065,0.048,0.48,8), Mbody)
+    shinM.position.set(0,-0.27,0)
+    shinM.castShadow = true
+    knee.add(shinM)
+
+    const footM = new THREE.Mesh(new THREE.BoxGeometry(0.11,0.055,0.20), Mbody)
+    footM.position.set(0,-0.50,0.06)
+    knee.add(footM)
+
+    for(let c=0;c<3;c++){
+      const clawM = new THREE.Mesh(new THREE.ConeGeometry(0.022,0.11,5), Maccent)
+      clawM.position.set((c-1)*0.045,-0.54,0.15)
+      clawM.rotation.x = 0.45
+      knee.add(clawM)
+    }
+
+    return {hip, knee, phase:d.phase}
+  })
+
+  // Lights
+  scene.add(new THREE.AmbientLight(0x040810, 1.2))
+
+  const rimL = new THREE.DirectionalLight(0x2244ff, 2.5)
+  rimL.position.set(-5,9,-8)
+  rimL.castShadow = true
+  rimL.shadow.mapSize.set(1024,1024)
+  scene.add(rimL)
+
+  const purpleL = new THREE.PointLight(0x8800ff,4,35)
+  purpleL.position.set(0,9,-16)
+  scene.add(purpleL)
+
+  const redL = new THREE.PointLight(0xff0066,3,28)
+  redL.position.set(9,4,-4)
+  scene.add(redL)
+
+  const bodyGlow = new THREE.PointLight(0x00ffaa,10,12)
+  scene.add(bodyGlow)
+
+  const eyeGlow = new THREE.PointLight(0x00ff66,6,8)
+  scene.add(eyeGlow)
+
+  // Ground neon strips
+  for(let i=0;i<6;i++){
+    const strip = new THREE.Mesh(
+      new THREE.BoxGeometry(0.025,0.01,55),
+      new THREE.MeshBasicMaterial({color:0x00ff33,transparent:true,opacity:0.11-i*0.013})
+    )
+    strip.position.set((i-2.5)*3.2, 0.005, -8)
+    scene.add(strip)
+  }
+
+  // Resize
+  window.addEventListener('resize',()=>{
+    const w=W(), h=H()
+    camera.aspect=w/h
+    camera.updateProjectionMatrix()
+    renderer.setSize(w,h)
+  })
+
+  // Animation loop
+  let running=false, rafId
+
+  function tick(){
+    if(!running) return
+    rafId = requestAnimationFrame(tick)
+
+    const t    = performance.now()/1000
+    const walk = t * 3.2
+
+    // Lizard approaches from far, loops (-20 → +4, then fog-reset at -20)
+    const SPEED=1.6, RANGE=28
+    const cyc = (t*SPEED) % RANGE
+    lizard.position.z = cyc < 24 ? -20+cyc : -20
+    lizard.position.y = 0.70 + Math.sin(walk)*0.018
+
+    // Body sway
+    lizard.rotation.z = Math.sin(walk*0.5)*0.055
+    lizard.rotation.y = Math.sin(walk*0.25)*0.04
+
+    // Head nod
+    headGrp.rotation.x = Math.sin(walk*0.5)*0.09 - 0.12
+    headGrp.position.y  = 0.26 + Math.sin(walk*0.5)*0.035
+
+    // Tail wave (cascading)
+    tailGrp.rotation.y = Math.sin(walk*0.55)*0.28
+    tailSegs.forEach((s,i)=>{ s.rotation.y = Math.sin(walk*0.55+i*0.35)*(0.12*(i+1)) })
+
+    // Spine pulse
+    Mspine.emissiveIntensity = 0.9 + Math.sin(t*2.5)*0.35
+
+    // Legs diagonal gait
+    legObjs.forEach(lg=>{
+      const sw = Math.sin(walk+lg.phase)
+      lg.hip.rotation.x  = sw * 0.58
+      lg.knee.rotation.x = Math.max(0,sw) * -0.42
+    })
+
+    // Lights follow lizard
+    bodyGlow.position.set(lizard.position.x, lizard.position.y+0.9, lizard.position.z+0.2)
+    eyeGlow.position.set(lizard.position.x,  lizard.position.y+0.55, lizard.position.z+2.2)
+
+    // Camera tracks
+    camera.lookAt(lizard.position.x, lizard.position.y+0.4, lizard.position.z*0.25)
+
+    renderer.render(scene,camera)
+  }
+
+  // Start/stop when visible
+  const lObs = new IntersectionObserver(entries=>{
+    if(entries[0].isIntersecting){ if(!running){running=true;tick()} }
+    else{ running=false; cancelAnimationFrame(rafId) }
+  },{threshold:0.1})
+  lObs.observe(container)
 })()
 
 // ── Elevator
