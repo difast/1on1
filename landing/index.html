@@ -17,7 +17,10 @@
   --acc:#7C3AED;
 }
 html{scroll-behavior:smooth}
-body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--txt);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:#000;color:var(--txt);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+
+/* ── BLOCK CARDS */
+.block-card{margin:0 15px 15px;border-radius:18px;overflow:hidden}
 .df{font-family:'Playfair Display',Georgia,serif}
 
 /* ── NAV */
@@ -69,7 +72,7 @@ h1.hh{font-family:'Playfair Display',serif;font-size:clamp(48px,7.5vw,92px);font
 .tpit-msg b{color:var(--txt)}
 
 /* ── SHARED */
-.section{padding:100px 0}
+.section{padding:100px 0;background:var(--bg)}
 .wrap{max-width:1180px;margin:0 auto;padding:0 40px}
 .sec-badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;padding:5px 14px;border-radius:99px;margin-bottom:20px}
 h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-weight:700;line-height:1.05;letter-spacing:-.03em;margin-bottom:16px}
@@ -243,7 +246,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </nav>
 
 <!-- HERO -->
-<section class="hero" id="home">
+<section class="hero block-card" id="home" style="margin-top:0">
   <div class="orb orb-1"></div>
   <div class="orb orb-2"></div>
   <div class="orb orb-3"></div>
@@ -276,7 +279,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- ── MEETINGS -->
-<section class="section bg-blue" id="features">
+<section class="section bg-blue block-card" id="features">
   <div class="wrap">
     <div class="reveal">
       <div class="sec-badge badge-blue">01 — Встречи</div>
@@ -331,7 +334,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- ── TASKS -->
-<section class="section bg-green" id="how">
+<section class="section bg-green block-card" id="how">
   <div class="wrap">
     <div class="reveal">
       <div class="sec-badge badge-green">02 — Задачи</div>
@@ -383,7 +386,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- ── MOOD -->
-<section class="section bg-pink">
+<section class="section bg-pink block-card">
   <div class="wrap">
     <div class="reveal">
       <div class="sec-badge badge-pink">03 — Настроение</div>
@@ -439,7 +442,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- ── ANALYTICS -->
-<section class="section bg-cyan">
+<section class="section bg-cyan block-card">
   <div class="wrap">
     <div class="reveal">
       <div class="sec-badge badge-cyan">04 — Аналитика</div>
@@ -498,7 +501,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- ── AI PIT -->
-<section class="section bg-purple" id="pit">
+<section class="section bg-purple block-card" id="pit">
   <div class="wrap">
     <div class="reveal">
       <div class="sec-badge badge-purple">05 — AI-ассистент</div>
@@ -544,7 +547,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- PRICING -->
-<section class="pricing-section" id="pricing">
+<section class="pricing-section block-card" id="pricing">
   <div class="wrap">
     <div class="reveal" style="text-align:center">
       <h2 class="sh df" style="margin:0 auto">Выберите свой план</h2>
@@ -585,7 +588,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- TESTIMONIALS -->
-<section class="section">
+<section class="section block-card">
   <div class="wrap">
     <div class="reveal" style="text-align:center">
       <h2 class="sh df" style="margin:0 auto">Тимлиды о нас</h2>
@@ -618,7 +621,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- CTA -->
-<section class="cta-section">
+<section class="cta-section block-card">
   <div class="hero-badge reveal" style="display:inline-flex;margin-bottom:28px"><div class="bdot"></div>Начните за 5 минут</div>
   <h2 class="cta-h df reveal">Первая встреча —<br>через пять минут.</h2>
   <p class="cta-sub reveal">Никаких сложных настроек. Создайте команду и пригласите коллег прямо сейчас.</p>
@@ -628,7 +631,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
   </div>
 </section>
 
-<footer>
+<footer class="block-card">
   <a href="#" class="logo"><div class="logo-mark">1:1</div>OneOnOne</a>
   <div class="flinks">
     <a href="#features">Возможности</a><a href="#pricing">Тарифы</a>
