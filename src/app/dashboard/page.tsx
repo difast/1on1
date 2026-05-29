@@ -304,7 +304,7 @@ export default function Dashboard() {
         ) : (
           <>
             {/* Stats */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 16 }}>
+            <div className="stat-grid-3" style={{ marginBottom: 16 }}>
               {[
                 { label: "В команде", val: activeTeam.members.length, red: false, onClick: undefined },
                 { label: "Нужна встреча", val: urgent, red: urgent > 0, onClick: undefined },
@@ -421,7 +421,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20 }}>
+            <div className="action-grid" style={{ marginBottom: 20 }}>
               <button className="btn btn-purple" onClick={() => setShowLogMeeting(true)} style={{ padding: "10px 8px", fontSize: 13 }}>✍️ Записать</button>
               <button className="btn btn-ghost" onClick={() => setShowSchedule(true)} style={{ padding: "10px 8px", fontSize: 13 }}>📅 Запланировать</button>
               <button className="btn btn-ghost" onClick={() => setShowAddTask(true)} style={{ padding: "10px 8px", fontSize: 13 }}>+ Задача</button>

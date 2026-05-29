@@ -225,8 +225,48 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 .reveal-r.vis{opacity:1;transform:translateX(0)}
 .char{display:inline-block;will-change:transform,opacity}
 
-@media(max-width:960px){nav{padding:12px 20px}.nav-links{display:none}.wrap{padding:0 24px}.panel-grid{grid-template-columns:1fr}.panel-vis{border-left:none;border-top:1px solid var(--brd)}.tgrid{grid-template-columns:1fr}.pgrid{grid-template-columns:1fr 1fr}.cta-section{padding:80px 24px}footer{padding:28px 20px}}
-@media(max-width:560px){.pgrid{grid-template-columns:1fr}.hero-btns,.cta-btns{flex-direction:column;align-items:center}}
+@media(max-width:960px){
+  nav{padding:12px 20px}
+  .nav-links{display:none}
+  .wrap{padding:0 20px}
+  .panel-grid{grid-template-columns:1fr}
+  .panel-vis{border-left:none;border-top:1px solid var(--brd);min-height:240px}
+  .tgrid{grid-template-columns:1fr}
+  .pgrid{grid-template-columns:1fr 1fr}
+  .cta-section{padding:80px 24px}
+  footer{padding:28px 20px}
+  .section{padding:72px 0}
+  .panel-text{padding:36px 28px}
+  .block-card{margin:0 10px 10px;border-radius:16px}
+  .hero{padding:60px 20px 80px}
+}
+@media(max-width:640px){
+  h1.hh{font-size:clamp(30px,9vw,92px)}
+  .hero-sub{font-size:15px;max-width:100%}
+  .hero-btns,.cta-btns{flex-direction:column;align-items:stretch;width:100%;max-width:320px}
+  .hero-btns .btn,.cta-btns .btn{width:100%;justify-content:center}
+  .hero-term{border-radius:10px}
+  .tbody{padding:12px 14px;font-size:12px}
+  .section{padding:56px 0}
+  .panel-text{padding:28px 20px}
+  .panel-vis{padding:24px 16px;min-height:200px}
+  .stat-pill{flex-direction:column;gap:6px;text-align:center;align-items:center}
+  .stat-n{font-size:36px}
+  h2.sh{font-size:clamp(24px,7vw,52px)}
+  .sh-sub{font-size:15px}
+  .block-card{margin:0 8px 8px;border-radius:12px}
+  .pricing-section{padding:56px 0}
+  .pgrid{grid-template-columns:1fr}
+  .tcard{padding:20px 16px}
+  .tquote{font-size:14px}
+  .cta-h{font-size:clamp(26px,8vw,72px)}
+  .cta-sub{font-size:15px}
+  footer{flex-direction:column;gap:12px}
+  .flinks{gap:12px}
+  nav{padding:10px 14px}
+  .btn-xl{padding:13px 28px;font-size:15px}
+  .btn-lg{padding:11px 22px;font-size:14px}
+}
 </style>
 </head>
 <body>

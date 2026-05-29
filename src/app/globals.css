@@ -205,3 +205,28 @@ textarea { resize: vertical; }
   animation: fadeInScale 0.2s ease;
   box-shadow: 0 4px 20px rgba(0,0,0,0.15);
 }
+
+.action-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 8px;
+}
+
+.stat-grid-3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+}
+
+@media(max-width:480px) {
+  .modal { padding: 20px 16px; border-radius: 18px 18px 0 0; }
+  .modal-center { padding: 20px 16px; }
+  .btn { padding: 10px 14px; font-size: 13px; }
+  .input { padding: 11px 12px; font-size: 14px; }
+  .card { border-radius: 14px; }
+  .toast { font-size: 13px; padding: 9px 16px; max-width: calc(100vw - 32px); white-space: normal; text-align: center; }
+  .action-grid { grid-template-columns: 1fr 1fr; }
+  .action-grid .btn:last-child { grid-column: 1 / -1; }
+  .stat-grid-3 { grid-template-columns: 1fr 1fr; }
+  .stat-grid-3 > :last-child { grid-column: 1 / -1; }
+}

@@ -92,8 +92,8 @@ export default function MemberPage() {
       <div style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
         <div style={{ fontWeight: 600, fontSize: 16 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-          <button onClick={() => setShowRequestMeeting(true)} className="btn btn-purple" style={{ padding: "7px 14px", fontSize: 13 }}>
-            + Запросить встречу
+          <button onClick={() => setShowRequestMeeting(true)} className="btn btn-purple" style={{ padding: "7px 12px", fontSize: 13, whiteSpace: "nowrap" }}>
+            + Встреча
           </button>
           <button onClick={() => supabase.auth.signOut().then(() => router.push("/login"))}
             style={{ fontSize: 13, color: "#999", background: "none", border: "none" }}>Выйти</button>
