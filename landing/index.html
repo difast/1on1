@@ -11,16 +11,17 @@
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#0a2020;
-  --bg1:#102a2a;
-  --bg2:#163434;
-  --acc:#2dd4bf;
-  --acc2:#14b8a6;
+  --bg:#34798C;
+  --bg1:#2c6578;
+  --bg2:#245263;
+  --acc:#ffffff;
+  --acc2:#d4eef4;
+  --dark:#1a3d48;
   --txt:#fff;
-  --txt2:rgba(255,255,255,.58);
-  --txt3:rgba(255,255,255,.28);
-  --brd:rgba(255,255,255,.1);
-  --brd2:rgba(255,255,255,.18);
+  --txt2:rgba(255,255,255,.68);
+  --txt3:rgba(255,255,255,.38);
+  --brd:rgba(255,255,255,.18);
+  --brd2:rgba(255,255,255,.3);
 }
 html{scroll-behavior:smooth}
 body{font-family:'Playfair Display',Georgia,serif;background:var(--bg);color:var(--txt);line-height:1.5;overflow-x:hidden;-webkit-font-smoothing:antialiased}
@@ -31,18 +32,18 @@ nav{
   display:flex;align-items:center;justify-content:space-between;
   padding:0 48px;height:64px;
   border-bottom:1px solid var(--brd);
-  background:rgba(10,32,32,.88);
+  background:rgba(52,121,140,.92);
   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
 }
 .logo{font-size:15px;font-weight:700;color:var(--txt);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:10px}
-.logo-mark{width:28px;height:28px;background:var(--acc);border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#0a2020;flex-shrink:0}
+.logo-mark{width:28px;height:28px;background:#fff;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#34798C;flex-shrink:0}
 .nav-links a{font-size:12px;color:var(--txt3);text-decoration:none;padding:8px 16px;transition:color .15s;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
 .nav-links a:hover{color:var(--txt)}
 .nav-r{display:flex;gap:8px}
 .btn{display:inline-flex;align-items:center;justify-content:center;padding:9px 22px;border-radius:5px;font-weight:700;font-size:12px;cursor:pointer;transition:all .18s;text-decoration:none;border:none;font-family:'Playfair Display',Georgia,serif;white-space:nowrap;letter-spacing:.05em;text-transform:uppercase}
-.btn-ghost{background:transparent;color:var(--txt2);border:1px solid var(--brd2)}
-.btn-ghost:hover{background:rgba(255,255,255,.06);color:var(--txt)}
-.btn-acc{background:var(--acc);color:#0a2020}
+.btn-ghost{background:transparent;color:rgba(255,255,255,.8);border:1px solid var(--brd2)}
+.btn-ghost:hover{background:rgba(255,255,255,.12);color:#fff}
+.btn-acc{background:#fff;color:#34798C}
 .btn-acc:hover{background:var(--acc2);transform:translateY(-1px)}
 .btn-lg{padding:13px 32px;font-size:13px}
 .btn-xl{padding:16px 40px;font-size:14px}
@@ -55,67 +56,40 @@ nav{
 }
 .hero-img{
   position:absolute;inset:0;z-index:0;
-  background:url('./images/hero.jpg') center/cover no-repeat,
-             linear-gradient(135deg,#1a8c8c 0%,#0d5555 40%,#063030 100%);
+  background:url('./images/hero.jpeg') center/cover no-repeat,
+             linear-gradient(160deg,#3d8fa3 0%,#34798C 50%,#245263 100%);
   will-change:transform;
 }
 .hero-overlay{
   position:absolute;inset:0;z-index:1;
   background:linear-gradient(180deg,
-    rgba(8,28,28,.78) 0%,
-    rgba(8,28,28,.55) 40%,
-    rgba(8,28,28,.82) 100%);
+    rgba(26,61,72,.72) 0%,
+    rgba(26,61,72,.45) 45%,
+    rgba(26,61,72,.78) 100%);
 }
 .hero>*:not(.hero-img):not(.hero-overlay){position:relative;z-index:2}
 
-.hero-eyebrow{
-  font-size:10px;font-weight:700;color:var(--acc);
-  letter-spacing:.28em;text-transform:uppercase;
-  margin-bottom:32px;opacity:0;
-}
-h1.ht{
-  font-size:clamp(44px,6.5vw,96px);
-  font-weight:700;line-height:.96;letter-spacing:-.03em;
-  margin-bottom:32px;opacity:0;
-}
-.ht em{font-style:italic;color:var(--acc)}
-.hero-sub{
-  font-size:17px;color:var(--txt2);
-  max-width:440px;line-height:1.75;font-weight:700;
-  margin:0 auto 44px;opacity:0;
-}
+.hero-eyebrow{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);letter-spacing:.28em;text-transform:uppercase;margin-bottom:32px;opacity:0}
+h1.ht{font-size:clamp(44px,6.5vw,96px);font-weight:700;line-height:.96;letter-spacing:-.03em;margin-bottom:32px;opacity:0}
+.ht em{font-style:italic;color:#fff}
+.hero-sub{font-size:17px;color:rgba(255,255,255,.75);max-width:440px;line-height:1.75;font-weight:700;margin:0 auto 44px;opacity:0}
 .hero-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;opacity:0}
-.scroll-hint{
-  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
-  display:flex;flex-direction:column;align-items:center;gap:10px;z-index:2;
-  opacity:0;
-}
-.scroll-line{width:1px;height:50px;background:linear-gradient(to bottom,transparent,rgba(45,212,191,.5),transparent);animation:sline 2.4s ease-in-out infinite}
-.scroll-text{font-size:9px;color:rgba(45,212,191,.5);letter-spacing:.22em;text-transform:uppercase}
+.scroll-hint{position:absolute;bottom:32px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:10px;z-index:2;opacity:0}
+.scroll-line{width:1px;height:50px;background:linear-gradient(to bottom,transparent,rgba(255,255,255,.4),transparent);animation:sline 2.4s ease-in-out infinite}
+.scroll-text{font-size:9px;color:rgba(255,255,255,.4);letter-spacing:.22em;text-transform:uppercase}
 @keyframes sline{0%,100%{opacity:.3}50%{opacity:1}}
 
 /* ── SHARED */
 .section{padding:120px 0}
 .wrap{max-width:1100px;margin:0 auto;padding:0 48px}
-.sec-label{
-  font-size:9px;font-weight:700;color:var(--acc);
-  letter-spacing:.26em;text-transform:uppercase;
-  margin-bottom:28px;display:flex;align-items:center;gap:16px;
-}
-.sec-label::after{content:'';flex:1;height:1px;background:rgba(45,212,191,.2);max-width:64px}
-h2.st{
-  font-size:clamp(36px,4.8vw,66px);
-  font-weight:700;line-height:.94;letter-spacing:-.03em;margin-bottom:20px;
-  overflow:hidden;
-}
+.sec-label{font-size:9px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.26em;text-transform:uppercase;margin-bottom:28px;display:flex;align-items:center;gap:16px}
+.sec-label::after{content:'';flex:1;height:1px;background:var(--brd);max-width:64px}
+h2.st{font-size:clamp(36px,4.8vw,66px);font-weight:700;line-height:.94;letter-spacing:-.03em;margin-bottom:20px;overflow:hidden}
 .st-sub{font-size:16px;color:var(--txt2);max-width:400px;line-height:1.75;font-weight:700}
 
 /* ── FEATURES */
 .feat-section{background:var(--bg);border-top:1px solid var(--brd)}
-.feat-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--brd);margin-top:72px;
-}
+.feat-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--brd);margin-top:72px}
 .feat-item{
   padding:52px 36px;border-right:1px solid var(--brd);border-bottom:1px solid var(--brd);
   position:relative;overflow:hidden;transition:background .25s;
@@ -123,83 +97,41 @@ h2.st{
 .feat-item:nth-child(3n){border-right:none}
 .feat-item:nth-child(n+4){border-bottom:none}
 .feat-item:hover{background:var(--bg1)}
-.feat-item::before{
-  content:'';position:absolute;inset:0;
-  background:radial-gradient(ellipse at 20% 20%,rgba(45,212,191,.06),transparent 65%);
-  opacity:0;transition:opacity .3s;pointer-events:none;
-}
+.feat-item::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 20% 20%,rgba(255,255,255,.04),transparent 65%);opacity:0;transition:opacity .3s;pointer-events:none}
 .feat-item:hover::before{opacity:1}
 .feat-num{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:.18em;text-transform:uppercase;margin-bottom:32px}
-.feat-ghost{
-  position:absolute;right:20px;bottom:12px;
-  font-size:clamp(60px,8vw,88px);font-weight:700;font-style:italic;
-  color:rgba(45,212,191,.04);letter-spacing:-.06em;line-height:1;
-  transition:color .3s;pointer-events:none;user-select:none;
-}
-.feat-item:hover .feat-ghost{color:rgba(45,212,191,.09)}
+.feat-ghost{position:absolute;right:20px;bottom:12px;font-size:clamp(60px,8vw,88px);font-weight:700;font-style:italic;color:rgba(255,255,255,.06);letter-spacing:-.06em;line-height:1;transition:color .3s;pointer-events:none;user-select:none}
+.feat-item:hover .feat-ghost{color:rgba(255,255,255,.1)}
 .feat-item h3{font-size:clamp(17px,1.8vw,22px);font-weight:700;letter-spacing:-.02em;margin-bottom:14px;line-height:1.1}
 .feat-item p{font-size:14px;color:var(--txt2);line-height:1.8}
 .feat-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:22px}
-.feat-tag{
-  font-size:9px;font-weight:700;color:rgba(45,212,191,.5);
-  letter-spacing:.1em;border:1px solid rgba(45,212,191,.18);
-  padding:4px 10px;border-radius:3px;text-transform:uppercase;
-  transition:all .2s;
-}
-.feat-item:hover .feat-tag{border-color:rgba(45,212,191,.4);color:var(--acc)}
+.feat-tag{font-size:9px;font-weight:700;color:rgba(255,255,255,.55);letter-spacing:.1em;border:1px solid var(--brd);padding:4px 10px;border-radius:3px;text-transform:uppercase;transition:all .2s}
+.feat-item:hover .feat-tag{border-color:var(--brd2);color:rgba(255,255,255,.85)}
 
 /* ── HOW */
 .how-section{background:var(--bg1);border-top:1px solid var(--brd)}
-.how-grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  border:1px solid var(--brd);margin-top:72px;
-}
-.how-item{
-  padding:52px 36px 64px;border-right:1px solid var(--brd);
-  transition:background .25s;overflow:hidden;
-}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--brd);margin-top:72px}
+.how-item{padding:52px 36px 64px;border-right:1px solid var(--brd);transition:background .25s;overflow:hidden}
 .how-item:last-child{border-right:none}
 .how-item:hover{background:var(--bg2)}
-.how-big{
-  font-size:clamp(68px,9vw,120px);font-weight:700;font-style:italic;
-  color:rgba(45,212,191,.05);letter-spacing:-.07em;line-height:1;
-  margin-bottom:32px;transition:color .3s;
-  overflow:hidden;
-}
-.how-item:hover .how-big{color:rgba(45,212,191,.11)}
+.how-big{font-size:clamp(68px,9vw,120px);font-weight:700;font-style:italic;color:rgba(255,255,255,.06);letter-spacing:-.07em;line-height:1;margin-bottom:32px;transition:color .3s;overflow:hidden}
+.how-item:hover .how-big{color:rgba(255,255,255,.12)}
 .how-item h3{font-size:19px;font-weight:700;letter-spacing:-.02em;margin-bottom:14px}
 .how-item p{font-size:14px;color:var(--txt2);line-height:1.8}
 
 /* ── PIT */
 .pit-section{background:var(--bg);border-top:1px solid var(--brd)}
-.pit-inner{
-  display:grid;grid-template-columns:1fr 1fr;gap:72px;
-  align-items:center;padding:120px 48px;max-width:1100px;margin:0 auto;
-}
+.pit-inner{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;padding:120px 48px;max-width:1100px;margin:0 auto}
 .pit-heading{font-size:clamp(32px,4vw,56px);font-weight:700;letter-spacing:-.03em;line-height:.95;margin-bottom:24px}
 .pit-desc{font-size:16px;color:var(--txt2);line-height:1.8;margin-bottom:40px;max-width:360px;font-weight:700}
 .pit-chat{display:flex;flex-direction:column;gap:10px}
 .chat-bubble{padding:13px 17px;border-radius:8px;font-size:14px;line-height:1.7;border:1px solid var(--brd)}
 .chat-user{background:var(--bg1);color:var(--txt2)}
-.chat-pit{background:rgba(45,212,191,.05);border-color:rgba(45,212,191,.2);color:var(--txt);display:flex;gap:11px;align-items:flex-start}
-.pit-icon{width:25px;height:25px;border-radius:50%;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#0a2020;flex-shrink:0;margin-top:1px}
-.pit-visual{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;
-  padding:52px 36px;border:1px solid var(--brd);background:var(--bg1);
-  position:relative;overflow:hidden;
-}
-.pit-visual::before{
-  content:'';position:absolute;
-  width:260px;height:260px;
-  background:radial-gradient(ellipse,rgba(45,212,191,.1),transparent 65%);
-  border-radius:50%;pointer-events:none;
-}
-.pit-avatar{
-  width:108px;height:108px;border-radius:50%;
-  background:radial-gradient(ellipse at 35% 28%,#a7f3d0 0%,#2dd4bf 40%,#0d9488 70%,#064e3b 100%);
-  position:relative;animation:pitfloat 4s ease-in-out infinite;
-  box-shadow:0 0 40px rgba(45,212,191,.22);z-index:1;
-}
+.chat-pit{background:rgba(255,255,255,.07);border-color:var(--brd2);color:#fff;display:flex;gap:11px;align-items:flex-start}
+.pit-icon{width:25px;height:25px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;color:#34798C;flex-shrink:0;margin-top:1px}
+.pit-visual{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;padding:52px 36px;border:1px solid var(--brd);background:var(--bg1);position:relative;overflow:hidden}
+.pit-visual::before{content:'';position:absolute;width:260px;height:260px;background:radial-gradient(ellipse,rgba(255,255,255,.07),transparent 65%);border-radius:50%;pointer-events:none}
+.pit-avatar{width:108px;height:108px;border-radius:50%;background:radial-gradient(ellipse at 35% 28%,#f0fafa 0%,#7dd3e8 40%,#34798C 70%,#1a3d48 100%);position:relative;animation:pitfloat 4s ease-in-out infinite;box-shadow:0 0 40px rgba(255,255,255,.15);z-index:1}
 @keyframes pitfloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 .peye{position:absolute;border-radius:50%;background:#fff;animation:pitblink 4.5s ease-in-out infinite}
 @keyframes pitblink{0%,88%,100%{transform:scaleY(1)}93%{transform:scaleY(.06)}}
@@ -213,57 +145,45 @@ h2.st{
 .pcard:last-child{border-right:none}
 .pcard:hover{background:var(--bg2)}
 .pcard.pop{background:var(--bg2)}
-.pcard.pop:hover{background:var(--bg)}
-.pbadge{font-size:8px;font-weight:700;color:var(--acc);letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;display:block}
+.pcard.pop:hover{background:var(--dark)}
+.pbadge{font-size:8px;font-weight:700;color:#fff;letter-spacing:.2em;text-transform:uppercase;margin-bottom:14px;display:block}
 .pname{font-size:9px;font-weight:700;color:var(--txt3);letter-spacing:.2em;text-transform:uppercase;margin-bottom:22px}
-.pname.acc{color:var(--acc)}
+.pname.acc{color:#fff}
 .pprice{font-size:44px;font-weight:700;letter-spacing:-.05em;line-height:1;margin-bottom:6px}
 .pprice small{font-size:13px;font-weight:700;color:var(--txt3)}
 .pdesc{font-size:12px;color:var(--txt3);margin-bottom:30px;font-weight:700}
 .plist{list-style:none;margin-bottom:34px;display:flex;flex-direction:column;gap:10px}
 .plist li{font-size:13px;color:var(--txt2);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
-.plist li::before{content:'—';color:rgba(45,212,191,.4);flex-shrink:0;font-size:12px;margin-top:1px}
+.plist li::before{content:'—';color:rgba(255,255,255,.35);flex-shrink:0;font-size:12px;margin-top:1px}
 .plist li.dim{color:var(--txt3);opacity:.5}
 .pbtn{display:block;width:100%;padding:12px;border-radius:4px;text-align:center;font-weight:700;font-size:12px;border:1px solid var(--brd2);background:transparent;color:var(--txt2);text-decoration:none;transition:all .18s;font-family:'Playfair Display',Georgia,serif;cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
-.pbtn:hover{background:rgba(255,255,255,.05);color:var(--txt)}
-.pbtn.prim{background:var(--acc);border-color:transparent;color:#0a2020}
+.pbtn:hover{background:rgba(255,255,255,.08);color:#fff}
+.pbtn.prim{background:#fff;border-color:transparent;color:#34798C}
 .pbtn.prim:hover{background:var(--acc2)}
 
 /* ── CTA */
-.cta-section{
-  padding:160px 40px;text-align:center;
-  background:var(--bg);border-top:1px solid var(--brd);
-  position:relative;overflow:hidden;
-}
-.cta-section::before{
-  content:'';position:absolute;top:50%;left:50%;
-  transform:translate(-50%,-50%);
-  width:700px;height:400px;
-  background:radial-gradient(ellipse,rgba(45,212,191,.08),transparent 68%);
-  pointer-events:none;
-}
+.cta-section{padding:160px 40px;text-align:center;background:var(--bg);border-top:1px solid var(--brd);position:relative;overflow:hidden}
+.cta-section::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:700px;height:400px;background:radial-gradient(ellipse,rgba(255,255,255,.06),transparent 68%);pointer-events:none}
 .cta-section>*{position:relative;z-index:1}
 .cta-h{font-size:clamp(52px,9vw,120px);font-weight:700;letter-spacing:-.05em;line-height:.9;margin-bottom:44px;overflow:hidden}
-.cta-em{font-style:italic;color:var(--acc)}
+.cta-em{font-style:italic;color:rgba(255,255,255,.85)}
 .cta-sub{font-size:16px;color:var(--txt2);margin-bottom:48px;line-height:1.75;font-weight:700}
 .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
 
 /* ── FOOTER */
-footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;background:var(--bg)}
+footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:20px;background:var(--bg1)}
 .flinks{display:flex;gap:24px;flex-wrap:wrap}
 .flinks a{font-size:11px;color:var(--txt3);text-decoration:none;transition:color .15s;font-weight:700;letter-spacing:.07em;text-transform:uppercase}
 .flinks a:hover{color:var(--txt2)}
 .fcopy{font-size:11px;color:var(--txt3);font-weight:700}
 
-/* ── REVEAL (for non-char elements) */
+/* ── REVEAL */
 .reveal{opacity:0;transform:translateY(32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal.vis{opacity:1;transform:translateY(0)}
 .reveal-l{opacity:0;transform:translateX(-32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal-l.vis{opacity:1;transform:translateX(0)}
 .reveal-r{opacity:0;transform:translateX(32px);transition:opacity .9s cubic-bezier(.16,1,.3,1),transform .9s cubic-bezier(.16,1,.3,1)}
 .reveal-r.vis{opacity:1;transform:translateX(0)}
-
-/* char spans injected by JS */
 .char{display:inline-block;will-change:transform,opacity}
 
 /* ── RESPONSIVE */
@@ -318,9 +238,7 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
   <div class="hero-img" id="heroImg"></div>
   <div class="hero-overlay"></div>
   <div class="hero-eyebrow" id="heroEyebrow">AI-платформа для команд</div>
-  <h1 class="ht" id="heroTitle">
-    1-on-1 <em>встречи</em><br>нового поколения
-  </h1>
+  <h1 class="ht" id="heroTitle">1-on-1 <em>встречи</em><br>нового поколения</h1>
   <p class="hero-sub" id="heroSub">Умное расписание, AI-ассистент Пит, аналитика команды и трекинг задач — всё в одном инструменте.</p>
   <div class="hero-actions" id="heroActions">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Начать бесплатно</a>
@@ -341,39 +259,39 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
       <p class="st-sub" style="margin-top:16px">Встречи, задачи, аналитика — единая система в одном окне.</p>
     </div>
     <div class="feat-grid">
-      <div class="feat-item reveal">
+      <div class="feat-item">
         <div class="feat-num">01 — Встречи</div>
         <h3>Умное расписание с AI</h3>
         <p>AI предложит оптимальное время на основе загрузки команды. Транскрипты, заметки и история — в одном месте.</p>
         <div class="feat-tags"><span class="feat-tag">AI слоты</span><span class="feat-tag">Транскрипты</span><span class="feat-tag">Календарь</span></div>
         <div class="feat-ghost">94%</div>
       </div>
-      <div class="feat-item reveal" style="transition-delay:.07s">
+      <div class="feat-item">
         <div class="feat-num">02 — Задачи</div>
         <h3>Задачи и подзадачи</h3>
         <p>Ставьте на встречах. AI декомпозирует на шаги. Авто-завершение при выполнении всех подзадач.</p>
         <div class="feat-ghost">∞</div>
       </div>
-      <div class="feat-item reveal" style="transition-delay:.14s">
+      <div class="feat-item">
         <div class="feat-num">03 — Настроение</div>
         <h3>Mood tracking</h3>
         <p>Ежедневные опросы, AI-анализ ответов, тренды за 12 недель и алерты при снижении настроения.</p>
         <div class="feat-ghost">12W</div>
       </div>
-      <div class="feat-item reveal" style="transition-delay:.07s">
+      <div class="feat-item">
         <div class="feat-num">04 — Аналитика</div>
         <h3>Дашборд тимлида</h3>
         <p>Частота встреч, зоны риска, активность за 12 недель. Экспорт CSV.</p>
         <div class="feat-tags"><span class="feat-tag">CSV</span><span class="feat-tag">Зоны риска</span></div>
         <div class="feat-ghost">→</div>
       </div>
-      <div class="feat-item reveal" style="transition-delay:.14s">
+      <div class="feat-item">
         <div class="feat-num">05 — Время</div>
         <h3>Учёт рабочего времени</h3>
         <p>Кнопки прихода и ухода. Тимлид видит статистику по команде в аналитике.</p>
         <div class="feat-ghost">8H</div>
       </div>
-      <div class="feat-item reveal" style="transition-delay:.21s">
+      <div class="feat-item">
         <div class="feat-num">06 — Уведомления</div>
         <h3>Умные уведомления</h3>
         <p>Напоминания о встречах, статусы задач, изменения настроения. Только важное.</p>
@@ -391,17 +309,17 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
       <h2 class="st split-chars">Три шага до первой встречи</h2>
     </div>
     <div class="how-grid">
-      <div class="how-item reveal">
+      <div class="how-item">
         <div class="how-big">01</div>
         <h3>Создайте команду</h3>
         <p>Зарегистрируйтесь и создайте команду. Участники присоединяются по инвайт-коду — без сложных настроек.</p>
       </div>
-      <div class="how-item reveal" style="transition-delay:.1s">
+      <div class="how-item">
         <div class="how-big">02</div>
         <h3>Запланируйте встречу</h3>
         <p>AI предложит оптимальное время. Подтвердите — встреча создана с уведомлениями и календарной ссылкой.</p>
       </div>
-      <div class="how-item reveal" style="transition-delay:.2s">
+      <div class="how-item">
         <div class="how-big">03</div>
         <h3>Развивайте команду</h3>
         <p>Аналитика покажет прогресс каждого. Задачи, настроение и статистика — в одном окне.</p>
@@ -415,7 +333,7 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
   <div class="pit-inner">
     <div class="reveal-l">
       <div class="sec-label">AI-ассистент</div>
-      <h2 class="pit-heading split-chars">Познакомьтесь с <em style="color:var(--acc)">Питом</em></h2>
+      <h2 class="pit-heading split-chars">Познакомьтесь с Питом</h2>
       <p class="pit-desc">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
       <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-lg">Попробовать Пита</a>
     </div>
@@ -485,14 +403,14 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
         <a href="https://1on1-production-bb3b.up.railway.app" class="pbtn">Выбрать Max</a>
       </div>
       <div class="pcard">
-        <div class="pname" style="color:rgba(167,139,250,.75)">Enterprise</div>
+        <div class="pname" style="color:rgba(200,180,255,.7)">Enterprise</div>
         <div class="pprice" style="font-size:28px;margin-top:10px">По запросу</div>
         <div class="pdesc">Для организаций</div>
         <ul class="plist">
           <li>Неограниченно</li><li>SLA 99.9%</li><li>On-premise деплой</li>
           <li>SSO / SAML</li><li>Поддержка 24/7</li><li>Кастомная интеграция</li>
         </ul>
-        <a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(167,139,250,.2);color:rgba(167,139,250,.7)">Связаться</a>
+        <a href="mailto:hello@oneonone.app" class="pbtn" style="border-color:rgba(200,180,255,.2);color:rgba(200,180,255,.65)">Связаться</a>
       </div>
     </div>
   </div>
@@ -500,7 +418,7 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
 
 <!-- CTA -->
 <section class="cta-section">
-  <div class="cta-h reveal split-chars">Начните прямо <span class="cta-em">сейчас.</span></div>
+  <div class="cta-h reveal split-chars">Начните <span class="cta-em">прямо</span> сейчас.</div>
   <p class="cta-sub reveal" style="transition-delay:.1s">Первая встреча — через пять минут. Никаких сложных настроек.</p>
   <div class="cta-btns reveal" style="transition-delay:.2s">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Создать аккаунт</a>
@@ -524,17 +442,15 @@ footer{border-top:1px solid var(--brd);padding:40px 48px;display:flex;align-item
 // ── 1. HERO PARALLAX (scroll-driven)
 const heroImg = document.getElementById('heroImg')
 let ticking = false
-function onScroll(){
+window.addEventListener('scroll', function(){
   if(!ticking){
-    requestAnimationFrame(()=>{
-      const y = window.scrollY
-      heroImg.style.transform = `translateY(${y * 0.38}px)`
+    requestAnimationFrame(function(){
+      heroImg.style.transform = 'translateY(' + (window.scrollY * 0.38) + 'px)'
       ticking = false
     })
     ticking = true
   }
-}
-window.addEventListener('scroll', onScroll, {passive:true})
+}, {passive:true})
 
 // ── 2. HERO ENTRANCE (Anime.js)
 ;(function(){
@@ -547,16 +463,14 @@ window.addEventListener('scroll', onScroll, {passive:true})
     .add({targets:'#scrollHint',opacity:[0,.6],duration:900},'-=300')
 })()
 
-// ── 3. SPLIT CHARS — inject <span class="char"> around each character
+// ── 3. SPLIT CHARS — wrap each letter in <span class="char">
 function splitChars(el){
-  const html = el.innerHTML
-  // preserve existing HTML tags (like <em>), split only text nodes
   const tmp = document.createElement('div')
-  tmp.innerHTML = html
+  tmp.innerHTML = el.innerHTML
   function processNode(node){
-    if(node.nodeType === 3){ // text
+    if(node.nodeType === 3){
       const frag = document.createDocumentFragment()
-      node.textContent.split('').forEach(ch => {
+      node.textContent.split('').forEach(function(ch){
         if(ch === ' ' || ch === '\n'){
           frag.appendChild(document.createTextNode(ch))
         } else {
@@ -574,17 +488,14 @@ function splitChars(el){
   Array.from(tmp.childNodes).forEach(processNode)
   el.innerHTML = tmp.innerHTML
 }
+document.querySelectorAll('.split-chars').forEach(function(el){ splitChars(el) })
 
-document.querySelectorAll('.split-chars').forEach(el => splitChars(el))
-
-// ── 4. SCROLL-TRIGGERED CHAR ANIMATIONS + REVEAL
-const animQueue = new Set()
-const mainIo = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
+// ── 4. INTERSECTION OBSERVER — chars + reveal
+const mainIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
     if(!entry.isIntersecting) return
     const el = entry.target
     mainIo.unobserve(el)
-
     if(el.classList.contains('split-chars')){
       const chars = el.querySelectorAll('.char')
       if(chars.length && typeof anime !== 'undefined'){
@@ -592,26 +503,28 @@ const mainIo = new IntersectionObserver(entries => {
           targets: chars,
           opacity: [0, 1],
           translateY: [28, 0],
-          rotateZ: [4, 0],
-          duration: 700,
-          delay: anime.stagger(22, {start: 80}),
-          easing: 'easeOutExpo',
+          rotateZ: [3, 0],
+          duration: 650,
+          delay: anime.stagger(20, {start:60}),
+          easing: 'easeOutExpo'
         })
       }
     } else {
       el.classList.add('vis')
     }
   })
-}, {threshold: 0.08})
+}, {threshold:0.08})
 
-document.querySelectorAll('.reveal, .reveal-l, .reveal-r, .split-chars').forEach(el => mainIo.observe(el))
+document.querySelectorAll('.reveal,.reveal-l,.reveal-r,.split-chars').forEach(function(el){
+  mainIo.observe(el)
+})
 
-// ── 5. STAGGER GRID ITEMS on first view
-const gridIo = new IntersectionObserver(entries => {
-  entries.forEach(entry => {
+// ── 5. STAGGER GRID ITEMS
+const gridIo = new IntersectionObserver(function(entries){
+  entries.forEach(function(entry){
     if(!entry.isIntersecting) return
     gridIo.unobserve(entry.target)
-    const items = entry.target.querySelectorAll('.feat-item, .how-item, .pcard')
+    const items = entry.target.querySelectorAll('.feat-item,.how-item,.pcard')
     if(items.length && typeof anime !== 'undefined'){
       anime({
         targets: items,
@@ -619,16 +532,15 @@ const gridIo = new IntersectionObserver(entries => {
         translateY: [40, 0],
         duration: 800,
         delay: anime.stagger(80),
-        easing: 'easeOutExpo',
+        easing: 'easeOutExpo'
       })
     }
   })
-}, {threshold: 0.05})
-document.querySelectorAll('.feat-grid, .how-grid, .pgrid').forEach(g => {
-  // set items invisible initially
-  g.querySelectorAll('.feat-item, .how-item, .pcard').forEach(i => {
+}, {threshold:0.05})
+
+document.querySelectorAll('.feat-grid,.how-grid,.pgrid').forEach(function(g){
+  g.querySelectorAll('.feat-item,.how-item,.pcard').forEach(function(i){
     i.style.opacity = '0'
-    i.classList.remove('reveal') // let gridIo handle these
   })
   gridIo.observe(g)
 })
