@@ -4,6 +4,7 @@ import {
   TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
 import { supabase } from '../lib/supabase';
@@ -54,7 +55,7 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Оформление</Text>
           <TouchableOpacity style={styles.row} onPress={toggleTheme} activeOpacity={0.7}>
-            <Text style={styles.rowIcon}>{isDark ? '☀️' : '🌙'}</Text>
+            <View style={styles.rowIcon}><Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitle}>{isDark ? 'Светлая тема' : 'Тёмная тема'}</Text>
               <Text style={styles.rowSub}>Сейчас: {isDark ? 'тёмная' : 'светлая'}</Text>
@@ -74,11 +75,11 @@ export default function SettingsScreen() {
             onPress={() => { setShowPasswordSection(v => !v); setPwdError(''); setPwdSuccess(''); }}
             activeOpacity={0.7}
           >
-            <Text style={styles.rowIcon}>🔑</Text>
+            <View style={styles.rowIcon}><Ionicons name="key-outline" size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitle}>Сменить пароль</Text>
             </View>
-            <Text style={styles.rowChevron}>{showPasswordSection ? '▴' : '▾'}</Text>
+            <Ionicons name={showPasswordSection ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
 
           {showPasswordSection && (
@@ -123,19 +124,19 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Поддержка</Text>
           <TouchableOpacity style={styles.row} onPress={() => Alert.alert('Помощь', 'Обратитесь к администратору или напишите в поддержку.')} activeOpacity={0.7}>
-            <Text style={styles.rowIcon}>❓</Text>
+            <View style={styles.rowIcon}><Ionicons name="help-circle-outline" size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitle}>Помощь</Text>
               <Text style={styles.rowSub}>Справка и поддержка</Text>
             </View>
-            <Text style={styles.rowChevron}>›</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* Logout */}
         <View style={styles.section}>
           <TouchableOpacity style={[styles.row, styles.rowDanger]} onPress={handleLogout} activeOpacity={0.7}>
-            <Text style={styles.rowIcon}>🚪</Text>
+            <View style={styles.rowIcon}><Ionicons name="log-out-outline" size={18} color={colors.danger} /></View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitleDanger}>Выйти</Text>
             </View>
@@ -173,7 +174,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderTopWidth: 1, borderTopColor: c.border,
   },
   rowDanger: { borderTopWidth: 0 },
-  rowIcon: { fontSize: 18, width: 24, textAlign: 'center' },
+  rowIcon: { width: 24, alignItems: 'center', justifyContent: 'center' },
   rowBody: { flex: 1 },
   rowTitle: { fontSize: 15, fontWeight: '500', color: c.textPrimary },
   rowTitleDanger: { fontSize: 15, fontWeight: '500', color: c.danger },

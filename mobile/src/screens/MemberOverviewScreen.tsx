@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, updateNote, deleteNote } from '../lib/api';
+import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, updateNote, deleteNote, checkInArrive, checkInLeave, getTodayCheckin } from '../lib/api';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
@@ -45,6 +46,10 @@ export default function MemberOverviewScreen() {
   const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
   const [editNoteText, setEditNoteText] = useState('');
   const [editNoteLoading, setEditNoteLoading] = useState(false);
+
+  // Check-in
+  const [checkin, setCheckin] = useState<any>(null);
+  const [checkinLoading, setCheckinLoading] = useState(false);
 
   const findTeam = useCallback(async () => {
     try {
@@ -88,7 +93,10 @@ export default function MemberOverviewScreen() {
     } catch {}
   }, [user]);
 
-  useEffect(() => { findTeam(); loadNotes(); }, [user?.id]);
+  useEffect(() => {
+    findTeam(); loadNotes();
+    if (user) getTodayCheckin(user.id).then(setCheckin).catch(() => {});
+  }, [user?.id]);
 
   useEffect(() => {
     if (team) loadMeetings();
@@ -174,6 +182,20 @@ export default function MemberOverviewScreen() {
     }
   };
 
+  const handleArrive = async () => {
+    if (!user) return;
+    setCheckinLoading(true);
+    try { const c = await checkInArrive(user.id); setCheckin(c); } catch {}
+    finally { setCheckinLoading(false); }
+  };
+
+  const handleLeave = async () => {
+    if (!user) return;
+    setCheckinLoading(true);
+    try { const c = await checkInLeave(user.id); setCheckin(c); } catch {}
+    finally { setCheckinLoading(false); }
+  };
+
   if (loading) return <Spinner />;
 
   if (!team) {
@@ -183,7 +205,7 @@ export default function MemberOverviewScreen() {
           <Text style={styles.headerTitle}>Обзор</Text>
         </View>
         <View style={styles.joinContainer}>
-          <Text style={styles.joinIcon}>🔗</Text>
+          <View style={styles.joinIconWrap}><Ionicons name="link-outline" size={36} color={colors.accent} /></View>
           <Text style={styles.joinTitle}>Присоединитесь к команде</Text>
           <Text style={styles.joinDesc}>Введите код приглашения от вашего тимлида</Text>
           <View style={styles.joinForm}>
@@ -233,13 +255,13 @@ export default function MemberOverviewScreen() {
             style={[styles.actionBtn, showSearch && styles.actionBtnActive]}
             onPress={() => { setShowSearch(s => !s); setMemberSearch(''); }}
           >
-            <Text style={styles.actionBtnText}>🔍</Text>
+            <Ionicons name="search-outline" size={18} color={showSearch ? colors.accent : colors.textSecondary} />
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.actionBtn, showNoteForm && styles.actionBtnActive]}
             onPress={() => setShowNoteForm(s => !s)}
           >
-            <Text style={styles.actionBtnText}>📝</Text>
+            <Ionicons name="create-outline" size={18} color={showNoteForm ? colors.accent : colors.textSecondary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -259,6 +281,48 @@ export default function MemberOverviewScreen() {
             </View>
           </View>
         )}
+
+        {/* Check-in */}
+        <View style={styles.checkinCard}>
+          <View style={styles.checkinLeft}>
+            <View style={[styles.checkinDot, checkin?.arrived_at && !checkin?.left_at ? styles.checkinDotActive : checkin?.left_at ? styles.checkinDotLeft : {}]} />
+            <View>
+              <Text style={styles.checkinTitle}>
+                {checkin?.arrived_at && !checkin?.left_at
+                  ? 'Вы на рабочем месте'
+                  : checkin?.left_at
+                  ? 'Рабочий день завершён'
+                  : 'Не отмечено сегодня'}
+              </Text>
+              {checkin?.arrived_at && (
+                <Text style={styles.checkinTime}>
+                  Пришёл: {new Date(checkin.arrived_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                  {checkin.left_at ? `  ·  Ушёл: ${new Date(checkin.left_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                </Text>
+              )}
+            </View>
+          </View>
+          <View style={styles.checkinActions}>
+            {(!checkin?.arrived_at || checkin?.left_at) && (
+              <TouchableOpacity
+                style={[styles.checkinBtn, styles.checkinBtnArrive, checkinLoading && styles.btnDisabled]}
+                onPress={handleArrive} disabled={checkinLoading}
+              >
+                <Ionicons name="log-in-outline" size={14} color="#fff" />
+                <Text style={styles.checkinBtnText}>Пришёл</Text>
+              </TouchableOpacity>
+            )}
+            {checkin?.arrived_at && !checkin?.left_at && (
+              <TouchableOpacity
+                style={[styles.checkinBtn, styles.checkinBtnLeave, checkinLoading && styles.btnDisabled]}
+                onPress={handleLeave} disabled={checkinLoading}
+              >
+                <Ionicons name="log-out-outline" size={14} color="#fff" />
+                <Text style={styles.checkinBtnText}>Ушёл</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        </View>
 
         {/* Upcoming meetings */}
         {upcomingMeetings.length > 0 && (
@@ -469,7 +533,7 @@ export default function MemberOverviewScreen() {
         )}
 
         {upcomingMeetings.length === 0 && otherMembers.length === 0 && notes.length === 0 && (
-          <EmptyState icon="👥" title="Команда пуста" description="Ждём когда тимлид добавит участников" />
+          <EmptyState icon="people-outline" title="Команда пуста" description="Ждём когда тимлид добавит участников" />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -605,7 +669,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   // Join form
   joinContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  joinIcon: { fontSize: 48, marginBottom: 12 },
+  joinIconWrap: {
+    width: 72, height: 72, borderRadius: 20, backgroundColor: c.accentLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
   joinTitle: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginBottom: 6 },
   joinDesc: { fontSize: 14, color: c.textSecondary, textAlign: 'center', marginBottom: 24 },
   joinForm: {
@@ -630,4 +697,24 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 14, alignItems: 'center',
   },
   joinBtnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+
+  checkinCard: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    backgroundColor: c.surface, borderRadius: 14,
+    borderWidth: 1, borderColor: c.border, padding: 14, gap: 12,
+  },
+  checkinLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  checkinDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.border, flexShrink: 0 },
+  checkinDotActive: { backgroundColor: '#22c55e' },
+  checkinDotLeft: { backgroundColor: c.textMuted },
+  checkinTitle: { fontSize: 13, fontWeight: '600', color: c.textPrimary },
+  checkinTime: { fontSize: 11, color: c.textMuted, marginTop: 2 },
+  checkinActions: { flexDirection: 'row', gap: 8 },
+  checkinBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 4,
+    borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
+  },
+  checkinBtnArrive: { backgroundColor: '#22c55e' },
+  checkinBtnLeave: { backgroundColor: c.textMuted },
+  checkinBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
 });

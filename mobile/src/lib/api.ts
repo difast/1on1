@@ -21,7 +21,6 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
-      // FastAPI returns detail as string or array of validation errors
       const detail = Array.isArray(body?.detail)
         ? body.detail.map((d: any) => d.msg ?? JSON.stringify(d)).join('; ')
         : (body?.detail ?? body?.message ?? `HTTP ${res.status}`);
@@ -69,6 +68,8 @@ export const getMeetings = (params: Record<string, string | number>) => {
     .join('&');
   return req<any[]>(`/meetings/?${qs}`);
 };
+export const updateMeeting = (id: number, data: unknown) =>
+  req(`/meetings/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const requestMeeting = (data: unknown) =>
   req('/meetings/request', { method: 'POST', body: JSON.stringify(data) });
 export const confirmMeeting = (id: number) =>
@@ -100,6 +101,8 @@ export const getNotifications = (userId: number) =>
   req<any[]>(`/notifications/?user_id=${userId}`);
 export const getUnreadCount = (userId: number) =>
   req<{ unread_count: number }>(`/notifications/count?user_id=${userId}`);
+export const markRead = (id: number) =>
+  req(`/notifications/${id}/read`, { method: 'POST' });
 export const markAllRead = (userId: number) =>
   req(`/notifications/read-all?user_id=${userId}`, { method: 'POST' });
 
@@ -119,29 +122,14 @@ export const updateNote = (id: number, data: { content: string }) =>
 export const deleteNote = (id: number) =>
   req<any>(`/notes/${id}`, { method: 'DELETE' });
 
-// Meetings (extra)
-export const updateMeeting = (id: number, data: unknown) =>
-  req<any>(`/meetings/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
-
-// Notifications (extra)
-export const markRead = (id: number) =>
-  req(`/notifications/${id}/read`, { method: 'POST' });
-
-// Check-ins
+// Check-in
 export const checkInArrive = (userId: number) =>
-  req<any>('/checkins/arrive', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+  req<any>('/checkin/arrive', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
 export const checkInLeave = (userId: number) =>
-  req<any>('/checkins/leave', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+  req<any>('/checkin/leave', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
 export const getTodayCheckin = (userId: number) =>
-  req<any>(`/checkins/today/${userId}`);
+  req<any>(`/checkin/today/${userId}`);
 
-// Support tickets
-export const createSupportTicket = (data: unknown) =>
+// Support
+export const createSupportTicket = (data: { user_id: number; subject: string; body: string }) =>
   req<any>('/support/', { method: 'POST', body: JSON.stringify(data) });
-export const getUserTickets = (userId: number) =>
-  req<any[]>(`/support/user/${userId}`);
-export const userSendMessage = (id: number, body: string) =>
-  req<any>(`/support/${id}/message`, { method: 'POST', body: JSON.stringify({ body }) });
-export const userReadReply = (id: number) =>
-  req<any>(`/support/${id}/user-read`, { method: 'PATCH' });
-

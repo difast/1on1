@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -6,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AuthProvider, useAuth } from '../src/context/auth';
 import { ThemeProvider, useTheme } from '../src/context/theme';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { CallBanner } from '../src/components/CallBanner';
 
 function AppContent() {
   const { session, user, loading, activeRole, hasBothRoles } = useAuth();
@@ -45,13 +47,16 @@ function AppContent() {
 
   return (
     <BottomSheetModalProvider>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" />
-        <Stack.Screen name="(auth)" />
-        <Stack.Screen name="onboarding" />
-        <Stack.Screen name="role-select" />
-        <Stack.Screen name="(tabs)" />
-      </Stack>
+      <View style={{ flex: 1 }}>
+        <CallBanner />
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="index" />
+          <Stack.Screen name="(auth)" />
+          <Stack.Screen name="onboarding" />
+          <Stack.Screen name="role-select" />
+          <Stack.Screen name="(tabs)" />
+        </Stack>
+      </View>
       <StatusBar style={isDark ? 'light' : 'dark'} />
     </BottomSheetModalProvider>
   );

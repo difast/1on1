@@ -257,7 +257,7 @@ export default function LeadTasksScreen() {
               </View>
             )}
             {tasks.length === 0 && !showForm && (
-              <EmptyState icon="📋" title="Нет личных задач" description="Добавьте задачи для себя" />
+              <EmptyState icon="document-text-outline" title="Нет личных задач" description="Добавьте задачи для себя" />
             )}
             {active.length > 0 && (
               <View style={styles.section}>
@@ -278,7 +278,7 @@ export default function LeadTasksScreen() {
           <>
             {teamsLoading && <Spinner />}
             {!teamsLoading && teams.length === 0 && (
-              <EmptyState icon="👥" title="Нет команд" description="Создайте команду чтобы добавлять участников" />
+              <EmptyState icon="people-outline" title="Нет команд" description="Создайте команду чтобы добавлять участников" />
             )}
             {teams.map((team: any) => {
               const members = (team.members || []).filter((m: any) => m.user_id !== user!.id);

@@ -73,6 +73,14 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="notifications"
+        options={{
+          title: 'Уведомления',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="notifications-outline" size={size} color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="support"
         options={{
@@ -82,6 +90,7 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Профиль',
