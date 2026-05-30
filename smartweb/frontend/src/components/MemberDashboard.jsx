@@ -9,7 +9,6 @@ import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
-import DeadlineBanner from './DeadlineBanner'
 import UserCard from './UserCard'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
@@ -345,9 +344,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   return (
     <>
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      bannerTasks={tasks}
       onNavigate={type => {
-        if (type === 'new_task') setActiveTab('tasks')
-        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
+        if (type === 'new_task' || type === 'tasks') setActiveTab('tasks')
+        else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
       }}
 >
       <div style={{ maxWidth: 900 }}>
@@ -965,7 +965,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <MoodPrompt teamId={teamId} />
-    <DeadlineBanner tasks={tasks} />
     {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
     </>
   )

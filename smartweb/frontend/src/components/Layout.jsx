@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
@@ -12,7 +12,7 @@ const TOAST_META = {
   meeting_declined:   { icon: '✕', color: '#dc2626' },
 }
 
-export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate }) {
+export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -56,6 +56,54 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
 
+  // ── Deadline banner (inline, replaces DeadlineBanner component) ──────────────
+  const [deadlineBanner, setDeadlineBanner] = useState(null)
+  const deadlineDismissed = useRef(false)
+
+  useEffect(() => {
+    if (deadlineDismissed.current || !bannerTasks?.length) return
+    const now = new Date()
+    const upcoming = bannerTasks.filter(t => {
+      if (!t.due_date || t.completed || t.status === 'done') return false
+      const diff = (new Date(t.due_date) - now) / 86400000
+      return diff >= 0 && diff <= 2
+    })
+    if (upcoming.length === 0) return
+    deadlineDismissed.current = true
+    const first = upcoming[0]
+    const diff = Math.ceil((new Date(first.due_date) - now) / 86400000)
+    const dueLabel = diff <= 0 ? 'сегодня' : diff === 1 ? 'завтра' : 'послезавтра'
+    setDeadlineBanner({
+      title: upcoming.length === 1 ? `Срок задачи — ${dueLabel}` : `${upcoming.length} задач истекают скоро`,
+      body: (first.title || '').slice(0, 42) + ((first.title || '').length > 42 ? '…' : ''),
+      dismissAt: Date.now() + 5000,
+    })
+  }, [bannerTasks])
+
+  // ── Mood drop banner (inline, replaces MoodDropBanner component) ──────────────
+  const [moodBanner, setMoodBanner] = useState(null)
+  const moodDismissed = useRef(false)
+  const prevBannerTeamId = useRef(null)
+
+  useEffect(() => {
+    if (!bannerTeamId) return
+    if (prevBannerTeamId.current !== bannerTeamId) {
+      moodDismissed.current = false
+      prevBannerTeamId.current = bannerTeamId
+    }
+    if (moodDismissed.current) return
+    getTeamMoodSummary(bannerTeamId).then(({ data }) => {
+      if (moodDismissed.current) return
+      const days = (data.days || []).filter(d => d.avg !== null && d.count > 0)
+      if (days.length < 3) return
+      const last3 = days.slice(-3)
+      if (last3[0].avg > last3[1].avg && last3[1].avg > last3[2].avg) {
+        moodDismissed.current = true
+        setMoodBanner({ dismissAt: Date.now() + 5000 })
+      }
+    }).catch(() => {})
+  }, [bannerTeamId])
+
   useEffect(() => {
     if (!currentUser?.id) return
     let lastCount = 0
@@ -80,7 +128,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             if (fresh.length > 0) {
               fresh.forEach(n => shownToastIds.current.add(n.id))
               setToasts(prev => [
-                ...fresh.map(n => ({ ...n, dismissAt: Date.now() + 6000 })),
+                ...fresh.map(n => ({ ...n, dismissAt: Date.now() + 5000 })),
                 ...prev,
               ].slice(0, 5))
             }
@@ -141,12 +189,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   }, [])
 
   useEffect(() => {
-    if (toasts.length === 0) return
     const timer = setInterval(() => {
-      setToasts(prev => prev.filter(t => t.dismissAt > Date.now()))
-    }, 1000)
+      const now = Date.now()
+      setToasts(prev => prev.filter(t => t.dismissAt > now))
+      setDeadlineBanner(prev => (prev && prev.dismissAt <= now) ? null : prev)
+      setMoodBanner(prev => (prev && prev.dismissAt <= now) ? null : prev)
+    }, 500)
     return () => clearInterval(timer)
-  }, [toasts.length])
+  }, [])
 
   useEffect(() => {
     if (!currentUser?.id) return
@@ -502,20 +552,86 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </div>
       )}
 
-      {/* Toast stack — bottom right */}
-      {toasts.length > 0 && (
+      {/* Unified banner stack — bottom right, covers QuickWidget button */}
+      {(toasts.length > 0 || deadlineBanner || moodBanner) && (
         <div style={{
-          position: 'fixed', bottom: 24, right: 24, zIndex: 9000,
-          display: 'flex', flexDirection: 'column-reverse', gap: 10,
+          position: 'fixed', bottom: 24, right: 24, zIndex: 9100,
+          display: 'flex', flexDirection: 'column', gap: 10,
+          alignItems: 'flex-end',
           pointerEvents: 'none',
         }}>
+          {/* Mood drop banner */}
+          {moodBanner && (
+            <div
+              style={{
+                pointerEvents: 'all', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderLeft: '4px solid #ef4444',
+                borderRadius: 12,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                padding: '12px 14px',
+                minWidth: 280, maxWidth: 340,
+                animation: 'popIn 0.22s var(--ease-spring)',
+              }}
+              onClick={() => { setMoodBanner(null); if (onNavigate) onNavigate('meetings') }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                <polyline points="2,5 7,13 12,9 18,17" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <polyline points="14,17 18,17 18,13" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>Настроение падает 3 дня подряд</p>
+                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 3 }}>Нажмите, чтобы запланировать встречу</p>
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); setMoodBanner(null) }}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
+              >✕</button>
+            </div>
+          )}
+
+          {/* Deadline banner */}
+          {deadlineBanner && (
+            <div
+              style={{
+                pointerEvents: 'all', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 12,
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
+                borderLeft: '4px solid #f59e0b',
+                borderRadius: 12,
+                boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+                padding: '12px 14px',
+                minWidth: 280, maxWidth: 340,
+                animation: 'popIn 0.22s var(--ease-spring)',
+              }}
+              onClick={() => { setDeadlineBanner(null); if (onNavigate) onNavigate('tasks') }}
+            >
+              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}>
+                <circle cx="10" cy="10" r="8.5" stroke="#f59e0b" strokeWidth="1.5"/>
+                <path d="M10 6V10.5L13 12.5" stroke="#f59e0b" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{deadlineBanner.title}</p>
+                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{deadlineBanner.body}</p>
+              </div>
+              <button
+                onClick={e => { e.stopPropagation(); setDeadlineBanner(null) }}
+                style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
+              >✕</button>
+            </div>
+          )}
+
+          {/* Notification toasts */}
           {toasts.map(t => {
             const meta = TOAST_META[t.type] || { icon: '🔔', color: '#6b7280' }
             return (
               <div
                 key={t.id}
                 style={{
-                  pointerEvents: 'all',
+                  pointerEvents: 'all', cursor: 'pointer',
                   display: 'flex', alignItems: 'flex-start', gap: 12,
                   background: 'var(--color-surface)',
                   border: `1px solid ${meta.color}33`,
@@ -524,11 +640,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
                   padding: '12px 14px',
                   minWidth: 280, maxWidth: 340,
-                  cursor: 'pointer',
                   animation: 'popIn 0.22s var(--ease-spring)',
                 }}
                 onClick={() => {
+                  markRead(t.id).catch(() => {})
+                  setUnreadCount(c => Math.max(0, c - 1))
                   setToasts(prev => prev.filter(x => x.id !== t.id))
+                  setNotifications(prev => prev.map(n => n.id === t.id ? { ...n, read: true } : n))
                   if (onNavigate) onNavigate(t.type)
                 }}
               >
@@ -540,9 +658,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <button
                   onClick={e => { e.stopPropagation(); setToasts(prev => prev.filter(x => x.id !== t.id)) }}
                   style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
-                >
-                  ✕
-                </button>
+                >✕</button>
               </div>
             )
           })}

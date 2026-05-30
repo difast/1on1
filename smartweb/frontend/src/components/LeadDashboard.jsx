@@ -13,8 +13,6 @@ import QuickWidget from './QuickWidget'
 import JitsiCall from './JitsiCall'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
-import DeadlineBanner from './DeadlineBanner'
-import MoodDropBanner from './MoodDropBanner'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [activeView, setActiveView] = useState('teams')
@@ -675,9 +673,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   return (
     <>
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
+      bannerTasks={myTasks}
+      bannerTeamId={selectedTeamId}
       onNavigate={type => {
-        if (type === 'new_task') setActiveView('tasks')
-        else if (['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
+        if (type === 'new_task' || type === 'tasks') setActiveView('tasks')
+        else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
       }}
 >
       <div style={{ maxWidth: 1100 }}>
@@ -1716,8 +1716,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => { setActiveCall(null); loadMyMeetings() }}
       />
     )}
-    <DeadlineBanner tasks={myTasks} />
-    <MoodDropBanner teamId={selectedTeamId} />
 
     {rescheduleModal && (
       <div className="overlay-center" onClick={() => setRescheduleModal(null)}>
