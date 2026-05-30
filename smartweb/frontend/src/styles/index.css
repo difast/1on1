@@ -532,6 +532,7 @@ textarea.input { resize: vertical; min-height: 90px; }
   .header { padding: 0 14px; }
 
   .app-main { padding: 16px 13px !important; }
+  .admin-main { padding: 20px 14px !important; }
 
   /* Page headers: title row + toolbar stack vertically */
   .page-header {

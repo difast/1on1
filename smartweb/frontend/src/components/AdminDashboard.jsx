@@ -116,7 +116,7 @@ export default function AdminDashboard({ onLogout }) {
         <button onClick={onLogout} className="btn btn-secondary btn-sm">Выйти</button>
       </header>
 
-      <main style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 28px' }}>
+      <main className="admin-main" style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 28px' }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 24 }}>Статистика сервиса</h1>
 
         {loading ? (
@@ -303,6 +303,7 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'system' && (
               <div className="card" style={{ padding: '18px 20px' }}>
                 <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>🗄 Записи в базе данных</p>
+                <div style={{ overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
@@ -329,6 +330,7 @@ export default function AdminDashboard({ onLogout }) {
                     ))}
                   </tbody>
                 </table>
+                </div>
               </div>
             )}
           </>

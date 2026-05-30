@@ -1048,7 +1048,8 @@ export default function LeadAnalytics({ user }) {
             {todayCheckins.length === 0 ? (
               <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Никто ещё не отметился сегодня</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 360 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
                     {['Участник', 'Пришёл', 'Ушёл', 'В офисе'].map(h => (
@@ -1071,6 +1072,7 @@ export default function LeadAnalytics({ user }) {
                   ))}
                 </tbody>
               </table>
+              </div>
             )}
           </div>
         )
