@@ -79,7 +79,7 @@ export const getUserStats = (userId) => api.get(`/users/${userId}/stats`)
 // Admin
 export const getAdminStats = () => api.get('/users/admin/stats')
 export const broadcastNotification = (data) => api.post('/notifications/broadcast', data)
-export const getServiceHealth = () => api.get('/api/health/detailed')
+export const getServiceHealth = () => api.get('/health/detailed')
 
 // Assistant (Пит)
 export const pitChat = (messages) => api.post('/assistant/chat', { messages })

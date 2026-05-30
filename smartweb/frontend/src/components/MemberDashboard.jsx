@@ -363,6 +363,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     <>
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
       bannerTasks={tasks}
+      bannerTeamId={team?.id}
       onNavigate={type => {
         if (type === 'new_task' || type === 'tasks') setActiveTab('tasks')
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
@@ -489,7 +490,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           disabled={callLoading[m.id]}
                           style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
                         >
-                          {callLoading[m.id] ? '...' : '📹 Созвон'}
+                          {callLoading[m.id] ? '...' : 'Созвон'}
                         </button>
                       </div>
                     </div>
@@ -653,7 +654,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           disabled={callLoading[m.id]}
                           style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
                         >
-                          {callLoading[m.id] ? '...' : '📹 Созвон'}
+                          {callLoading[m.id] ? '...' : 'Созвон'}
                         </button>
                       )}
                       {isPast && (
@@ -661,7 +662,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           onClick={() => toggleMeetingNote(m.id)}
                           style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
                         >
-                          {isExpanded ? '▾ Заметки' : '▸ Заметки'}{hasNote ? ' ●' : ''}
+                          {isExpanded ? '↓ Заметки' : '→ Заметки'}{hasNote ? ' ·' : ''}
                         </button>
                       )}
                       {isPast && !m.ai_summary && (

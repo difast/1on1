@@ -596,7 +596,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               onClick={() => handleToggleMeetingNote(m)}
               style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: noteState?.expanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
             >
-              {noteState?.expanded ? '▾ Заметки' : '▸ Заметки'}{m.notes ? ' ●' : ''}
+              {noteState?.expanded ? '↓ Заметки' : '→ Заметки'}{m.notes ? ' ·' : ''}
             </button>
           )}
           {isPast && !isRequest && !m.ai_summary && (
@@ -639,7 +639,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 disabled={callLoading[m.id]}
                 style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
               >
-                {callLoading[m.id] ? '...' : '📹 Созвон'}
+                {callLoading[m.id] ? '...' : 'Созвон'}
               </button>
             </>
           )}
@@ -730,7 +730,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
             {selectedTeamId && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
-                📹 Созвон
+                Созвон
               </button>
             )}
             <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
@@ -841,7 +841,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           })}
                           style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', width: '100%', textAlign: 'left', padding: 0 }}
                         >
-                          <span style={{ fontSize: 13, color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-muted)', width: 12 }}>{isExpanded ? '▾' : '▸'}</span>
+                          <span style={{ fontSize: 13, color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-muted)', width: 12 }}>{isExpanded ? '↓' : '→'}</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{memberName}</span>
                             <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 8 }}>
@@ -1410,7 +1410,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 style={{ flexShrink: 0, fontWeight: 600 }}
                                 title={`Созвон с ${member.user_name}`}
                               >
-                                {memberCallLoading[member.user_id] ? '...' : '📹 Созвон'}
+                                {memberCallLoading[member.user_id] ? '...' : 'Созвон'}
                               </button>
                             </div>
 
@@ -1703,7 +1703,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="btn btn-accent"
                 style={{ gap: 8, fontWeight: 700 }}
               >
-                📹 Начать созвон
+                Начать созвон
               </button>
             </div>
           )}

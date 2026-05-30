@@ -186,7 +186,7 @@ export default function SupportPage({ currentUser, onClose }) {
               <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><div className="spinner" /></div>
             ) : tickets.length === 0 ? (
               <div className="empty-state">
-                <div className="empty-icon">📭</div>
+                <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="13" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><path d="M2 8l9 6 9-6" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
                 <p className="empty-title">Обращений пока нет</p>
                 <p className="empty-desc">Создайте первое обращение — мы ответим как можно скорее</p>
                 <button onClick={() => setView('new')} className="btn btn-accent" style={{ marginTop: 20 }}>Написать в поддержку</button>
@@ -229,7 +229,9 @@ export default function SupportPage({ currentUser, onClose }) {
           <div style={{ maxWidth: 560, width: '100%', margin: '0 auto', padding: '28px 20px' }}>
             {sent ? (
               <div style={{ textAlign: 'center', padding: '48px 0' }}>
-                <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+                <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
+                  <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polyline points="5,14 11,20 23,8" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
                 <h2 style={{ fontSize: 20, fontWeight: 700 }}>Обращение отправлено</h2>
                 <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Возвращаем вас к списку...</p>
               </div>

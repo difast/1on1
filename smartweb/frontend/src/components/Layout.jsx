@@ -11,7 +11,7 @@ const TOAST_META = {
   meeting_confirmed:  { icon: '✓', color: '#15803d' },
   meeting_requested:  { icon: '◎', color: '#b45309' },
   meeting_declined:   { icon: '✕', color: '#dc2626' },
-  broadcast:          { icon: '📣', color: '#ef4444' },
+  broadcast:          { icon: '!', color: '#ef4444' },
 }
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
@@ -544,7 +544,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
           boxShadow: '0 2px 12px rgba(0,97,255,0.3)',
         }}>
-          <span style={{ fontSize: 18 }}>📹</span>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="4" width="11" height="10" rx="2" fill="rgba(255,255,255,0.9)"/><path d="M12 7l5-3v10l-5-3V7z" fill="rgba(255,255,255,0.9)"/></svg>
           <div style={{ flex: 1, minWidth: 0 }}>
             <span style={{ fontWeight: 600, fontSize: 14 }}>{activeCallNotif.title}</span>
           </div>
@@ -691,7 +691,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
           {/* Notification toasts */}
           {toasts.map(t => {
-            const meta = TOAST_META[t.type] || { icon: '🔔', color: '#6b7280' }
+            const meta = TOAST_META[t.type] || { icon: '·', color: '#6b7280' }
             return (
               <div
                 key={t.id}

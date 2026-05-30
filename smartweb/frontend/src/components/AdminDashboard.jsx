@@ -354,7 +354,7 @@ export default function AdminDashboard({ onLogout }) {
                     <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
                   ) : tickets.length === 0 ? (
                     <div className="empty-state" style={{ padding: '32px 16px' }}>
-                      <div className="empty-icon" style={{ width: 48, height: 48, fontSize: 22 }}>📭</div>
+                      <div className="empty-icon" style={{ width: 48, height: 48, fontSize: 22, background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><path d="M2 7l8 5 8-5" stroke="var(--color-text-muted)" strokeWidth="1.4"/></svg></div>
                       <p className="empty-title" style={{ fontSize: 14 }}>Обращений нет</p>
                     </div>
                   ) : tickets.map(t => (
@@ -388,7 +388,7 @@ export default function AdminDashboard({ onLogout }) {
                 <div className="card" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 480 }}>
                   {!activeTicket ? (
                     <div className="empty-state" style={{ margin: 'auto' }}>
-                      <div className="empty-icon">💬</div>
+                      <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H7l-4 3V5z" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
                       <p className="empty-title">Выберите обращение</p>
                     </div>
                   ) : (
@@ -538,21 +538,31 @@ export default function AdminDashboard({ onLogout }) {
                         background: broadcastResult.ok ? '#f0fdf4' : '#fff1f2',
                         color: broadcastResult.ok ? '#15803d' : '#be123c',
                         border: `1px solid ${broadcastResult.ok ? '#bbf7d0' : '#fecdd3'}`,
+                        display: 'flex', alignItems: 'center', gap: 8,
                       }}>
-                        {broadcastResult.ok ? `✓ Отправлено ${broadcastResult.sent} пользователям` : '✕ Ошибка отправки'}
+                        <span style={{
+                          width: 18, height: 18, borderRadius: '50%', flexShrink: 0,
+                          background: broadcastResult.ok ? '#15803d' : '#be123c',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            {broadcastResult.ok
+                              ? <polyline points="1.5,5 4,7.5 8.5,2.5" stroke="#fff" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                              : <><line x1="2" y1="2" x2="8" y2="8" stroke="#fff" strokeWidth="1.6" strokeLinecap="round"/><line x1="8" y1="2" x2="2" y2="8" stroke="#fff" strokeWidth="1.6" strokeLinecap="round"/></>
+                            }
+                          </svg>
+                        </span>
+                        {broadcastResult.ok ? `Отправлено ${broadcastResult.sent} пользователям` : 'Ошибка отправки'}
                       </div>
                     )}
                   </form>
                 </div>
                 <div className="card" style={{ padding: '20px 22px', flex: 1, minWidth: 240 }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Как это выглядит</p>
-                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderLeft: '4px solid #ef4444', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10 }}>
-                    <span style={{ fontSize: 20 }}>📣</span>
-                    <div>
-                      <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 10, marginBottom: 4 }}>ОБЪЯВЛЕНИЕ</span>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', margin: '0 0 2px' }}>{broadcastForm.title || 'Заголовок уведомления'}</p>
-                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{broadcastForm.body || 'Текст сообщения'}</p>
-                    </div>
+                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Предпросмотр</p>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderLeft: '3px solid #ef4444', borderRadius: 10, padding: '12px 14px' }}>
+                    <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: '#ef4444', color: '#fff', padding: '2px 7px', borderRadius: 4, marginBottom: 6 }}>ОБЪЯВЛЕНИЕ</span>
+                    <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', margin: '0 0 3px' }}>{broadcastForm.title || 'Заголовок уведомления'}</p>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>{broadcastForm.body || 'Текст сообщения'}</p>
                   </div>
                 </div>
               </div>
@@ -578,12 +588,13 @@ export default function AdminDashboard({ onLogout }) {
                       {Object.entries(health.services || {}).map(([svc, status]) => {
                         const ok = status === 'ok'
                         const nc = status === 'not_configured'
+                        const dotColor = ok ? '#10b981' : nc ? '#9ca3af' : '#ef4444'
                         return (
                           <div key={svc} className="card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                            <span style={{ fontSize: 22 }}>{ok ? '🟢' : nc ? '⚪' : '🔴'}</span>
+                            <span style={{ width: 10, height: 10, borderRadius: '50%', background: dotColor, flexShrink: 0, boxShadow: `0 0 0 3px ${dotColor}22` }} />
                             <div>
                               <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px', textTransform: 'capitalize' }}>{svc}</p>
-                              <p style={{ fontSize: 12, color: ok ? '#15803d' : nc ? 'var(--color-text-muted)' : 'var(--color-danger)', margin: 0, fontWeight: 600 }}>
+                              <p style={{ fontSize: 12, color: dotColor, margin: 0, fontWeight: 600 }}>
                                 {ok ? 'Работает' : nc ? 'Не настроено' : 'Ошибка'}
                               </p>
                             </div>
@@ -625,15 +636,17 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap: 16 }}>
                   {[
-                    { icon: '💳', title: 'Тарифные планы', desc: 'Управление тарифами: лимиты участников, встреч в месяц, функций. Создание и редактирование планов.' },
-                    { icon: '📋', title: 'История платежей', desc: 'Журнал всех платежей по пользователям и командам, статусы транзакций, экспорт.' },
-                    { icon: '⏳', title: 'Пробный период', desc: 'Управление пробным доступом: продление, отзыв, просмотр истекающих триалов.' },
+                    { label: 'TP', title: 'Тарифные планы', desc: 'Управление тарифами: лимиты участников, встреч в месяц, функций. Создание и редактирование планов.' },
+                    { label: 'HP', title: 'История платежей', desc: 'Журнал всех платежей по пользователям и командам, статусы транзакций, экспорт.' },
+                    { label: 'PP', title: 'Пробный период', desc: 'Управление пробным доступом: продление, отзыв, просмотр истекающих триалов.' },
                   ].map(item => (
-                    <div key={item.title} className="card" style={{ padding: '24px 22px', opacity: 0.7 }}>
-                      <span style={{ fontSize: 28, display: 'block', marginBottom: 12 }}>{item.icon}</span>
+                    <div key={item.title} className="card" style={{ padding: '24px 22px', opacity: 0.72 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: '0.04em', color: 'var(--color-accent)' }}>{item.label}</span>
+                      </div>
                       <p style={{ fontWeight: 700, fontSize: 15, margin: '0 0 8px' }}>{item.title}</p>
                       <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
-                      <div style={{ marginTop: 16, padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 8, border: '1px dashed var(--color-border)', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', fontWeight: 600 }}>
+                      <div style={{ marginTop: 16, padding: '7px 14px', background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', fontWeight: 600, letterSpacing: '0.04em' }}>
                         В разработке
                       </div>
                     </div>
@@ -674,7 +687,7 @@ export default function AdminDashboard({ onLogout }) {
                     <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
                   ) : articles.length === 0 ? (
                     <div className="empty-state">
-                      <div className="empty-icon">📚</div>
+                      <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="2" width="14" height="18" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><line x1="7" y1="7" x2="15" y2="7" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="10.5" x2="15" y2="10.5" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="14" x2="11" y2="14" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/></svg></div>
                       <p className="empty-title">База знаний пуста</p>
                       <p className="empty-desc">Создайте первую статью</p>
                     </div>

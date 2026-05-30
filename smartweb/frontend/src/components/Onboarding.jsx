@@ -352,7 +352,7 @@ export default function Onboarding({ email, onComplete }) {
                 </>
               ) : (
                 <div style={{ animation:'obSlideUp 0.5s ease' }}>
-                  <div style={{ fontSize:56,marginBottom:16,animation:'obConfettiPop 0.6s ease' }}>🎉</div>
+                  <div style={{ width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,0.12)',border:'2px solid rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',animation:'obConfettiPop 0.6s ease' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polyline points="5,14 11,20 23,8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
                   <h2 style={{ fontSize:22,fontWeight:700,color:'#fff',marginBottom:8 }}>Всё готово!</h2>
                   <p style={{ fontSize:14,color:'rgba(255,255,255,0.55)' }}>Открываем рабочее пространство...</p>
                   <div style={{ marginTop:20,display:'flex',justifyContent:'center' }}>

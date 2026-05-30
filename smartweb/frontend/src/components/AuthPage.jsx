@@ -73,7 +73,7 @@ export default function AuthPage({ onAdminLogin }) {
         {/* Check email screen */}
         {mode === 'check_email' && (
           <div className="card anim-slide" style={{ padding: 32, textAlign: 'center' }}>
-            <div style={{ fontSize: 48, marginBottom: 16 }}>📬</div>
+            <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--blue-50)', border: '1px solid var(--blue-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="2" stroke="var(--color-accent)" strokeWidth="1.5"/><path d="M2 9l11 7 11-7" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinejoin="round"/></svg></div>
             <h2 style={{ fontWeight: 600, fontSize: 20, color: 'var(--color-text-primary)', marginBottom: 10 }}>
               Проверьте почту
             </h2>
@@ -96,7 +96,7 @@ export default function AuthPage({ onAdminLogin }) {
         {mode === 'admin' && (
           <div className="card anim-slide" style={{ padding: 28 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
-              <span style={{ fontSize: 22 }}>🔐</span>
+              <span style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="3" y="7" width="10" height="8" rx="2" stroke="var(--color-accent)" strokeWidth="1.4"/><path d="M5 7V5a3 3 0 016 0v2" stroke="var(--color-accent)" strokeWidth="1.4" strokeLinecap="round"/></svg></span>
               <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text-primary)' }}>Вход для администратора</p>
             </div>
             <form onSubmit={handleAdminLogin}>
