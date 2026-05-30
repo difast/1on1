@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+
 class MeetingCreate(BaseModel):
     team_id: int
     team_lead_id: int
@@ -26,6 +27,7 @@ class MeetingOut(BaseModel):
     ai_summary: Optional[str] = None
     call_duration_seconds: Optional[int] = None
     call_analytics: Optional[str] = None
+    is_rescheduled: bool = False
     created_at: datetime
 
     class Config:
@@ -38,6 +40,8 @@ class MeetingUpdate(BaseModel):
     agenda: Optional[str] = None
     call_duration_seconds: Optional[int] = None
     call_analytics: Optional[str] = None
+    scheduled_date: Optional[datetime] = None
+    is_rescheduled: Optional[bool] = None
 
 class MeetingRequest(BaseModel):
     member_id: int

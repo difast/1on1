@@ -126,6 +126,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [tasksSubTab, setTasksSubTab] = useState('mine')
   const [myTaskFilter, setMyTaskFilter] = useState('all')
   const [memberTaskFilter, setMemberTaskFilter] = useState('all')
+  const [meetingStatusFilter, setMeetingStatusFilter] = useState('all')
 
   // Reschedule AI slots modal
   const [rescheduleModal, setRescheduleModal] = useState(null) // { meetingId, memberName, cadence }
@@ -293,8 +294,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const handleRescheduleSelect = async (slot) => {
     if (!rescheduleModal) return
     try {
-      await updateMeeting(rescheduleModal.meetingId, { scheduled_date: slot })
-      setMyMeetings(prev => prev.map(m => m.id === rescheduleModal.meetingId ? { ...m, scheduled_date: slot } : m))
+      const updated = await updateMeeting(rescheduleModal.meetingId, { scheduled_date: slot, is_rescheduled: true })
+      setMyMeetings(prev => prev.map(m =>
+        m.id === rescheduleModal.meetingId
+          ? { ...m, scheduled_date: slot, is_rescheduled: true, status: updated.data?.status || m.status }
+          : m
+      ))
       setRescheduleModal(null)
     } catch {}
   }
@@ -527,7 +532,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
     const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
-      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
+      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #a78bfa' : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
             width: 46, height: 46, borderRadius: 'var(--radius-md)',
@@ -550,9 +555,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               </p>
             )}
           </div>
-          <span className={`badge ${stBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-            {stLabel[m.status] || m.status}
-          </span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
+            <span className={`badge ${stBadge[m.status] || 'badge-gray'}`}>
+              {stLabel[m.status] || m.status}
+            </span>
+            {m.is_rescheduled && !['cancelled','declined'].includes(m.status) && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
+                ↻ Перенесена
+              </span>
+            )}
+          </div>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
             <div style={{ display: 'flex', gap: 4, flexShrink: 0, position: 'relative' }}>
               <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
@@ -668,7 +680,33 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Separate requests from calendar meetings
   const meetingRequests = myMeetings.filter(m => m.status === 'requested')
-  const calendarMeetings = myMeetings.filter(m => m.status !== 'requested')
+  const calendarMeetings = myMeetings.filter(m => {
+    if (m.status === 'requested') return false
+    if (meetingStatusFilter === 'all') return true
+    if (meetingStatusFilter === 'rescheduled') return m.is_rescheduled && !['cancelled','declined'].includes(m.status)
+    return m.status === meetingStatusFilter
+  })
+
+  const MEETING_FILTERS = [
+    { key: 'all', label: 'Все' },
+    { key: 'scheduled', label: 'Запланированы' },
+    { key: 'confirmed', label: 'Подтверждены' },
+    { key: 'in_progress', label: 'Идут сейчас' },
+    { key: 'completed', label: 'Завершены' },
+    { key: 'rescheduled', label: 'Перенесены' },
+    { key: 'cancelled', label: 'Отменены' },
+    { key: 'declined', label: 'Отклонены' },
+  ]
+  const meetingFilterCounts = {
+    all: myMeetings.filter(m => m.status !== 'requested').length,
+    scheduled: myMeetings.filter(m => m.status === 'scheduled').length,
+    confirmed: myMeetings.filter(m => m.status === 'confirmed').length,
+    in_progress: myMeetings.filter(m => m.status === 'in_progress').length,
+    completed: myMeetings.filter(m => m.status === 'completed').length,
+    rescheduled: myMeetings.filter(m => m.is_rescheduled && !['cancelled','declined'].includes(m.status)).length,
+    cancelled: myMeetings.filter(m => m.status === 'cancelled').length,
+    declined: myMeetings.filter(m => m.status === 'declined').length,
+  }
 
   return (
     <>
@@ -1141,6 +1179,34 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
           ) : (
             <div style={{ maxWidth: 720 }}>
+              {/* Status filter chips */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                {MEETING_FILTERS.filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (
+                  <button
+                    key={f.key}
+                    onClick={() => setMeetingStatusFilter(f.key)}
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 5,
+                      padding: '5px 12px', borderRadius: 9999, fontSize: 12, fontWeight: 600,
+                      cursor: 'pointer', transition: 'all 0.15s', border: '1px solid',
+                      background: meetingStatusFilter === f.key ? 'var(--color-accent)' : 'var(--color-surface)',
+                      color: meetingStatusFilter === f.key ? '#fff' : 'var(--color-text-secondary)',
+                      borderColor: meetingStatusFilter === f.key ? 'var(--color-accent)' : 'var(--color-border)',
+                    }}
+                  >
+                    {f.label}
+                    {meetingFilterCounts[f.key] > 0 && (
+                      <span style={{
+                        fontSize: 10, fontWeight: 700,
+                        background: meetingStatusFilter === f.key ? 'rgba(255,255,255,0.25)' : 'var(--color-bg)',
+                        color: meetingStatusFilter === f.key ? '#fff' : 'var(--color-text-muted)',
+                        padding: '1px 5px', borderRadius: 20, minWidth: 18, textAlign: 'center',
+                      }}>{meetingFilterCounts[f.key]}</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+
               {/* Meeting requests stay as a list at the top */}
               {meetingRequests.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
