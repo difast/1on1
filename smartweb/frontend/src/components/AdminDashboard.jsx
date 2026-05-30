@@ -1,75 +1,172 @@
-import { useState, useEffect } from 'react'
-import { getAdminStats, getSupportTickets, markTicketRead, markAllTicketsRead, getSupportUnreadCount } from '../api/client'
+import { useState, useEffect, useRef } from 'react'
+import {
+  getAdminStats, getAdminAnalytics,
+  getSupportTickets, markTicketRead, markAllTicketsRead, getSupportUnreadCount, adminReplyTicket,
+  blockUser, unblockUser, deleteUser,
+  getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
+} from '../api/client'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
-const ROLE_BADGE = { team_lead: 'badge-blue', member: 'badge-gray' }
+const ROLE_BADGE  = { team_lead: 'badge-blue', member: 'badge-gray' }
 
 function Td({ children, muted, mono, center }) {
   return (
     <td style={{
-      padding: '10px 14px', fontSize: 13,
+      padding: '10px 14px', fontSize: 13, verticalAlign: 'middle',
       color: muted ? 'var(--color-text-muted)' : 'var(--color-text-primary)',
       fontFamily: mono ? 'var(--font-mono)' : undefined,
       textAlign: center ? 'center' : undefined,
-      verticalAlign: 'middle',
     }}>{children}</td>
   )
 }
 
-// "Active in the last 7 days" — more meaningful than 14
-function ActivityBadge({ lastMeeting, isOnline }) {
-  const now = Date.now()
-  const ago7 = now - 7 * 24 * 3600 * 1000
-  const ago30 = now - 30 * 24 * 3600 * 1000
-  const lastMs = lastMeeting ? new Date(lastMeeting).getTime() : 0
+function MiniBar({ value, max, color = 'var(--color-accent)' }) {
+  const pct = max ? (value / max) * 100 : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ flex: 1, height: 6, background: 'var(--gray-200)', borderRadius: 3, overflow: 'hidden', minWidth: 60 }}>
+        <div style={{ width: `${pct}%`, height: '100%', background: color, borderRadius: 3 }} />
+      </div>
+      <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 24 }}>{value}</span>
+    </div>
+  )
+}
 
-  if (isOnline) return <span className="badge badge-green" style={{ fontSize: 11 }}>● Онлайн</span>
-  if (lastMs > ago7) return <span className="badge badge-green" style={{ fontSize: 11 }}>Активен</span>
-  if (lastMs > ago30) return <span className="badge badge-amber" style={{ fontSize: 11 }}>Умеренно</span>
-  return <span className="badge badge-red" style={{ fontSize: 11 }}>Неактивен</span>
+function MessageBubble({ msg }) {
+  const isAdmin = msg.sender === 'admin'
+  return (
+    <div style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+      <div style={{
+        maxWidth: '80%', padding: '8px 12px',
+        borderRadius: isAdmin ? '12px 4px 12px 12px' : '4px 12px 12px 12px',
+        background: isAdmin ? 'var(--color-accent)' : 'var(--color-bg)',
+        color: isAdmin ? '#fff' : 'var(--color-text-primary)',
+        fontSize: 13, lineHeight: 1.5,
+        border: isAdmin ? 'none' : '1px solid var(--color-border)',
+        whiteSpace: 'pre-wrap', wordBreak: 'break-word',
+      }}>
+        {!isAdmin && <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', margin: '0 0 3px' }}>Пользователь</p>}
+        {msg.body}
+        <p style={{ fontSize: 10, margin: '3px 0 0', textAlign: 'right', color: isAdmin ? 'rgba(255,255,255,0.6)' : 'var(--color-text-muted)' }}>
+          {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+        </p>
+      </div>
+    </div>
+  )
 }
 
 export default function AdminDashboard({ onLogout }) {
-  const [data, setData] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('users')
-  const [search, setSearch] = useState('')
+  const [data, setData]             = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [tab, setTab]               = useState('users')
+  const [search, setSearch]         = useState('')
   const [roleFilter, setRoleFilter] = useState('all')
 
-  const [tickets, setTickets] = useState([])
+  // Tickets
+  const [tickets, setTickets]           = useState([])
   const [ticketsLoading, setTicketsLoading] = useState(false)
-  const [unreadTickets, setUnreadTickets] = useState(0)
-  const [expandedTicket, setExpandedTicket] = useState(null)
+  const [unreadTickets, setUnreadTickets]   = useState(0)
+  const [activeTicket, setActiveTicket]     = useState(null)
+  const [replyText, setReplyText]           = useState('')
+  const [replying, setReplying]             = useState(false)
+  const threadEndRef = useRef(null)
+
+  // Analytics
+  const [analytics, setAnalytics]   = useState(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+
+  // KB
+  const [articles, setArticles]     = useState([])
+  const [kbLoading, setKbLoading]   = useState(false)
+  const [kbForm, setKbForm]         = useState({ title: '', content: '' })
+  const [kbEditing, setKbEditing]   = useState(null)
+  const [kbSaving, setKbSaving]     = useState(false)
 
   useEffect(() => {
-    getAdminStats()
-      .then(r => setData(r.data))
-      .catch(() => setData(null))
-      .finally(() => setLoading(false))
-    getSupportUnreadCount()
-      .then(r => setUnreadTickets(r.data.count))
-      .catch(() => {})
+    getAdminStats().then(r => setData(r.data)).catch(() => setData(null)).finally(() => setLoading(false))
+    getSupportUnreadCount().then(r => setUnreadTickets(r.data.count)).catch(() => {})
   }, [])
 
   useEffect(() => {
-    if (tab !== 'tickets') return
-    setTicketsLoading(true)
-    getSupportTickets()
-      .then(r => { setTickets(r.data); setUnreadTickets(r.data.filter(t => !t.read_by_admin).length) })
-      .catch(() => {})
-      .finally(() => setTicketsLoading(false))
+    if (tab === 'tickets') {
+      setTicketsLoading(true)
+      getSupportTickets()
+        .then(r => { setTickets(r.data); setUnreadTickets(r.data.filter(t => !t.read_by_admin).length) })
+        .catch(() => {}).finally(() => setTicketsLoading(false))
+    }
+    if (tab === 'analytics' && !analytics) {
+      setAnalyticsLoading(true)
+      getAdminAnalytics().then(r => setAnalytics(r.data)).catch(() => {}).finally(() => setAnalyticsLoading(false))
+    }
+    if (tab === 'kb' && articles.length === 0) {
+      setKbLoading(true)
+      getAdminArticles().then(r => setArticles(r.data)).catch(() => {}).finally(() => setKbLoading(false))
+    }
   }, [tab])
 
-  const handleMarkRead = async (id) => {
-    await markTicketRead(id).catch(() => {})
-    setTickets(prev => prev.map(t => t.id === id ? { ...t, read_by_admin: true } : t))
-    setUnreadTickets(c => Math.max(0, c - 1))
+  useEffect(() => { threadEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeTicket?.messages?.length])
+
+  const openTicket = (ticket) => {
+    setActiveTicket(ticket)
+    setReplyText('')
+    if (!ticket.read_by_admin) {
+      markTicketRead(ticket.id).catch(() => {})
+      setTickets(prev => prev.map(t => t.id === ticket.id ? { ...t, read_by_admin: true } : t))
+      setUnreadTickets(c => Math.max(0, c - 1))
+    }
+  }
+
+  const handleReply = async (e) => {
+    e.preventDefault()
+    if (!replyText.trim() || !activeTicket) return
+    setReplying(true)
+    try {
+      const { data: updated } = await adminReplyTicket(activeTicket.id, replyText.trim())
+      setActiveTicket(updated)
+      setTickets(prev => prev.map(t => t.id === updated.id ? updated : t))
+      setReplyText('')
+    } catch {} finally { setReplying(false) }
   }
 
   const handleMarkAllRead = async () => {
     await markAllTicketsRead().catch(() => {})
     setTickets(prev => prev.map(t => ({ ...t, read_by_admin: true })))
     setUnreadTickets(0)
+  }
+
+  const handleBlock = async (userId, blocked) => {
+    const fn = blocked ? unblockUser : blockUser
+    await fn(userId).catch(() => {})
+    setData(d => ({ ...d, users: d.users.map(u => u.id === userId ? { ...u, is_blocked: !blocked } : u) }))
+  }
+
+  const handleDelete = async (userId) => {
+    if (!confirm('Удалить пользователя? Это действие необратимо.')) return
+    await deleteUser(userId).catch(() => {})
+    setData(d => ({ ...d, users: d.users.filter(u => u.id !== userId) }))
+  }
+
+  const handleKbSave = async (e) => {
+    e.preventDefault()
+    if (!kbForm.title.trim()) return
+    setKbSaving(true)
+    try {
+      if (kbEditing) {
+        const { data: updated } = await updateAdminArticle(kbEditing, { title: kbForm.title, content: kbForm.content })
+        setArticles(prev => prev.map(a => a.id === kbEditing ? updated : a))
+      } else {
+        const { data: created } = await createAdminArticle({ title: kbForm.title, content: kbForm.content })
+        setArticles(prev => [created, ...prev])
+      }
+      setKbForm({ title: '', content: '' })
+      setKbEditing(null)
+    } catch {} finally { setKbSaving(false) }
+  }
+
+  const handleKbDelete = async (id) => {
+    if (!confirm('Удалить статью?')) return
+    await deleteAdminArticle(id).catch(() => {})
+    setArticles(prev => prev.filter(a => a.id !== id))
   }
 
   const filteredUsers = (data?.users || []).filter(u => {
@@ -80,22 +177,17 @@ export default function AdminDashboard({ onLogout }) {
   })
 
   const TabBtn = ({ id, label, badge }) => (
-    <button onClick={() => setTab(id)} style={{
+    <button onClick={() => { setTab(id); if (id !== 'tickets') setActiveTicket(null) }} style={{
       display: 'inline-flex', alignItems: 'center', gap: 6,
-      padding: '8px 18px', borderRadius: 9, border: 'none', cursor: 'pointer',
+      padding: '7px 16px', borderRadius: 9, border: 'none', cursor: 'pointer',
       fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-sans)', transition: 'all 0.15s',
       background: tab === id ? 'var(--color-accent)' : 'var(--color-surface)',
       color: tab === id ? '#fff' : 'var(--color-text-secondary)',
       boxShadow: tab === id ? '0 2px 8px rgba(59,110,240,0.28)' : '0 1px 3px rgba(0,0,0,0.06)',
+      whiteSpace: 'nowrap',
     }}>
       {label}
-      {badge > 0 && (
-        <span style={{
-          background: '#ef4444', color: '#fff', fontSize: 11, fontWeight: 700,
-          borderRadius: 20, padding: '1px 6px', lineHeight: '16px',
-          boxShadow: tab === id ? '0 0 0 2px var(--color-accent)' : 'none',
-        }}>{badge}</span>
-      )}
+      {badge > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '1px 6px' }}>{badge}</span>}
     </button>
   )
 
@@ -109,41 +201,41 @@ export default function AdminDashboard({ onLogout }) {
         <button onClick={onLogout} className="btn btn-secondary btn-sm">Выйти</button>
       </header>
 
-      <main className="admin-main" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 28px', width: '100%' }}>
-        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', margin: 0 }}>Личный кабинет</h1>
-        </div>
+      <main className="admin-main" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px', width: '100%' }}>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 24 }}>Личный кабинет</h1>
 
-        {/* Tab bar */}
+        {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
-          <TabBtn id="users" label="Пользователи" />
-          <TabBtn id="tickets" label="Обращения" badge={unreadTickets} />
+          <TabBtn id="users"     label="Пользователи" />
+          <TabBtn id="tickets"   label="Обращения" badge={unreadTickets} />
+          <TabBtn id="analytics" label="Аналитика" />
+          <TabBtn id="kb"        label="База знаний" />
         </div>
 
-        {loading ? (
+        {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
-        ) : !data ? (
-          <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки данных</p>
+        ) : !data && tab === 'users' ? (
+          <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки</p>
         ) : (
           <>
-            {/* ПОЛЬЗОВАТЕЛИ */}
-            {tab === 'users' && (
+            {/* ── ПОЛЬЗОВАТЕЛИ ── */}
+            {tab === 'users' && data && (
               <div className="card" style={{ padding: '18px 20px' }}>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                   <p style={{ fontWeight: 600, fontSize: 14, flex: 1, margin: 0 }}>Пользователи ({filteredUsers.length})</p>
-                  <input className="input input-sm" style={{ width: 200, maxWidth: '100%' }} placeholder="Поиск по имени или email..." value={search} onChange={e => setSearch(e.target.value)} />
-                  <select className="input input-sm" style={{ width: 160 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
+                  <input className="input input-sm" style={{ width: 200, maxWidth: '100%' }} placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} />
+                  <select className="input input-sm" style={{ width: 150 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
                     <option value="all">Все роли</option>
                     <option value="team_lead">Тимлиды</option>
                     <option value="member">Участники</option>
                   </select>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
                     <thead>
                       <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                        {['#', 'Имя', 'Email', 'Роль', 'Встреч', 'Задач', 'Последняя встреча', 'Активность'].map(h => (
-                          <th key={h} style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                        {['#', 'Имя', 'Email', 'Роль', 'Встреч', 'Задач', 'Последняя встреча', 'Активность', 'Действия'].map(h => (
+                          <th key={h} style={{ padding: '8px 12px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: 'left', whiteSpace: 'nowrap' }}>{h}</th>
                         ))}
                       </tr>
                     </thead>
@@ -151,10 +243,10 @@ export default function AdminDashboard({ onLogout }) {
                       {filteredUsers.map(u => {
                         const now = Date.now()
                         const lastMs = u.last_meeting ? new Date(u.last_meeting).getTime() : 0
-                        const ago7 = now - 7 * 24 * 3600 * 1000
-                        const ago30 = now - 30 * 24 * 3600 * 1000
+                        const ago7  = now - 7 * 86400000
+                        const ago30 = now - 30 * 86400000
                         return (
-                          <tr key={u.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                          <tr key={u.id} style={{ borderBottom: '1px solid var(--color-border)', opacity: u.is_blocked ? 0.55 : 1 }}>
                             <Td muted>{u.id}</Td>
                             <Td>
                               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -174,14 +266,32 @@ export default function AdminDashboard({ onLogout }) {
                               {lastMs > ago7
                                 ? <span className="badge badge-green" style={{ fontSize: 11 }}>Активен</span>
                                 : lastMs > ago30
-                                  ? <span className="badge badge-amber" style={{ fontSize: 11 }}>Слабая активность</span>
+                                  ? <span className="badge badge-amber" style={{ fontSize: 11 }}>Слабая</span>
                                   : <span className="badge badge-red" style={{ fontSize: 11 }}>Неактивен</span>}
+                            </Td>
+                            <Td>
+                              <div style={{ display: 'flex', gap: 4 }}>
+                                <button
+                                  onClick={() => handleBlock(u.id, u.is_blocked)}
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap',
+                                    background: u.is_blocked ? '#f0fdf4' : '#fff7ed',
+                                    color: u.is_blocked ? '#16a34a' : '#c2410c',
+                                    borderColor: u.is_blocked ? '#bbf7d0' : '#fed7aa',
+                                  }}>
+                                  {u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(u.id)}
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>
+                                  Удалить
+                                </button>
+                              </div>
                             </Td>
                           </tr>
                         )
                       })}
                       {filteredUsers.length === 0 && (
-                        <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Ничего не найдено</td></tr>
+                        <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Ничего не найдено</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -189,86 +299,225 @@ export default function AdminDashboard({ onLogout }) {
               </div>
             )}
 
-            {/* ОБРАЩЕНИЯ */}
+            {/* ── ОБРАЩЕНИЯ ── */}
             {tab === 'tickets' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                  <p style={{ fontWeight: 600, fontSize: 14, margin: 0, color: 'var(--color-text-primary)' }}>
-                    Обращения пользователей
-                    {unreadTickets > 0 && <span style={{ marginLeft: 8, background: '#ef4444', color: '#fff', fontSize: 11, fontWeight: 700, borderRadius: 20, padding: '2px 8px' }}>{unreadTickets} новых</span>}
-                  </p>
-                  {unreadTickets > 0 && (
-                    <button onClick={handleMarkAllRead} className="btn btn-secondary btn-sm">
-                      Прочитать все
-                    </button>
-                  )}
-                </div>
-
-                {ticketsLoading ? (
-                  <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}><div className="spinner" /></div>
-                ) : tickets.length === 0 ? (
-                  <div className="card empty-state">
-                    <div className="empty-icon">📭</div>
-                    <p className="empty-title">Обращений пока нет</p>
-                    <p className="empty-desc">Когда пользователи отправят вопрос или предложение — они появятся здесь</p>
+              <div style={{ display: 'flex', gap: 16, minHeight: 520 }}>
+                {/* Left: ticket list */}
+                <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>
+                      Обращения {unreadTickets > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, borderRadius: 20, padding: '1px 6px', marginLeft: 4 }}>{unreadTickets}</span>}
+                    </p>
+                    {unreadTickets > 0 && <button onClick={handleMarkAllRead} className="btn btn-secondary btn-sm" style={{ fontSize: 11 }}>Прочитать все</button>}
                   </div>
-                ) : (
-                  tickets.map(ticket => {
-                    const isExpanded = expandedTicket === ticket.id
-                    const isUnread = !ticket.read_by_admin
-                    return (
-                      <div
-                        key={ticket.id}
-                        className="card"
-                        style={{
-                          padding: '16px 20px',
-                          borderLeft: isUnread ? '3px solid #ef4444' : undefined,
-                          cursor: 'pointer',
-                          transition: 'all 0.15s',
-                        }}
-                        onClick={() => {
-                          setExpandedTicket(isExpanded ? null : ticket.id)
-                          if (isUnread) handleMarkRead(ticket.id)
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, flexWrap: 'wrap' }}>
-                          <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0 }}>
-                            {(ticket.user_name || '?').charAt(0).toUpperCase()}
+
+                  {ticketsLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
+                  ) : tickets.length === 0 ? (
+                    <div className="empty-state" style={{ padding: '32px 16px' }}>
+                      <div className="empty-icon" style={{ width: 48, height: 48, fontSize: 22 }}>📭</div>
+                      <p className="empty-title" style={{ fontSize: 14 }}>Обращений нет</p>
+                    </div>
+                  ) : tickets.map(t => (
+                    <div
+                      key={t.id}
+                      onClick={() => openTicket(t)}
+                      className="card"
+                      style={{
+                        padding: '12px 14px', cursor: 'pointer', transition: 'all 0.12s',
+                        borderLeft: !t.read_by_admin ? '3px solid #ef4444' : activeTicket?.id === t.id ? '3px solid var(--color-accent)' : undefined,
+                        background: activeTicket?.id === t.id ? 'var(--blue-50)' : undefined,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                        <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0, fontSize: 11 }}>{(t.user_name || '?').charAt(0).toUpperCase()}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
+                            <p style={{ fontWeight: !t.read_by_admin ? 700 : 600, fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{t.subject}</p>
+                            {!t.read_by_admin && <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />}
                           </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                              <span style={{ fontWeight: 700, fontSize: 14, color: 'var(--color-text-primary)' }}>{ticket.subject}</span>
-                              {isUnread && <span className="badge badge-red" style={{ fontSize: 10 }}>НОВОЕ</span>}
-                            </div>
-                            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-                              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                                {ticket.user_name} · {ticket.user_email}
-                              </span>
-                              <span className={`badge ${ticket.user_role === 'team_lead' ? 'badge-blue' : 'badge-gray'}`} style={{ fontSize: 10 }}>
-                                {ROLE_LABEL[ticket.user_role] || ticket.user_role}
-                              </span>
-                              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                                {new Date(ticket.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                            </div>
-                            {isExpanded && (
-                              <div style={{
-                                marginTop: 12, padding: '12px 16px',
-                                background: 'var(--color-bg)', borderRadius: 8,
-                                border: '1px solid var(--color-border)',
-                                fontSize: 14, color: 'var(--color-text-primary)',
-                                lineHeight: 1.6, whiteSpace: 'pre-wrap',
-                              }}>
-                                {ticket.body}
-                              </div>
-                            )}
-                          </div>
-                          <span style={{ fontSize: 18, color: 'var(--color-text-muted)', flexShrink: 0, transition: 'transform 0.15s', transform: isExpanded ? 'rotate(180deg)' : 'none' }}>▾</span>
+                          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>
+                            {t.user_name} · {new Date(t.created_at).toLocaleDateString('ru-RU')}
+                          </p>
                         </div>
                       </div>
-                    )
-                  })
-                )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Right: thread */}
+                <div className="card" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 480 }}>
+                  {!activeTicket ? (
+                    <div className="empty-state" style={{ margin: 'auto' }}>
+                      <div className="empty-icon">💬</div>
+                      <p className="empty-title">Выберите обращение</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Thread header */}
+                      <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+                        <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{activeTicket.subject}</p>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{activeTicket.user_name} · {activeTicket.user_email}</span>
+                          <span className={`badge ${ROLE_BADGE[activeTicket.user_role] || 'badge-gray'}`} style={{ fontSize: 10 }}>{ROLE_LABEL[activeTicket.user_role] || activeTicket.user_role}</span>
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{new Date(activeTicket.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      </div>
+
+                      {/* Messages */}
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
+                        {activeTicket.messages.map(m => <MessageBubble key={m.id} msg={m} />)}
+                        <div ref={threadEndRef} />
+                      </div>
+
+                      {/* Reply */}
+                      <form onSubmit={handleReply} style={{ padding: '10px 16px', borderTop: '1px solid var(--color-border)', display: 'flex', gap: 8, flexShrink: 0 }}>
+                        <textarea
+                          value={replyText}
+                          onChange={e => setReplyText(e.target.value)}
+                          placeholder="Ответить пользователю..."
+                          rows={2}
+                          style={{ flex: 1, resize: 'none', fontSize: 13, padding: '7px 11px', border: '1.5px solid var(--color-border)', borderRadius: 8, outline: 'none', fontFamily: 'var(--font-sans)', background: 'var(--color-bg)' }}
+                          onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
+                          onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
+                          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(e) } }}
+                        />
+                        <button type="submit" disabled={replying || !replyText.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end' }}>
+                          {replying ? '...' : 'Ответить'}
+                        </button>
+                      </form>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* ── АНАЛИТИКА ── */}
+            {tab === 'analytics' && (
+              analyticsLoading ? (
+                <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
+              ) : !analytics ? (
+                <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                  {/* Funnel */}
+                  <div className="card" style={{ padding: '20px 24px' }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Воронка пользователей</p>
+                    {analytics.funnel.map((step, i) => {
+                      const maxVal = analytics.funnel[0]?.value || 1
+                      const pct = Math.round((step.value / maxVal) * 100)
+                      return (
+                        <div key={i} style={{ marginBottom: 14 }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
+                            <span style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>{step.label}</span>
+                            <span style={{ fontWeight: 700, color: 'var(--color-accent)' }}>{step.value} <span style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 400 }}>({pct}%)</span></span>
+                          </div>
+                          <div style={{ height: 8, background: 'var(--gray-200)', borderRadius: 4, overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: `hsl(${230 - i * 30}, 80%, ${55 + i * 5}%)`, borderRadius: 4, transition: 'width 0.6s' }} />
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  {/* Weekly growth */}
+                  <div className="card" style={{ padding: '20px 24px' }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Рост по неделям (последние 8 недель)</p>
+                    <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+                      {/* Users chart */}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые пользователи</p>
+                        {analytics.weekly_growth.map((w, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                            <span style={{ fontSize: 11, color: 'var(--color-text-muted)', minWidth: 32 }}>{w.label}</span>
+                            <MiniBar value={w.users} max={Math.max(...analytics.weekly_growth.map(x => x.users), 1)} color="var(--color-accent)" />
+                          </div>
+                        ))}
+                      </div>
+                      {/* Meetings chart */}
+                      <div style={{ flex: 1, minWidth: 200 }}>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые встречи</p>
+                        {analytics.weekly_growth.map((w, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
+                            <span style={{ fontSize: 11, color: 'var(--color-text-muted)', minWidth: 32 }}>{w.label}</span>
+                            <MiniBar value={w.meetings} max={Math.max(...analytics.weekly_growth.map(x => x.meetings), 1)} color="#10b981" />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Retention */}
+                  <div className="card" style={{ padding: '20px 24px' }}>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Retention по когортам</p>
+                    <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>% пользователей, проведших хотя бы одну встречу в течение 7 дней после регистрации</p>
+                    {analytics.retention.length === 0 ? (
+                      <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Недостаточно данных</p>
+                    ) : analytics.retention.map((r, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', minWidth: 52 }}>{r.label}</span>
+                        <span style={{ fontSize: 12, color: 'var(--color-text-muted)', minWidth: 60 }}>{r.cohort} польз.</span>
+                        <MiniBar value={r.pct} max={100} color={r.pct >= 50 ? '#10b981' : r.pct >= 25 ? '#f59e0b' : '#ef4444'} />
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-primary)', minWidth: 36 }}>{r.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            )}
+
+            {/* ── БАЗА ЗНАНИЙ ── */}
+            {tab === 'kb' && (
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                {/* Form */}
+                <div className="card" style={{ padding: '20px 22px', width: '100%', maxWidth: 420 }}>
+                  <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{kbEditing ? 'Редактировать статью' : 'Новая статья'}</p>
+                  <form onSubmit={handleKbSave} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Заголовок</label>
+                      <input className="input" value={kbForm.title} onChange={e => setKbForm(f => ({ ...f, title: e.target.value }))} placeholder="Название статьи" required />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Содержание</label>
+                      <textarea className="input" value={kbForm.content} onChange={e => setKbForm(f => ({ ...f, content: e.target.value }))} placeholder="Текст статьи..." rows={8} style={{ minHeight: 160, resize: 'vertical' }} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      {kbEditing && (
+                        <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setKbEditing(null); setKbForm({ title: '', content: '' }) }}>Отмена</button>
+                      )}
+                      <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2 }}>
+                        {kbSaving ? '...' : kbEditing ? 'Сохранить' : '+ Создать статью'}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+
+                {/* Articles list */}
+                <div style={{ flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {kbLoading ? (
+                    <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
+                  ) : articles.length === 0 ? (
+                    <div className="empty-state">
+                      <div className="empty-icon">📚</div>
+                      <p className="empty-title">База знаний пуста</p>
+                      <p className="empty-desc">Создайте первую статью</p>
+                    </div>
+                  ) : articles.map(a => (
+                    <div key={a.id} className="card" style={{ padding: '14px 18px' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 4px', color: 'var(--color-text-primary)' }}>{a.title}</p>
+                          {a.content && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.content.slice(0, 80)}{a.content.length > 80 ? '…' : ''}</p>}
+                          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '6px 0 0' }}>{new Date(a.created_at).toLocaleDateString('ru-RU')}</p>
+                        </div>
+                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                          <button onClick={() => { setKbEditing(a.id); setKbForm({ title: a.title, content: a.content || '' }) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Изменить</button>
+                          <button onClick={() => handleKbDelete(a.id)} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', background: '#fff1f2', color: '#be123c', fontWeight: 600 }}>Удалить</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </>

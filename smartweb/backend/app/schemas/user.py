@@ -21,6 +21,7 @@ class UserOut(BaseModel):
     linkedin: Optional[str]
     github: Optional[str]
     avatar: Optional[str]
+    is_blocked: bool = False
     created_at: datetime
 
     class Config:

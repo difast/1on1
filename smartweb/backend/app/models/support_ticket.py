@@ -10,6 +10,8 @@ class SupportTicket(Base):
     subject = Column(String(300), nullable=False)
     body = Column(Text, nullable=False)
     read_by_admin = Column(Boolean, nullable=False, default=False, server_default='false')
+    has_unread_reply = Column(Boolean, nullable=False, default=False, server_default='false')
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User", foreign_keys=[user_id])
+    messages = relationship("TicketMessage", back_populates="ticket", order_by="TicketMessage.created_at")

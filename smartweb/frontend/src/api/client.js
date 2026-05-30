@@ -107,8 +107,22 @@ export const getTeamCheckins = (teamId, days = 7) => api.get(`/checkins/team/${t
 // Support tickets
 export const createSupportTicket = (data) => api.post('/support/', data)
 export const getSupportTickets = () => api.get('/support/')
+export const getUserTickets = (userId) => api.get(`/support/user/${userId}`)
 export const getSupportUnreadCount = () => api.get('/support/unread-count')
 export const markTicketRead = (id) => api.patch(`/support/${id}/read`)
 export const markAllTicketsRead = () => api.patch('/support/read-all')
+export const adminReplyTicket = (id, body) => api.post(`/support/${id}/reply`, { body })
+export const userSendMessage = (id, body) => api.post(`/support/${id}/message`, { body })
+export const userReadReply = (id) => api.patch(`/support/${id}/user-read`)
+// Admin user management
+export const blockUser = (id) => api.patch(`/users/${id}/block`)
+export const unblockUser = (id) => api.patch(`/users/${id}/unblock`)
+export const deleteUser = (id) => api.delete(`/users/${id}`)
+export const getAdminAnalytics = () => api.get('/users/admin/analytics')
+// Admin knowledge base
+export const getAdminArticles = () => api.get('/knowledge/admin/all')
+export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })
+export const updateAdminArticle = (id, data) => api.patch(`/knowledge/${id}`, data)
+export const deleteAdminArticle = (id) => api.delete(`/knowledge/${id}`)
 
 export default api

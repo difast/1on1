@@ -9,3 +9,4 @@ from app.models.knowledge import KnowledgeArticle
 from app.models.subtask import SubTask
 from app.models.checkin import WorkCheckin
 from app.models.support_ticket import SupportTicket
+from app.models.ticket_message import TicketMessage

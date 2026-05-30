@@ -10,10 +10,11 @@ from app.models.knowledge import KnowledgeArticle
 router = APIRouter()
 
 class ArticleCreate(BaseModel):
-    team_id: int
+    team_id: Optional[int] = None
     author_id: Optional[int] = None
     title: str
     content: Optional[str] = None
+    is_admin: bool = False
 
 class ArticleUpdate(BaseModel):
     title: Optional[str] = None
@@ -21,10 +22,11 @@ class ArticleUpdate(BaseModel):
 
 class ArticleOut(BaseModel):
     id: int
-    team_id: int
+    team_id: Optional[int]
     author_id: Optional[int]
     title: str
     content: Optional[str]
+    is_admin: bool = False
     created_at: datetime
     updated_at: datetime
     class Config:
@@ -63,3 +65,9 @@ def delete_article(article_id: int, db: Session = Depends(get_db)):
     db.delete(article)
     db.commit()
     return {"ok": True}
+
+@router.get("/admin/all", response_model=List[ArticleOut])
+def list_admin_articles(db: Session = Depends(get_db)):
+    return db.query(KnowledgeArticle).filter(
+        KnowledgeArticle.is_admin == True
+    ).order_by(KnowledgeArticle.created_at.desc()).all()

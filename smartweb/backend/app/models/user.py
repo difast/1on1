@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, func
+from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, func
 from app.database import Base
 
 class User(Base):
@@ -15,4 +15,5 @@ class User(Base):
     calendar_token = Column(Text, nullable=True)
     avatar = Column(Text, nullable=True)
     push_token = Column(String(512), nullable=True)
+    is_blocked = Column(Boolean, nullable=False, default=False, server_default='false')
     created_at = Column(DateTime, server_default=func.now())
