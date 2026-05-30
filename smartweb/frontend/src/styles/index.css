@@ -115,6 +115,15 @@
   background: rgba(26,29,39,0.92);
 }
 
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: hidden;
+}
+
 body {
   font-family: var(--font-sans);
   font-size: 15px;
