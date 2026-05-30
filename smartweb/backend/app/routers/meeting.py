@@ -79,8 +79,12 @@ def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(g
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
-    for key, value in data.model_dump(exclude_unset=True).items():
+    updates = data.model_dump(exclude_unset=True)
+    for key, value in updates.items():
         setattr(meeting, key, value)
+    # When rescheduling a cancelled meeting, restore it to scheduled
+    if updates.get('is_rescheduled') and meeting.status in ('cancelled', 'declined'):
+        meeting.status = 'scheduled'
     db.commit()
     db.refresh(meeting)
     return meeting

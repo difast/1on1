@@ -349,7 +349,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   </span>
                   <button
                     onClick={handleMarkAllRead}
-                    style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer' }}
+                    style={{
+                      fontSize: 13, color: '#fff', fontWeight: 600,
+                      background: unreadCount > 0 ? 'var(--color-accent)' : 'var(--gray-200)',
+                      border: 'none', cursor: 'pointer',
+                      padding: '4px 12px', borderRadius: 20,
+                      animation: unreadCount > 0 ? 'markAllPulse 1.8s ease infinite' : 'none',
+                      transition: 'background 0.2s',
+                    }}
                   >
                     Прочитать все
                   </button>

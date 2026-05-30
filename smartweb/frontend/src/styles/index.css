@@ -161,6 +161,23 @@ button { cursor: pointer; border: none; background: none; }
   50%       { opacity: 0.4; }
 }
 @keyframes spin { to { transform: rotate(360deg); } }
+@keyframes bellShake {
+  0%, 100% { transform: rotate(0deg); }
+  10%       { transform: rotate(-18deg); }
+  20%       { transform: rotate(18deg); }
+  30%       { transform: rotate(-14deg); }
+  40%       { transform: rotate(14deg); }
+  50%       { transform: rotate(-8deg); }
+  60%       { transform: rotate(8deg); }
+  70%       { transform: rotate(-4deg); }
+  80%       { transform: rotate(4deg); }
+  90%       { transform: rotate(0deg); }
+}
+@keyframes markAllPulse {
+  0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(99,102,241,0); }
+  100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+}
 @keyframes toastSlide {
   from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.94); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
