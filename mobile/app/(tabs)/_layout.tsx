@@ -6,10 +6,10 @@ import { useTheme } from '../../src/context/theme';
 import { ActivityIndicator, View } from 'react-native';
 
 export default function TabsLayout() {
-  const { session, user, loading, activeRole } = useAuth();
+  const { session, user, loading, initializing, activeRole } = useAuth();
   const { colors } = useTheme();
 
-  if (loading) {
+  if (loading || initializing) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <ActivityIndicator size="large" color={colors.accent} />
