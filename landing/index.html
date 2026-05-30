@@ -206,7 +206,7 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .elevator-open .lift-l{transform:translateX(-100%)}
 .elevator-open .lift-r{transform:translateX(100%)}
 .cta-section::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(124,58,237,.13),transparent 65%);pointer-events:none}
-.cta-section>*{position:relative;z-index:1}
+.cta-section>*:not(.lift-door){position:relative;z-index:1}
 .cta-h{font-family:'Playfair Display',serif;font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:20px}
 .cta-sub{font-size:17px;color:var(--txt2);margin:0 auto 40px;max-width:440px;line-height:1.75}
 .cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
