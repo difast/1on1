@@ -36,6 +36,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [meetingLoading, setMeetingLoading] = useState(false)
 
   const [tasks, setTasks] = useState([])
+  const [taskFilter, setTaskFilter] = useState('all')
   const [selfTaskForm, setSelfTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
   const [editingTask, setEditingTask] = useState(null)
   const [subtaskRefresh, setSubtaskRefresh] = useState({})
@@ -733,8 +734,22 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 <p className="empty-desc">Создайте задачу или дождитесь задач от тимлида</p>
               </div>
             ) : (
+              <>
+                <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                  {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
+                    <button key={f} onClick={() => setTaskFilter(f)}
+                      className={taskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              {tasks.filter(t => taskFilter === 'all' ? true : taskFilter === 'open' ? !t.completed : t.completed).length === 0 ? (
+                <p style={{ fontSize: 14, color: 'var(--color-text-muted)', padding: '12px 0' }}>
+                  {taskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                </p>
+              ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {tasks.map(task => {
+                {tasks.filter(t => taskFilter === 'all' ? true : taskFilter === 'open' ? !t.completed : t.completed).map(task => {
                   const isSelf = task.assigned_by === user.id
                   return (
                     <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -800,6 +815,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   )
                 })}
               </div>
+              )}
+              </>
             )}
           </div>
         )}

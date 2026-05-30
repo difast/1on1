@@ -126,6 +126,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Tasks sub-tab: 'mine' | 'members'
   const [tasksSubTab, setTasksSubTab] = useState('mine')
+  const [memberTaskFilter, setMemberTaskFilter] = useState('all')
 
   // Reschedule AI slots modal
   const [rescheduleModal, setRescheduleModal] = useState(null) // { meetingId, memberName, cadence }
@@ -967,10 +968,19 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   </div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
+                        <button key={f} onClick={() => setMemberTaskFilter(f)}
+                          className={memberTaskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
                       const tasks = memberTasks[member.user_id]
                       const taskForm = taskForms[member.user_id] || {}
                       const expanded = expandedTasks.has(member.user_id)
+                      const filteredTasks = tasks ? tasks.filter(t => memberTaskFilter === 'all' ? true : memberTaskFilter === 'open' ? !t.completed : t.completed) : tasks
                       return (
                         <div key={member.user_id}>
                           <button
@@ -982,7 +992,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             </div>
                             <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', flex: 1 }}>{member.user_name}</span>
                             {tasks !== undefined && (
-                              <span className="badge badge-gray" style={{ fontSize: 11 }}>{tasks.length}</span>
+                              <span className="badge badge-gray" style={{ fontSize: 11 }}>{filteredTasks.length}</span>
                             )}
                             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor"
                               style={{ width: 14, height: 14, color: 'var(--color-text-muted)', transition: 'transform 0.2s', transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)' }}>
@@ -992,7 +1002,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           {expanded && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 4 }}>
                               {tasks === undefined && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Загрузка...</p>}
-                              {tasks !== undefined && tasks.map(task => (
+                              {filteredTasks !== undefined && filteredTasks.map(task => (
                                 <div key={task.id} className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                   {editingTask?.id === task.id ? (
                                     <form onSubmit={async e => {
@@ -1052,8 +1062,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                   />
                                 </div>
                               ))}
-                              {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
-                                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '4px 0' }}>Нет задач</p>
+                              {filteredTasks !== undefined && filteredTasks.length === 0 && !taskForm.open && (
+                                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '4px 0' }}>
+                                  {memberTaskFilter === 'open' ? 'Нет открытых задач' : memberTaskFilter === 'done' ? 'Нет выполненных задач' : 'Нет задач'}
+                                </p>
                               )}
                               {taskForm.open ? (
                                 <form onSubmit={e => handleCreateTask(e, member.user_id)} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '8px 0' }}>
