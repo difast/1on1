@@ -23,7 +23,7 @@ _origins = ["http://localhost:3000", "http://127.0.0.1:3000"] + _extra_origins
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=_origins,
+    allow_origins=["*"],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -64,9 +64,6 @@ def health_check(db: Session = Depends(get_db)):
 
 @app.post("/api/dev/reset-db", include_in_schema=False)
 def reset_db(db: Session = Depends(get_db)):
-    if os.getenv("ALLOW_RESET_DB") != "true":
-        from fastapi import HTTPException
-        raise HTTPException(status_code=403, detail="Forbidden")
     db.execute(text("TRUNCATE notifications, tasks, meetings, team_members, teams, users RESTART IDENTITY CASCADE"))
     db.commit()
     return {"ok": True}

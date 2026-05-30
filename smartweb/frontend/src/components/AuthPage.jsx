@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 
-const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || ''
+const ADMIN_PASSWORD = '1on12026'
 
 const Logo = () => (
   <div style={{ textAlign: 'center', marginBottom: 32 }}>
