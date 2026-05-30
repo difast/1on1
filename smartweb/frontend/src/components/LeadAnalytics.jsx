@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins } from '../api/client'
+import XLSXStyle from 'xlsx-js-style'
 
 // ─── Animated number counter ──────────────────────────────────────────────────
 function AnimNum({ value, suffix = '', duration = 900 }) {
@@ -274,16 +275,184 @@ export default function LeadAnalytics({ user }) {
       .finally(() => setLoading(false))
   }, [user.id])
 
-  const exportCSV = (team, members) => {
-    const rows = [['Участник', 'Встреч (30 дн)', 'Последняя встреча', 'Задачи %', 'Статус']]
-    members.forEach(s => {
-      const status = s.warning_flags.length ? 'Риск' : 'Норма'
-      rows.push([s.member_name, s.meetings_last_30_days, s.last_meeting_date || '—', s.task_completion_pct ?? '—', status])
+  const exportExcel = (team, members, mood) => {
+    const XLSX = XLSXStyle
+    const wb = XLSX.utils.book_new()
+
+    // ── Style helpers ──────────────────────────────────────────────────────────
+    const hdr = (color = '1E3A5F') => ({
+      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
+      fill: { fgColor: { rgb: color } },
+      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+      border: { bottom: { style: 'thin', color: { rgb: 'CCCCCC' } } },
     })
-    const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+    const cell = (align = 'left', bold = false) => ({
+      font: { sz: 10, bold },
+      alignment: { horizontal: align, vertical: 'center' },
+      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
+    })
+    const riskCell = () => ({
+      font: { sz: 10, bold: true, color: { rgb: 'C0392B' } },
+      fill: { fgColor: { rgb: 'FDEDED' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
+    })
+    const okCell = () => ({
+      font: { sz: 10, color: { rgb: '1A6B3C' } },
+      fill: { fgColor: { rgb: 'E9F7EF' } },
+      alignment: { horizontal: 'center', vertical: 'center' },
+      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
+    })
+    const altRow = (isAlt) => isAlt ? { fill: { fgColor: { rgb: 'F7F9FC' } } } : {}
+    const makeCell = (v, s) => ({ v, s })
+
+    // ── Sheet 1: Обзор команды ─────────────────────────────────────────────────
+    const today = new Date().toLocaleDateString('ru-RU')
+    const ms = members
+
+    const s1Headers = [
+      'Участник', 'Встреч за 30 дн', 'Всего встреч', 'Последняя встреча',
+      'Дней с последней', 'Ср. интервал (дн)', 'Задачи выполнено %',
+      'Открытых задач', 'Инициировал лид', 'Инициировал сотр.', 'Статус',
+    ]
+    const s1Rows = [s1Headers.map(h => makeCell(h, hdr()))]
+    ms.forEach((s, i) => {
+      const isRisk = s.warning_flags && s.warning_flags.length > 0
+      const alt = altRow(i % 2 === 1)
+      s1Rows.push([
+        makeCell(s.member_name, { ...cell('left', true), ...alt }),
+        makeCell(s.meetings_last_30 ?? s.meetings_last_30_days ?? 0, { ...cell('center'), ...alt }),
+        makeCell(s.total_meetings ?? 0, { ...cell('center'), ...alt }),
+        makeCell(s.last_meeting_date || '—', { ...cell('center'), ...alt }),
+        makeCell(s.days_since_last ?? '—', { ...cell('center'), ...alt }),
+        makeCell(s.avg_interval_days ?? '—', { ...cell('center'), ...alt }),
+        makeCell(s.task_completion_pct != null ? s.task_completion_pct + '%' : '—', { ...cell('center'), ...alt }),
+        makeCell(s.open_tasks ?? 0, { ...cell('center'), ...alt }),
+        makeCell(s.lead_initiated ?? 0, { ...cell('center'), ...alt }),
+        makeCell(s.member_initiated ?? 0, { ...cell('center'), ...alt }),
+        makeCell(isRisk ? 'Риск' : 'Норма', isRisk ? riskCell() : okCell()),
+      ])
+    })
+    const ws1 = XLSX.utils.aoa_to_sheet(s1Rows.map(r => r.map(c => c.v)))
+    s1Rows.forEach((row, ri) => row.forEach((c, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: ri, c: ci })
+      if (!ws1[addr]) ws1[addr] = {}
+      ws1[addr].s = c.s
+    }))
+    ws1['!cols'] = [22, 16, 14, 18, 16, 18, 20, 16, 16, 18, 10].map(w => ({ wch: w }))
+    ws1['!rows'] = [{ hpt: 30 }]
+    // Title row above headers
+    const titleAddr = XLSX.utils.encode_cell({ r: 0, c: 0 })
+    XLSX.utils.sheet_add_aoa(ws1, [[`Аналитика команды: ${team.team_name} | ${today}`]], { origin: 'A1' })
+    ws1['A1'].s = { font: { bold: true, sz: 13, color: { rgb: '1E3A5F' } }, alignment: { horizontal: 'left' } }
+    XLSX.utils.sheet_add_aoa(ws1, [s1Headers], { origin: 'A2' })
+    s1Headers.forEach((h, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: 1, c: ci })
+      ws1[addr] = { v: h, s: hdr() }
+    })
+    ms.forEach((s, i) => {
+      const isRisk = s.warning_flags && s.warning_flags.length > 0
+      const alt = altRow(i % 2 === 1)
+      const rowVals = [
+        s.member_name,
+        s.meetings_last_30 ?? s.meetings_last_30_days ?? 0,
+        s.total_meetings ?? 0,
+        s.last_meeting_date || '—',
+        s.days_since_last ?? '—',
+        s.avg_interval_days ?? '—',
+        s.task_completion_pct != null ? s.task_completion_pct + '%' : '—',
+        s.open_tasks ?? 0,
+        s.lead_initiated ?? 0,
+        s.member_initiated ?? 0,
+        isRisk ? 'Риск' : 'Норма',
+      ]
+      const styles = [
+        { ...cell('left', true), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        { ...cell('center'), ...alt },
+        isRisk ? riskCell() : okCell(),
+      ]
+      rowVals.forEach((v, ci) => {
+        const addr = XLSX.utils.encode_cell({ r: i + 2, c: ci })
+        ws1[addr] = { v, s: styles[ci] }
+      })
+    })
+    const ref = ws1['!ref']
+    ws1['!ref'] = `A1:K${ms.length + 2}`
+    XLSX.utils.book_append_sheet(wb, ws1, 'Обзор')
+
+    // ── Sheet 2: Зона риска ────────────────────────────────────────────────────
+    const atRisk = ms.filter(s => s.warning_flags && s.warning_flags.length > 0)
+    const ws2 = XLSX.utils.aoa_to_sheet([])
+    XLSX.utils.sheet_add_aoa(ws2, [['Участники в зоне риска']], { origin: 'A1' })
+    ws2['A1'] = { v: 'Участники в зоне риска', s: { font: { bold: true, sz: 13, color: { rgb: 'C0392B' } } } }
+    const riskHeaders = ['Участник', 'Флаги риска', 'Дней с последней встречи', 'Открытых задач', 'Задачи %']
+    riskHeaders.forEach((h, ci) => {
+      const addr = XLSX.utils.encode_cell({ r: 1, c: ci })
+      ws2[addr] = { v: h, s: hdr('C0392B') }
+    })
+    if (atRisk.length === 0) {
+      ws2['A3'] = { v: 'Нет участников в зоне риска', s: { font: { color: { rgb: '1A6B3C' }, italic: true } } }
+    } else {
+      atRisk.forEach((s, i) => {
+        const flags = (s.warning_flags || []).join('; ')
+        const rowVals = [s.member_name, flags, s.days_since_last ?? '—', s.open_tasks ?? 0, s.task_completion_pct != null ? s.task_completion_pct + '%' : '—']
+        rowVals.forEach((v, ci) => {
+          const addr = XLSX.utils.encode_cell({ r: i + 2, c: ci })
+          ws2[addr] = { v, s: i === 0 ? riskCell() : { ...cell('left'), fill: { fgColor: { rgb: 'FFF5F5' } } } }
+        })
+      })
+    }
+    ws2['!cols'] = [22, 40, 22, 16, 14].map(w => ({ wch: w }))
+    ws2['!ref'] = `A1:E${Math.max(atRisk.length + 2, 3)}`
+    XLSX.utils.book_append_sheet(wb, ws2, 'Зона риска')
+
+    // ── Sheet 3: Настроение команды ────────────────────────────────────────────
+    const ws3 = XLSX.utils.aoa_to_sheet([])
+    ws3['A1'] = { v: 'Настроение команды (последние 7 дней)', s: { font: { bold: true, sz: 13, color: { rgb: '1E3A5F' } } } }
+    const moodDays = mood?.days ?? []
+    const moodWeeks = mood?.weeks ?? []
+    ws3['A2'] = { v: 'По дням', s: hdr('2980B9') }
+    ws3['B2'] = { v: 'Ср. балл (1–5)', s: hdr('2980B9') }
+    ws3['C2'] = { v: 'Ответов', s: hdr('2980B9') }
+    moodDays.forEach((d, i) => {
+      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 0 })] = { v: d.day, s: cell('center') }
+      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 1 })] = { v: d.avg ?? '—', s: cell('center') }
+      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 2 })] = { v: d.count, s: cell('center') }
+    })
+    const weekStart = moodDays.length + 4
+    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 0 })] = { v: 'По неделям (12 нед.)', s: hdr('2980B9') }
+    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 1 })] = { v: 'Ср. балл', s: hdr('2980B9') }
+    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 2 })] = { v: 'Ответов', s: hdr('2980B9') }
+    moodWeeks.forEach((w, i) => {
+      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 0 })] = { v: w.week, s: cell('center') }
+      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 1 })] = { v: w.avg ?? '—', s: cell('center') }
+      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 2 })] = { v: w.count, s: cell('center') }
+    })
+    if (mood?.recent_summaries?.length) {
+      const sumStart = weekStart + moodWeeks.length + 2
+      ws3[XLSX.utils.encode_cell({ r: sumStart, c: 0 })] = { v: 'Последние AI-резюме опросов', s: { font: { bold: true, sz: 11, color: { rgb: '1E3A5F' } } } }
+      mood.recent_summaries.forEach((s, i) => {
+        ws3[XLSX.utils.encode_cell({ r: sumStart + 1 + i, c: 0 })] = { v: s, s: cell('left') }
+      })
+    }
+    ws3['!cols'] = [18, 16, 12].map(w => ({ wch: w }))
+    ws3['!ref'] = `A1:C${weekStart + moodWeeks.length + 10}`
+    XLSX.utils.book_append_sheet(wb, ws3, 'Настроение')
+
+    // ── Write file ─────────────────────────────────────────────────────────────
+    const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
+    const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }))
-    a.download = `${team.team_name}_аналитика.csv`
+    a.href = URL.createObjectURL(blob)
+    a.download = `${team.team_name}_аналитика.xlsx`
     a.click()
   }
 
@@ -336,9 +505,9 @@ export default function LeadAnalytics({ user }) {
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
         <button
-          onClick={() => exportCSV(team, team.member_stats)}
+          onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id])}
           style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >↓ Экспорт CSV</button>
+        >↓ Экспорт Excel</button>
       </div>
 
       {/* Heatmap + Mood line */}
