@@ -235,7 +235,7 @@ async def _analyze_and_create_tasks(meeting: Meeting, transcript: str, db: Sessi
             content = content.split("```")[1]
             if content.startswith("json"):
                 content = content[4:]
-        if "{" in content:
+        if "{" in content and "}" in content:
             content = content[content.index("{"):content.rindex("}") + 1]
         parsed = json.loads(content)
     except Exception as e:

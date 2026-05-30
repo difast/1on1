@@ -8,10 +8,9 @@ from typing import List, Optional
 
 from app.database import get_db
 from app.models.mood import MoodEntry
+from app.prompts import AITUNNEL_KEY
 
 router = APIRouter()
-
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
 
 def _analyze_survey(answers: List[str]) -> dict:
     filled = [a.strip() for a in answers if a.strip()]
