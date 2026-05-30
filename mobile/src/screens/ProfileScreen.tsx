@@ -4,6 +4,7 @@ import {
   TextInput, Alert, Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/auth';
 import { updateUser } from '../lib/api';
@@ -102,8 +103,8 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const currentRole = activeRole ?? user.role;
-  const roleLabel = currentRole === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник команды';
-  const otherRoleLabel = currentRole === 'team_lead' ? '🧑‍💻 Участник команды' : '👔 Тимлид';
+  const roleLabel = currentRole === 'team_lead' ? 'Тимлид' : 'Участник команды';
+  const otherRoleLabel = currentRole === 'team_lead' ? 'Участник команды' : 'Тимлид';
 
   return (
     <SafeAreaView style={styles.root}>
@@ -124,7 +125,9 @@ export default function ProfileScreen() {
               <Avatar name={user.name} size={88} />
             )}
             <View style={styles.avatarOverlay}>
-              <Text style={styles.avatarOverlayText}>{uploadingAvatar ? '...' : '📷'}</Text>
+              {uploadingAvatar
+                ? <Text style={styles.avatarOverlayText}>...</Text>
+                : <Ionicons name="camera" size={14} color="#fff" />}
             </View>
           </TouchableOpacity>
           <Text style={styles.name}>{user.name}</Text>
@@ -209,14 +212,16 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           {!editing ? (
             <>
-              {[
-                { icon: '💼', label: 'Должность', value: user.title },
-                { icon: '✈️', label: 'Telegram', value: user.telegram },
-                { icon: '🔗', label: 'LinkedIn', value: user.linkedin },
-                { icon: '⌨️', label: 'GitHub', value: user.github },
-              ].map(f => (
+              {([
+                { icon: 'briefcase-outline', label: 'Должность', value: user.title },
+                { icon: 'paper-plane-outline', label: 'Telegram', value: user.telegram },
+                { icon: 'logo-linkedin', label: 'LinkedIn', value: user.linkedin },
+                { icon: 'logo-github', label: 'GitHub', value: user.github },
+              ] as const).map(f => (
                 <View key={f.label} style={styles.infoRow}>
-                  <Text style={styles.infoIcon}>{f.icon}</Text>
+                  <View style={styles.infoIconWrap}>
+                    <Ionicons name={f.icon} size={18} color={colors.textSecondary} />
+                  </View>
                   <View>
                     <Text style={styles.infoLabel}>{f.label}</Text>
                     <Text style={[styles.infoValue, !f.value && styles.infoEmpty]}>
@@ -226,7 +231,8 @@ export default function ProfileScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)}>
-                <Text style={styles.editBtnText}>⚙️ Настройки</Text>
+                <Ionicons name="settings-outline" size={16} color={colors.accent} />
+                <Text style={styles.editBtnText}>Настройки</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -235,7 +241,8 @@ export default function ProfileScreen() {
               <View style={styles.themeRow}>
                 <Text style={styles.fieldLabel}>Тема приложения</Text>
                 <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-                  <Text style={styles.themeToggleText}>{isDark ? '☀️  Светлая' : '🌙  Тёмная'}</Text>
+                  <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={15} color={colors.textSecondary} />
+                  <Text style={styles.themeToggleText}>{isDark ? 'Светлая' : 'Тёмная'}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -289,6 +296,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
   themeRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
   themeToggle: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     backgroundColor: c.accentLight, borderRadius: 8,
     paddingHorizontal: 12, paddingVertical: 7,
     borderWidth: 1, borderColor: c.accent,
@@ -308,7 +316,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     borderWidth: 2, borderColor: c.bg,
   },
-  avatarOverlayText: { fontSize: 12 },
+  avatarOverlayText: { fontSize: 12, color: '#fff' },
   name: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginTop: 12 },
   role: { fontSize: 14, color: c.textSecondary, marginTop: 4 },
   email: { fontSize: 13, color: c.textMuted, marginTop: 4 },
@@ -321,15 +329,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 20,
     gap: 14,
   },
-  infoRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 12 },
-  infoIcon: { fontSize: 16, marginTop: 2 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  infoIconWrap: {
+    width: 36, height: 36, borderRadius: 9, backgroundColor: c.surface2,
+    alignItems: 'center', justifyContent: 'center',
+  },
   infoLabel: { fontSize: 11, fontWeight: '600', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 },
   infoValue: { fontSize: 14, color: c.textPrimary },
   infoEmpty: { color: c.textMuted, fontStyle: 'italic' },
 
   editBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
     borderWidth: 1, borderColor: c.border, borderRadius: 10,
-    paddingVertical: 12, alignItems: 'center', marginTop: 4,
+    paddingVertical: 12, marginTop: 4,
     backgroundColor: c.surface2,
   },
   editBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },

@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../src/context/auth';
 import { createUser, joinTeam, updateUser } from '../src/lib/api';
@@ -132,16 +133,18 @@ export default function OnboardingScreen() {
         {step === 1 && (
           <View style={{ width: '100%', maxWidth: 400 }}>
             <Text style={styles.stepTitle}>Кто вы?</Text>
-            {[
-              { r: 'team_lead', icon: '👔', title: 'Тимлид', desc: 'Управляю командой, провожу 1-on-1 встречи' },
-              { r: 'member', icon: '🧑‍💻', title: 'Участник команды', desc: 'Являюсь частью команды, участвую в 1-on-1 встречах' },
-            ].map(opt => (
+            {([
+              { r: 'team_lead', icon: 'briefcase-outline', title: 'Тимлид', desc: 'Управляю командой, провожу 1-on-1 встречи' },
+              { r: 'member', icon: 'person-outline', title: 'Участник команды', desc: 'Являюсь частью команды, участвую в 1-on-1 встречах' },
+            ] as const).map(opt => (
               <TouchableOpacity
                 key={opt.r}
                 style={styles.roleCard}
                 onPress={() => { setRole(opt.r as any); setStep(2); }}
               >
-                <Text style={styles.roleIcon}>{opt.icon}</Text>
+                <View style={styles.roleIconWrap}>
+                  <Ionicons name={opt.icon} size={24} color={colors.accent} />
+                </View>
                 <Text style={styles.roleTitle}>{opt.title}</Text>
                 <Text style={styles.roleDesc}>{opt.desc}</Text>
               </TouchableOpacity>
@@ -156,7 +159,7 @@ export default function OnboardingScreen() {
               <Text style={styles.backBtnText}>← Назад</Text>
             </TouchableOpacity>
             <Text style={styles.stepHeader}>
-              {role === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник команды'}
+              {role === 'team_lead' ? 'Тимлид' : 'Участник команды'}
             </Text>
             <Text style={styles.stepSub}>Расскажите немного о себе</Text>
 
@@ -302,7 +305,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     padding: 20,
     marginBottom: 12,
   },
-  roleIcon: { fontSize: 28, marginBottom: 8 },
+  roleIconWrap: {
+    width: 48, height: 48, borderRadius: 12, backgroundColor: c.accentLight,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 12,
+  },
   roleTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginBottom: 4 },
   roleDesc: { fontSize: 14, color: c.textSecondary },
 

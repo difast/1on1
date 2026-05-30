@@ -4,6 +4,7 @@ import {
   RefreshControl, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getTasks, createTask, updateTask, deleteTask, getTeams, getTeam } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -304,11 +305,12 @@ export default function LeadTasksScreen() {
                             <Text style={styles.memberName}>{member.user_name}</Text>
                             <Text style={styles.memberRole}>{member.role}</Text>
                           </View>
-                          <Text style={styles.chevron}>
-                            {mTasks !== undefined
-                              ? `${mTasks.length} · `
-                              : ''}{isExpanded ? '▾' : '▸'}
-                          </Text>
+                          <View style={styles.chevron}>
+                            {mTasks !== undefined && (
+                              <Text style={styles.chevronCount}>{mTasks.length}</Text>
+                            )}
+                            <Ionicons name={isExpanded ? 'chevron-down' : 'chevron-forward'} size={15} color={colors.textMuted} />
+                          </View>
                         </TouchableOpacity>
                         {isExpanded && (
                           <View style={styles.memberTasksList}>
@@ -382,7 +384,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   memberAvatarText: { fontSize: 15, fontWeight: '700', color: c.accent },
   memberName: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
   memberRole: { fontSize: 12, color: c.textMuted },
-  chevron: { fontSize: 13, color: c.textMuted },
+  chevron: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  chevronCount: { fontSize: 13, color: c.textMuted },
   memberTasksList: { borderTopWidth: 1, borderTopColor: c.border, padding: 12, gap: 8 },
   loadingText: { fontSize: 13, color: c.textMuted, textAlign: 'center', paddingVertical: 8 },
   emptyText: { fontSize: 13, color: c.textMuted, fontStyle: 'italic' },

@@ -386,9 +386,10 @@ export default function MemberOverviewScreen() {
                       </Text>
                       {m.topic ? <Text style={styles.meetingNoteSub} numberOfLines={1}>{m.topic}</Text> : null}
                     </View>
-                    <Text style={styles.meetingNoteToggle}>
-                      {hasNote ? '● ' : ''}{isOpen ? '▾' : '▸'}
-                    </Text>
+                    <View style={styles.meetingNoteToggle}>
+                      {hasNote && <View style={styles.meetingNoteDot} />}
+                      <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={15} color={colors.textMuted} />
+                    </View>
                   </TouchableOpacity>
                   {isOpen && (
                     <View style={styles.meetingNoteEditor}>
@@ -588,7 +589,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   meetingNoteDateDay: { fontSize: 10, fontWeight: '700', color: c.accent, textAlign: 'center' },
   meetingNoteTitle: { fontSize: 13, fontWeight: '500', color: c.textPrimary },
   meetingNoteSub: { fontSize: 11, color: c.textSecondary, marginTop: 1 },
-  meetingNoteToggle: { fontSize: 13, color: c.textMuted, flexShrink: 0 },
+  meetingNoteToggle: { flexDirection: 'row', alignItems: 'center', gap: 4, flexShrink: 0 },
+  meetingNoteDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent },
   meetingNoteEditor: {
     borderTopWidth: 1, borderTopColor: c.border,
     padding: 12, gap: 10,

@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import {
   getTeams, getTeam, createTeam,
@@ -290,7 +291,7 @@ export default function LeadTeamsScreen() {
         {/* Notes section */}
         <View style={styles.notesSection}>
           <View style={styles.notesSectionHeader}>
-            <Text style={styles.notesSectionTitle}>📝 Мои заметки</Text>
+            <Text style={styles.notesSectionTitle}>Мои заметки</Text>
             <TouchableOpacity onPress={() => setShowNoteForm(s => !s)}>
               <Text style={styles.notesAddLink}>{showNoteForm ? 'Закрыть' : '+ Добавить'}</Text>
             </TouchableOpacity>
@@ -385,7 +386,7 @@ export default function LeadTeamsScreen() {
             {/* Invite banner */}
             <TouchableOpacity style={styles.inviteBanner} onPress={handleCopyInvite}>
               <View style={styles.inviteIcon}>
-                <Text style={{ fontSize: 20 }}>🔗</Text>
+                <Ionicons name="link-outline" size={20} color={colors.accent} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.inviteLabel}>Код приглашения</Text>
@@ -413,7 +414,7 @@ export default function LeadTeamsScreen() {
               style={styles.memberSearchInput}
               value={memberSearch}
               onChangeText={setMemberSearch}
-              placeholder="🔍 Поиск участников..."
+              placeholder="Поиск участников..."
               placeholderTextColor={colors.textMuted}
             />
 
@@ -479,8 +480,9 @@ export default function LeadTeamsScreen() {
                       style={styles.tasksToggle}
                       onPress={() => toggleTasks(member.user_id)}
                     >
+                      <Ionicons name={tasksExpanded ? 'chevron-down' : 'chevron-forward'} size={14} color={colors.textSecondary} />
                       <Text style={styles.tasksToggleText}>
-                        {tasksExpanded ? '▾' : '▸'} Задачи
+                        {' '}Задачи
                         {tasks !== undefined && (
                           <Text style={{ color: colors.textMuted }}> ({tasks.length})</Text>
                         )}
@@ -832,7 +834,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     marginBottom: 10,
   },
   scheduleBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  tasksToggle: { paddingVertical: 4 },
+  tasksToggle: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4 },
   tasksToggleText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
   tasksLoading: { fontSize: 12, color: c.textMuted, paddingVertical: 4 },
   tasksList: { marginTop: 8, gap: 6 },

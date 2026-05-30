@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../src/context/auth';
 import { useTheme } from '../src/context/theme';
 import type { AppColors } from '../src/constants/colors';
@@ -23,17 +24,19 @@ export default function RoleSelectScreen() {
         <Text style={styles.title}>Войти как</Text>
         <Text style={styles.sub}>У вас есть обе роли. Выберите, в каком режиме работать сейчас.</Text>
 
-        {[
-          { role: 'team_lead' as const, icon: '👔', title: 'Тимлид', desc: 'Управление командой и 1-on-1 встречами' },
-          { role: 'member' as const, icon: '🧑‍💻', title: 'Участник команды', desc: 'Участие во встречах и задачах команды' },
-        ].map(opt => (
+        {([
+          { role: 'team_lead', icon: 'briefcase-outline', title: 'Тимлид', desc: 'Управление командой и 1-on-1 встречами' },
+          { role: 'member', icon: 'person-outline', title: 'Участник команды', desc: 'Участие во встречах и задачах команды' },
+        ] as const).map(opt => (
           <TouchableOpacity key={opt.role} style={styles.card} onPress={() => choose(opt.role)}>
-            <Text style={styles.cardIcon}>{opt.icon}</Text>
+            <View style={styles.cardIconWrap}>
+              <Ionicons name={opt.icon} size={22} color={colors.accent} />
+            </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.cardTitle}>{opt.title}</Text>
               <Text style={styles.cardDesc}>{opt.desc}</Text>
             </View>
-            <Text style={styles.arrow}>›</Text>
+            <Ionicons name="chevron-forward" size={20} color={colors.textMuted} />
           </TouchableOpacity>
         ))}
 
@@ -62,10 +65,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     gap: 14,
     marginBottom: 12,
   },
-  cardIcon: { fontSize: 28 },
+  cardIconWrap: {
+    width: 44, height: 44, borderRadius: 11, backgroundColor: c.accentLight,
+    alignItems: 'center', justifyContent: 'center',
+  },
   cardTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginBottom: 4 },
   cardDesc: { fontSize: 13, color: c.textSecondary },
-  arrow: { fontSize: 22, color: c.textMuted, fontWeight: '300' },
 
   signOutBtn: { marginTop: 24, alignItems: 'center', paddingVertical: 12 },
   signOutText: { fontSize: 14, color: c.textMuted },

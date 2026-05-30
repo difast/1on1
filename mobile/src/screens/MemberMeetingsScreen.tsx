@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -251,11 +252,13 @@ export default function MemberMeetingsScreen() {
                     <View key={m.id} style={styles.pastCard}>
                       <MeetingItem meeting={m} />
                       <TouchableOpacity
-                        style={styles.noteToggleBtn}
+                        style={[styles.noteToggleBtn, styles.noteToggleRow]}
                         onPress={() => setExpandedNoteId(isOpen ? null : m.id)}
                       >
+                        {hasNote && <View style={styles.noteDot} />}
+                        <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={hasNote ? colors.accent : colors.textSecondary} />
                         <Text style={[styles.noteToggleText, hasNote && styles.noteToggleActive]}>
-                          {hasNote ? '● ' : ''}{isOpen ? '▾ Заметки' : '▸ Заметки'}
+                          {' '}Заметки
                         </Text>
                       </TouchableOpacity>
                       {isOpen && (
@@ -402,6 +405,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
   },
   noteToggleBtn: { paddingHorizontal: 14, paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border },
+  noteToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  noteDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent },
   noteToggleText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   noteToggleActive: { color: c.accent },
   noteEditor: { borderTopWidth: 1, borderTopColor: c.border, padding: 12, gap: 10 },

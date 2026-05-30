@@ -4,6 +4,7 @@ import {
   RefreshControl, TextInput, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -267,12 +268,14 @@ export default function LeadMeetingsScreen() {
                     <View key={m.id} style={styles.pastMeetingCard}>
                       <MeetingItem meeting={m} subtitle={memberName} />
                       <TouchableOpacity
-                        style={styles.noteToggleBtn}
+                        style={[styles.noteToggleBtn, styles.noteToggleRow]}
                         onPress={() => setExpandedNoteId(isOpen ? null : m.id)}
                         activeOpacity={0.7}
                       >
+                        {hasNote && <View style={styles.noteDot} />}
+                        <Ionicons name={isOpen ? 'chevron-down' : 'chevron-forward'} size={14} color={hasNote ? colors.accent : colors.textSecondary} />
                         <Text style={[styles.noteToggleText, hasNote && styles.noteToggleTextActive]}>
-                          {hasNote ? '● ' : ''}{isOpen ? '▾ Заметки' : '▸ Заметки'}
+                          {' '}Заметки
                         </Text>
                       </TouchableOpacity>
                       {isOpen && (
@@ -364,6 +367,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8,
     borderTopWidth: 1, borderTopColor: c.border,
   },
+  noteToggleRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  noteDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: c.accent },
   noteToggleText: { fontSize: 12, fontWeight: '600', color: c.textMuted },
   noteToggleTextActive: { color: c.accent },
   noteEditor: {
