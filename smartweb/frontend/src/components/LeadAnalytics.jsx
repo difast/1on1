@@ -924,7 +924,7 @@ export default function LeadAnalytics({ user }) {
       </div>
 
       {/* Heatmap + Mood line */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="grid-2-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="card" style={{ padding: '18px 20px' }}>
           <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
             Активность встреч по неделям

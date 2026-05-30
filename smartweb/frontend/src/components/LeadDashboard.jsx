@@ -720,14 +720,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 >
       <div style={{ maxWidth: 1100 }}>
         {/* Page header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+        <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
               {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'notes' ? 'Заметки' : 'Аналитика'}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
             {selectedTeamId && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
                 📹 Созвон

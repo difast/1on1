@@ -17,6 +17,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
   const [scrolled, setScrolled] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeCallNotif, setActiveCallNotif] = useState(null)
   const [toasts, setToasts] = useState([])
   const shownToastIds = useRef(new Set())
@@ -323,7 +324,18 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)' }}>
       {/* Header — exactly as per .header CSS spec */}
       <header className={`header${scrolled ? ' scrolled' : ''}`}>
-        <span className="logo" style={{ cursor: 'pointer' }} onClick={() => window.location.reload()}>OneOn<span className="accent">One</span></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <button
+            className="mobile-menu-btn"
+            aria-label="Меню"
+            onClick={() => setSidebarOpen(o => !o)}
+          >
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
+            </svg>
+          </button>
+          <span className="logo" style={{ cursor: 'pointer' }} onClick={() => window.location.reload()}>OneOn<span className="accent">One</span></span>
+        </div>
 
         <nav className="nav">
         </nav>
@@ -334,7 +346,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
             {/* Notification dropdown — inside notifRef so outside-click logic works correctly */}
             {showNotifications && (
-              <div style={{
+              <div className="notif-dropdown" style={{
                 position: 'fixed', right: 16, top: 68, width: 360,
                 background: 'var(--color-surface)', borderRadius: 'var(--radius-lg)',
                 border: '1px solid var(--color-border)', boxShadow: 'var(--shadow-lg)',
@@ -709,8 +721,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
       {/* Body: sidebar + main */}
       <div style={{ display: 'flex' }}>
+        {/* Mobile backdrop */}
+        <div
+          className={`sidebar-backdrop${sidebarOpen ? ' open' : ''}`}
+          onClick={() => setSidebarOpen(false)}
+        />
         {/* Sidebar */}
-        <aside style={{
+        <aside className={`app-sidebar${sidebarOpen ? ' open' : ''}`} style={{
           width: 240,
           position: 'fixed',
           top: 58,
@@ -843,7 +860,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </aside>
 
         {/* Main content */}
-        <main style={{ marginLeft: 240, flex: 1, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
+        <main className="app-main" style={{ marginLeft: 240, flex: 1, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
           {children}
         </main>
       </div>

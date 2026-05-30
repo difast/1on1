@@ -160,7 +160,7 @@ export default function MemberAnalytics({ user }) {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="grid-2-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {/* Who initiates */}
         <div className="card" style={{ padding: '18px 20px' }}>
           <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Кто инициирует встречи</p>

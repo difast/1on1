@@ -453,29 +453,124 @@ textarea.input { resize: vertical; min-height: 90px; }
 .border-status-yellow { border-color: #FCD34D !important; }
 .border-status-red { border-color: #F87171 !important; }
 
+/* ═══════════════════════════════════════════════════════════
+   Mobile sidebar drawer + hamburger
+   ═══════════════════════════════════════════════════════════ */
+
+/* Hamburger button — hidden on desktop, shown on mobile */
+.mobile-menu-btn {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 38px; height: 38px; padding: 0;
+  border-radius: var(--radius-sm);
+  background: transparent; border: none;
+  color: var(--color-text-secondary);
+  cursor: pointer; flex-shrink: 0;
+  transition: background var(--dur-fast) var(--ease-smooth), color var(--dur-fast) var(--ease-smooth);
+}
+.mobile-menu-btn:hover { background: var(--gray-100); color: var(--color-text-primary); }
+.mobile-menu-btn:active { transform: scale(0.92); }
+
+/* Backdrop behind the drawer — only visible when sidebar open on mobile */
+.sidebar-backdrop {
+  display: none;
+  position: fixed; inset: 0; top: var(--header-height);
+  background: rgba(15,20,40,0.4);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  z-index: 89; opacity: 0; pointer-events: none;
+  transition: opacity var(--dur-normal) var(--ease-smooth);
+}
+
+/* ── Tablet ───────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .app-main { padding: 24px 20px; }
+}
+
+/* ── Mobile (≤ 768px): sidebar becomes a slide-out drawer ──── */
+@media (max-width: 768px) {
+  .mobile-menu-btn { display: inline-flex; }
+
+  .app-sidebar {
+    transform: translateX(-100%);
+    transition: transform var(--dur-normal) var(--ease-spring), box-shadow var(--dur-normal) var(--ease-smooth);
+    z-index: 95 !important;
+    box-shadow: none;
+    width: 270px !important;
+  }
+  .app-sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .sidebar-backdrop { display: block; }
+  .sidebar-backdrop.open { opacity: 1; pointer-events: auto; }
+
+  .app-main {
+    margin-left: 0 !important;
+    padding: 20px 16px !important;
+  }
+}
+
+/* ── Phones (≤ 640px) ─────────────────────────────────────── */
 @media (max-width: 640px) {
-  h1 { font-size: 1.6rem; }
-  h2 { font-size: 1.3rem; }
-  .header { padding: 0 16px; }
+  body { font-size: 14px; }
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.1rem; }
+  .header { padding: 0 14px; }
+
+  .app-main { padding: 16px 13px !important; }
+
+  /* Page headers: title row + toolbar stack vertically */
+  .page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 14px !important;
+  }
+  .page-toolbar {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+  .page-toolbar .btn { flex: 1 1 auto; }
 
   /* Tabs scroll horizontally on mobile */
   .tabs { overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; max-width: 100%; scrollbar-width: none; }
   .tabs::-webkit-scrollbar { display: none; }
   .tab { padding: 7px 11px; font-size: 13px; flex-shrink: 0; }
 
+  /* Two-column grids collapse to one column */
+  .grid-2-mobile { grid-template-columns: 1fr !important; }
+
   /* Meeting item actions wrap on mobile */
+  .meeting-item { padding: 12px 13px; }
   .meeting-item > div { flex-wrap: wrap; row-gap: 8px; }
 
   /* Member card compact on mobile */
   .member-card { padding: 14px; }
 
+  /* Cards a touch tighter */
+  .card { border-radius: var(--radius-md); }
+
   /* Invite banner stacks on mobile */
-  .invite-banner { flex-direction: column; gap: 12px; }
+  .invite-banner { flex-direction: column; gap: 12px; align-items: flex-start; }
   .invite-banner > div:last-child { flex-wrap: wrap; width: 100%; }
 
-  /* Modals full-width on mobile */
-  .modal { max-width: 100%; border-radius: 20px 20px 0 0; padding: 24px 18px; }
+  /* Modals: full-width bottom sheet on mobile */
+  .modal { max-width: 100%; border-radius: 20px 20px 0 0; padding: 24px 18px; max-height: 92vh; overflow-y: auto; }
   .overlay-center { align-items: flex-end; padding: 0; }
+  .overlay { align-items: flex-end; }
+
+  /* Notification dropdown full-width */
+  .notif-dropdown { right: 8px !important; left: 8px !important; width: auto !important; }
+
+  /* Bottom-right fixed widgets/banners: keep within viewport */
+  .quick-widget-wrap { right: 14px !important; bottom: 14px !important; }
+}
+
+/* Larger tap targets on touch devices */
+@media (hover: none) and (pointer: coarse) {
+  .btn-sm { padding: 9px 14px; }
+  .tab { padding: 9px 14px; }
 }
 
 /* FullCalendar overrides */

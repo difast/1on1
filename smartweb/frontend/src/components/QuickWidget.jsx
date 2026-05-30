@@ -19,7 +19,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
         />
       )}
 
-      <div style={{
+      <div className="quick-widget-wrap" style={{
         position: 'fixed',
         right: 24,
         bottom: 32,

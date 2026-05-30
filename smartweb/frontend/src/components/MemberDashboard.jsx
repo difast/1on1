@@ -351,12 +351,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       }}
 >
       <div style={{ maxWidth: 900 }}>
-        <div style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div className="page-header" style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="page-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                 Пришёл: {new Date(checkin.arrived_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
