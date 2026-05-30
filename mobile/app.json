@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "OneOnOne",
-    "slug": "oneonone",
+    "slug": "1on1",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -46,6 +46,6 @@
         "projectId": "737d36e1-dc2c-4d6d-89a6-af1a7d0b4957"
       }
     },
-    "owner": "pyatakovvv"
+    "owner": "new_session"
   }
 }
