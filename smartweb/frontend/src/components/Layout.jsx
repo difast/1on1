@@ -360,42 +360,77 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                       Нет уведомлений
                     </p>
                   ) : (
-                    notifications.map(n => (
-                      <div
-                        key={n.id}
-                        style={{
-                          padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
-                          background: n.type === 'call_started' && !n.read
-                            ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
-                            : !n.read ? 'var(--blue-50)' : 'transparent',
-                          transition: 'background 0.15s',
-                        }}
-                      >
-                        <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
-                        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
-                        {n.type === 'call_started' && n.data?.room_url && (
-                          <button
-                            onClick={() => {
-                              const url = n.data.room_url
-                              const roomName = url.split('/').pop()
-                              if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
-                              else window.open(url, '_blank')
-                              markRead(n.id).catch(() => {})
-                              setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
-                              setUnreadCount(c => Math.max(0, c - 1))
-                              if (activeCallNotif?.id === n.id) setActiveCallNotif(null)
-                            }}
-                            style={{
-                              marginTop: 8, padding: '5px 14px', fontSize: 13, fontWeight: 600,
-                              background: 'var(--color-accent)', color: '#fff',
-                              border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-                            }}
-                          >
-                            Присоединиться →
-                          </button>
-                        )}
-                      </div>
-                    ))
+                    notifications.map(n => {
+                      const isCall = n.type === 'call_started'
+                      const isUnread = !n.read
+                      const handleClick = () => {
+                        if (isCall) return
+                        if (isUnread) {
+                          markRead(n.id).catch(() => {})
+                          setUnreadCount(c => Math.max(0, c - 1))
+                          setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                        }
+                        setShowNotifications(false)
+                        if (onNavigate) onNavigate(n.type)
+                      }
+                      return (
+                        <div
+                          key={n.id}
+                          onClick={handleClick}
+                          style={{
+                            padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
+                            background: isCall && isUnread
+                              ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
+                              : isUnread ? 'var(--blue-50)' : 'transparent',
+                            cursor: isCall ? 'default' : 'pointer',
+                            transition: 'background 0.15s',
+                            borderLeft: isUnread ? '3px solid #ef4444' : '3px solid transparent',
+                          }}
+                          onMouseEnter={e => { if (!isCall) e.currentTarget.style.background = 'var(--gray-100)' }}
+                          onMouseLeave={e => { if (!isCall) e.currentTarget.style.background = isUnread ? 'var(--blue-50)' : 'transparent' }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontWeight: isUnread ? 600 : 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
+                              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
+                            </div>
+                            {isUnread && (
+                              <span style={{
+                                flexShrink: 0, marginTop: 2,
+                                fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
+                                background: '#ef4444', color: '#fff',
+                                padding: '2px 7px', borderRadius: 20,
+                                whiteSpace: 'nowrap',
+                              }}>
+                                НОВОЕ
+                              </span>
+                            )}
+                          </div>
+                          {isCall && n.data?.room_url && (
+                            <button
+                              onClick={e => {
+                                e.stopPropagation()
+                                const url = n.data.room_url
+                                const roomName = url.split('/').pop()
+                                if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
+                                else window.open(url, '_blank')
+                                markRead(n.id).catch(() => {})
+                                setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+                                setUnreadCount(c => Math.max(0, c - 1))
+                                if (activeCallNotif?.id === n.id) setActiveCallNotif(null)
+                              }}
+                              style={{
+                                marginTop: 8, padding: '5px 14px', fontSize: 13, fontWeight: 600,
+                                background: 'var(--color-accent)', color: '#fff',
+                                border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
+                              }}
+                            >
+                              Присоединиться →
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })
                   )}
                 </div>
               </div>
