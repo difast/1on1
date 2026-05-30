@@ -469,7 +469,7 @@ export default function MemberOverviewScreen() {
         )}
 
         {upcomingMeetings.length === 0 && otherMembers.length === 0 && notes.length === 0 && (
-          <EmptyState icon="👥" title="Команда пуста" description="Ждём когда тимлид добавит участников" />
+          <EmptyState icon="people-outline" title="Команда пуста" description="Ждём когда тимлид добавит участников" />
         )}
       </ScrollView>
     </SafeAreaView>

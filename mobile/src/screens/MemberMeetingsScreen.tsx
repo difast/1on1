@@ -193,7 +193,7 @@ export default function MemberMeetingsScreen() {
                       disabled={callLoading[m.id]}
                     >
                       <Text style={styles.callBtnText}>
-                        {callLoading[m.id] ? 'Подключение...' : '📹 Начать созвон'}
+                        {callLoading[m.id] ? 'Подключение...' : 'Начать созвон'}
                       </Text>
                     </TouchableOpacity>
                   </View>

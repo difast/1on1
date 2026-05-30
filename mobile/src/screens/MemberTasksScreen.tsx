@@ -177,7 +177,7 @@ export default function MemberTasksScreen() {
         )}
 
         {tasks.length === 0 && !showForm && (
-          <EmptyState icon="✅" title="Нет задач" description="Создайте личную задачу или ждите от тимлида" />
+          <EmptyState icon="checkmark-circle-outline" title="Нет задач" description="Создайте личную задачу или ждите от тимлида" />
         )}
 
         {active.length > 0 && (

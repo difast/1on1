@@ -376,7 +376,7 @@ export default function LeadTeamsScreen() {
 
         {/* Empty state */}
         {teams.length === 0 && (
-          <EmptyState icon="👥" title="Нет команд" description="Создайте первую команду, чтобы начать" />
+          <EmptyState icon="people-outline" title="Нет команд" description="Создайте первую команду, чтобы начать" />
         )}
 
         {/* Team detail */}
@@ -420,7 +420,7 @@ export default function LeadTeamsScreen() {
             {/* Members */}
             {allMembers.length === 0 ? (
               <EmptyState
-                icon="👤"
+                icon="person-outline"
                 title="Нет участников"
                 description="Добавьте первого участника в команду"
               >

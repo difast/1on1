@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 
 interface EmptyStateProps {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   title: string;
   description?: string;
   children?: React.ReactNode;
@@ -15,7 +16,9 @@ export function EmptyState({ icon, title, description, children }: EmptyStatePro
   const styles = useMemo(() => makeStyles(colors), [colors]);
   return (
     <View style={styles.container}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconWrap}>
+        <Ionicons name={icon} size={36} color={colors.textMuted} />
+      </View>
       <Text style={styles.title}>{title}</Text>
       {description ? <Text style={styles.desc}>{description}</Text> : null}
       {children}
@@ -29,9 +32,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 48,
     paddingHorizontal: 24,
   },
-  icon: {
-    fontSize: 40,
-    marginBottom: 12,
+  iconWrap: {
+    width: 72,
+    height: 72,
+    borderRadius: 20,
+    backgroundColor: c.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: c.border,
   },
   title: {
     fontSize: 16,
