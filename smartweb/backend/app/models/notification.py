@@ -12,6 +12,7 @@ class Notification(Base):
     body = Column(Text, nullable=True)
     data = Column(JSON, nullable=True)  # extra payload like meeting_id
     read = Column(Boolean, default=False)
+    is_broadcast = Column(Boolean, nullable=False, default=False, server_default='false')
     created_at = Column(DateTime, server_default=func.now())
 
     user = relationship("User")

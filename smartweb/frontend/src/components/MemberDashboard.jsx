@@ -36,6 +36,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [tasks, setTasks] = useState([])
   const [taskFilter, setTaskFilter] = useState('all')
+  const [meetingFilter, setMeetingFilter] = useState('all')
   const [selfTaskForm, setSelfTaskForm] = useState({ title: '', due_date: '', open: false, loading: false })
   const [editingTask, setEditingTask] = useState(null)
   const [subtaskRefresh, setSubtaskRefresh] = useState({})
@@ -276,6 +277,23 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const pastMeetings = meetings
     .filter(m => new Date(m.scheduled_date) < now || m.status === 'completed')
     .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
+
+  const meetingFilterCounts = {
+    all: meetings.filter(m => m.status !== 'requested').length,
+    scheduled: meetings.filter(m => m.status === 'scheduled').length,
+    confirmed: meetings.filter(m => m.status === 'confirmed').length,
+    in_progress: meetings.filter(m => m.status === 'in_progress').length,
+    completed: meetings.filter(m => m.status === 'completed').length,
+    rescheduled: meetings.filter(m => m.is_rescheduled && !['cancelled','declined'].includes(m.status)).length,
+    cancelled: meetings.filter(m => m.status === 'cancelled').length,
+    declined: meetings.filter(m => m.status === 'declined').length,
+  }
+
+  const filteredMeetings = meetingFilter === 'all'
+    ? meetings.filter(m => m.status !== 'requested')
+    : meetingFilter === 'rescheduled'
+    ? meetings.filter(m => m.is_rescheduled && !['cancelled','declined'].includes(m.status))
+    : meetings.filter(m => m.status === meetingFilter)
 
   const freeNotes = notes.filter(n => !n.meeting_id)
 
@@ -562,8 +580,34 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 + Запросить встречу
               </button>
             </div>
+            {/* Meeting filter bar */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+              {[
+                { key: 'all', label: 'Все' },
+                { key: 'scheduled', label: 'Запланировано' },
+                { key: 'confirmed', label: 'Подтверждено' },
+                { key: 'in_progress', label: 'Идёт' },
+                { key: 'completed', label: 'Завершено' },
+                { key: 'rescheduled', label: 'Перенесено' },
+                { key: 'cancelled', label: 'Отменено' },
+                { key: 'declined', label: 'Отклонено' },
+              ].filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setMeetingFilter(f.key)}
+                  className={meetingFilter === f.key ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
+                >
+                  {f.label}
+                  {meetingFilterCounts[f.key] > 0 && f.key !== 'all' && (
+                    <span style={{ marginLeft: 4, fontSize: 11, fontWeight: 700, background: meetingFilter === f.key ? 'rgba(255,255,255,0.25)' : 'var(--color-border)', borderRadius: 10, padding: '0 5px' }}>
+                      {meetingFilterCounts[f.key]}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
             <MeetingCalendar
-              meetings={meetings}
+              meetings={filteredMeetings}
               renderCard={(m) => {
                 const isPast = new Date(m.scheduled_date) < new Date()
                 const isExpanded = expandedMeetingNotes.has(m.id)

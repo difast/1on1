@@ -1,8 +1,10 @@
 import os
+import time
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
+_app_start_time = time.time()
 from app.database import get_db
 from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support
 
@@ -61,6 +63,60 @@ def health_check(db: Session = Depends(get_db)):
         "db": db_host,
         "db_ok": db_ok,
         "error": error,
+    }
+
+@app.get("/api/health/detailed")
+def health_detailed(db: Session = Depends(get_db)):
+    import alembic.runtime.migration as mig
+    from alembic.config import Config as AlembicConfig
+    from alembic import command as alembic_cmd
+    import io, contextlib
+
+    uptime_s = int(time.time() - _app_start_time)
+
+    # DB latency
+    t0 = time.perf_counter()
+    db_ok = True
+    db_error = None
+    try:
+        db.execute(text("SELECT 1"))
+    except Exception as e:
+        db_ok = False
+        db_error = str(e)
+    db_latency_ms = round((time.perf_counter() - t0) * 1000, 1)
+
+    # Current migration revision
+    try:
+        result = db.execute(text("SELECT version_num FROM alembic_version LIMIT 1")).fetchone()
+        current_rev = result[0] if result else None
+    except Exception:
+        current_rev = None
+
+    # User / meeting counts
+    try:
+        user_count = db.execute(text("SELECT COUNT(*) FROM users")).scalar()
+        meeting_count = db.execute(text("SELECT COUNT(*) FROM meetings")).scalar()
+        ticket_count = db.execute(text("SELECT COUNT(*) FROM support_tickets WHERE read_by_admin = false")).scalar()
+    except Exception:
+        user_count = meeting_count = ticket_count = None
+
+    return {
+        "status": "ok" if db_ok else "db_error",
+        "uptime_seconds": uptime_s,
+        "db_ok": db_ok,
+        "db_latency_ms": db_latency_ms,
+        "db_error": db_error,
+        "migration_rev": current_rev,
+        "stats": {
+            "users": user_count,
+            "meetings": meeting_count,
+            "open_tickets": ticket_count,
+        },
+        "services": {
+            "api": "ok",
+            "database": "ok" if db_ok else "error",
+            "celery": "not_configured",
+        }
     }
 
 @app.post("/api/dev/reset-db", include_in_schema=False)

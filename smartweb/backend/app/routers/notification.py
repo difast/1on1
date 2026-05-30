@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
+from pydantic import BaseModel
 from typing import List, Optional
 from app.database import get_db
 from app.models.notification import Notification
+from app.models.user import User
 from app.schemas.notification import NotificationOut, NotificationCount
 
 router = APIRouter()
@@ -43,3 +45,35 @@ def mark_all_read(user_id: int = Query(...), db: Session = Depends(get_db)):
     ).update({"read": True})
     db.commit()
     return {"ok": True}
+
+
+class BroadcastBody(BaseModel):
+    title: str
+    body: Optional[str] = None
+    target: str = "all"   # "all" | user_id (str of int)
+
+@router.post("/broadcast")
+def broadcast(data: BroadcastBody, db: Session = Depends(get_db)):
+    if data.target == "all":
+        users = db.query(User).filter(User.is_blocked == False).all()
+    else:
+        try:
+            uid = int(data.target)
+        except ValueError:
+            return {"ok": False, "error": "invalid target"}
+        users = db.query(User).filter(User.id == uid).all()
+
+    created = 0
+    for u in users:
+        notif = Notification(
+            user_id=u.id,
+            type="broadcast",
+            title=data.title,
+            body=data.body,
+            is_broadcast=True,
+            read=False,
+        )
+        db.add(notif)
+        created += 1
+    db.commit()
+    return {"ok": True, "sent": created}

@@ -4,6 +4,7 @@ import {
   getSupportTickets, markTicketRead, markAllTicketsRead, getSupportUnreadCount, adminReplyTicket,
   blockUser, unblockUser, deleteUser,
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
+  broadcastNotification, getServiceHealth, getUsers,
 } from '../api/client'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
@@ -82,6 +83,16 @@ export default function AdminDashboard({ onLogout }) {
   const [kbEditing, setKbEditing]   = useState(null)
   const [kbSaving, setKbSaving]     = useState(false)
 
+  // Broadcast
+  const [broadcastForm, setBroadcastForm] = useState({ title: '', body: '', target: 'all' })
+  const [broadcastSending, setBroadcastSending] = useState(false)
+  const [broadcastResult, setBroadcastResult] = useState(null)
+  const [allUsers, setAllUsers] = useState([])
+
+  // Health
+  const [health, setHealth] = useState(null)
+  const [healthLoading, setHealthLoading] = useState(false)
+
   useEffect(() => {
     getAdminStats().then(r => setData(r.data)).catch(() => setData(null)).finally(() => setLoading(false))
     getSupportUnreadCount().then(r => setUnreadTickets(r.data.count)).catch(() => {})
@@ -101,6 +112,13 @@ export default function AdminDashboard({ onLogout }) {
     if (tab === 'kb' && articles.length === 0) {
       setKbLoading(true)
       getAdminArticles().then(r => setArticles(r.data)).catch(() => {}).finally(() => setKbLoading(false))
+    }
+    if (tab === 'broadcast' && allUsers.length === 0) {
+      getUsers().then(r => setAllUsers(r.data)).catch(() => {})
+    }
+    if (tab === 'health') {
+      setHealthLoading(true)
+      getServiceHealth().then(r => setHealth(r.data)).catch(() => setHealth({ error: true })).finally(() => setHealthLoading(false))
     }
   }, [tab])
 
@@ -144,6 +162,24 @@ export default function AdminDashboard({ onLogout }) {
     if (!confirm('Удалить пользователя? Это действие необратимо.')) return
     await deleteUser(userId).catch(() => {})
     setData(d => ({ ...d, users: d.users.filter(u => u.id !== userId) }))
+  }
+
+  const handleBroadcast = async (e) => {
+    e.preventDefault()
+    if (!broadcastForm.title.trim()) return
+    setBroadcastSending(true)
+    setBroadcastResult(null)
+    try {
+      const { data: res } = await broadcastNotification({
+        title: broadcastForm.title,
+        body: broadcastForm.body || null,
+        target: broadcastForm.target,
+      })
+      setBroadcastResult({ ok: true, sent: res.sent })
+      setBroadcastForm(f => ({ ...f, title: '', body: '' }))
+    } catch {
+      setBroadcastResult({ ok: false })
+    } finally { setBroadcastSending(false) }
   }
 
   const handleKbSave = async (e) => {
@@ -206,10 +242,13 @@ export default function AdminDashboard({ onLogout }) {
 
         {/* Tabs */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
-          <TabBtn id="users"     label="Пользователи" />
-          <TabBtn id="tickets"   label="Обращения" badge={unreadTickets} />
-          <TabBtn id="analytics" label="Аналитика" />
-          <TabBtn id="kb"        label="База знаний" />
+          <TabBtn id="users"      label="Пользователи" />
+          <TabBtn id="tickets"    label="Обращения" badge={unreadTickets} />
+          <TabBtn id="broadcast"  label="Рассылка" />
+          <TabBtn id="analytics"  label="Аналитика" />
+          <TabBtn id="health"     label="Здоровье сервиса" />
+          <TabBtn id="kb"         label="База знаний" />
+          <TabBtn id="monetize"   label="Монетизация" />
         </div>
 
         {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' ? (
@@ -464,6 +503,143 @@ export default function AdminDashboard({ onLogout }) {
                   </div>
                 </div>
               )
+            )}
+
+            {/* ── РАССЫЛКА ── */}
+            {tab === 'broadcast' && (
+              <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+                <div className="card" style={{ padding: '24px 26px', width: '100%', maxWidth: 500 }}>
+                  <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Массовая рассылка</p>
+                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>Уведомление отправится в колокольчик с красной плашкой «Объявление»</p>
+                  <form onSubmit={handleBroadcast} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Получатели</label>
+                      <select className="input" value={broadcastForm.target} onChange={e => setBroadcastForm(f => ({ ...f, target: e.target.value }))}>
+                        <option value="all">Все пользователи</option>
+                        {allUsers.filter(u => !u.is_blocked).map(u => (
+                          <option key={u.id} value={String(u.id)}>{u.name} ({u.email})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Заголовок *</label>
+                      <input className="input" value={broadcastForm.title} onChange={e => setBroadcastForm(f => ({ ...f, title: e.target.value }))} placeholder="Текст заголовка уведомления" required />
+                    </div>
+                    <div className="form-group" style={{ marginBottom: 0 }}>
+                      <label className="form-label">Текст сообщения</label>
+                      <textarea className="input" value={broadcastForm.body} onChange={e => setBroadcastForm(f => ({ ...f, body: e.target.value }))} placeholder="Дополнительный текст (необязательно)..." rows={4} style={{ minHeight: 100, resize: 'vertical' }} />
+                    </div>
+                    <button type="submit" disabled={broadcastSending} className="btn btn-accent" style={{ fontWeight: 700 }}>
+                      {broadcastSending ? 'Отправка...' : 'Отправить уведомление'}
+                    </button>
+                    {broadcastResult && (
+                      <div style={{
+                        padding: '10px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        background: broadcastResult.ok ? '#f0fdf4' : '#fff1f2',
+                        color: broadcastResult.ok ? '#15803d' : '#be123c',
+                        border: `1px solid ${broadcastResult.ok ? '#bbf7d0' : '#fecdd3'}`,
+                      }}>
+                        {broadcastResult.ok ? `✓ Отправлено ${broadcastResult.sent} пользователям` : '✕ Ошибка отправки'}
+                      </div>
+                    )}
+                  </form>
+                </div>
+                <div className="card" style={{ padding: '20px 22px', flex: 1, minWidth: 240 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Как это выглядит</p>
+                  <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderLeft: '4px solid #ef4444', borderRadius: 10, padding: '12px 14px', display: 'flex', gap: 10 }}>
+                    <span style={{ fontSize: 20 }}>📣</span>
+                    <div>
+                      <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 10, marginBottom: 4 }}>ОБЪЯВЛЕНИЕ</span>
+                      <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', margin: '0 0 2px' }}>{broadcastForm.title || 'Заголовок уведомления'}</p>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{broadcastForm.body || 'Текст сообщения'}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── ЗДОРОВЬЕ СЕРВИСА ── */}
+            {tab === 'health' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Статус сервиса</p>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setHealthLoading(true); getServiceHealth().then(r => setHealth(r.data)).catch(() => setHealth({ error: true })).finally(() => setHealthLoading(false)) }}>
+                    Обновить
+                  </button>
+                </div>
+                {healthLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}><div className="spinner" /></div>
+                ) : !health ? null : health.error ? (
+                  <div className="card" style={{ padding: 20, color: 'var(--color-danger)' }}>Ошибка загрузки данных</div>
+                ) : (
+                  <>
+                    {/* Status cards */}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px,100%), 1fr))', gap: 12 }}>
+                      {Object.entries(health.services || {}).map(([svc, status]) => {
+                        const ok = status === 'ok'
+                        const nc = status === 'not_configured'
+                        return (
+                          <div key={svc} className="card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span style={{ fontSize: 22 }}>{ok ? '🟢' : nc ? '⚪' : '🔴'}</span>
+                            <div>
+                              <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px', textTransform: 'capitalize' }}>{svc}</p>
+                              <p style={{ fontSize: 12, color: ok ? '#15803d' : nc ? 'var(--color-text-muted)' : 'var(--color-danger)', margin: 0, fontWeight: 600 }}>
+                                {ok ? 'Работает' : nc ? 'Не настроено' : 'Ошибка'}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+
+                    {/* Metrics */}
+                    <div className="card" style={{ padding: '20px 22px' }}>
+                      <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Метрики</p>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(180px,100%), 1fr))', gap: 14 }}>
+                        {[
+                          { label: 'Задержка БД', value: `${health.db_latency_ms} мс`, ok: health.db_latency_ms < 100 },
+                          { label: 'Время работы', value: `${Math.floor((health.uptime_seconds||0)/3600)}ч ${Math.floor(((health.uptime_seconds||0)%3600)/60)}м` },
+                          { label: 'Миграция БД', value: health.migration_rev || '—' },
+                          { label: 'Пользователей', value: health.stats?.users ?? '—' },
+                          { label: 'Встреч', value: health.stats?.meetings ?? '—' },
+                          { label: 'Открытых обращений', value: health.stats?.open_tickets ?? '—' },
+                        ].map(m => (
+                          <div key={m.label} style={{ background: 'var(--color-bg)', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--color-border)' }}>
+                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>{m.label}</p>
+                            <p style={{ fontSize: 18, fontWeight: 700, color: m.ok === false ? '#ef4444' : 'var(--color-text-primary)', margin: 0 }}>{m.value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── МОНЕТИЗАЦИЯ ── */}
+            {tab === 'monetize' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Монетизация</p>
+                  <span style={{ fontSize: 11, fontWeight: 700, background: '#f59e0b22', color: '#b45309', padding: '2px 10px', borderRadius: 20, border: '1px solid #fbbf24' }}>СКОРО</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap: 16 }}>
+                  {[
+                    { icon: '💳', title: 'Тарифные планы', desc: 'Управление тарифами: лимиты участников, встреч в месяц, функций. Создание и редактирование планов.' },
+                    { icon: '📋', title: 'История платежей', desc: 'Журнал всех платежей по пользователям и командам, статусы транзакций, экспорт.' },
+                    { icon: '⏳', title: 'Пробный период', desc: 'Управление пробным доступом: продление, отзыв, просмотр истекающих триалов.' },
+                  ].map(item => (
+                    <div key={item.title} className="card" style={{ padding: '24px 22px', opacity: 0.7 }}>
+                      <span style={{ fontSize: 28, display: 'block', marginBottom: 12 }}>{item.icon}</span>
+                      <p style={{ fontWeight: 700, fontSize: 15, margin: '0 0 8px' }}>{item.title}</p>
+                      <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
+                      <div style={{ marginTop: 16, padding: '8px 14px', background: 'var(--color-bg)', borderRadius: 8, border: '1px dashed var(--color-border)', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', fontWeight: 600 }}>
+                        В разработке
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             )}
 
             {/* ── БАЗА ЗНАНИЙ ── */}

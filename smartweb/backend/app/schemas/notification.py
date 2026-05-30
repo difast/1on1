@@ -10,6 +10,7 @@ class NotificationOut(BaseModel):
     body: Optional[str]
     data: Optional[Any]
     read: bool
+    is_broadcast: bool = False
     created_at: datetime
 
     class Config:

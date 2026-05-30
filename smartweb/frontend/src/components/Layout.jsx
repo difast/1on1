@@ -11,6 +11,7 @@ const TOAST_META = {
   meeting_confirmed:  { icon: '✓', color: '#15803d' },
   meeting_requested:  { icon: '◎', color: '#b45309' },
   meeting_declined:   { icon: '✕', color: '#dc2626' },
+  broadcast:          { icon: '📣', color: '#ef4444' },
 }
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
@@ -383,6 +384,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   ) : (
                     notifications.map(n => {
                       const isCall = n.type === 'call_started'
+                      const isBroadcast = n.is_broadcast
                       const isUnread = !n.read
                       const handleClick = () => {
                         if (isCall) return
@@ -400,18 +402,25 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                           onClick={handleClick}
                           style={{
                             padding: '12px 18px', borderBottom: '1px solid var(--color-border)',
-                            background: isCall && isUnread
+                            background: isBroadcast && isUnread
+                              ? 'linear-gradient(135deg, #fff1f1, #fff5f5)'
+                              : isCall && isUnread
                               ? 'linear-gradient(135deg, var(--blue-50), #eff6ff)'
                               : isUnread ? 'var(--blue-50)' : 'transparent',
                             cursor: isCall ? 'default' : 'pointer',
                             transition: 'background 0.15s',
-                            borderLeft: isUnread ? '3px solid #ef4444' : '3px solid transparent',
+                            borderLeft: isBroadcast ? '3px solid #ef4444' : isUnread ? '3px solid var(--color-accent)' : '3px solid transparent',
                           }}
                           onMouseEnter={e => { if (!isCall) e.currentTarget.style.background = 'var(--gray-100)' }}
-                          onMouseLeave={e => { if (!isCall) e.currentTarget.style.background = isUnread ? 'var(--blue-50)' : 'transparent' }}
+                          onMouseLeave={e => { if (!isCall) e.currentTarget.style.background = isBroadcast && isUnread ? 'linear-gradient(135deg,#fff1f1,#fff5f5)' : isUnread ? 'var(--blue-50)' : 'transparent' }}
                         >
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
+                              {isBroadcast && (
+                                <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 10, marginBottom: 4 }}>
+                                  ОБЪЯВЛЕНИЕ
+                                </span>
+                              )}
                               <p style={{ fontWeight: isUnread ? 600 : 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
                               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
                             </div>
@@ -419,7 +428,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                               <span style={{
                                 flexShrink: 0, marginTop: 2,
                                 fontSize: 10, fontWeight: 700, letterSpacing: '0.04em',
-                                background: '#ef4444', color: '#fff',
+                                background: isBroadcast ? '#ef4444' : 'var(--color-accent)', color: '#fff',
                                 padding: '2px 7px', borderRadius: 20,
                                 whiteSpace: 'nowrap',
                               }}>
