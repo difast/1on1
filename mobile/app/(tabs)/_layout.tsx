@@ -73,6 +73,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+      <Tabs.Screen
+        name="support"
+        options={{
+          title: 'Поддержка',
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="chatbubble-ellipses-outline" size={size} color={color} />
+          ),
+        }}
+      />
         name="profile"
         options={{
           title: 'Профиль',

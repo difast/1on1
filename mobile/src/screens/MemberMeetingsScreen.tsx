@@ -23,6 +23,7 @@ export default function MemberMeetingsScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [calendarView, setCalendarView] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const [meetingDate, setMeetingDate] = useState('');
   const [meetingTopic, setMeetingTopic] = useState('');
@@ -128,10 +129,30 @@ export default function MemberMeetingsScreen() {
   };
 
   const now = new Date();
-  const upcoming = meetings
+  const FILTERS = [
+    { key: 'all', label: 'Все' },
+    { key: 'scheduled', label: 'Запланировано' },
+    { key: 'confirmed', label: 'Подтверждено' },
+    { key: 'in_progress', label: 'Идёт' },
+    { key: 'completed', label: 'Завершено' },
+    { key: 'rescheduled', label: 'Перенесено' },
+    { key: 'cancelled', label: 'Отменено' },
+    { key: 'declined', label: 'Отклонено' },
+  ];
+  const filteredMeetings = statusFilter === 'all'
+    ? meetings.filter(m => m.status !== 'requested')
+    : statusFilter === 'rescheduled'
+    ? meetings.filter(m => m.is_rescheduled && !['cancelled', 'declined'].includes(m.status))
+    : meetings.filter(m => m.status === statusFilter);
+  const visibleFilters = FILTERS.filter(f => f.key === 'all' || meetings.some(m =>
+    f.key === 'rescheduled'
+      ? m.is_rescheduled && !['cancelled','declined'].includes(m.status)
+      : m.status === f.key
+  ));
+  const upcoming = filteredMeetings
     .filter(m => new Date(m.scheduled_date) >= now && m.status !== 'cancelled')
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
-  const past = meetings
+  const past = filteredMeetings
     .filter(m => new Date(m.scheduled_date) < now || m.status === 'completed')
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
@@ -173,8 +194,25 @@ export default function MemberMeetingsScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
-        {meetings.length === 0 && (
-          <EmptyState icon="📅" title="Нет встреч" description="Запросите первую встречу с тимлидом" />
+        {!calendarView && visibleFilters.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }} contentContainerStyle={{ gap: 6, paddingRight: 4 }}>
+            {visibleFilters.map(f => (
+              <TouchableOpacity
+                key={f.key}
+                onPress={() => setStatusFilter(f.key)}
+                style={[styles.filterChip, statusFilter === f.key && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterChipText, statusFilter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
+        {filteredMeetings.length === 0 && meetings.length === 0 && (
+          <EmptyState icon="calendar-outline" title="Нет встреч" description="Запросите первую встречу с тимлидом" />
+        )}
+        {filteredMeetings.length === 0 && meetings.length > 0 && (
+          <EmptyState icon="calendar-outline" title="Нет встреч" description="По выбранному фильтру встреч нет" />
         )}
 
         {calendarView ? (
@@ -379,4 +417,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   noteCancelText: { fontSize: 13, fontWeight: '500', color: c.textSecondary },
   noteSaveBtn: { flex: 1, backgroundColor: c.accent, borderRadius: 8, paddingVertical: 9, alignItems: 'center' },
   noteSaveText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  filterChip: {
+    paddingHorizontal: 13, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: c.border, backgroundColor: c.surface,
+  },
+  filterChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  filterChipTextActive: { color: '#fff' },
 });

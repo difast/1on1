@@ -24,6 +24,7 @@ export default function LeadMeetingsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
   const [calendarView, setCalendarView] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   // Meeting notes state
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
@@ -116,12 +117,32 @@ export default function LeadMeetingsScreen() {
   };
 
   const now = new Date();
+  const FILTERS = [
+    { key: 'all', label: 'Все' },
+    { key: 'scheduled', label: 'Запланировано' },
+    { key: 'confirmed', label: 'Подтверждено' },
+    { key: 'in_progress', label: 'Идёт' },
+    { key: 'completed', label: 'Завершено' },
+    { key: 'rescheduled', label: 'Перенесено' },
+    { key: 'cancelled', label: 'Отменено' },
+    { key: 'declined', label: 'Отклонено' },
+  ];
+  const visibleFilters = FILTERS.filter(f => f.key === 'all' || meetings.some(m =>
+    f.key === 'rescheduled'
+      ? m.is_rescheduled && !['cancelled','declined'].includes(m.status)
+      : m.status === f.key && m.status !== 'requested'
+  ));
   const requests = meetings.filter(m => m.status === 'requested');
-  const upcoming = meetings
-    .filter(m => m.status !== 'requested' && m.status !== 'cancelled' && m.status !== 'declined' && new Date(m.scheduled_date) >= now)
+  const baseMeetings = statusFilter === 'all'
+    ? meetings.filter(m => m.status !== 'requested')
+    : statusFilter === 'rescheduled'
+    ? meetings.filter(m => m.is_rescheduled && !['cancelled','declined'].includes(m.status))
+    : meetings.filter(m => m.status === statusFilter);
+  const upcoming = baseMeetings
+    .filter(m => m.status !== 'cancelled' && m.status !== 'declined' && new Date(m.scheduled_date) >= now)
     .sort((a, b) => new Date(a.scheduled_date).getTime() - new Date(b.scheduled_date).getTime());
-  const past = meetings
-    .filter(m => (new Date(m.scheduled_date) < now && m.status !== 'requested') || m.status === 'completed' || m.status === 'cancelled' || m.status === 'declined')
+  const past = baseMeetings
+    .filter(m => new Date(m.scheduled_date) < now || m.status === 'completed' || m.status === 'cancelled' || m.status === 'declined')
     .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
 
   if (loading) return <Spinner />;
@@ -150,8 +171,22 @@ export default function LeadMeetingsScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        {!calendarView && visibleFilters.length > 1 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }} contentContainerStyle={{ gap: 6, paddingRight: 4 }}>
+            {visibleFilters.map(f => (
+              <TouchableOpacity
+                key={f.key}
+                onPress={() => setStatusFilter(f.key)}
+                style={[styles.filterChip, statusFilter === f.key && styles.filterChipActive]}
+              >
+                <Text style={[styles.filterChipText, statusFilter === f.key && styles.filterChipTextActive]}>{f.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        )}
+
         {meetings.length === 0 && (
-          <EmptyState icon="📅" title="Встреч пока нет" description="Встречи появятся после планирования" />
+          <EmptyState icon="calendar-outline" title="Встреч пока нет" description="Встречи появятся после планирования" />
         )}
 
         {calendarView ? (
@@ -350,4 +385,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     flex: 1, backgroundColor: c.accent, borderRadius: 8, paddingVertical: 9, alignItems: 'center',
   },
   noteSaveText: { fontSize: 13, fontWeight: '600', color: '#fff' },
+  filterChip: {
+    paddingHorizontal: 13, paddingVertical: 6, borderRadius: 20,
+    borderWidth: 1, borderColor: c.border, backgroundColor: c.surface,
+  },
+  filterChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+  filterChipText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  filterChipTextActive: { color: '#fff' },
 });

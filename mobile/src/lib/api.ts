@@ -118,3 +118,30 @@ export const updateNote = (id: number, data: { content: string }) =>
   req<any>(`/notes/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteNote = (id: number) =>
   req<any>(`/notes/${id}`, { method: 'DELETE' });
+
+// Meetings (extra)
+export const updateMeeting = (id: number, data: unknown) =>
+  req<any>(`/meetings/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+
+// Notifications (extra)
+export const markRead = (id: number) =>
+  req(`/notifications/${id}/read`, { method: 'POST' });
+
+// Check-ins
+export const checkInArrive = (userId: number) =>
+  req<any>('/checkins/arrive', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const checkInLeave = (userId: number) =>
+  req<any>('/checkins/leave', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const getTodayCheckin = (userId: number) =>
+  req<any>(`/checkins/today/${userId}`);
+
+// Support tickets
+export const createSupportTicket = (data: unknown) =>
+  req<any>('/support/', { method: 'POST', body: JSON.stringify(data) });
+export const getUserTickets = (userId: number) =>
+  req<any[]>(`/support/user/${userId}`);
+export const userSendMessage = (id: number, body: string) =>
+  req<any>(`/support/${id}/message`, { method: 'POST', body: JSON.stringify({ body }) });
+export const userReadReply = (id: number) =>
+  req<any>(`/support/${id}/user-read`, { method: 'PATCH' });
+
