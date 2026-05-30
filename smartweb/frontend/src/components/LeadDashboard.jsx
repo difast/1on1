@@ -126,6 +126,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Tasks sub-tab: 'mine' | 'members'
   const [tasksSubTab, setTasksSubTab] = useState('mine')
+  const [myTaskFilter, setMyTaskFilter] = useState('all')
   const [memberTaskFilter, setMemberTaskFilter] = useState('all')
 
   // Reschedule AI slots modal
@@ -887,8 +888,22 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
                 </div>
               ) : (
+                <>
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+                    {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
+                      <button key={f} onClick={() => setMyTaskFilter(f)}
+                        className={myTaskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  {myTasks.filter(t => myTaskFilter === 'all' ? true : myTaskFilter === 'open' ? !t.completed : t.completed).length === 0 ? (
+                    <p style={{ fontSize: 14, color: 'var(--color-text-muted)', padding: '12px 0' }}>
+                      {myTaskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                    </p>
+                  ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {myTasks.map(task => (
+                  {myTasks.filter(t => myTaskFilter === 'all' ? true : myTaskFilter === 'open' ? !t.completed : t.completed).map(task => (
                     <div key={task.id} className="card" style={{ padding: '14px 18px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {editingTask?.id === task.id ? (
                         <form onSubmit={async e => {
@@ -954,6 +969,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     </div>
                   ))}
                 </div>
+                  )}
+                </>
               )}
             </>)}
 
