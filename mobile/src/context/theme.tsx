@@ -9,17 +9,18 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  isDark: false,
-  colors: lightColors,
+  isDark: true,
+  colors: darkColors,
   toggleTheme: () => {},
 });
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     AsyncStorage.getItem('app_theme').then(v => {
-      if (v === 'dark') setIsDark(true);
+      if (v === 'light') setIsDark(false);
+      else setIsDark(true); // default dark
     }).catch(() => {});
   }, []);
 
