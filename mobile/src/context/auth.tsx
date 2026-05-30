@@ -125,6 +125,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (_event, sess) => {
         setSession(sess);
         if (sess?.user?.email) {
+          // Keep the loading gate up while we resolve the backend profile,
+          // otherwise the router briefly sees session+no-user and bounces
+          // an existing user into the onboarding (registration) flow.
+          setLoading(true);
           await loadUser(sess.user.email);
         } else {
           setUserState(null);
