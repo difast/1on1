@@ -241,7 +241,7 @@ export default function AdminDashboard({ onLogout }) {
         <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 24 }}>Личный кабинет</h1>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
+        <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
           <TabBtn id="users"      label="Пользователи" />
           <TabBtn id="tickets"    label="Обращения" badge={unreadTickets} />
           <TabBtn id="broadcast"  label="Рассылка" />
@@ -340,9 +340,9 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* ── ОБРАЩЕНИЯ ── */}
             {tab === 'tickets' && (
-              <div style={{ display: 'flex', gap: 16, minHeight: 520 }}>
+              <div className="tickets-pane" style={{ display: 'flex', gap: 16, minHeight: 520, flexWrap: 'wrap' }}>
                 {/* Left: ticket list */}
-                <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div className="tickets-list" style={{ width: 300, minWidth: 0, flexBasis: 300, flexGrow: 0, flexShrink: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>
                       Обращения {unreadTickets > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, borderRadius: 20, padding: '1px 6px', marginLeft: 4 }}>{unreadTickets}</span>}
@@ -385,7 +385,7 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
 
                 {/* Right: thread */}
-                <div className="card" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 480 }}>
+                <div className="card" style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 400 }}>
                   {!activeTicket ? (
                     <div className="empty-state" style={{ margin: 'auto' }}>
                       <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H7l-4 3V5z" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
@@ -464,7 +464,7 @@ export default function AdminDashboard({ onLogout }) {
                     <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Рост по неделям (последние 8 недель)</p>
                     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       {/* Users chart */}
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ flex: 1, minWidth: 'min(200px, 100%)' }}>
                         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые пользователи</p>
                         {analytics.weekly_growth.map((w, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
@@ -474,7 +474,7 @@ export default function AdminDashboard({ onLogout }) {
                         ))}
                       </div>
                       {/* Meetings chart */}
-                      <div style={{ flex: 1, minWidth: 200 }}>
+                      <div style={{ flex: 1, minWidth: 'min(200px, 100%)' }}>
                         <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые встречи</p>
                         {analytics.weekly_growth.map((w, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
@@ -557,7 +557,7 @@ export default function AdminDashboard({ onLogout }) {
                     )}
                   </form>
                 </div>
-                <div className="card" style={{ padding: '20px 22px', flex: 1, minWidth: 240 }}>
+                <div className="card" style={{ padding: '20px 22px', flex: 1, minWidth: 'min(240px, 100%)' }}>
                   <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Предпросмотр</p>
                   <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderLeft: '3px solid #ef4444', borderRadius: 10, padding: '12px 14px' }}>
                     <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: '#ef4444', color: '#fff', padding: '2px 7px', borderRadius: 4, marginBottom: 6 }}>ОБЪЯВЛЕНИЕ</span>
@@ -682,7 +682,7 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
 
                 {/* Articles list */}
-                <div style={{ flex: 1, minWidth: 280, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ flex: 1, minWidth: 'min(280px, 100%)', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {kbLoading ? (
                     <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
                   ) : articles.length === 0 ? (

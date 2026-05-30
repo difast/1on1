@@ -596,6 +596,15 @@ textarea.input { resize: vertical; min-height: 90px; }
   /* Banner stack hugs both edges so cards never overflow */
   .banner-stack { left: 12px !important; right: 12px !important; bottom: 14px !important; align-items: stretch !important; }
   .banner-stack > * { max-width: 100% !important; min-width: 0 !important; width: 100% !important; }
+
+  /* AdminDashboard tab bar scrolls horizontally on mobile */
+  .admin-tabs { overflow-x: auto; flex-wrap: nowrap !important; -webkit-overflow-scrolling: touch; scrollbar-width: none; padding-bottom: 4px; }
+  .admin-tabs::-webkit-scrollbar { display: none; }
+  .admin-tabs > button { flex-shrink: 0; }
+
+  /* Tickets split-pane stacks vertically on mobile */
+  .tickets-pane { flex-direction: column !important; }
+  .tickets-list { width: 100% !important; flex-basis: auto !important; }
 }
 
 /* Larger tap targets on touch devices */
