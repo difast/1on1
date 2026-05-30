@@ -275,184 +275,597 @@ export default function LeadAnalytics({ user }) {
       .finally(() => setLoading(false))
   }, [user.id])
 
-  const exportExcel = (team, members, mood) => {
+  const exportExcel = (team, members, mood, checkins) => {
     const XLSX = XLSXStyle
     const wb = XLSX.utils.book_new()
-
-    // ── Style helpers ──────────────────────────────────────────────────────────
-    const hdr = (color = '1E3A5F') => ({
-      font: { bold: true, color: { rgb: 'FFFFFF' }, sz: 11 },
-      fill: { fgColor: { rgb: color } },
-      alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
-      border: { bottom: { style: 'thin', color: { rgb: 'CCCCCC' } } },
-    })
-    const cell = (align = 'left', bold = false) => ({
-      font: { sz: 10, bold },
-      alignment: { horizontal: align, vertical: 'center' },
-      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
-    })
-    const riskCell = () => ({
-      font: { sz: 10, bold: true, color: { rgb: 'C0392B' } },
-      fill: { fgColor: { rgb: 'FDEDED' } },
-      alignment: { horizontal: 'center', vertical: 'center' },
-      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
-    })
-    const okCell = () => ({
-      font: { sz: 10, color: { rgb: '1A6B3C' } },
-      fill: { fgColor: { rgb: 'E9F7EF' } },
-      alignment: { horizontal: 'center', vertical: 'center' },
-      border: { bottom: { style: 'hair', color: { rgb: 'E0E0E0' } } },
-    })
-    const altRow = (isAlt) => isAlt ? { fill: { fgColor: { rgb: 'F7F9FC' } } } : {}
-    const makeCell = (v, s) => ({ v, s })
-
-    // ── Sheet 1: Обзор команды ─────────────────────────────────────────────────
     const today = new Date().toLocaleDateString('ru-RU')
-    const ms = members
+    const nowStr = new Date().toLocaleString('ru-RU')
 
-    const s1Headers = [
-      'Участник', 'Встреч за 30 дн', 'Всего встреч', 'Последняя встреча',
-      'Дней с последней', 'Ср. интервал (дн)', 'Задачи выполнено %',
-      'Открытых задач', 'Инициировал лид', 'Инициировал сотр.', 'Статус',
+    // ─────────────────────────────────────────────────────────────────────────
+    // STYLE PALETTE
+    // ─────────────────────────────────────────────────────────────────────────
+    const NAVY   = '0F2443'
+    const BLUE   = '1D4ED8'
+    const ACCENT = '3B82F6'
+    const TEAL   = '0D9488'
+    const RED    = 'DC2626'
+    const AMBER  = 'D97706'
+    const GREEN  = '16A34A'
+    const LIGHT  = 'EFF6FF'
+    const SILVER = 'F1F5F9'
+    const WHITE  = 'FFFFFF'
+
+    const brd = (color = 'CBD5E1') => ({
+      top:    { style: 'thin', color: { rgb: color } },
+      bottom: { style: 'thin', color: { rgb: color } },
+      left:   { style: 'thin', color: { rgb: color } },
+      right:  { style: 'thin', color: { rgb: color } },
+    })
+    const brdB = (color = 'CBD5E1') => ({ bottom: { style: 'thin', color: { rgb: color } } })
+
+    const S = {
+      // Cover branding cells
+      coverBrand: { font: { bold: true, sz: 28, color: { rgb: WHITE }, name: 'Calibri' }, fill: { fgColor: { rgb: NAVY } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      coverSub:   { font: { sz: 12, color: { rgb: 'BFD4F2' }, italic: true }, fill: { fgColor: { rgb: NAVY } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      coverTeam:  { font: { bold: true, sz: 18, color: { rgb: NAVY } }, fill: { fgColor: { rgb: LIGHT } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      coverDate:  { font: { sz: 11, color: { rgb: '64748B' } }, fill: { fgColor: { rgb: LIGHT } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      coverKpiLbl:{ font: { bold: true, sz: 10, color: { rgb: '64748B' } }, fill: { fgColor: { rgb: SILVER } }, alignment: { horizontal: 'center', vertical: 'center' } },
+      coverKpiVal:{ font: { bold: true, sz: 20, color: { rgb: NAVY } }, fill: { fgColor: { rgb: WHITE } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+
+      // Section headers (dark navy band)
+      secHdr: (bg = NAVY) => ({
+        font: { bold: true, sz: 11, color: { rgb: WHITE }, name: 'Calibri' },
+        fill: { fgColor: { rgb: bg } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: brd(bg),
+      }),
+      // Sub-header (blue band)
+      subHdr: (bg = BLUE) => ({
+        font: { bold: true, sz: 10, color: { rgb: WHITE } },
+        fill: { fgColor: { rgb: bg } },
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: brd(bg),
+      }),
+      // Normal data cell
+      data: (align = 'center', bold = false, color = '1E293B') => ({
+        font: { sz: 10, bold, color: { rgb: color } },
+        alignment: { horizontal: align, vertical: 'center' },
+        border: brdB(),
+      }),
+      // Alternate row tint
+      dataAlt: (align = 'center', bold = false) => ({
+        font: { sz: 10, bold, color: { rgb: '1E293B' } },
+        fill: { fgColor: { rgb: 'F8FAFC' } },
+        alignment: { horizontal: align, vertical: 'center' },
+        border: brdB(),
+      }),
+      // Status badges
+      ok:     { font: { bold: true, sz: 10, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('BBF7D0') },
+      warn:   { font: { bold: true, sz: 10, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FDE68A') },
+      danger: { font: { bold: true, sz: 10, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FECACA') },
+      urgent: { font: { bold: true, sz: 10, color: { rgb: WHITE }  }, fill: { fgColor: { rgb: RED }    }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd(RED) },
+      // Member card title
+      cardName: { font: { bold: true, sz: 12, color: { rgb: WHITE } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
+      cardRole: { font: { italic: true, sz: 10, color: { rgb: 'BFD4F2' } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
+      cardLbl:  { font: { sz: 9, color: { rgb: '64748B' } }, fill: { fgColor: { rgb: SILVER } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardVal:  { font: { bold: true, sz: 12, color: { rgb: NAVY }  }, fill: { fgColor: { rgb: WHITE } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValG: { font: { bold: true, sz: 12, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValR: { font: { bold: true, sz: 12, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValA: { font: { bold: true, sz: 12, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      moodEmoji:{ font: { sz: 14 }, alignment: { horizontal: 'center', vertical: 'center' } },
+    }
+
+    // Helper: set cell
+    const sc = (ws, r, c, v, s) => {
+      const addr = XLSX.utils.encode_cell({ r, c })
+      ws[addr] = { v: v ?? '', s }
+    }
+    // Helper: merge
+    const addMerge = (ws, rs, re, cs, ce) => {
+      if (!ws['!merges']) ws['!merges'] = []
+      ws['!merges'].push({ s: { r: rs, c: cs }, e: { r: re, c: ce } })
+    }
+    // Helper: max row/col → ref
+    const setRef = (ws, maxR, maxC) => {
+      ws['!ref'] = `${XLSX.utils.encode_cell({ r: 0, c: 0 })}:${XLSX.utils.encode_cell({ r: maxR, c: maxC })}`
+    }
+
+    const FLAG_RU = {
+      no_meeting_14_days: (s) => `${s.days_since_last ?? '14+'} дн. без встречи`,
+      mood_declining: () => 'Настроение падает',
+      many_incomplete_tasks: (s) => `${s.open_tasks} незакрытых задач`,
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHEET 0 — ОБЛОЖКА (Cover / Logo)
+    // ─────────────────────────────────────────────────────────────────────────
+    const ws0 = {}
+    ws0['!cols'] = [4, 22, 22, 22, 22, 22, 4].map(w => ({ wch: w }))
+    ws0['!rows'] = [
+      { hpt: 8 }, { hpt: 50 }, { hpt: 22 }, { hpt: 40 }, { hpt: 22 },
+      { hpt: 8 }, { hpt: 26 }, { hpt: 44 }, { hpt: 8 },
+      { hpt: 26 }, { hpt: 44 }, { hpt: 8 },
     ]
-    const s1Rows = [s1Headers.map(h => makeCell(h, hdr()))]
+
+    // Brand stripe (rows 1–2, cols 1–5)
+    for (let ci = 0; ci <= 6; ci++) {
+      sc(ws0, 0, ci, '', { fill: { fgColor: { rgb: NAVY } } })
+      sc(ws0, 1, ci, '', S.coverBrand)
+      sc(ws0, 2, ci, '', S.coverSub)
+    }
+    sc(ws0, 1, 1, 'OneOnOne', S.coverBrand)
+    addMerge(ws0, 1, 1, 1, 5)
+    sc(ws0, 2, 1, 'Платформа эффективных 1-on-1 встреч', S.coverSub)
+    addMerge(ws0, 2, 2, 1, 5)
+
+    // Team block (rows 3–4)
+    for (let ci = 0; ci <= 6; ci++) {
+      sc(ws0, 3, ci, '', { fill: { fgColor: { rgb: LIGHT } } })
+      sc(ws0, 4, ci, '', { fill: { fgColor: { rgb: LIGHT } } })
+    }
+    sc(ws0, 3, 1, `Команда: ${team.team_name}`, S.coverTeam)
+    addMerge(ws0, 3, 3, 1, 5)
+    sc(ws0, 4, 1, `Отчёт сформирован: ${nowStr}`, S.coverDate)
+    addMerge(ws0, 4, 4, 1, 5)
+
+    // Spacer
+    for (let ci = 0; ci <= 6; ci++) sc(ws0, 5, ci, '', {})
+
+    // KPI row 1 labels — Встречи | Участников | В зоне риска | Ср. интервал
+    const ms = members
+    const intervals = ms.map(s => s.avg_interval_days).filter(Boolean)
+    const teamAvgInt = intervals.length ? +(intervals.reduce((a, b) => a + b, 0) / intervals.length).toFixed(1) : null
+    const teamMtg30 = ms.reduce((a, s) => a + (s.meetings_last_30 || 0), 0)
+    const taskPcts  = ms.map(s => s.task_completion_pct).filter(v => v != null)
+    const teamTaskP = taskPcts.length ? Math.round(taskPcts.reduce((a, b) => a + b, 0) / taskPcts.length) : null
+    const atRiskCnt = (team.at_risk_members || []).length
+
+    const kpi1 = [
+      ['Встреч за 30 дн', teamMtg30],
+      ['Всего встреч', team.total_meetings ?? 0],
+      ['Участников', ms.length],
+      ['В зоне риска', atRiskCnt],
+    ]
+    const kpi2 = [
+      ['Ср. интервал (дн)', teamAvgInt ?? '—'],
+      ['Выполнено задач', teamTaskP != null ? teamTaskP + '%' : '—'],
+      ['Настроение ср.', mood?.overall_avg ? mood.overall_avg + '/5' : '—'],
+      ['Всего опросов', mood?.total ?? 0],
+    ]
+    kpi1.forEach(([lbl, val], ci) => {
+      sc(ws0, 6, ci + 1, lbl, S.coverKpiLbl)
+      sc(ws0, 7, ci + 1, val, S.coverKpiVal)
+    })
+    kpi2.forEach(([lbl, val], ci) => {
+      sc(ws0, 9, ci + 1, lbl, S.coverKpiLbl)
+      sc(ws0, 10, ci + 1, val, S.coverKpiVal)
+    })
+
+    ws0['!rows'].push({ hpt: 20 })
+    const noteRow = 12
+    sc(ws0, noteRow, 1, 'Отчёт содержит 5 листов: Сводка • Участники • Карточки • Риски & Сигналы • Настроение & Активность', {
+      font: { italic: true, sz: 9, color: { rgb: '94A3B8' } },
+      alignment: { horizontal: 'left', vertical: 'center' },
+    })
+    addMerge(ws0, noteRow, noteRow, 1, 5)
+
+    setRef(ws0, noteRow, 6)
+    XLSX.utils.book_append_sheet(wb, ws0, '⭐ Обложка')
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHEET 1 — СВОДКА (Team overview table)
+    // ─────────────────────────────────────────────────────────────────────────
+    const ws1 = {}
+    ws1['!cols'] = [28, 14, 14, 14, 16, 16, 16, 16, 14, 14, 12].map(w => ({ wch: w }))
+
+    const HDR1 = [
+      'Участник', 'Встреч 30дн', 'Встреч 90дн', 'Всего встреч',
+      'Без встречи (дн)', 'Ср. интервал (дн)', '% задач', 'Откр. задач',
+      'Вып. задач', 'Всего задач', 'Статус',
+    ]
+    // Title
+    sc(ws1, 0, 0, `Сводная таблица — ${team.team_name}`, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    addMerge(ws1, 0, 0, 0, HDR1.length - 1)
+    sc(ws1, 1, 0, `Дата: ${today} · Участников: ${ms.length} · В зоне риска: ${atRiskCnt}`, { font: { sz: 10, color: { rgb: '64748B' } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    addMerge(ws1, 1, 1, 0, HDR1.length - 1)
+
+    HDR1.forEach((h, ci) => sc(ws1, 2, ci, h, S.secHdr()))
+    ws1['!rows'] = [{ hpt: 28 }, { hpt: 18 }, { hpt: 28 }]
+
     ms.forEach((s, i) => {
       const isRisk = s.warning_flags && s.warning_flags.length > 0
-      const alt = altRow(i % 2 === 1)
-      s1Rows.push([
-        makeCell(s.member_name, { ...cell('left', true), ...alt }),
-        makeCell(s.meetings_last_30 ?? s.meetings_last_30_days ?? 0, { ...cell('center'), ...alt }),
-        makeCell(s.total_meetings ?? 0, { ...cell('center'), ...alt }),
-        makeCell(s.last_meeting_date || '—', { ...cell('center'), ...alt }),
-        makeCell(s.days_since_last ?? '—', { ...cell('center'), ...alt }),
-        makeCell(s.avg_interval_days ?? '—', { ...cell('center'), ...alt }),
-        makeCell(s.task_completion_pct != null ? s.task_completion_pct + '%' : '—', { ...cell('center'), ...alt }),
-        makeCell(s.open_tasks ?? 0, { ...cell('center'), ...alt }),
-        makeCell(s.lead_initiated ?? 0, { ...cell('center'), ...alt }),
-        makeCell(s.member_initiated ?? 0, { ...cell('center'), ...alt }),
-        makeCell(isRisk ? 'Риск' : 'Норма', isRisk ? riskCell() : okCell()),
-      ])
+      const flags = s.warning_flags || []
+      const isUrgent = s.days_since_last >= 21 || flags.length >= 2
+      const st = isUrgent ? S.urgent : isRisk ? S.danger : S.ok
+      const a = i % 2 === 1 ? 'dataAlt' : 'data'
+      const row = i + 3
+      const vals = [
+        s.name, s.meetings_last_30 ?? 0, s.meetings_last_90 ?? 0, s.total_meetings ?? 0,
+        s.days_since_last ?? '—', s.avg_interval_days ?? '—',
+        s.task_completion_pct != null ? s.task_completion_pct + '%' : '—',
+        s.open_tasks ?? 0, s.completed_tasks ?? 0, s.total_tasks ?? 0,
+        isUrgent ? 'Срочно' : isRisk ? 'Риск' : 'ОК',
+      ]
+      const styles = [S[a]('left', true), ...Array(9).fill(S[a]('center')), st]
+      vals.forEach((v, ci) => sc(ws1, row, ci, v, styles[ci]))
+      ws1['!rows'].push({ hpt: 22 })
     })
-    const ws1 = XLSX.utils.aoa_to_sheet(s1Rows.map(r => r.map(c => c.v)))
-    s1Rows.forEach((row, ri) => row.forEach((c, ci) => {
-      const addr = XLSX.utils.encode_cell({ r: ri, c: ci })
-      if (!ws1[addr]) ws1[addr] = {}
-      ws1[addr].s = c.s
-    }))
-    ws1['!cols'] = [22, 16, 14, 18, 16, 18, 20, 16, 16, 18, 10].map(w => ({ wch: w }))
-    ws1['!rows'] = [{ hpt: 30 }]
-    // Title row above headers
-    const titleAddr = XLSX.utils.encode_cell({ r: 0, c: 0 })
-    XLSX.utils.sheet_add_aoa(ws1, [[`Аналитика команды: ${team.team_name} | ${today}`]], { origin: 'A1' })
-    ws1['A1'].s = { font: { bold: true, sz: 13, color: { rgb: '1E3A5F' } }, alignment: { horizontal: 'left' } }
-    XLSX.utils.sheet_add_aoa(ws1, [s1Headers], { origin: 'A2' })
-    s1Headers.forEach((h, ci) => {
-      const addr = XLSX.utils.encode_cell({ r: 1, c: ci })
-      ws1[addr] = { v: h, s: hdr() }
-    })
-    ms.forEach((s, i) => {
-      const isRisk = s.warning_flags && s.warning_flags.length > 0
-      const alt = altRow(i % 2 === 1)
-      const rowVals = [
-        s.member_name,
-        s.meetings_last_30 ?? s.meetings_last_30_days ?? 0,
+
+    // Team totals footer
+    const footRow = ms.length + 3
+    sc(ws1, footRow, 0, 'ИТОГО / СРЕДНЕЕ', S.subHdr(TEAL))
+    sc(ws1, footRow, 1, teamMtg30, S.subHdr(TEAL))
+    sc(ws1, footRow, 2, ms.reduce((a, s) => a + (s.meetings_last_90 || 0), 0), S.subHdr(TEAL))
+    sc(ws1, footRow, 3, team.total_meetings ?? 0, S.subHdr(TEAL))
+    sc(ws1, footRow, 4, teamAvgInt != null ? teamAvgInt + ' ср.' : '—', S.subHdr(TEAL))
+    sc(ws1, footRow, 5, teamAvgInt ?? '—', S.subHdr(TEAL))
+    sc(ws1, footRow, 6, teamTaskP != null ? teamTaskP + '%' : '—', S.subHdr(TEAL))
+    sc(ws1, footRow, 7, ms.reduce((a, s) => a + (s.open_tasks || 0), 0), S.subHdr(TEAL))
+    sc(ws1, footRow, 8, ms.reduce((a, s) => a + (s.completed_tasks || 0), 0), S.subHdr(TEAL))
+    sc(ws1, footRow, 9, ms.reduce((a, s) => a + (s.total_tasks || 0), 0), S.subHdr(TEAL))
+    sc(ws1, footRow, 10, `${atRiskCnt} риск`, S.subHdr(TEAL))
+    ws1['!rows'].push({ hpt: 24 })
+
+    setRef(ws1, footRow, HDR1.length - 1)
+    XLSX.utils.book_append_sheet(wb, ws1, '📊 Сводка')
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHEET 2 — КАРТОЧКИ УЧАСТНИКОВ (per-member detail cards)
+    // ─────────────────────────────────────────────────────────────────────────
+    const ws2 = {}
+    ws2['!cols'] = [24, 14, 14, 14, 14, 14, 14, 14].map(w => ({ wch: w }))
+    ws2['!rows'] = []
+    ws2['!merges'] = []
+
+    let curRow = 0
+    // Sheet title
+    sc(ws2, curRow, 0, `Карточки участников — ${team.team_name}`, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    addMerge(ws2, curRow, curRow, 0, 7)
+    ws2['!rows'].push({ hpt: 28 })
+    curRow++
+    sc(ws2, curRow, 0, `Каждая карточка — полная аналитика по одному участнику`, { font: { sz: 10, italic: true, color: { rgb: '94A3B8' } }, alignment: { horizontal: 'left' } })
+    addMerge(ws2, curRow, curRow, 0, 7)
+    ws2['!rows'].push({ hpt: 16 })
+    curRow++
+
+    ms.forEach((s) => {
+      const flags = s.warning_flags || []
+      const isRisk = flags.length > 0
+      const isUrgent = s.days_since_last >= 21 || flags.length >= 2
+      const statusTxt = isUrgent ? 'СРОЧНО' : isRisk ? 'РИСК' : 'ОК'
+
+      // Spacer
+      ws2['!rows'].push({ hpt: 6 })
+      curRow++
+
+      // ── Name row
+      sc(ws2, curRow, 0, s.name, S.cardName)
+      addMerge(ws2, curRow, curRow, 0, 5)
+      sc(ws2, curRow, 6, s.role || 'member', S.cardRole)
+      sc(ws2, curRow, 7, statusTxt, isUrgent ? S.urgent : isRisk ? S.danger : S.ok)
+      ws2['!rows'].push({ hpt: 26 })
+      curRow++
+
+      // ── KPI labels row
+      const kpiLbls = ['Встреч 30дн', 'Встреч 90дн', 'Всего встреч', 'Без встречи', 'Ср. интервал', '% задач', 'Откр. задач']
+      kpiLbls.forEach((l, ci) => sc(ws2, curRow, ci + 1, l, S.cardLbl))
+      sc(ws2, curRow, 0, 'Показатель', S.cardLbl)
+      ws2['!rows'].push({ hpt: 20 })
+      curRow++
+
+      // ── KPI values row
+      const kpiVals = [
+        s.meetings_last_30 ?? 0,
+        s.meetings_last_90 ?? 0,
         s.total_meetings ?? 0,
-        s.last_meeting_date || '—',
-        s.days_since_last ?? '—',
-        s.avg_interval_days ?? '—',
+        s.days_since_last != null ? s.days_since_last + ' дн.' : '—',
+        s.avg_interval_days != null ? s.avg_interval_days + ' дн.' : '—',
         s.task_completion_pct != null ? s.task_completion_pct + '%' : '—',
         s.open_tasks ?? 0,
-        s.lead_initiated ?? 0,
-        s.member_initiated ?? 0,
-        isRisk ? 'Риск' : 'Норма',
       ]
-      const styles = [
-        { ...cell('left', true), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        { ...cell('center'), ...alt },
-        isRisk ? riskCell() : okCell(),
-      ]
-      rowVals.forEach((v, ci) => {
-        const addr = XLSX.utils.encode_cell({ r: i + 2, c: ci })
-        ws1[addr] = { v, s: styles[ci] }
+      sc(ws2, curRow, 0, 'Значение', S.cardLbl)
+      kpiVals.forEach((v, ci) => {
+        let st = S.cardVal
+        if (ci === 3 && s.days_since_last >= 14) st = S.cardValR
+        if (ci === 3 && s.days_since_last != null && s.days_since_last < 7) st = S.cardValG
+        if (ci === 5 && s.task_completion_pct != null) {
+          st = s.task_completion_pct >= 70 ? S.cardValG : s.task_completion_pct < 40 ? S.cardValR : S.cardValA
+        }
+        if (ci === 6 && s.open_tasks >= 5) st = S.cardValR
+        sc(ws2, curRow, ci + 1, v, st)
       })
-    })
-    const ref = ws1['!ref']
-    ws1['!ref'] = `A1:K${ms.length + 2}`
-    XLSX.utils.book_append_sheet(wb, ws1, 'Обзор')
+      ws2['!rows'].push({ hpt: 30 })
+      curRow++
 
-    // ── Sheet 2: Зона риска ────────────────────────────────────────────────────
-    const atRisk = ms.filter(s => s.warning_flags && s.warning_flags.length > 0)
-    const ws2 = XLSX.utils.aoa_to_sheet([])
-    XLSX.utils.sheet_add_aoa(ws2, [['Участники в зоне риска']], { origin: 'A1' })
-    ws2['A1'] = { v: 'Участники в зоне риска', s: { font: { bold: true, sz: 13, color: { rgb: 'C0392B' } } } }
-    const riskHeaders = ['Участник', 'Флаги риска', 'Дней с последней встречи', 'Открытых задач', 'Задачи %']
-    riskHeaders.forEach((h, ci) => {
-      const addr = XLSX.utils.encode_cell({ r: 1, c: ci })
-      ws2[addr] = { v: h, s: hdr('C0392B') }
+      // ── Tasks detail row
+      sc(ws2, curRow, 0, 'Задачи', S.cardLbl)
+      sc(ws2, curRow, 1, `Выполнено: ${s.completed_tasks ?? 0}`, S.data('center'))
+      sc(ws2, curRow, 2, `Открыто: ${s.open_tasks ?? 0}`, S.data('center'))
+      sc(ws2, curRow, 3, `Всего: ${s.total_tasks ?? 0}`, S.data('center'))
+      ws2['!rows'].push({ hpt: 18 })
+      curRow++
+
+      // ── Mood trend row
+      if (s.mood_trend && s.mood_trend.length > 0) {
+        sc(ws2, curRow, 0, 'Настроение (последние)', S.cardLbl)
+        s.mood_trend.slice(0, 7).forEach((m, ci) => {
+          sc(ws2, curRow, ci + 1, m.emoji || m.mood || '', S.moodEmoji)
+        })
+        ws2['!rows'].push({ hpt: 22 })
+        curRow++
+      }
+
+      // ── Warning flags row
+      if (flags.length > 0) {
+        sc(ws2, curRow, 0, 'Флаги риска', { ...S.cardLbl, fill: { fgColor: { rgb: 'FEE2E2' } } })
+        const flagStr = flags.map(f => FLAG_RU[f]?.(s) || f).join(' • ')
+        sc(ws2, curRow, 1, flagStr, { font: { sz: 10, bold: true, color: { rgb: RED } }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brdB('FECACA') })
+        addMerge(ws2, curRow, curRow, 1, 7)
+        ws2['!rows'].push({ hpt: 18 })
+        curRow++
+      }
     })
+
+    setRef(ws2, curRow, 7)
+    XLSX.utils.book_append_sheet(wb, ws2, '👤 Карточки')
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHEET 3 — РИСКИ & СИГНАЛЫ
+    // ─────────────────────────────────────────────────────────────────────────
+    const ws3 = {}
+    ws3['!cols'] = [26, 18, 16, 16, 16, 40].map(w => ({ wch: w }))
+    ws3['!rows'] = []
+    ws3['!merges'] = []
+    let r3 = 0
+
+    sc(ws3, r3, 0, 'Зоны риска & Сигналы тревоги', { font: { bold: true, sz: 14, color: { rgb: RED } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    addMerge(ws3, r3, r3, 0, 5)
+    ws3['!rows'].push({ hpt: 28 })
+    r3++
+
+    // ── At-risk members
+    sc(ws3, r3, 0, 'УЧАСТНИКИ В ЗОНЕ РИСКА', S.secHdr(RED))
+    addMerge(ws3, r3, r3, 0, 5)
+    ws3['!rows'].push({ hpt: 24 })
+    r3++
+
+    const rHdrs = ['Участник', 'Дней без встречи', 'Открытых задач', '% задач', 'Срочность', 'Причины']
+    rHdrs.forEach((h, ci) => sc(ws3, r3, ci, h, S.subHdr(RED)))
+    ws3['!rows'].push({ hpt: 22 })
+    r3++
+
+    const atRisk = (team.at_risk_members || [])
     if (atRisk.length === 0) {
-      ws2['A3'] = { v: 'Нет участников в зоне риска', s: { font: { color: { rgb: '1A6B3C' }, italic: true } } }
+      sc(ws3, r3, 0, 'Нет участников в зоне риска — всё в порядке!', { font: { sz: 11, color: { rgb: GREEN }, bold: true }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'left', vertical: 'center' } })
+      addMerge(ws3, r3, r3, 0, 5)
+      ws3['!rows'].push({ hpt: 22 })
+      r3++
     } else {
       atRisk.forEach((s, i) => {
-        const flags = (s.warning_flags || []).join('; ')
-        const rowVals = [s.member_name, flags, s.days_since_last ?? '—', s.open_tasks ?? 0, s.task_completion_pct != null ? s.task_completion_pct + '%' : '—']
-        rowVals.forEach((v, ci) => {
-          const addr = XLSX.utils.encode_cell({ r: i + 2, c: ci })
-          ws2[addr] = { v, s: i === 0 ? riskCell() : { ...cell('left'), fill: { fgColor: { rgb: 'FFF5F5' } } } }
+        const flags = s.warning_flags || []
+        const isUrgent = s.days_since_last >= 21 || flags.length >= 2
+        const reasons = flags.map(f => FLAG_RU[f]?.(s) || f).join(' • ')
+        const a = i % 2 ? S.dataAlt : S.data
+        sc(ws3, r3, 0, s.name, { ...a('left', true), ...(isUrgent ? { fill: { fgColor: { rgb: 'FFF1F2' } } } : {}) })
+        sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + ' дн.' : '—', isUrgent ? S.urgent : S.danger)
+        sc(ws3, r3, 2, s.open_tasks ?? 0, a('center'))
+        sc(ws3, r3, 3, s.task_completion_pct != null ? s.task_completion_pct + '%' : '—', a('center'))
+        sc(ws3, r3, 4, isUrgent ? 'СРОЧНО' : 'РИСК', isUrgent ? S.urgent : S.danger)
+        sc(ws3, r3, 5, reasons, { font: { sz: 10, color: { rgb: RED } }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true }, border: brdB() })
+        ws3['!rows'].push({ hpt: 22 })
+        r3++
+      })
+    }
+
+    // ── Warning signals
+    r3++
+    sc(ws3, r3, 0, 'ВСЕ СИГНАЛЫ ПРЕДУПРЕЖДЕНИЙ', S.secHdr(AMBER))
+    addMerge(ws3, r3, r3, 0, 5)
+    ws3['!rows'].push({ hpt: 24 })
+    r3++
+
+    const sigHdrs = ['Тип сигнала', 'Участник', 'Детали', '', '', '']
+    sigHdrs.forEach((h, ci) => sc(ws3, r3, ci, h, S.subHdr(AMBER)))
+    ws3['!rows'].push({ hpt: 22 })
+    r3++
+
+    const sigTypeRu = {
+      no_meeting_14_days: 'Долго без встречи',
+      mood_declining: 'Настроение ухудшается',
+      many_incomplete_tasks: 'Много незакрытых задач',
+    }
+    const signals = team.warning_signals || []
+    if (signals.length === 0) {
+      sc(ws3, r3, 0, 'Нет активных сигналов', { font: { sz: 11, color: { rgb: GREEN } }, alignment: { horizontal: 'left' } })
+      addMerge(ws3, r3, r3, 0, 5)
+      ws3['!rows'].push({ hpt: 20 })
+      r3++
+    } else {
+      signals.forEach((sig, i) => {
+        const detail = sig.days != null ? `${sig.days} дн.` : sig.count != null ? `${sig.count} задач` : ''
+        const a = i % 2 ? S.dataAlt : S.data
+        sc(ws3, r3, 0, sigTypeRu[sig.type] || sig.type, { ...a('left'), font: { sz: 10, bold: true, color: { rgb: AMBER } } })
+        sc(ws3, r3, 1, sig.member_name || '', a('left', true))
+        sc(ws3, r3, 2, detail, a('center'))
+        sc(ws3, r3, 3, '', a('center'))
+        sc(ws3, r3, 4, '', a('center'))
+        sc(ws3, r3, 5, '', a('left'))
+        ws3['!rows'].push({ hpt: 20 })
+        r3++
+      })
+    }
+
+    setRef(ws3, r3, 5)
+    XLSX.utils.book_append_sheet(wb, ws3, '⚠️ Риски')
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SHEET 4 — НАСТРОЕНИЕ & АКТИВНОСТЬ
+    // ─────────────────────────────────────────────────────────────────────────
+    const ws4 = {}
+    ws4['!cols'] = [18, 15, 12, 6, 12, 15, 12].map(w => ({ wch: w }))
+    ws4['!rows'] = []
+    ws4['!merges'] = []
+    let r4 = 0
+
+    sc(ws4, r4, 0, 'Настроение & Активность — ' + team.team_name, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left' } })
+    addMerge(ws4, r4, r4, 0, 6)
+    ws4['!rows'].push({ hpt: 28 })
+    r4++
+
+    // ── Mood summary stats
+    if (mood) {
+      sc(ws4, r4, 0, 'ИТОГИ НАСТРОЕНИЯ', S.secHdr(TEAL))
+      addMerge(ws4, r4, r4, 0, 2)
+      ws4['!rows'].push({ hpt: 22 })
+      r4++
+      const moodKpi = [
+        ['Общий средний балл', mood.overall_avg != null ? mood.overall_avg + '/5' : '—'],
+        ['Всего ответов', mood.total ?? 0],
+        ['Последних резюме', (mood.recent_summaries || []).length],
+      ]
+      moodKpi.forEach(([l, v]) => {
+        sc(ws4, r4, 0, l, S.data('left', true))
+        sc(ws4, r4, 1, v, S.cardVal)
+        ws4['!rows'].push({ hpt: 20 })
+        r4++
+      })
+      r4++
+
+      // ── Mood by day
+      sc(ws4, r4, 0, 'НАСТРОЕНИЕ ПО ДНЯМ (7 дней)', S.subHdr(TEAL))
+      sc(ws4, r4, 1, 'Ср. балл (1–5)', S.subHdr(TEAL))
+      sc(ws4, r4, 2, 'Ответов', S.subHdr(TEAL))
+      ws4['!rows'].push({ hpt: 22 })
+      r4++;
+      (mood.days || []).forEach((d, i) => {
+        const moodColor = d.avg == null ? '94A3B8' : d.avg >= 4 ? GREEN : d.avg >= 3 ? TEAL : d.avg >= 2 ? AMBER : RED
+        sc(ws4, r4, 0, d.day, S.data('center'))
+        sc(ws4, r4, 1, d.avg ?? '—', { font: { bold: true, sz: 11, color: { rgb: moodColor } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brdB() })
+        sc(ws4, r4, 2, d.count, S.data('center'))
+        ws4['!rows'].push({ hpt: 20 })
+        r4++
+      })
+      r4++
+
+      // ── Mood by week
+      sc(ws4, r4, 0, 'НАСТРОЕНИЕ ПО НЕДЕЛЯМ (12 нед.)', S.subHdr(TEAL))
+      sc(ws4, r4, 1, 'Ср. балл', S.subHdr(TEAL))
+      sc(ws4, r4, 2, 'Ответов', S.subHdr(TEAL))
+      ws4['!rows'].push({ hpt: 22 })
+      r4++;
+      (mood.weeks || []).forEach((w, i) => {
+        const moodColor = w.avg == null ? '94A3B8' : w.avg >= 4 ? GREEN : w.avg >= 3 ? TEAL : w.avg >= 2 ? AMBER : RED
+        sc(ws4, r4, 0, w.week, S.data('center'))
+        sc(ws4, r4, 1, w.avg ?? '—', { font: { bold: true, sz: 11, color: { rgb: moodColor } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brdB() })
+        sc(ws4, r4, 2, w.count, S.data('center'))
+        ws4['!rows'].push({ hpt: 18 })
+        r4++
+      })
+      r4++
+
+      // ── Recent AI summaries
+      if ((mood.recent_summaries || []).length > 0) {
+        sc(ws4, r4, 0, 'AI-РЕЗЮМЕ ОПРОСОВ (последние)', S.subHdr(ACCENT))
+        addMerge(ws4, r4, r4, 0, 6)
+        ws4['!rows'].push({ hpt: 22 })
+        r4++
+        mood.recent_summaries.forEach((s, i) => {
+          sc(ws4, r4, 0, `${i + 1}.`, S.data('center'))
+          sc(ws4, r4, 1, s, { font: { sz: 10, italic: true, color: { rgb: '334155' } }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true }, border: brdB() })
+          addMerge(ws4, r4, r4, 1, 6)
+          ws4['!rows'].push({ hpt: 22 })
+          r4++
         })
+        r4++
+      }
+    }
+
+    // ── Hour distribution
+    const hourDist = team.patterns?.hour_distribution || {}
+    const hourEntries = Object.entries(hourDist).map(([h, c]) => ({ hour: parseInt(h), count: c })).sort((a, b) => a.hour - b.hour)
+    if (hourEntries.length > 0) {
+      sc(ws4, r4, 0, 'РАСПРЕДЕЛЕНИЕ ВСТРЕЧ ПО ЧАСАМ', S.secHdr(NAVY))
+      addMerge(ws4, r4, r4, 0, 6)
+      ws4['!rows'].push({ hpt: 24 })
+      r4++
+      sc(ws4, r4, 0, 'Час', S.subHdr())
+      sc(ws4, r4, 1, 'Кол-во встреч', S.subHdr())
+      ws4['!rows'].push({ hpt: 22 })
+      r4++
+      const maxHour = Math.max(...hourEntries.map(e => e.count), 1)
+      hourEntries.forEach(e => {
+        const pct = e.count / maxHour
+        const barColor = pct >= 0.75 ? BLUE : pct >= 0.5 ? ACCENT : pct >= 0.25 ? '93C5FD' : 'DBEAFE'
+        sc(ws4, r4, 0, `${e.hour}:00`, S.data('center'))
+        sc(ws4, r4, 1, e.count, { font: { bold: true, sz: 10, color: { rgb: WHITE } }, fill: { fgColor: { rgb: barColor } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brdB() })
+        ws4['!rows'].push({ hpt: 18 })
+        r4++
+      })
+      r4++
+    }
+
+    // ── Weekly meetings heatmap data
+    const weekData = team.meetings_per_week || []
+    if (weekData.length > 0) {
+      sc(ws4, r4, 0, 'АКТИВНОСТЬ ПО НЕДЕЛЯМ', S.secHdr(NAVY))
+      addMerge(ws4, r4, r4, 0, 6)
+      ws4['!rows'].push({ hpt: 24 })
+      r4++
+      sc(ws4, r4, 0, 'Неделя', S.subHdr())
+      sc(ws4, r4, 1, 'Встреч', S.subHdr())
+      ws4['!rows'].push({ hpt: 22 })
+      r4++
+      const maxW = Math.max(...weekData.map(w => w.count), 1)
+      weekData.forEach(w => {
+        const pct = w.count / maxW
+        const barColor = pct >= 0.75 ? BLUE : pct >= 0.5 ? ACCENT : pct >= 0.25 ? '93C5FD' : w.count > 0 ? 'DBEAFE' : 'F1F5F9'
+        sc(ws4, r4, 0, w.week, S.data('center'))
+        sc(ws4, r4, 1, w.count, { font: { bold: w.count > 0, sz: 10, color: { rgb: w.count > 0 ? WHITE : '94A3B8' } }, fill: { fgColor: { rgb: barColor } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brdB() })
+        ws4['!rows'].push({ hpt: 18 })
+        r4++
       })
     }
-    ws2['!cols'] = [22, 40, 22, 16, 14].map(w => ({ wch: w }))
-    ws2['!ref'] = `A1:E${Math.max(atRisk.length + 2, 3)}`
-    XLSX.utils.book_append_sheet(wb, ws2, 'Зона риска')
 
-    // ── Sheet 3: Настроение команды ────────────────────────────────────────────
-    const ws3 = XLSX.utils.aoa_to_sheet([])
-    ws3['A1'] = { v: 'Настроение команды (последние 7 дней)', s: { font: { bold: true, sz: 13, color: { rgb: '1E3A5F' } } } }
-    const moodDays = mood?.days ?? []
-    const moodWeeks = mood?.weeks ?? []
-    ws3['A2'] = { v: 'По дням', s: hdr('2980B9') }
-    ws3['B2'] = { v: 'Ср. балл (1–5)', s: hdr('2980B9') }
-    ws3['C2'] = { v: 'Ответов', s: hdr('2980B9') }
-    moodDays.forEach((d, i) => {
-      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 0 })] = { v: d.day, s: cell('center') }
-      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 1 })] = { v: d.avg ?? '—', s: cell('center') }
-      ws3[XLSX.utils.encode_cell({ r: i + 2, c: 2 })] = { v: d.count, s: cell('center') }
-    })
-    const weekStart = moodDays.length + 4
-    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 0 })] = { v: 'По неделям (12 нед.)', s: hdr('2980B9') }
-    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 1 })] = { v: 'Ср. балл', s: hdr('2980B9') }
-    ws3[XLSX.utils.encode_cell({ r: weekStart - 1, c: 2 })] = { v: 'Ответов', s: hdr('2980B9') }
-    moodWeeks.forEach((w, i) => {
-      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 0 })] = { v: w.week, s: cell('center') }
-      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 1 })] = { v: w.avg ?? '—', s: cell('center') }
-      ws3[XLSX.utils.encode_cell({ r: weekStart + i, c: 2 })] = { v: w.count, s: cell('center') }
-    })
-    if (mood?.recent_summaries?.length) {
-      const sumStart = weekStart + moodWeeks.length + 2
-      ws3[XLSX.utils.encode_cell({ r: sumStart, c: 0 })] = { v: 'Последние AI-резюме опросов', s: { font: { bold: true, sz: 11, color: { rgb: '1E3A5F' } } } }
-      mood.recent_summaries.forEach((s, i) => {
-        ws3[XLSX.utils.encode_cell({ r: sumStart + 1 + i, c: 0 })] = { v: s, s: cell('left') }
+    // ── Checkins (if provided)
+    if (checkins && checkins.length > 0) {
+      r4++
+      sc(ws4, r4, 0, 'ПРИХОД / УХОД (последние данные)', S.secHdr(TEAL))
+      addMerge(ws4, r4, r4, 0, 6)
+      ws4['!rows'].push({ hpt: 24 })
+      r4++
+      const cHdrs = ['Участник', 'Пришёл', 'Ушёл', 'Продолжительность', '', '', '']
+      cHdrs.forEach((h, ci) => sc(ws4, r4, ci, h, S.subHdr(TEAL)))
+      ws4['!rows'].push({ hpt: 22 })
+      r4++
+      const memberMap = Object.fromEntries(ms.map(s => [s.user_id, s.name]))
+      const fmt = dt => dt ? new Date(dt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '—'
+      const dur = (a, l) => {
+        if (!a || !l) return '—'
+        const m = Math.round((new Date(l) - new Date(a)) / 60000)
+        return `${Math.floor(m / 60)}ч ${m % 60}м`
+      }
+      checkins.forEach((c, i) => {
+        const a = i % 2 ? S.dataAlt : S.data
+        sc(ws4, r4, 0, memberMap[c.user_id] || `#${c.user_id}`, a('left', true))
+        sc(ws4, r4, 1, fmt(c.arrived_at), { ...a('center'), font: { sz: 10, color: { rgb: GREEN } } })
+        sc(ws4, r4, 2, fmt(c.left_at), a('center'))
+        sc(ws4, r4, 3, dur(c.arrived_at, c.left_at), a('center'))
+        ws4['!rows'].push({ hpt: 20 })
+        r4++
       })
     }
-    ws3['!cols'] = [18, 16, 12].map(w => ({ wch: w }))
-    ws3['!ref'] = `A1:C${weekStart + moodWeeks.length + 10}`
-    XLSX.utils.book_append_sheet(wb, ws3, 'Настроение')
 
-    // ── Write file ─────────────────────────────────────────────────────────────
+    setRef(ws4, r4, 6)
+    XLSX.utils.book_append_sheet(wb, ws4, '📈 Активность')
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // WRITE
+    // ─────────────────────────────────────────────────────────────────────────
     const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' })
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${team.team_name}_аналитика.xlsx`
+    a.download = `${team.team_name}_аналитика_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`
     a.click()
   }
 
@@ -505,7 +918,7 @@ export default function LeadAnalytics({ user }) {
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
         <button
-          onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id])}
+          onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
           style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
         >↓ Экспорт Excel</button>
       </div>
