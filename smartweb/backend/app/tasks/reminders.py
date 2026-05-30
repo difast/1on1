@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from sqlalchemy import func as sqlfunc
 from app.tasks.celery_app import celery_app
 from app.database import SessionLocal
 from app.models.meeting import Meeting
@@ -26,10 +27,13 @@ def send_meeting_reminders():
             .all()
         )
 
+        all_user_ids = {uid for m in meetings for uid in (m.member_id, m.team_lead_id) if uid}
+        users_map = {u.id: u for u in db.query(User).filter(User.id.in_(all_user_ids)).all()} if all_user_ids else {}
+
         messages = []
         for meeting in meetings:
-            member = db.query(User).filter(User.id == meeting.member_id).first()
-            lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
+            member = users_map.get(meeting.member_id)
+            lead = users_map.get(meeting.team_lead_id)
             time_str = meeting.scheduled_date.strftime("%H:%M")
 
             for user, with_name in [(lead, member.name if member else "—"), (member, lead.name if lead else "—")]:
@@ -76,10 +80,13 @@ def send_hourly_meeting_reminders():
             .all()
         )
 
+        all_user_ids = {uid for m in meetings for uid in (m.member_id, m.team_lead_id) if uid}
+        users_map = {u.id: u for u in db.query(User).filter(User.id.in_(all_user_ids)).all()} if all_user_ids else {}
+
         messages = []
         for meeting in meetings:
-            member = db.query(User).filter(User.id == meeting.member_id).first()
-            lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
+            member = users_map.get(meeting.member_id)
+            lead = users_map.get(meeting.team_lead_id)
 
             for user, with_name in [(lead, member.name if member else "—"), (member, lead.name if lead else "—")]:
                 if user and user.push_token:
@@ -104,46 +111,63 @@ def check_overdue_meetings():
     try:
         from app.models.team import TeamMember, Team
 
-        overdue = (
-            db.query(TeamMember)
+        team_members = db.query(TeamMember).filter(
+            TeamMember.cadence_days > 0,
+            TeamMember.role != "lead",
+        ).all()
+
+        if not team_members:
+            return
+
+        # Batch-load last meeting date per (member_id, team_id)
+        member_team_pairs = [(tm.user_id, tm.team_id) for tm in team_members]
+        member_ids = list({tm.user_id for tm in team_members})
+        team_ids = list({tm.team_id for tm in team_members})
+
+        last_meeting_rows = (
+            db.query(Meeting.member_id, Meeting.team_id, sqlfunc.max(Meeting.scheduled_date).label("last_date"))
+            .filter(
+                Meeting.member_id.in_(member_ids),
+                Meeting.team_id.in_(team_ids),
+                Meeting.status.notin_(["cancelled", "declined"]),
+            )
+            .group_by(Meeting.member_id, Meeting.team_id)
             .all()
         )
+        last_meeting_map = {(row.member_id, row.team_id): row.last_date for row in last_meeting_rows}
 
+        # Batch-load all relevant users and teams
+        all_user_ids = set(member_ids)
+        teams_map = {t.id: t for t in db.query(Team).filter(Team.id.in_(team_ids)).all()}
+        lead_ids = {t.team_lead_id for t in teams_map.values() if t.team_lead_id}
+        all_user_ids |= lead_ids
+        users_map = {u.id: u for u in db.query(User).filter(User.id.in_(all_user_ids)).all()}
+
+        now = datetime.utcnow()
         messages = []
-        for tm in overdue:
-            last = (
-                db.query(Meeting)
-                .filter(
-                    Meeting.member_id == tm.user_id,
-                    Meeting.team_id == tm.team_id,
-                    Meeting.status.notin_(["cancelled", "declined"]),
-                )
-                .order_by(Meeting.scheduled_date.desc())
-                .first()
-            )
-            if last:
-                days = (datetime.utcnow() - last.scheduled_date).days
-            else:
-                days = 9999
+        for tm in team_members:
+            last_date = last_meeting_map.get((tm.user_id, tm.team_id))
+            days = (now - last_date).days if last_date else 9999
 
             if days > tm.cadence_days * 2:
-                member = db.query(User).filter(User.id == tm.user_id).first()
-                team = db.query(Team).filter(Team.id == tm.team_id).first()
+                team = teams_map.get(tm.team_id)
                 if not team:
                     continue
-                lead = db.query(User).filter(User.id == team.team_lead_id).first()
+                member = users_map.get(tm.user_id)
+                lead = users_map.get(team.team_lead_id)
+                member_name = member.name if member else "—"
 
                 db.add(Notification(
                     user_id=team.team_lead_id,
                     type="overdue_alert",
-                    title=f"Давно не было 1-on-1 с {member.name if member else '—'}",
+                    title=f"Давно не было 1-on-1 с {member_name}",
                     body=f"Прошло {days} дн., рекомендуется каждые {tm.cadence_days} дн.",
                     data={"member_id": tm.user_id, "team_id": tm.team_id},
                 ))
                 if lead and lead.push_token:
                     messages.append({
                         "to": lead.push_token,
-                        "title": f"Давно не было 1-on-1 с {member.name if member else '—'}",
+                        "title": f"Давно не было 1-on-1 с {member_name}",
                         "body": f"Прошло {days} дн., рекомендуется каждые {tm.cadence_days} дн.",
                         "sound": "default",
                         "data": {"member_id": tm.user_id, "team_id": tm.team_id},

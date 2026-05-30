@@ -10,6 +10,7 @@ from app.models.team import Team, TeamMember
 from app.models.user import User
 from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, MeetingRequest
 from app.services.notification_service import NotificationService
+from app.prompts import AITUNNEL_KEY
 
 router = APIRouter()
 
@@ -170,8 +171,6 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
     NotificationService(db).meeting_declined(meeting.member_id, lead_name, meeting.id)
 
     return meeting
-
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
 
 class SlotRequest(PydanticBase):
     meeting_id: int
