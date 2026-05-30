@@ -340,9 +340,9 @@ export default function AdminDashboard({ onLogout }) {
 
             {/* ── ОБРАЩЕНИЯ ── */}
             {tab === 'tickets' && (
-              <div className="tickets-pane" style={{ display: 'flex', gap: 16, minHeight: 520, flexWrap: 'wrap' }}>
-                {/* Left: ticket list */}
-                <div className="tickets-list" style={{ width: 300, minWidth: 0, flexBasis: 300, flexGrow: 0, flexShrink: 1, display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div className="tickets-pane" style={{ display: 'flex', gap: 16, minHeight: 520 }}>
+                {/* Left: ticket list — hidden on mobile when ticket is open */}
+                <div className={`tickets-list${activeTicket ? ' tickets-list-hidden' : ''}`} style={{ width: 300, flexBasis: 300, flexGrow: 0, flexShrink: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
                     <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>
                       Обращения {unreadTickets > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, borderRadius: 20, padding: '1px 6px', marginLeft: 4 }}>{unreadTickets}</span>}
@@ -384,8 +384,8 @@ export default function AdminDashboard({ onLogout }) {
                   ))}
                 </div>
 
-                {/* Right: thread */}
-                <div className="card" style={{ flex: 1, minWidth: 260, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 400 }}>
+                {/* Right: thread — hidden on mobile when no ticket selected */}
+                <div className={`card tickets-thread${!activeTicket ? ' tickets-thread-hidden' : ''}`} style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden', minHeight: 400 }}>
                   {!activeTicket ? (
                     <div className="empty-state" style={{ margin: 'auto' }}>
                       <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H7l-4 3V5z" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
@@ -395,6 +395,12 @@ export default function AdminDashboard({ onLogout }) {
                     <>
                       {/* Thread header */}
                       <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
+                        <div className="tickets-back-btn" style={{ display: 'none', marginBottom: 10 }}>
+                          <button onClick={() => setActiveTicket(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, padding: 0 }}>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            Назад
+                          </button>
+                        </div>
                         <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{activeTicket.subject}</p>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{activeTicket.user_name} · {activeTicket.user_email}</span>

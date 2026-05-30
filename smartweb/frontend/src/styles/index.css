@@ -602,9 +602,13 @@ textarea.input { resize: vertical; min-height: 90px; }
   .admin-tabs::-webkit-scrollbar { display: none; }
   .admin-tabs > button { flex-shrink: 0; }
 
-  /* Tickets split-pane stacks vertically on mobile */
+  /* Tickets split-pane: master-detail on mobile */
   .tickets-pane { flex-direction: column !important; }
   .tickets-list { width: 100% !important; flex-basis: auto !important; }
+  .tickets-list-hidden { display: none !important; }
+  .tickets-thread { width: 100% !important; min-height: 500px !important; }
+  .tickets-thread-hidden { display: none !important; }
+  .tickets-back-btn { display: block !important; }
 }
 
 /* Larger tap targets on touch devices */
