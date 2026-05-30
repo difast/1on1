@@ -10,7 +10,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 
 function AppContent() {
-  const { session, user, loading, activeRole, hasBothRoles } = useAuth();
+  const { session, user, loading, activeRole, hasBothRoles, isAdmin } = useAuth();
   const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
@@ -20,9 +20,15 @@ function AppContent() {
 
     const root = segments[0] as string | undefined;
 
+    // Admin mode is independent of Supabase auth
+    if (isAdmin) {
+      if (root !== 'admin') router.replace('/admin');
+      return;
+    }
+
     if (!session) {
       // Not authenticated → always go to login
-      router.replace('/(auth)/login');
+      if (root !== '(auth)') router.replace('/(auth)/login');
       return;
     }
 
@@ -30,20 +36,20 @@ function AppContent() {
     if (!user) return;
 
     if (!user.role) {
-      router.replace('/onboarding');
+      if (root !== 'onboarding') router.replace('/onboarding');
       return;
     }
 
     if (hasBothRoles && !activeRole) {
-      router.replace('/role-select');
+      if (root !== 'role-select') router.replace('/role-select');
       return;
     }
 
     // Authenticated + role determined → go to tabs if stuck on auth/onboarding screens
-    if (root === '(auth)' || root === 'onboarding' || root === 'role-select') {
+    if (root === '(auth)' || root === 'onboarding' || root === 'role-select' || root === 'admin') {
       router.replace('/(tabs)');
     }
-  }, [session, loading, user?.id, user?.role, activeRole, hasBothRoles]);
+  }, [session, loading, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
 
   return (
     <BottomSheetModalProvider>
@@ -55,6 +61,7 @@ function AppContent() {
           <Stack.Screen name="onboarding" />
           <Stack.Screen name="role-select" />
           <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="admin" />
         </Stack>
       </View>
       <StatusBar style={isDark ? 'light' : 'dark'} />

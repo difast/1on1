@@ -24,10 +24,13 @@ interface AuthContextType {
   loading: boolean;
   activeRole: Role | null;
   hasBothRoles: boolean;
+  isAdmin: boolean;
   setUser: (user: AppUser | null) => void;
   setActiveRole: (role: Role) => Promise<void>;
   addSecondaryRole: (inviteCode: string) => Promise<void>;
   addTeamLeadRole: (teamName: string) => Promise<void>;
+  enterAdmin: () => Promise<void>;
+  exitAdmin: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -37,16 +40,20 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   activeRole: null,
   hasBothRoles: false,
+  isAdmin: false,
   setUser: () => {},
   setActiveRole: async () => {},
   addSecondaryRole: async () => {},
   addTeamLeadRole: async () => {},
+  enterAdmin: async () => {},
+  exitAdmin: async () => {},
   signOut: async () => {},
 });
 
 const USER_CACHE_KEY = 'cachedUser';
 const BOTH_ROLES_KEY = 'hasBothRoles';
 const ACTIVE_ROLE_KEY = 'activeRole';
+const ADMIN_KEY = 'adminMode';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -54,6 +61,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [activeRole, setActiveRoleState] = useState<Role | null>(null);
   const [hasBothRoles, setHasBothRoles] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(ADMIN_KEY).then(v => { if (v === 'true') setIsAdmin(true); }).catch(() => {});
+  }, []);
+
+  const enterAdmin = async () => {
+    setIsAdmin(true);
+    await AsyncStorage.setItem(ADMIN_KEY, 'true');
+  };
+
+  const exitAdmin = async () => {
+    setIsAdmin(false);
+    await AsyncStorage.removeItem(ADMIN_KEY);
+  };
 
   // Keep user cache in sync (fire-and-forget)
   const setUser = (u: AppUser | null) => {
@@ -141,13 +163,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSession(null);
     setActiveRoleState(null);
     setHasBothRoles(false);
-    await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY]);
+    setIsAdmin(false);
+    await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY, ADMIN_KEY]);
   };
 
   return (
     <AuthContext.Provider value={{
-      session, user, loading, activeRole, hasBothRoles,
-      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, signOut,
+      session, user, loading, activeRole, hasBothRoles, isAdmin,
+      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut,
     }}>
       {children}
     </AuthContext.Provider>

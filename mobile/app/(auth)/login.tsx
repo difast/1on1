@@ -5,12 +5,15 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 
-type Mode = 'login' | 'register' | 'check_email';
+type Mode = 'login' | 'register' | 'check_email' | 'admin';
+
+const ADMIN_PASSWORD = '1on12026';
 
 function translateError(msg: string): string {
   if (msg.includes('Invalid login credentials')) return 'Неверный email или пароль';
@@ -23,15 +26,26 @@ function translateError(msg: string): string {
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session } = useAuth();
+  const { session, enterAdmin } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [adminPwd, setAdminPwd] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   if (session) return <Redirect href="/" />;
+
+  const handleAdminLogin = async () => {
+    setError('');
+    if (adminPwd === ADMIN_PASSWORD) {
+      await enterAdmin();
+      // Root layout will redirect to /admin once isAdmin flips
+    } else {
+      setError('Неверный пароль администратора');
+    }
+  };
 
   const handleLogin = async () => {
     setError('');
@@ -67,7 +81,9 @@ export default function LoginScreen() {
   if (mode === 'check_email') {
     return (
       <SafeAreaView style={[styles.root, styles.center]}>
-        <Text style={styles.emailIcon}>📬</Text>
+        <View style={styles.emailIconWrap}>
+          <Ionicons name="mail-outline" size={28} color={colors.accent} />
+        </View>
         <Text style={styles.emailTitle}>Проверьте почту</Text>
         <Text style={styles.emailDesc}>Мы отправили письмо на</Text>
         <Text style={styles.emailAddress}>{email}</Text>
@@ -77,6 +93,53 @@ export default function LoginScreen() {
         <TouchableOpacity style={styles.btn} onPress={() => setMode('login')}>
           <Text style={styles.btnText}>Войти</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (mode === 'admin') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="handled">
+            <View style={styles.logoWrap}>
+              <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
+              <Text style={styles.logoSub}>Эффективные 1-on-1 встречи с командой</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.adminHeader}>
+                <View style={styles.adminLockWrap}>
+                  <Ionicons name="lock-closed-outline" size={16} color={colors.accent} />
+                </View>
+                <Text style={styles.adminTitle}>Вход для администратора</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>Пароль администратора</Text>
+                <TextInput
+                  style={styles.input}
+                  value={adminPwd}
+                  onChangeText={v => { setAdminPwd(v); setError(''); }}
+                  placeholder="••••••••••"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  autoFocus
+                />
+              </View>
+              {error ? (
+                <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
+              ) : null}
+              <TouchableOpacity style={styles.btn} onPress={handleAdminLogin}>
+                <Text style={styles.btnText}>Войти как администратор</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backLink}
+                onPress={() => { setMode('login'); setError(''); setAdminPwd(''); }}
+              >
+                <Text style={styles.backLinkText}>← Назад к обычному входу</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -174,6 +237,13 @@ export default function LoginScreen() {
                 : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
             </Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.adminLink}
+            onPress={() => { setMode('admin'); setError(''); }}
+          >
+            <Text style={styles.adminLinkText}>Вход для администратора</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -264,6 +334,22 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
 
   emailIcon: { fontSize: 48, marginBottom: 16 },
+  emailIconWrap: {
+    width: 64, height: 64, borderRadius: 16,
+    backgroundColor: c.accentLight, borderWidth: 1, borderColor: c.blue200,
+    alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+  },
+  adminHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
+  adminLockWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: c.bg, borderWidth: 1, borderColor: c.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  adminTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+  backLink: { alignItems: 'center', marginTop: 12, paddingVertical: 4 },
+  backLinkText: { fontSize: 13, color: c.textMuted },
+  adminLink: { alignItems: 'center', marginTop: 18 },
+  adminLinkText: { fontSize: 12, color: c.textMuted },
   emailTitle: { fontSize: 20, fontWeight: '700', color: c.textPrimary, marginBottom: 8 },
   emailDesc: { fontSize: 14, color: c.textSecondary },
   emailAddress: { fontSize: 15, fontWeight: '600', color: c.accent, marginVertical: 4 },

@@ -130,6 +130,24 @@ export const checkInLeave = (userId: number) =>
 export const getTodayCheckin = (userId: number) =>
   req<any>(`/checkin/today/${userId}`);
 
-// Support
+// Support (user side)
 export const createSupportTicket = (data: { user_id: number; subject: string; body: string }) =>
   req<any>('/support/', { method: 'POST', body: JSON.stringify(data) });
+export const getUserTickets = (userId: number) =>
+  req<any[]>(`/support/user/${userId}`);
+export const userSendMessage = (ticketId: number, body: string) =>
+  req<any>(`/support/${ticketId}/message`, { method: 'POST', body: JSON.stringify({ body }) });
+export const userReadReply = (ticketId: number) =>
+  req<any>(`/support/${ticketId}/user-read`, { method: 'PATCH' });
+
+// Admin
+export const getAdminStats = () => req<any>('/users/admin/stats');
+export const getAdminAnalytics = () => req<any>('/users/admin/analytics');
+export const blockUser = (id: number) => req<any>(`/users/${id}/block`, { method: 'PATCH' });
+export const unblockUser = (id: number) => req<any>(`/users/${id}/unblock`, { method: 'PATCH' });
+export const getServiceHealth = () => req<any>('/health/detailed');
+export const broadcastNotification = (data: { title: string; body?: string; target?: string }) =>
+  req<any>('/notifications/broadcast', { method: 'POST', body: JSON.stringify(data) });
+export const getSupportTickets = () => req<any[]>('/support/');
+export const adminReplyTicket = (ticketId: number, body: string) =>
+  req<any>(`/support/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
