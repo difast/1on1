@@ -134,7 +134,7 @@ export default function MemberAnalytics({ user }) {
   const taskColor = data.task_completion_pct >= 70 ? 'var(--color-success)' : data.task_completion_pct >= 40 ? 'var(--color-accent)' : 'var(--color-danger)'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 860 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 860, width: '100%' }}>
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <StatCard value={data.meetings_last_90} label="Встреч за 90 дней" accent delay={0} />

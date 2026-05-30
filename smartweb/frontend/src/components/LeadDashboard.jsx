@@ -718,7 +718,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
       }}
 >
-      <div style={{ maxWidth: 1100 }}>
+      <div style={{ maxWidth: 1100, width: '100%' }}>
         {/* Page header */}
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
@@ -773,7 +773,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Notes view */}
         {activeView === 'notes' && (
-          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ maxWidth: 640, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* General notes */}
             <div>
               <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
@@ -873,7 +873,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tasks view */}
         {activeView === 'tasks' && (
-          <div style={{ maxWidth: 700 }}>
+          <div style={{ maxWidth: 700, width: '100%' }}>
             {/* Sub-tabs */}
             <div className="tabs" style={{ width: 'fit-content', marginBottom: 20 }}>
               <button onClick={() => setTasksSubTab('mine')} className={`tab${tasksSubTab === 'mine' ? ' active' : ''}`}>
@@ -1178,7 +1178,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <div className="spinner" />
             </div>
           ) : (
-            <div style={{ maxWidth: 720 }}>
+            <div style={{ maxWidth: 720, width: '100%' }}>
               {/* Status filter chips */}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
                 {MEETING_FILTERS.filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (

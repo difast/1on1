@@ -495,6 +495,12 @@ textarea.input { resize: vertical; min-height: 90px; }
   .app-main { padding: 24px 20px; }
 }
 
+/* ── Tablet ───────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  /* Shrink header right-side gap so payment button doesn't shift */
+  .header-actions { gap: 6px !important; }
+}
+
 /* ── Mobile (≤ 768px): sidebar becomes a slide-out drawer ──── */
 @media (max-width: 768px) {
   .mobile-menu-btn { display: inline-flex; }
@@ -530,6 +536,13 @@ textarea.input { resize: vertical; min-height: 90px; }
   h2 { font-size: 1.25rem; }
   h3 { font-size: 1.1rem; }
   .header { padding: 0 14px; }
+
+  /* Header: tighten right-side items */
+  .header-actions { gap: 4px !important; }
+  /* Hide payment button text label on phones */
+  .payment-label { display: none; }
+  /* Hide username text (keep avatar-like button) */
+  .header-username { display: none !important; }
 
   .app-main { padding: 16px 13px !important; }
   .admin-main { padding: 20px 14px !important; }

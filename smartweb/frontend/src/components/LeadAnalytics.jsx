@@ -898,7 +898,7 @@ export default function LeadAnalytics({ user }) {
   const moodLinePoints = mood?.weeks?.map(w => ({ label: w.week, y: w.avg })) ?? []
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 1000 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 1000, width: '100%' }}>
       {/* Team tabs */}
       {data.teams.length > 1 && (
         <div style={{ display: 'flex', gap: 8 }}>

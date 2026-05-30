@@ -340,7 +340,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <nav className="nav">
         </nav>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div ref={notifRef} style={{ position: 'relative' }}>
             <NotificationBell count={unreadCount} onClick={toggleNotifications} />
 
@@ -475,7 +475,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <path d="M1 5.5h11" stroke="#16a34a" strokeWidth="1.1"/>
                 <rect x="2.5" y="7.5" width="3" height="1.2" rx="0.4" fill="#16a34a"/>
               </svg>
-              Оплата
+              <span className="payment-label">Оплата</span>
             </button>
           )}
 
@@ -492,7 +492,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               onMouseEnter={e => { e.currentTarget.style.background = 'var(--gray-100)'; e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.color = 'var(--color-text-primary)' }}
               onMouseLeave={e => { e.currentTarget.style.background = 'none'; e.currentTarget.style.borderColor = 'transparent'; e.currentTarget.style.color = 'var(--color-text-secondary)' }}
             >
-              {user?.name}
+              <span className="header-username">{user?.name}</span>
               <span style={{ fontSize: 9, opacity: 0.5, marginLeft: 2 }}>▾</span>
             </button>
 
@@ -860,7 +860,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </aside>
 
         {/* Main content */}
-        <main className="app-main" style={{ marginLeft: 240, flex: 1, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
+        <main className="app-main" style={{ marginLeft: 240, flex: 1, minWidth: 0, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
           {children}
         </main>
       </div>

@@ -350,7 +350,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
       }}
 >
-      <div style={{ maxWidth: 900 }}>
+      <div style={{ maxWidth: 900, width: '100%' }}>
         <div className="page-header" style={{ marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>{team.name}</h1>
@@ -556,7 +556,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Meetings — calendar view */}
         {activeTab === 'meetings' && (
-          <div style={{ maxWidth: 700 }}>
+          <div style={{ maxWidth: 700, width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
               <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
                 + Запросить встречу
@@ -695,7 +695,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Tasks */}
         {activeTab === 'tasks' && (
-          <div style={{ maxWidth: 700 }}>
+          <div style={{ maxWidth: 700, width: '100%' }}>
             {/* Self-task form */}
             {selfTaskForm.open ? (
               <form onSubmit={handleCreateSelfTask} className="card" style={{ padding: 16, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -823,7 +823,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Tab: Notes */}
         {activeTab === 'notes' && (
-          <div style={{ maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 20 }}>
+          <div style={{ maxWidth: 640, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* General notes */}
             <div>
               <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
