@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from app.database import get_db
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
 
@@ -43,6 +43,7 @@ app.include_router(knowledge.router, prefix="/api/knowledge", tags=["knowledge"]
 app.include_router(assistant.router, prefix="/api/assistant", tags=["assistant"])
 app.include_router(subtask.router, prefix="/api/subtasks", tags=["subtasks"])
 app.include_router(checkin.router, prefix="/api/checkins", tags=["checkins"])
+app.include_router(support.router, prefix="/api/support", tags=["support"])
 
 @app.get("/")
 @app.get("/api/health")

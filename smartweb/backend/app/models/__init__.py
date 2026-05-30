@@ -8,3 +8,4 @@ from app.models.mood import MoodEntry
 from app.models.knowledge import KnowledgeArticle
 from app.models.subtask import SubTask
 from app.models.checkin import WorkCheckin
+from app.models.support_ticket import SupportTicket

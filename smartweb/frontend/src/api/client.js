@@ -104,4 +104,11 @@ export const checkInLeave = (userId) => api.post('/checkins/leave', { user_id: u
 export const getTodayCheckin = (userId) => api.get(`/checkins/today/${userId}`)
 export const getTeamCheckins = (teamId, days = 7) => api.get(`/checkins/team/${teamId}`, { params: { days } })
 
+// Support tickets
+export const createSupportTicket = (data) => api.post('/support/', data)
+export const getSupportTickets = () => api.get('/support/')
+export const getSupportUnreadCount = () => api.get('/support/unread-count')
+export const markTicketRead = (id) => api.patch(`/support/${id}/read`)
+export const markAllTicketsRead = () => api.patch('/support/read-all')
+
 export default api
