@@ -25,6 +25,7 @@ export default function MemberPage() {
   const [reqMessage, setReqMessage] = useState("");
   const [toast, setToast] = useState("");
   const [activeTab, setActiveTab] = useState<"meetings" | "tasks">("meetings");
+  const [taskFilter, setTaskFilter] = useState<'all'|'open'|'done'>('all');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -89,8 +90,8 @@ export default function MemberPage() {
       {toast && <div className="toast" style={{ background: "#1D9E75", color: "#fff" }}>{toast}</div>}
 
       {/* Header */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ fontWeight: 600, fontSize: 16 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
+      <div className="app-header" style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
+        <div className="app-header-logo" style={{ fontWeight: 600, fontSize: 16, flexShrink: 0 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => setShowRequestMeeting(true)} className="btn btn-purple" style={{ padding: "7px 12px", fontSize: 13, whiteSpace: "nowrap" }}>
             + Встреча
@@ -212,24 +213,45 @@ export default function MemberPage() {
                 <div style={{ fontSize: 32, marginBottom: 10 }}>✅</div>
                 <div style={{ fontWeight: 500, fontSize: 15 }}>Задач пока нет</div>
               </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[...pendingTasks, ...doneTasks].map((task, i) => (
-                  <div key={task.id} className="card animate-fade" style={{ padding: "12px 16px", animationDelay: `${i * 0.04}s`, opacity: task.done ? 0.6 : 1 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                      <button onClick={() => toggleTask(task)}
-                        style={{ width: 22, height: 22, borderRadius: 6, border: task.done ? "none" : "2px solid #D0CEC7", background: task.done ? "#1D9E75" : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, transition: "all 0.15s" }}>
-                        {task.done && <span style={{ color: "#fff", fontSize: 12 }}>✓</span>}
+            ) : (() => {
+              const filtered = tasks.filter(t =>
+                taskFilter === 'all' ? true : taskFilter === 'open' ? !t.done : t.done
+              );
+              return (
+                <>
+                  <div style={{ display: "flex", gap: 4, marginBottom: 12 }}>
+                    {(['all', 'open', 'done'] as const).map(f => (
+                      <button key={f} onClick={() => setTaskFilter(f)}
+                        style={{ padding: "5px 12px", borderRadius: 99, fontSize: 12, fontWeight: 500, border: "1.5px solid", borderColor: taskFilter === f ? "#7F77DD" : "#E8E6E1", background: taskFilter === f ? "#7F77DD" : "#fff", color: taskFilter === f ? "#fff" : "#999", cursor: "pointer", transition: "all 0.15s" }}>
+                        {f === 'all' ? 'Все' : f === 'open' ? 'Открытые' : 'Готово'}
                       </button>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 14, textDecoration: task.done ? "line-through" : "none", color: task.done ? "#999" : "#1a1a1a" }}>{task.text}</div>
-                        {task.due_date && <div style={{ fontSize: 12, color: "#bbb", marginTop: 3 }}>до {formatDate(task.due_date)}</div>}
-                      </div>
-                    </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            )}
+                  {filtered.length === 0 ? (
+                    <div style={{ textAlign: "center", color: "#bbb", fontSize: 14, padding: "24px 0" }}>
+                      {taskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                    </div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {filtered.map((task, i) => (
+                        <div key={task.id} className="card animate-fade" style={{ padding: "12px 16px", animationDelay: `${i * 0.04}s`, opacity: task.done ? 0.6 : 1 }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                            <button onClick={() => toggleTask(task)}
+                              style={{ width: 22, height: 22, borderRadius: 6, border: task.done ? "none" : "2px solid #D0CEC7", background: task.done ? "#1D9E75" : "none", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 1, transition: "all 0.15s", cursor: "pointer" }}>
+                              {task.done && <span style={{ color: "#fff", fontSize: 12 }}>✓</span>}
+                            </button>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 14, textDecoration: task.done ? "line-through" : "none", color: task.done ? "#999" : "#1a1a1a", wordBreak: "break-word" }}>{task.text}</div>
+                              {task.due_date && <div style={{ fontSize: 12, color: "#bbb", marginTop: 3 }}>до {formatDate(task.due_date)}</div>}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         )}
       </div>

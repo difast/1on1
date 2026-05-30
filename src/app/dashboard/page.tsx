@@ -42,6 +42,7 @@ export default function Dashboard() {
   const [taskDue, setTaskDue] = useState("");
   const [toast, setToast] = useState("");
   const [copiedInvite, setCopiedInvite] = useState(false);
+  const [taskFilter, setTaskFilter] = useState<'all'|'open'|'done'>('all');
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -254,8 +255,8 @@ export default function Dashboard() {
       {toast && <div className="toast" style={{ background: "#1D9E75", color: "#fff" }}>{toast}</div>}
 
       {/* Header */}
-      <div style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ fontWeight: 600, fontSize: 16 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
+      <div className="app-header" style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
+        <div className="app-header-logo" style={{ fontWeight: 600, fontSize: 16, flexShrink: 0 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           {pendingRequests > 0 && (
             <button onClick={() => setShowRequests(true)} style={{ position: "relative", background: "none", border: "none", fontSize: 20, cursor: "pointer" }}>
@@ -342,7 +343,7 @@ export default function Dashboard() {
                 return (
                   <div key={member.id} className="card card-clickable animate-fade"
                     style={{ padding: "14px 16px", cursor: "pointer", animationDelay: `${i * 0.05}s` }}
-                    onClick={() => setSelectedMember(member)}>
+                    onClick={() => { setSelectedMember(member); setTaskFilter('all'); }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
                       <div style={{ position: "relative" }}>
                         <div style={{ width: 44, height: 44, borderRadius: 13, background: member.avatar_color + "22", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 600, color: member.avatar_color }}>
@@ -427,25 +428,44 @@ export default function Dashboard() {
               <button className="btn btn-ghost" onClick={() => setShowAddTask(true)} style={{ padding: "10px 8px", fontSize: 13 }}>+ Задача</button>
             </div>
 
-            {selectedMember.tasks.length > 0 && (
-              <>
-                <div style={{ fontWeight: 600, fontSize: 14, color: "#555", marginBottom: 8 }}>Задачи</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
-                  {selectedMember.tasks.map(task => (
-                    <div key={task.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: "#F7F6F3", borderRadius: 10 }}>
-                      <button onClick={() => toggleTask(task)}
-                        style={{ width: 20, height: 20, borderRadius: 5, border: task.done ? "none" : "2px solid #D0CEC7", background: task.done ? "#1D9E75" : "none", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.15s" }}>
-                        {task.done && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
-                      </button>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13, textDecoration: task.done ? "line-through" : "none", color: task.done ? "#999" : "#1a1a1a" }}>{task.text}</div>
-                        {task.due_date && <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>до {formatDate(task.due_date)}</div>}
-                      </div>
+            {selectedMember.tasks.length > 0 && (() => {
+              const filtered = selectedMember.tasks.filter(t =>
+                taskFilter === 'all' ? true : taskFilter === 'open' ? !t.done : t.done
+              );
+              return (
+                <>
+                  <div style={{ marginBottom: 8 }}>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: "#555", marginBottom: 8 }}>Задачи</div>
+                    <div style={{ display: "flex", gap: 4 }}>
+                      {(['all', 'open', 'done'] as const).map(f => (
+                        <button key={f} onClick={() => setTaskFilter(f)}
+                          style={{ padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 500, border: "1.5px solid", borderColor: taskFilter === f ? "#7F77DD" : "#E8E6E1", background: taskFilter === f ? "#7F77DD" : "none", color: taskFilter === f ? "#fff" : "#999", cursor: "pointer", transition: "all 0.15s" }}>
+                          {f === 'all' ? 'Все' : f === 'open' ? 'Открытые' : 'Готово'}
+                        </button>
+                      ))}
                     </div>
-                  ))}
-                </div>
-              </>
-            )}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16, minHeight: 40 }}>
+                    {filtered.length === 0 ? (
+                      <div style={{ textAlign: "center", color: "#bbb", fontSize: 13, padding: "12px 0" }}>
+                        {taskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                      </div>
+                    ) : filtered.map(task => (
+                      <div key={task.id} style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 12px", background: "#F7F6F3", borderRadius: 10 }}>
+                        <button onClick={() => toggleTask(task)}
+                          style={{ width: 20, height: 20, borderRadius: 5, border: task.done ? "none" : "2px solid #D0CEC7", background: task.done ? "#1D9E75" : "none", flexShrink: 0, marginTop: 1, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", transition: "all 0.15s" }}>
+                          {task.done && <span style={{ color: "#fff", fontSize: 11 }}>✓</span>}
+                        </button>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 13, textDecoration: task.done ? "line-through" : "none", color: task.done ? "#999" : "#1a1a1a", wordBreak: "break-word" }}>{task.text}</div>
+                          {task.due_date && <div style={{ fontSize: 11, color: "#bbb", marginTop: 2 }}>до {formatDate(task.due_date)}</div>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
 
             <div style={{ fontWeight: 600, fontSize: 14, color: "#555", marginBottom: 10 }}>История встреч</div>
             {selectedMember.meetings.length === 0 ? (
