@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View, ActivityIndicator } from 'react-native';
+import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -11,7 +11,7 @@ import { CallBanner } from '../src/components/CallBanner';
 
 function AppContent() {
   const { session, user, loading, initializing, activeRole, hasBothRoles, isAdmin } = useAuth();
-  const { isDark, colors } = useTheme();
+  const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
 
@@ -50,14 +50,6 @@ function AppContent() {
       router.replace('/(tabs)');
     }
   }, [session, loading, initializing, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
-
-  if (initializing) {
-    return (
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
-        <ActivityIndicator size="large" color={colors.accent} />
-      </View>
-    );
-  }
 
   return (
     <BottomSheetModalProvider>
