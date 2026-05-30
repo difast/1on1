@@ -518,6 +518,9 @@ textarea.input { resize: vertical; min-height: 90px; }
     margin-left: 0 !important;
     padding: 20px 16px !important;
   }
+
+  /* Active-call bar spans full width (sidebar is hidden) */
+  .active-call-bar { left: 0 !important; padding: 10px 16px !important; }
 }
 
 /* ── Phones (≤ 640px) ─────────────────────────────────────── */
@@ -574,6 +577,11 @@ textarea.input { resize: vertical; min-height: 90px; }
 
   /* Bottom-right fixed widgets/banners: keep within viewport */
   .quick-widget-wrap { right: 14px !important; bottom: 14px !important; }
+  .quick-widget-wrap > div { max-width: calc(100vw - 28px); }
+
+  /* Banner stack hugs both edges so cards never overflow */
+  .banner-stack { left: 12px !important; right: 12px !important; bottom: 14px !important; align-items: stretch !important; }
+  .banner-stack > * { max-width: 100% !important; min-width: 0 !important; width: 100% !important; }
 }
 
 /* Larger tap targets on touch devices */

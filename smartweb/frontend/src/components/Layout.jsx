@@ -527,7 +527,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
       {/* Active call banner */}
       {activeCallNotif && (
-        <div style={{
+        <div className="active-call-bar" style={{
           position: 'fixed', top: 58, left: 240, right: 0, zIndex: 120,
           background: 'var(--color-accent)', color: '#fff',
           padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
@@ -608,7 +608,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
       {/* Unified banner stack — bottom right, covers QuickWidget button */}
       {(toasts.length > 0 || deadlineBanner || moodBanner) && (
-        <div style={{
+        <div className="banner-stack" style={{
           position: 'fixed', bottom: 24, right: 24, zIndex: 9100,
           display: 'flex', flexDirection: 'column', gap: 10,
           alignItems: 'flex-end',
