@@ -533,7 +533,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
       <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #a78bfa' : undefined }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{
             width: 46, height: 46, borderRadius: 'var(--radius-md)',
             background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
@@ -566,7 +566,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
-            <div style={{ display: 'flex', gap: 4, flexShrink: 0, position: 'relative' }}>
+            <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0, position: 'relative' }}>
               <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 В календарь
@@ -586,7 +586,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
           )}
           {isRequest && (
-            <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
               <button onClick={() => handleConfirmMeeting(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
               <button onClick={() => handleDeclineMeeting(m.id)} disabled={busy} className="btn btn-danger btn-sm">Отклонить</button>
             </div>
@@ -1294,7 +1294,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         {teamDetail.invite_code}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
                       <button
                         onClick={e => { e.stopPropagation(); handleCopyInvite() }}
                         className="btn btn-accent btn-sm"
@@ -1332,7 +1332,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
                   {/* Members grid */}
                   {filteredMembers.length > 0 ? (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 14 }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 14 }}>
                       {filteredMembers.map((member) => {
                         const tasksExpanded = expandedTasks.has(member.user_id)
                         const tasks = memberTasks[member.user_id]

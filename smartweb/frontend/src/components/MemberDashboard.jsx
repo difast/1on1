@@ -517,7 +517,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             {team.members && team.members.length > 0 && (
               <div>
                 <p className="label" style={{ marginBottom: 12 }}>Участники команды</p>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: 10 }}>
                   {[...team.members].filter(m => m.user_id !== user.id).sort((a, b) => {
                     if (!a.last_meeting_date) return -1
                     if (!b.last_meeting_date) return 1
@@ -571,7 +571,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 const hasNote = notes.some(n => n.meeting_id === m.id)
                 return (
                   <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <div style={{
                         width: 46, height: 46, borderRadius: 'var(--radius-md)',
                         background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
@@ -598,7 +598,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         {statusLabel[m.status] || m.status}
                       </span>
                       {!['completed', 'cancelled', 'declined'].includes(m.status) && (
-                        <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0 }}>
                           <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
                           <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
                         </div>
