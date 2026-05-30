@@ -582,7 +582,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               </button>
             </div>
             {/* Meeting filter bar */}
-            <div style={{ display: 'flex', gap: 6, marginBottom: 18, flexWrap: 'wrap' }}>
+            <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
               {[
                 { key: 'all', label: 'Все' },
                 { key: 'scheduled', label: 'Запланировано' },

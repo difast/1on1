@@ -1180,7 +1180,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           ) : (
             <div style={{ maxWidth: 720, width: '100%' }}>
               {/* Status filter chips */}
-              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+              <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                 {MEETING_FILTERS.filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (
                   <button
                     key={f.key}
