@@ -40,8 +40,9 @@ export default function RoleSelectScreen() {
           </TouchableOpacity>
         ))}
 
-        <TouchableOpacity style={styles.signOutBtn} onPress={signOut}>
-          <Text style={styles.signOutText}>Выйти из аккаунта</Text>
+        <TouchableOpacity style={styles.backBtn} onPress={async () => { await signOut(); router.replace('/(auth)/login'); }}>
+          <Ionicons name="arrow-back-outline" size={16} color={colors.textMuted} />
+          <Text style={styles.backText}>Вернуться к входу</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -72,6 +73,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginBottom: 4 },
   cardDesc: { fontSize: 13, color: c.textSecondary },
 
-  signOutBtn: { marginTop: 24, alignItems: 'center', paddingVertical: 12 },
-  signOutText: { fontSize: 14, color: c.textMuted },
+  backBtn: { marginTop: 24, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, gap: 6 },
+  backText: { fontSize: 14, color: c.textMuted },
 });

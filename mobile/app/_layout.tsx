@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { View } from 'react-native';
+import { View, ActivityIndicator } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -10,13 +10,13 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 
 function AppContent() {
-  const { session, user, loading, activeRole, hasBothRoles, isAdmin } = useAuth();
-  const { isDark } = useTheme();
+  const { session, user, loading, initializing, activeRole, hasBothRoles, isAdmin } = useAuth();
+  const { isDark, colors } = useTheme();
   const router = useRouter();
   const segments = useSegments();
 
   useEffect(() => {
-    if (loading) return;
+    if (initializing || loading) return;
 
     const root = segments[0] as string | undefined;
 
@@ -49,7 +49,15 @@ function AppContent() {
     if (root === '(auth)' || root === 'onboarding' || root === 'role-select' || root === 'admin') {
       router.replace('/(tabs)');
     }
-  }, [session, loading, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
+  }, [session, loading, initializing, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
+
+  if (initializing) {
+    return (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
+        <ActivityIndicator size="large" color={colors.accent} />
+      </View>
+    );
+  }
 
   return (
     <BottomSheetModalProvider>
@@ -62,6 +70,7 @@ function AppContent() {
           <Stack.Screen name="role-select" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="admin" />
+          <Stack.Screen name="+not-found" />
         </Stack>
       </View>
       <StatusBar style={isDark ? 'light' : 'dark'} />

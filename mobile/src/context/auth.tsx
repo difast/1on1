@@ -22,6 +22,7 @@ interface AuthContextType {
   session: Session | null;
   user: AppUser | null;
   loading: boolean;
+  initializing: boolean;
   activeRole: Role | null;
   hasBothRoles: boolean;
   isAdmin: boolean;
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   user: null,
   loading: true,
+  initializing: true,
   activeRole: null,
   hasBothRoles: false,
   isAdmin: false,
@@ -59,6 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUserState] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initializing, setInitializing] = useState(true);
   const [activeRole, setActiveRoleState] = useState<Role | null>(null);
   const [hasBothRoles, setHasBothRoles] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -125,15 +128,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       async (_event, sess) => {
         setSession(sess);
         if (sess?.user?.email) {
-          // Keep the loading gate up while we resolve the backend profile,
-          // otherwise the router briefly sees session+no-user and bounces
-          // an existing user into the onboarding (registration) flow.
           setLoading(true);
           await loadUser(sess.user.email);
         } else {
           setUserState(null);
         }
         setLoading(false);
+        setInitializing(false);
       },
     );
     return () => subscription.unsubscribe();
@@ -173,7 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider value={{
-      session, user, loading, activeRole, hasBothRoles, isAdmin,
+      session, user, loading, initializing, activeRole, hasBothRoles, isAdmin,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut,
     }}>
       {children}
