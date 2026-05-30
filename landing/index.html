@@ -199,7 +199,8 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .trole{font-size:12px;color:var(--txt3)}
 
 /* ── CTA */
-.cta-section{padding:120px 40px;text-align:center;background:linear-gradient(180deg,rgba(124,58,237,.08) 0%,var(--bg) 100%);position:relative;overflow:hidden}
+.cta-section{padding:120px 40px;text-align:center;background:linear-gradient(180deg,rgba(124,58,237,.08) 0%,var(--bg) 100%);position:relative;overflow:hidden;clip-path:inset(0 0 100% 0);transition:clip-path 1.15s cubic-bezier(.76,0,.24,1);will-change:clip-path}
+.cta-section.elevator-open{clip-path:inset(0 0 0% 0)}
 .cta-section::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:800px;height:400px;background:radial-gradient(ellipse,rgba(124,58,237,.13),transparent 65%);pointer-events:none}
 .cta-section>*{position:relative;z-index:1}
 .cta-h{font-family:'Playfair Display',serif;font-size:clamp(40px,6vw,72px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin-bottom:20px}
@@ -344,7 +345,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
             </li>
           </ul>
           <div class="stat-pill">
-            <div class="stat-n c-blue">94%</div>
+            <div class="stat-n c-blue"><span data-count="94" data-suffix="%">0%</span></div>
             <div class="stat-d">команд проводят встречи вовремя</div>
           </div>
         </div>
@@ -451,7 +452,7 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
             </li>
           </ul>
           <div class="stat-pill">
-            <div class="stat-n c-pink">4.3<span style="font-size:24px">/5</span></div>
+            <div class="stat-n c-pink"><span data-count="4.3" data-decimals="1">0.0</span><span style="font-size:24px">/5</span></div>
             <div class="stat-d">средний mood-индекс команд на платформе</div>
           </div>
         </div>
@@ -661,11 +662,11 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 </section>
 
 <!-- CTA -->
-<section class="cta-section block-card">
-  <div class="hero-badge reveal" style="display:inline-flex;margin-bottom:28px"><div class="bdot"></div>Начните за 5 минут</div>
-  <h2 class="cta-h df reveal">Первая встреча —<br>через пять минут.</h2>
-  <p class="cta-sub reveal">Никаких сложных настроек. Создайте команду и пригласите коллег прямо сейчас.</p>
-  <div class="cta-btns reveal">
+<section class="cta-section block-card" id="ctaSection">
+  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>Начните за 5 минут</div>
+  <h2 class="cta-h df cta-child" style="opacity:0">Первая встреча —<br>через пять минут.</h2>
+  <p class="cta-sub cta-child" style="opacity:0">Никаких сложных настроек. Создайте команду и пригласите коллег прямо сейчас.</p>
+  <div class="cta-btns cta-child" style="opacity:0">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Создать аккаунт →</a>
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost btn-lg">Войти</a>
   </div>
@@ -696,6 +697,46 @@ footer{border-top:1px solid var(--brd);padding:40px;display:flex;align-items:cen
 // ── SCROLL REVEAL
 const rio=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('vis');rio.unobserve(x.target)}})},{threshold:.07})
 document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el=>rio.observe(el))
+
+// ── NUMBER COUNTERS
+const cntObs=new IntersectionObserver(entries=>{
+  entries.forEach(entry=>{
+    if(!entry.isIntersecting)return
+    cntObs.unobserve(entry.target)
+    const el=entry.target
+    const target=parseFloat(el.dataset.count)
+    const suffix=el.dataset.suffix||''
+    const decimals=parseInt(el.dataset.decimals||'0')
+    const duration=1600
+    const start=performance.now()
+    ;(function tick(now){
+      const p=Math.min((now-start)/duration,1)
+      const e=1-Math.pow(1-p,3)
+      const val=target*e
+      el.textContent=(decimals>0?val.toFixed(decimals):Math.round(val))+suffix
+      if(p<1)requestAnimationFrame(tick)
+    })(start)
+  })
+},{threshold:0.4})
+document.querySelectorAll('[data-count]').forEach(el=>cntObs.observe(el))
+
+// ── CTA ELEVATOR
+const ctaSec=document.getElementById('ctaSection')
+if(ctaSec){
+  const ctaObs=new IntersectionObserver(entries=>{
+    entries.forEach(entry=>{
+      if(!entry.isIntersecting)return
+      ctaObs.unobserve(ctaSec)
+      ctaSec.classList.add('elevator-open')
+      setTimeout(()=>{
+        if(typeof anime!=='undefined'){
+          anime({targets:ctaSec.querySelectorAll('.cta-child'),opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})
+        }
+      },900)
+    })
+  },{threshold:0.08})
+  ctaObs.observe(ctaSec)
+}
 
 // ── PANEL STAGGER
 const pio=new IntersectionObserver(e=>{
