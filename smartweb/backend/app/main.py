@@ -10,14 +10,10 @@ from app.routers import user, team, meeting, task, notification, scheduling, ana
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0")
 
-@app.on_event("startup")
-def run_migrations():
-    from alembic.config import Config
-    from alembic import command
-    import os
-    cfg = Config(os.path.join(os.path.dirname(__file__), "../alembic.ini"))
-    cfg.set_main_option("script_location", os.path.join(os.path.dirname(__file__), "../alembic"))
-    command.upgrade(cfg, "head")
+# NOTE: Database migrations are run by start.sh (`alembic upgrade head`) BEFORE
+# uvicorn boots. Do NOT run them again in a startup event — a second in-process
+# upgrade can block on the alembic_version lock and hang "application startup",
+# leaving the server unable to accept requests (every API call then times out).
 
 _origins_env = os.getenv("CORS_ORIGINS", "")
 _extra_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]

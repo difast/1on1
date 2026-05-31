@@ -124,11 +124,11 @@ export const deleteNote = (id: number) =>
 
 // Check-in
 export const checkInArrive = (userId: number) =>
-  req<any>('/checkin/arrive', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+  req<any>('/checkins/arrive', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
 export const checkInLeave = (userId: number) =>
-  req<any>('/checkin/leave', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+  req<any>('/checkins/leave', { method: 'POST', body: JSON.stringify({ user_id: userId }) });
 export const getTodayCheckin = (userId: number) =>
-  req<any>(`/checkin/today/${userId}`);
+  req<any>(`/checkins/today/${userId}`);
 
 // Support (user side)
 export const createSupportTicket = (data: { user_id: number; subject: string; body: string }) =>
