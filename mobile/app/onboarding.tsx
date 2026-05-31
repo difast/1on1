@@ -15,8 +15,13 @@ import type { AppColors } from '../src/constants/colors';
 export default function OnboardingScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session, user, setUser, setActiveRole } = useAuth();
+  const { session, user, setUser, setActiveRole, signOut } = useAuth();
   const router = useRouter();
+
+  const handleBack = async () => {
+    await signOut();
+    router.replace('/(auth)/login');
+  };
 
   const [step, setStep] = useState(1);
   const [role, setRole] = useState<'team_lead' | 'member' | ''>('');
@@ -122,6 +127,12 @@ export default function OnboardingScreen() {
         contentContainerStyle={styles.root}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Back to login */}
+        <TouchableOpacity style={styles.exitBtn} onPress={handleBack}>
+          <Ionicons name="arrow-back-outline" size={18} color={colors.textSecondary} />
+          <Text style={styles.exitBtnText}>Назад</Text>
+        </TouchableOpacity>
+
         {/* Logo */}
         <View style={styles.logoWrap}>
           <Text style={styles.logo}>
@@ -285,6 +296,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     justifyContent: 'center',
     gap: 16,
   },
+  exitBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    alignSelf: 'flex-start', paddingVertical: 8, marginBottom: 4,
+  },
+  exitBtnText: { fontSize: 14, color: c.textSecondary },
   logoWrap: { alignItems: 'center', marginBottom: 8 },
   logo: { fontSize: 24, fontWeight: '700', color: c.textPrimary },
   logoAccent: { color: c.accent },

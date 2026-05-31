@@ -10,7 +10,9 @@ import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 
-type Mode = 'login' | 'register' | 'check_email';
+type Mode = 'login' | 'register' | 'check_email' | 'admin';
+
+const ADMIN_CODE = '1on12026';
 
 function translateError(msg: string): string {
   if (msg.includes('Invalid login credentials')) return 'Неверный email или пароль';
@@ -23,16 +25,17 @@ function translateError(msg: string): string {
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session } = useAuth();
+  const { session, enterAdmin, profileError } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Session exists: show spinner while _layout navigates away
-  if (session) {
+  // Show spinner while _layout navigates away after successful auth
+  if (session && !profileError) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -71,6 +74,12 @@ export default function LoginScreen() {
     }
   };
 
+  const handleAdminLogin = async () => {
+    setError('');
+    if (adminCode !== ADMIN_CODE) { setError('Неверный код администратора'); return; }
+    await enterAdmin();
+  };
+
   if (mode === 'check_email') {
     return (
       <SafeAreaView style={[styles.root, styles.center]}>
@@ -86,6 +95,53 @@ export default function LoginScreen() {
         <TouchableOpacity style={styles.btn} onPress={() => setMode('login')}>
           <Text style={styles.btnText}>Войти</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (mode === 'admin') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="handled">
+            <View style={styles.logoWrap}>
+              <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
+              <Text style={styles.logoSub}>Панель администратора</Text>
+            </View>
+            <View style={styles.card}>
+              <View style={styles.adminHeader}>
+                <View style={styles.adminIconWrap}>
+                  <Ionicons name="shield-checkmark-outline" size={18} color={colors.accent} />
+                </View>
+                <Text style={styles.adminTitle}>Вход для администратора</Text>
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>Код администратора</Text>
+                <TextInput
+                  style={styles.input}
+                  value={adminCode}
+                  onChangeText={v => { setAdminCode(v); setError(''); }}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  textContentType="password"
+                />
+              </View>
+              {error ? (
+                <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
+              ) : null}
+              <TouchableOpacity style={styles.btn} onPress={handleAdminLogin}>
+                <Text style={styles.btnText}>Войти</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.backLink}
+                onPress={() => { setMode('login'); setError(''); setAdminCode(''); }}
+              >
+                <Text style={styles.backLinkText}>← Назад</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -119,12 +175,13 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 value={email}
-                onChangeText={setEmail}
+                onChangeText={v => { setEmail(v); setError(''); }}
                 placeholder="ivan@company.com"
                 placeholderTextColor={colors.textMuted}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoCorrect={false}
+                textContentType="emailAddress"
               />
             </View>
 
@@ -133,7 +190,7 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={v => { setPassword(v); setError(''); }}
                 placeholder="••••••••"
                 placeholderTextColor={colors.textMuted}
                 secureTextEntry
@@ -155,9 +212,18 @@ export default function LoginScreen() {
               />
             </View>
 
+            {/* Supabase/auth error */}
             {error ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Backend/profile error (server down, 401, etc.) */}
+            {profileError ? (
+              <View style={styles.errorBox}>
+                <Ionicons name="cloud-offline-outline" size={14} color={colors.danger} />
+                <Text style={[styles.errorText, { marginLeft: 6 }]}>{profileError}</Text>
               </View>
             ) : null}
 
@@ -171,6 +237,13 @@ export default function LoginScreen() {
                   ? (mode === 'login' ? 'Входим...' : 'Регистрируемся...')
                   : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
               </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.adminLink}
+              onPress={() => { setMode('admin'); setError(''); }}
+            >
+              <Text style={styles.adminLinkText}>Вход для администратора</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -219,10 +292,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
 
   errorBox: {
+    flexDirection: 'row', alignItems: 'center',
     backgroundColor: c.dangerBg, borderWidth: 1, borderColor: '#FCA5A5',
     borderRadius: 10, padding: 12, marginBottom: 12,
   },
-  errorText: { fontSize: 14, color: c.danger },
+  errorText: { fontSize: 14, color: c.danger, flexShrink: 1 },
 
   btn: {
     backgroundColor: c.accent, borderRadius: 10,
@@ -230,6 +304,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   btnDisabled: { opacity: 0.6 },
   btnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+
+  adminLink: { alignItems: 'center', marginTop: 18 },
+  adminLinkText: { fontSize: 12, color: c.textMuted },
+
+  adminHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
+  adminIconWrap: {
+    width: 32, height: 32, borderRadius: 8,
+    backgroundColor: c.accentLight, borderWidth: 1, borderColor: c.border,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  adminTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+  backLink: { alignItems: 'center', marginTop: 14, paddingVertical: 4 },
+  backLinkText: { fontSize: 13, color: c.textMuted },
 
   emailIconWrap: {
     width: 64, height: 64, borderRadius: 16,

@@ -12,7 +12,7 @@ import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
 function AppContent() {
-  const { session, user, loading, initializing, activeRole, hasBothRoles, isAdmin } = useAuth();
+  const { session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin } = useAuth();
   const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
@@ -34,9 +34,15 @@ function AppContent() {
       return;
     }
 
-    // Session exists but user profile not loaded → go to onboarding (new user or API down)
+    // Session exists but user profile not loaded
     if (!user) {
-      if (root !== 'onboarding') router.replace('/onboarding');
+      if (profileError) {
+        // Server error — stay on login so the error message is visible
+        if (root !== '(auth)') router.replace('/(auth)/login');
+      } else {
+        // 404: new user who never created a profile → onboarding
+        if (root !== 'onboarding') router.replace('/onboarding');
+      }
       return;
     }
 
@@ -54,7 +60,7 @@ function AppContent() {
     if (root === '(auth)' || root === 'onboarding' || root === 'role-select' || root === 'admin') {
       router.replace('/(tabs)');
     }
-  }, [session, loading, initializing, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
+  }, [session, loading, initializing, profileError, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
 
   return (
     <BottomSheetModalProvider>

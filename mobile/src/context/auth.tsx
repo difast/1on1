@@ -23,6 +23,7 @@ interface AuthContextType {
   user: AppUser | null;
   loading: boolean;
   initializing: boolean;
+  profileError: string | null;
   activeRole: Role | null;
   hasBothRoles: boolean;
   isAdmin: boolean;
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   initializing: true,
+  profileError: null,
   activeRole: null,
   hasBothRoles: false,
   isAdmin: false,
@@ -62,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUserState] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [activeRole, setActiveRoleState] = useState<Role | null>(null);
   const [hasBothRoles, setHasBothRoles] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -86,7 +89,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (u) AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(u)).catch(() => {});
   };
 
-  const loadUser = async (email: string) => {
+  // Returns 'ok' | 'not_found' | 'error'
+  const loadUser = async (email: string): Promise<'ok' | 'not_found' | 'error'> => {
     const [savedActiveRole, hasBoth, cached] = await Promise.all([
       AsyncStorage.getItem(ACTIVE_ROLE_KEY),
       AsyncStorage.getItem(BOTH_ROLES_KEY),
@@ -94,32 +98,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
     setHasBothRoles(hasBoth === 'true');
 
-    // Restore from cache immediately — prevents onboarding flash on slow network
+    // Restore from cache immediately
     if (cached) {
       try {
         const u: AppUser = JSON.parse(cached);
         setUserState(u);
-        if (savedActiveRole) {
-          setActiveRoleState(savedActiveRole as Role);
-        } else if (hasBoth !== 'true') {
-          // Single-role user: use their role directly
-          setActiveRoleState(u.role);
-        }
-        // hasBothRoles + no savedActiveRole → leave null so role-select shows
+        if (savedActiveRole) setActiveRoleState(savedActiveRole as Role);
+        else if (hasBoth !== 'true') setActiveRoleState(u.role);
       } catch {}
     }
 
     try {
       const data = (await getUserByEmail(email)) as AppUser;
       setUserState(data);
+      setProfileError(null);
       AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
-      if (savedActiveRole) {
-        setActiveRoleState(savedActiveRole as Role);
-      } else if (hasBoth !== 'true') {
-        setActiveRoleState(data.role);
+      if (savedActiveRole) setActiveRoleState(savedActiveRole as Role);
+      else if (hasBoth !== 'true') setActiveRoleState(data.role);
+      return 'ok';
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404) {
+        // New user — Supabase account exists but no backend profile yet
+        if (!cached) setUserState(null);
+        setProfileError(null);
+        return 'not_found';
       }
-    } catch {
-      if (!cached) setUserState(null);
+      // Server error (500, timeout, 401, network down)
+      const msg = err?.response?.detail ?? err?.message ?? null;
+      if (!cached) {
+        setUserState(null);
+        setProfileError(msg ?? 'Сервер временно недоступен. Попробуйте позже.');
+      }
+      return 'error';
     }
   };
 
@@ -127,6 +138,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, sess) => {
         setSession(sess);
+        setProfileError(null);
         if (sess?.user?.email) {
           setLoading(true);
           try {
@@ -171,12 +183,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setActiveRoleState(null);
     setHasBothRoles(false);
     setIsAdmin(false);
+    setProfileError(null);
     await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY, ADMIN_KEY]);
   };
 
   return (
     <AuthContext.Provider value={{
-      session, user, loading, initializing, activeRole, hasBothRoles, isAdmin,
+      session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut,
     }}>
       {children}
