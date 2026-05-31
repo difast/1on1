@@ -129,7 +129,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setSession(sess);
         if (sess?.user?.email) {
           setLoading(true);
-          await loadUser(sess.user.email);
+          try {
+            await loadUser(sess.user.email);
+          } catch {}
         } else {
           setUserState(null);
         }

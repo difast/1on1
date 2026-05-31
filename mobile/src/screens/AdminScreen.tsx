@@ -50,9 +50,11 @@ export default function AdminScreen() {
 
   // Health
   const [health, setHealth] = useState<any>(null);
+  const [statsError, setStatsError] = useState(false);
 
   const loadStats = useCallback(async () => {
-    try { setStats(await getAdminStats()); } catch {}
+    try { setStats(await getAdminStats()); setStatsError(false); }
+    catch { setStatsError(true); }
     finally { setLoading(false); }
   }, []);
 
@@ -161,7 +163,14 @@ export default function AdminScreen() {
       ) : (
         <>
           {/* USERS */}
-          {tab === 'users' && stats && (
+          {tab === 'users' && statsError && (
+            <View style={styles.emptyWrap}>
+              <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
+              <Text style={styles.emptyText}>Нет доступа к данным</Text>
+              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 4 }]}>Проверьте подключение и права доступа</Text>
+            </View>
+          )}
+          {tab === 'users' && !statsError && stats && (
             <ScrollView
               contentContainerStyle={styles.content}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}

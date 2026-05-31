@@ -4,7 +4,6 @@ import {
   KeyboardAvoidingView, Platform, ScrollView, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/lib/supabase';
 import { useAuth } from '../../src/context/auth';
@@ -31,19 +30,30 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [adminPwd, setAdminPwd] = useState('');
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+  const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  if (session) return <Redirect href="/" />;
+  if (session) return null;
 
   const handleAdminLogin = async () => {
     setError('');
-    if (adminPwd === ADMIN_PASSWORD) {
+    if (adminCode !== ADMIN_PASSWORD) { setError('Неверный код администратора'); return; }
+    if (!adminEmail.trim()) { setError('Введите email'); return; }
+    setLoading(true);
+    try {
+      const { error: err } = await supabase.auth.signInWithPassword({
+        email: adminEmail.trim(),
+        password: adminPassword,
+      });
+      if (err) { setError(translateError(err.message)); return; }
       await enterAdmin();
-      // Root layout will redirect to /admin once isAdmin flips
-    } else {
-      setError('Неверный пароль администратора');
+    } catch {
+      setError('Ошибка сети. Проверьте подключение.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -114,22 +124,47 @@ export default function LoginScreen() {
                 <Text style={styles.adminTitle}>Вход для администратора</Text>
               </View>
               <View style={styles.field}>
-                <Text style={styles.label}>Пароль администратора</Text>
+                <Text style={styles.label}>Email</Text>
                 <TextInput
                   style={styles.input}
-                  value={adminPwd}
-                  onChangeText={v => { setAdminPwd(v); setError(''); }}
-                  placeholder="••••••••••"
+                  value={adminEmail}
+                  onChangeText={v => { setAdminEmail(v); setError(''); }}
+                  placeholder="admin@company.com"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>Пароль аккаунта</Text>
+                <TextInput
+                  style={styles.input}
+                  value={adminPassword}
+                  onChangeText={v => { setAdminPassword(v); setError(''); }}
+                  placeholder="••••••••"
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry
-                  autoFocus
+                  textContentType="password"
+                />
+              </View>
+              <View style={styles.field}>
+                <Text style={styles.label}>Код администратора</Text>
+                <TextInput
+                  style={styles.input}
+                  value={adminCode}
+                  onChangeText={v => { setAdminCode(v); setError(''); }}
+                  placeholder="••••••••"
+                  placeholderTextColor={colors.textMuted}
+                  secureTextEntry
+                  textContentType="password"
                 />
               </View>
               {error ? (
                 <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
               ) : null}
-              <TouchableOpacity style={styles.btn} onPress={handleAdminLogin}>
-                <Text style={styles.btnText}>Войти как администратор</Text>
+              <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleAdminLogin} disabled={loading}>
+                <Text style={styles.btnText}>{loading ? 'Входим...' : 'Войти как администратор'}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.backLink}
