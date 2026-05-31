@@ -1,3 +1,8 @@
+// Hermes ships an incomplete URL/URLSearchParams implementation; supabase-js
+// builds URL objects for every auth request, so without this polyfill the app
+// crashes deterministically the moment you sign in or sign up in a release
+// (Hermes) build. Must be imported before createClient runs.
+import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as SecureStore from 'expo-secure-store';
 import { createClient } from '@supabase/supabase-js';

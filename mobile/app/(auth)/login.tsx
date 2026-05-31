@@ -30,8 +30,6 @@ export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [adminEmail, setAdminEmail] = useState('');
-  const [adminPassword, setAdminPassword] = useState('');
   const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -41,17 +39,11 @@ export default function LoginScreen() {
   const handleAdminLogin = async () => {
     setError('');
     if (adminCode !== ADMIN_PASSWORD) { setError('Неверный код администратора'); return; }
-    if (!adminEmail.trim()) { setError('Введите email'); return; }
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({
-        email: adminEmail.trim(),
-        password: adminPassword,
-      });
-      if (err) { setError(translateError(err.message)); return; }
       await enterAdmin();
     } catch {
-      setError('Ошибка сети. Проверьте подключение.');
+      setError('Не удалось войти. Попробуйте ещё раз.');
     } finally {
       setLoading(false);
     }
@@ -124,31 +116,6 @@ export default function LoginScreen() {
                 <Text style={styles.adminTitle}>Вход для администратора</Text>
               </View>
               <View style={styles.field}>
-                <Text style={styles.label}>Email</Text>
-                <TextInput
-                  style={styles.input}
-                  value={adminEmail}
-                  onChangeText={v => { setAdminEmail(v); setError(''); }}
-                  placeholder="admin@company.com"
-                  placeholderTextColor={colors.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>Пароль аккаунта</Text>
-                <TextInput
-                  style={styles.input}
-                  value={adminPassword}
-                  onChangeText={v => { setAdminPassword(v); setError(''); }}
-                  placeholder="••••••••"
-                  placeholderTextColor={colors.textMuted}
-                  secureTextEntry
-                  textContentType="password"
-                />
-              </View>
-              <View style={styles.field}>
                 <Text style={styles.label}>Код администратора</Text>
                 <TextInput
                   style={styles.input}
@@ -168,7 +135,7 @@ export default function LoginScreen() {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.backLink}
-                onPress={() => { setMode('login'); setError(''); setAdminPwd(''); }}
+                onPress={() => { setMode('login'); setError(''); setAdminCode(''); }}
               >
                 <Text style={styles.backLinkText}>← Назад к обычному входу</Text>
               </TouchableOpacity>
