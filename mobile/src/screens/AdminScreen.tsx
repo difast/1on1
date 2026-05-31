@@ -28,7 +28,7 @@ const TABS: { id: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] =
 export default function AdminScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { exitAdmin, session } = useAuth();
+  const { exitAdmin } = useAuth();
 
   const [tab, setTab] = useState<Tab>('users');
   const [stats, setStats] = useState<any>(null);
@@ -128,40 +128,6 @@ export default function AdminScreen() {
       { text: 'Выйти', style: 'destructive', onPress: () => exitAdmin() },
     ]);
   };
-
-  // Admin entered code but has no Supabase session → data won't load
-  if (!session) {
-    return (
-      <SafeAreaView style={styles.root}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Админ-панель</Text>
-            <Text style={styles.headerSub}>Управление платформой OneOnOne</Text>
-          </View>
-          <TouchableOpacity style={styles.logoutBtn} onPress={() => exitAdmin()}>
-            <Ionicons name="exit-outline" size={18} color={colors.danger} />
-          </TouchableOpacity>
-        </View>
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 16 }}>
-          <View style={{ width: 64, height: 64, borderRadius: 16, backgroundColor: colors.accentLight, alignItems: 'center', justifyContent: 'center' }}>
-            <Ionicons name="lock-closed-outline" size={28} color={colors.accent} />
-          </View>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary, textAlign: 'center' }}>
-            Требуется авторизация
-          </Text>
-          <Text style={{ fontSize: 14, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 }}>
-            Для доступа к данным войдите в аккаунт через обычный вход, затем введите код администратора в Настройках.
-          </Text>
-          <TouchableOpacity
-            style={{ backgroundColor: colors.accent, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 13, marginTop: 8 }}
-            onPress={() => exitAdmin()}
-          >
-            <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>Перейти к входу</Text>
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.root}>

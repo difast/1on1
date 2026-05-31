@@ -5,8 +5,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../src/lib/supabase';
-import { useAuth } from '../../src/context/auth';
+import { useAuth, PENDING_ONBOARDING_KEY } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 
@@ -65,8 +66,11 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
-      if (err) setError(translateError(err.message));
-      else setMode('check_email');
+      if (err) { setError(translateError(err.message)); }
+      else {
+        await AsyncStorage.setItem(PENDING_ONBOARDING_KEY, 'true');
+        setMode('check_email');
+      }
     } catch {
       setError('Ошибка сети. Проверьте подключение.');
     } finally {
