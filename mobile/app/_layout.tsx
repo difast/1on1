@@ -1,3 +1,4 @@
+import '../src/lib/polyfills';
 import React, { useEffect } from 'react';
 import { View } from 'react-native';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -8,6 +9,7 @@ import { AuthProvider, useAuth } from '../src/context/auth';
 import { ThemeProvider, useTheme } from '../src/context/theme';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
 function AppContent() {
   const { session, user, loading, initializing, activeRole, hasBothRoles, isAdmin } = useAuth();
@@ -72,14 +74,16 @@ function AppContent() {
 
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SafeAreaProvider>
-        <ThemeProvider>
-          <AuthProvider>
-            <AppContent />
-          </AuthProvider>
-        </ThemeProvider>
-      </SafeAreaProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <SafeAreaProvider>
+          <ThemeProvider>
+            <AuthProvider>
+              <AppContent />
+            </AuthProvider>
+          </ThemeProvider>
+        </SafeAreaProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
