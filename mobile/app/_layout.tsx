@@ -12,7 +12,7 @@ import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 
 function AppContent() {
-  const { session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin } = useAuth();
+  const { session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding } = useAuth();
   const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
@@ -39,9 +39,13 @@ function AppContent() {
       if (profileError) {
         // Server error — stay on login so the error message is visible
         if (root !== '(auth)') router.replace('/(auth)/login');
-      } else {
-        // 404: new user who never created a profile → onboarding
+      } else if (needsOnboarding) {
+        // New registration: flag set during signUp, profile not created yet
         if (root !== 'onboarding') router.replace('/onboarding');
+      } else {
+        // Returning user whose profile load returned 404 (e.g. cleared DB or error)
+        // — do not send to onboarding, redirect back to login
+        if (root !== '(auth)') router.replace('/(auth)/login');
       }
       return;
     }
@@ -60,7 +64,7 @@ function AppContent() {
     if (root === '(auth)' || root === 'onboarding' || root === 'role-select' || root === 'admin') {
       router.replace('/(tabs)');
     }
-  }, [session, loading, initializing, profileError, user?.id, user?.role, activeRole, hasBothRoles, isAdmin]);
+  }, [session, loading, initializing, profileError, user?.id, user?.role, activeRole, hasBothRoles, isAdmin, needsOnboarding]);
 
   return (
     <BottomSheetModalProvider>

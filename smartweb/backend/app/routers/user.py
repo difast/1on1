@@ -167,6 +167,82 @@ def get_admin_stats(db: Session = Depends(get_db)):
         "system": system_counts,
     }
 
+@router.get("/admin/analytics")
+def get_admin_analytics(db: Session = Depends(get_db)):
+    """Funnel, retention, and weekly growth data for admin dashboard."""
+    from app.models.team import TeamMember
+    now = datetime.utcnow()
+
+    users = db.query(User).order_by(User.created_at).all()
+    meetings = db.query(Meeting).all()
+
+    # Funnel
+    registered = len(users)
+    has_team = db.query(TeamMember.user_id).distinct().count()
+    had_meeting_ids = set()
+    for m in meetings:
+        had_meeting_ids.add(m.team_lead_id)
+        had_meeting_ids.add(m.member_id)
+    had_meeting = len(had_meeting_ids)
+    cnt: dict = {}
+    for m in meetings:
+        for uid in [m.team_lead_id, m.member_id]:
+            cnt[uid] = cnt.get(uid, 0) + 1
+    had_3_meetings = sum(1 for v in cnt.values() if v >= 3)
+
+    # Weekly growth (last 8 weeks)
+    weekly_users = {}
+    weekly_meetings = {}
+    for u in users:
+        if u.created_at:
+            wk = u.created_at.isocalendar()[:2]
+            weekly_users[wk] = weekly_users.get(wk, 0) + 1
+    for m in meetings:
+        if m.created_at:
+            wk = m.created_at.isocalendar()[:2]
+            weekly_meetings[wk] = weekly_meetings.get(wk, 0) + 1
+
+    weeks = []
+    for i in range(7, -1, -1):
+        d = now - timedelta(weeks=i)
+        wk = d.isocalendar()[:2]
+        weeks.append({
+            "label": f"W{wk[1]}",
+            "users": weekly_users.get(wk, 0),
+            "meetings": weekly_meetings.get(wk, 0),
+        })
+
+    retention_weeks = []
+    for i in range(4, -1, -1):
+        start = now - timedelta(weeks=i+1)
+        end = now - timedelta(weeks=i)
+        cohort = [u for u in users if u.created_at and start <= u.created_at < end]
+        if not cohort:
+            continue
+        cohort_ids = {u.id for u in cohort}
+        retained = sum(
+            1 for m in meetings
+            if m.created_at and start <= m.created_at < end + timedelta(days=7)
+            and (m.team_lead_id in cohort_ids or m.member_id in cohort_ids)
+        )
+        retention_weeks.append({
+            "label": start.strftime("%d.%m"),
+            "cohort": len(cohort),
+            "retained": min(retained, len(cohort)),
+            "pct": round(min(retained, len(cohort)) / len(cohort) * 100) if cohort else 0,
+        })
+
+    return {
+        "funnel": [
+            {"label": "Зарегистрировались", "value": registered},
+            {"label": "Вступили в команду", "value": has_team},
+            {"label": "Провели встречу", "value": had_meeting},
+            {"label": "3+ встречи", "value": had_3_meetings},
+        ],
+        "weekly_growth": weeks,
+        "retention": retention_weeks,
+    }
+
 @router.get("/", response_model=List[UserOut])
 def list_users(db: Session = Depends(get_db)):
     return db.query(User).all()
@@ -226,82 +302,3 @@ def delete_user(user_id: int, db: Session = Depends(get_db)):
     db.delete(user)
     db.commit()
     return {"ok": True}
-
-@router.get("/admin/analytics")
-def get_admin_analytics(db: Session = Depends(get_db)):
-    """Funnel, retention, and weekly growth data for admin dashboard."""
-    from app.models.team import TeamMember
-    now = datetime.utcnow()
-
-    users = db.query(User).order_by(User.created_at).all()
-    meetings = db.query(Meeting).all()
-
-    # Funnel
-    registered = len(users)
-    has_team = db.query(TeamMember.user_id).distinct().count()
-    had_meeting_ids = set()
-    for m in meetings:
-        had_meeting_ids.add(m.team_lead_id)
-        had_meeting_ids.add(m.member_id)
-    had_meeting = len(had_meeting_ids)
-    had_3_meetings = 0
-    cnt: dict = {}
-    for m in meetings:
-        for uid in [m.team_lead_id, m.member_id]:
-            cnt[uid] = cnt.get(uid, 0) + 1
-    had_3_meetings = sum(1 for v in cnt.values() if v >= 3)
-
-    # Weekly growth (last 8 weeks)
-    weekly_users = {}
-    weekly_meetings = {}
-    for u in users:
-        if u.created_at:
-            wk = u.created_at.isocalendar()[:2]
-            weekly_users[wk] = weekly_users.get(wk, 0) + 1
-    for m in meetings:
-        if m.created_at:
-            wk = m.created_at.isocalendar()[:2]
-            weekly_meetings[wk] = weekly_meetings.get(wk, 0) + 1
-
-    # Get last 8 iso-weeks
-    weeks = []
-    for i in range(7, -1, -1):
-        d = now - timedelta(weeks=i)
-        wk = d.isocalendar()[:2]
-        weeks.append({
-            "label": f"W{wk[1]}",
-            "users": weekly_users.get(wk, 0),
-            "meetings": weekly_meetings.get(wk, 0),
-        })
-
-    # Retention: of users registered each week, how many had a meeting within 7 days
-    retention_weeks = []
-    for i in range(4, -1, -1):
-        start = now - timedelta(weeks=i+1)
-        end = now - timedelta(weeks=i)
-        cohort = [u for u in users if u.created_at and start <= u.created_at < end]
-        if not cohort:
-            continue
-        cohort_ids = {u.id for u in cohort}
-        retained = sum(
-            1 for m in meetings
-            if m.created_at and start <= m.created_at < end + timedelta(days=7)
-            and (m.team_lead_id in cohort_ids or m.member_id in cohort_ids)
-        )
-        retention_weeks.append({
-            "label": start.strftime("%d.%m"),
-            "cohort": len(cohort),
-            "retained": min(retained, len(cohort)),
-            "pct": round(min(retained, len(cohort)) / len(cohort) * 100) if cohort else 0,
-        })
-
-    return {
-        "funnel": [
-            {"label": "Зарегистрировались", "value": registered},
-            {"label": "Вступили в команду", "value": has_team},
-            {"label": "Провели встречу", "value": had_meeting},
-            {"label": "3+ встречи", "value": had_3_meetings},
-        ],
-        "weekly_growth": weeks,
-        "retention": retention_weeks,
-    }

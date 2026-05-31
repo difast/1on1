@@ -10,7 +10,7 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
     : {};
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  const timer = setTimeout(() => controller.abort(), 30000);
 
   try {
     const res = await fetch(`${BASE}${path}`, {

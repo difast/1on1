@@ -166,8 +166,14 @@ export default function AdminScreen() {
           {tab === 'users' && statsError && (
             <View style={styles.emptyWrap}>
               <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
-              <Text style={styles.emptyText}>Нет доступа к данным</Text>
-              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 4 }]}>Проверьте подключение и права доступа</Text>
+              <Text style={styles.emptyText}>Не удалось загрузить данные</Text>
+              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 4 }]}>Сервер недоступен или запрос завис</Text>
+              <TouchableOpacity
+                style={styles.retryBtn}
+                onPress={() => { setLoading(true); loadStats(); }}
+              >
+                <Text style={styles.retryBtnText}>Повторить</Text>
+              </TouchableOpacity>
             </View>
           )}
           {tab === 'users' && !statsError && stats && (
@@ -487,6 +493,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   emptyWrap: { alignItems: 'center', paddingVertical: 60, gap: 12 },
   emptyText: { fontSize: 14, color: c.textMuted },
+  retryBtn: {
+    marginTop: 8, paddingHorizontal: 24, paddingVertical: 10,
+    backgroundColor: c.accent, borderRadius: 10,
+  },
+  retryBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
 
   ticketCard: {
     flexDirection: 'row', alignItems: 'center', gap: 10,

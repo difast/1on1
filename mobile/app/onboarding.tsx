@@ -7,7 +7,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Redirect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { useAuth } from '../src/context/auth';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuth, PENDING_ONBOARDING_KEY } from '../src/context/auth';
 import { createUser, joinTeam, updateUser } from '../src/lib/api';
 import { useTheme } from '../src/context/theme';
 import type { AppColors } from '../src/constants/colors';
@@ -115,8 +116,9 @@ export default function OnboardingScreen() {
   };
 
   const finish = (u: any) => {
+    AsyncStorage.removeItem(PENDING_ONBOARDING_KEY).catch(() => {});
     setUser(u);
-    if (u?.role) setActiveRole(u.role); // fire and forget - state update is synchronous, AsyncStorage save is background
+    if (u?.role) setActiveRole(u.role);
     router.replace('/(tabs)');
   };
 

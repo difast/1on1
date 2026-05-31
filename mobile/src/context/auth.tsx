@@ -18,6 +18,8 @@ export interface AppUser {
 
 type Role = 'team_lead' | 'member';
 
+export const PENDING_ONBOARDING_KEY = 'pendingOnboarding';
+
 interface AuthContextType {
   session: Session | null;
   user: AppUser | null;
@@ -27,6 +29,7 @@ interface AuthContextType {
   activeRole: Role | null;
   hasBothRoles: boolean;
   isAdmin: boolean;
+  needsOnboarding: boolean;
   setUser: (user: AppUser | null) => void;
   setActiveRole: (role: Role) => Promise<void>;
   addSecondaryRole: (inviteCode: string) => Promise<void>;
@@ -45,6 +48,7 @@ const AuthContext = createContext<AuthContextType>({
   activeRole: null,
   hasBothRoles: false,
   isAdmin: false,
+  needsOnboarding: false,
   setUser: () => {},
   setActiveRole: async () => {},
   addSecondaryRole: async () => {},
@@ -68,6 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [activeRole, setActiveRoleState] = useState<Role | null>(null);
   const [hasBothRoles, setHasBothRoles] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [needsOnboarding, setNeedsOnboarding] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(ADMIN_KEY).then(v => { if (v === 'true') setIsAdmin(true); }).catch(() => {});
@@ -91,10 +96,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Returns 'ok' | 'not_found' | 'error'
   const loadUser = async (email: string): Promise<'ok' | 'not_found' | 'error'> => {
-    const [savedActiveRole, hasBoth, cached] = await Promise.all([
+    const [savedActiveRole, hasBoth, cached, pendingOnboarding] = await Promise.all([
       AsyncStorage.getItem(ACTIVE_ROLE_KEY),
       AsyncStorage.getItem(BOTH_ROLES_KEY),
       AsyncStorage.getItem(USER_CACHE_KEY),
+      AsyncStorage.getItem(PENDING_ONBOARDING_KEY),
     ]);
     setHasBothRoles(hasBoth === 'true');
 
@@ -112,7 +118,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = (await getUserByEmail(email)) as AppUser;
       setUserState(data);
       setProfileError(null);
+      setNeedsOnboarding(false);
       AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
+      AsyncStorage.removeItem(PENDING_ONBOARDING_KEY).catch(() => {});
       if (savedActiveRole) setActiveRoleState(savedActiveRole as Role);
       else if (hasBoth !== 'true') setActiveRoleState(data.role);
       return 'ok';
@@ -120,7 +128,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const status = err?.response?.status;
       if (status === 404) {
         // New user — Supabase account exists but no backend profile yet
-        if (!cached) setUserState(null);
+        if (!cached) {
+          setUserState(null);
+          // Only route to onboarding when the registration flag is set;
+          // returning users without a profile should stay at the login screen.
+          setNeedsOnboarding(pendingOnboarding === 'true');
+        }
         setProfileError(null);
         return 'not_found';
       }
@@ -184,12 +197,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setHasBothRoles(false);
     setIsAdmin(false);
     setProfileError(null);
-    await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY, ADMIN_KEY]);
+    setNeedsOnboarding(false);
+    await AsyncStorage.multiRemove([ACTIVE_ROLE_KEY, BOTH_ROLES_KEY, USER_CACHE_KEY, ADMIN_KEY, PENDING_ONBOARDING_KEY]);
   };
 
   return (
     <AuthContext.Provider value={{
-      session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin,
+      session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut,
     }}>
       {children}
