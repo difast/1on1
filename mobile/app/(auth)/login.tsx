@@ -26,7 +26,7 @@ function translateError(msg: string): string {
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session, enterAdmin, profileError } = useAuth();
+  const { session, user, loading, enterAdmin, profileError } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,7 +36,7 @@ export default function LoginScreen() {
   const [error, setError] = useState('');
 
   // Show spinner while _layout navigates away after successful auth
-  if (session && !profileError) {
+  if (session && !profileError && (user || loading)) {
     return (
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator size="large" color={colors.accent} />
