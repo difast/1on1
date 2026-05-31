@@ -13,9 +13,22 @@ import type { AppColors } from '../constants/colors';
 export default function SettingsScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { signOut } = useAuth();
+  const { signOut, enterAdmin, isAdmin, exitAdmin } = useAuth();
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showAdminSection, setShowAdminSection] = useState(false);
+  const [adminCode, setAdminCode] = useState('');
+  const [adminError, setAdminError] = useState('');
+
+  const ADMIN_CODE = '1on12026';
+
+  const handleAdminUnlock = async () => {
+    if (adminCode !== ADMIN_CODE) { setAdminError('Неверный код'); return; }
+    await enterAdmin();
+    setShowAdminSection(false);
+    setAdminCode('');
+    setAdminError('');
+  };
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
@@ -131,6 +144,50 @@ export default function SettingsScreen() {
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
+        </View>
+
+        {/* Admin */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Дополнительно</Text>
+          {isAdmin ? (
+            <TouchableOpacity style={styles.row} onPress={() => exitAdmin()} activeOpacity={0.7}>
+              <View style={styles.rowIcon}><Ionicons name="shield-outline" size={18} color={colors.accent} /></View>
+              <View style={styles.rowBody}>
+                <Text style={styles.rowTitle}>Выйти из режима администратора</Text>
+              </View>
+            </TouchableOpacity>
+          ) : (
+            <>
+              <TouchableOpacity
+                style={styles.row}
+                onPress={() => { setShowAdminSection(v => !v); setAdminError(''); setAdminCode(''); }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.rowIcon}><Ionicons name="shield-outline" size={18} color={colors.textSecondary} /></View>
+                <View style={styles.rowBody}>
+                  <Text style={styles.rowTitle}>Режим администратора</Text>
+                </View>
+                <Ionicons name={showAdminSection ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+              {showAdminSection && (
+                <View style={styles.expandedBlock}>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Код администратора"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    textContentType="password"
+                    value={adminCode}
+                    onChangeText={v => { setAdminCode(v); setAdminError(''); }}
+                  />
+                  {adminError ? <Text style={styles.errorText}>{adminError}</Text> : null}
+                  <TouchableOpacity style={styles.saveBtn} onPress={handleAdminUnlock}>
+                    <Text style={styles.saveBtnText}>Войти как администратор</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
+          )}
         </View>
 
         {/* Logout */}

@@ -34,8 +34,11 @@ function AppContent() {
       return;
     }
 
-    // Session exists but user profile not loaded yet → wait
-    if (!user) return;
+    // Session exists but user profile not loaded → go to onboarding (new user or API down)
+    if (!user) {
+      if (root !== 'onboarding') router.replace('/onboarding');
+      return;
+    }
 
     if (!user.role) {
       if (root !== 'onboarding') router.replace('/onboarding');

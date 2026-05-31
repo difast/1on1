@@ -17,7 +17,7 @@ export default function Index() {
 
   if (isAdmin) return <Redirect href="/admin" />;
   if (!session) return <Redirect href="/(auth)/login" />;
-  if (!user) return <Redirect href="/(auth)/login" />;
+  if (!user) return <Redirect href="/onboarding" />;
   if (!user.role) return <Redirect href="/onboarding" />;
   if (hasBothRoles && !activeRole) return <Redirect href="/role-select" />;
   return <Redirect href="/(tabs)" />;
