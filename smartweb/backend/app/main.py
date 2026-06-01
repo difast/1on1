@@ -1,5 +1,8 @@
 import os
 import time
+import asyncio
+import httpx
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -8,7 +11,26 @@ _app_start_time = time.time()
 from app.database import get_db
 from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support
 
-app = FastAPI(title="Smart 1-on-1", version="0.1.0")
+async def _keep_alive():
+    """Ping own health endpoint every 4 minutes to prevent Railway from sleeping."""
+    port = os.getenv("PORT", "8080")
+    url = f"http://127.0.0.1:{port}/api/health"
+    await asyncio.sleep(60)  # wait for server to be fully up
+    async with httpx.AsyncClient(timeout=10) as client:
+        while True:
+            try:
+                await client.get(url)
+            except Exception:
+                pass
+            await asyncio.sleep(240)  # 4 minutes
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    task = asyncio.create_task(_keep_alive())
+    yield
+    task.cancel()
+
+app = FastAPI(title="Smart 1-on-1", version="0.1.0", lifespan=lifespan)
 
 # NOTE: Database migrations are run by start.sh (`alembic upgrade head`) BEFORE
 # uvicorn boots. Do NOT run them again in a startup event — a second in-process
