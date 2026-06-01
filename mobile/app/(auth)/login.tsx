@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
@@ -34,6 +34,15 @@ export default function LoginScreen() {
   const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const submittingRef = useRef(false);
+
+  // Reset submitting state if session disappears (e.g. sign-out while loading)
+  React.useEffect(() => {
+    if (!session) {
+      submittingRef.current = false;
+      setLoading(false);
+    }
+  }, [session]);
 
   // Session exists but server failed to load profile — show retry screen
   if (session && profileError) {
@@ -72,15 +81,22 @@ export default function LoginScreen() {
   }
 
   const handleLogin = async () => {
+    if (submittingRef.current) return;
     setError('');
     if (!email.trim()) { setError('Введите email'); return; }
+    submittingRef.current = true;
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (err) setError(translateError(err.message));
+      if (err) {
+        setError(translateError(err.message));
+        submittingRef.current = false;
+        setLoading(false);
+      }
+      // On success: keep loading=true until onAuthStateChange fires and navigates away
     } catch {
       setError('Ошибка сети. Проверьте подключение.');
-    } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
@@ -134,7 +150,7 @@ export default function LoginScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
             <View style={styles.logoWrap}>
               <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
               <Text style={styles.logoSub}>Панель администратора</Text>
@@ -180,7 +196,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
           <View style={styles.logoWrap}>
             <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
             <Text style={styles.logoSub}>Эффективные 1-on-1 встречи с командой</Text>
@@ -262,12 +278,11 @@ export default function LoginScreen() {
               style={[styles.btn, loading && styles.btnDisabled]}
               onPress={mode === 'login' ? handleLogin : handleRegister}
               disabled={loading}
+              activeOpacity={0.7}
             >
-              <Text style={styles.btnText}>
-                {loading
-                  ? (mode === 'login' ? 'Входим...' : 'Регистрируемся...')
-                  : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
-              </Text>
+              {loading
+                ? <ActivityIndicator size="small" color="#fff" />
+                : <Text style={styles.btnText}>{mode === 'login' ? 'Войти →' : 'Зарегистрироваться →'}</Text>}
             </TouchableOpacity>
 
             <TouchableOpacity
