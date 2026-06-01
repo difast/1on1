@@ -18,7 +18,11 @@ function AppContent() {
   const segments = useSegments();
 
   useEffect(() => {
-    if (initializing || loading) return;
+    // Block only when there's genuinely no data to navigate with yet.
+    // If we have a user (from cache) or a profileError, navigate immediately
+    // rather than waiting 10-30s for the background server refresh to finish.
+    if (initializing) return;
+    if (loading && !user && !profileError && !isAdmin) return;
 
     const root = segments[0] as string | undefined;
 

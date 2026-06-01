@@ -102,10 +102,12 @@ export default function LoginScreen() {
   };
 
   const handleRegister = async () => {
+    if (submittingRef.current) return;
     setError('');
     if (!email.trim()) { setError('Введите email'); return; }
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
     if (password.length < 6) { setError('Пароль минимум 6 символов'); return; }
+    submittingRef.current = true;
     setLoading(true);
     try {
       const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
@@ -117,6 +119,7 @@ export default function LoginScreen() {
     } catch {
       setError('Ошибка сети. Проверьте подключение.');
     } finally {
+      submittingRef.current = false;
       setLoading(false);
     }
   };
