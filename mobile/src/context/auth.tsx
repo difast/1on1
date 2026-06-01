@@ -37,6 +37,7 @@ interface AuthContextType {
   enterAdmin: () => Promise<void>;
   exitAdmin: () => Promise<void>;
   signOut: () => Promise<void>;
+  retryProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -56,6 +57,7 @@ const AuthContext = createContext<AuthContextType>({
   enterAdmin: async () => {},
   exitAdmin: async () => {},
   signOut: async () => {},
+  retryProfile: async () => {},
 });
 
 const USER_CACHE_KEY = 'cachedUser';
@@ -189,6 +191,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await setActiveRole('team_lead');
   };
 
+  const retryProfile = async () => {
+    const email = session?.user?.email;
+    if (!email) return;
+    setLoading(true);
+    setProfileError(null);
+    try { await loadUser(email); } catch {}
+    setLoading(false);
+  };
+
   const signOut = async () => {
     await supabase.auth.signOut();
     setUserState(null);
@@ -204,7 +215,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
-      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut,
+      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut, retryProfile,
     }}>
       {children}
     </AuthContext.Provider>

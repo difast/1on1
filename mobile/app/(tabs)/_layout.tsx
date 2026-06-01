@@ -9,7 +9,10 @@ export default function TabsLayout() {
   const { session, user, loading, initializing, activeRole } = useAuth();
   const { colors } = useTheme();
 
-  if (loading || initializing) {
+  // Only block UI on first initialisation with no data at all.
+  // During background re-fetches (loading=true but user already loaded from cache),
+  // keep showing the tabs so the user isn't stared at a spinner for up to 30 s.
+  if ((initializing || loading) && !user) {
     return (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg }}>
         <ActivityIndicator size="large" color={colors.accent} />
@@ -18,7 +21,7 @@ export default function TabsLayout() {
   }
 
   if (!session) return <Redirect href="/(auth)/login" />;
-  if (!user?.role) return <Redirect href="/onboarding" />;
+  if (!user?.role && !loading) return <Redirect href="/onboarding" />;
 
   const isLead = (activeRole ?? user.role) === 'team_lead';
 

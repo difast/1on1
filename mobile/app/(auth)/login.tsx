@@ -26,7 +26,7 @@ function translateError(msg: string): string {
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session, user, loading: authLoading, enterAdmin, profileError } = useAuth();
+  const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -34,6 +34,33 @@ export default function LoginScreen() {
   const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Session exists but server failed to load profile — show retry screen
+  if (session && profileError) {
+    return (
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+        <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
+        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary, marginTop: 16, textAlign: 'center' }}>
+          Сервер недоступен
+        </Text>
+        <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
+          {profileError}
+        </Text>
+        <TouchableOpacity
+          style={{ marginTop: 24, backgroundColor: colors.accent, borderRadius: 10, paddingVertical: 14, paddingHorizontal: 32 }}
+          onPress={retryProfile}
+          disabled={authLoading}
+        >
+          <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>
+            {authLoading ? 'Загрузка...' : 'Повторить'}
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={{ marginTop: 16 }} onPress={signOut}>
+          <Text style={{ fontSize: 14, color: colors.textMuted }}>Выйти из аккаунта</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   // Show spinner while _layout navigates away after successful auth
   if (session && !profileError && (user || authLoading)) {
