@@ -12,6 +12,7 @@ type MeetingRequest = { id: string; proposed_date: string; message: string | nul
 type Member = { id: string; name: string; role: string | null; avatar_color: string; user_id: string | null; meetings: Meeting[]; tasks: Task[]; profile?: Profile };
 type Team = { id: string; name: string; members: Member[]; invite_code: string };
 type PitMessage = { role: "user" | "assistant"; content: string };
+type PitAction = { type: "create_task" | "schedule_meeting"; memberId: string; text: string };
 
 const API_BASE = "https://fulfilling-stillness-production-a6e1.up.railway.app/api";
 
@@ -34,9 +35,23 @@ function buildTeamContext(team: Team): string {
     const days = c[0] ? daysSince(c[0].date) : 999;
     const moodLabel = c[0]?.mood === "good" ? "хорошее" : c[0]?.mood === "bad" ? "плохое" : c[0] ? "нейтральное" : "нет данных";
     const openTasks = m.tasks.filter(t => !t.done).length;
-    lines.push(`- ${m.name}${m.role ? ` (${m.role})` : ""}: последняя встреча ${days >= 999 ? "никогда" : `${days} дн. назад`}, настроение: ${moodLabel}, открытых задач: ${openTasks}`);
+    lines.push(`- ${m.name}${m.role ? ` (${m.role})` : ""} [id:${m.id}]: последняя встреча ${days >= 999 ? "никогда" : `${days} дн. назад`}, настроение: ${moodLabel}, открытых задач: ${openTasks}`);
   }
   return lines.join("\n");
+}
+
+function parsePitActions(reply: string): PitAction[] {
+  const actions: PitAction[] = [];
+  const re = /<<ACTION:(create_task|schedule_meeting):([^:]+):([^>]+)>>/g;
+  let m;
+  while ((m = re.exec(reply)) !== null) {
+    actions.push({ type: m[1] as PitAction["type"], memberId: m[2].trim(), text: m[3].trim() });
+  }
+  return actions;
+}
+
+function stripPitActions(reply: string): string {
+  return reply.replace(/<<ACTION:[^>]+>>/g, "").trim();
 }
 
 export default function Dashboard() {
@@ -76,6 +91,7 @@ export default function Dashboard() {
   const [pitMessages, setPitMessages] = useState<PitMessage[]>([{ role: "assistant", content: "Привет! Я Пит — знаю вашу команду и могу помочь с встречами, задачами и анализом трендов. Спрашивайте!" }]);
   const [pitInput, setPitInput] = useState("");
   const [pitLoading, setPitLoading] = useState(false);
+  const [pitPendingActions, setPitPendingActions] = useState<PitAction[]>([]);
 
   const sendPit = async (text?: string) => {
     const content = (text ?? pitInput).trim();
@@ -92,10 +108,40 @@ export default function Dashboard() {
         body: JSON.stringify({ messages: newMsgs, context }),
       });
       const data = await res.json();
-      setPitMessages(prev => [...prev, { role: "assistant", content: data.reply ?? "Нет ответа" }]);
+      const raw = data.reply ?? "Нет ответа";
+      const actions = parsePitActions(raw);
+      const clean = stripPitActions(raw);
+      setPitMessages(prev => [...prev, { role: "assistant", content: clean }]);
+      if (actions.length > 0) setPitPendingActions(actions);
     } catch {
       setPitMessages(prev => [...prev, { role: "assistant", content: "Ошибка соединения. Попробуйте снова." }]);
     } finally { setPitLoading(false); }
+  };
+
+  const executePitAction = async (action: PitAction) => {
+    if (!activeTeam) return;
+    const member = activeTeam.members.find(m => m.id === action.memberId);
+    if (!member) return;
+    if (action.type === "create_task") {
+      const { data } = await supabase.from("tasks").insert({ member_id: member.id, text: action.text, done: false }).select().single();
+      if (data) {
+        setActiveTeam(t => t ? { ...t, members: t.members.map(m => m.id === member.id ? { ...m, tasks: [data, ...m.tasks] } : m) } : t);
+        setPitMessages(prev => [...prev, { role: "assistant", content: `Задача создана для ${member.name}: "${action.text}"` }]);
+        showToast(`Задача добавлена ${member.name}`);
+      }
+    } else if (action.type === "schedule_meeting") {
+      const nextDate = new Date();
+      nextDate.setDate(nextDate.getDate() + 1);
+      nextDate.setHours(10, 0, 0, 0);
+      const isoDate = nextDate.toISOString().slice(0, 16);
+      const { data } = await supabase.from("meetings").insert({ member_id: member.id, date: isoDate.slice(0, 10), mood: "neutral", notes: action.text, scheduled_at: isoDate }).select().single();
+      if (data) {
+        setActiveTeam(t => t ? { ...t, members: t.members.map(m => m.id === member.id ? { ...m, meetings: [data, ...m.meetings] } : m) } : t);
+        setPitMessages(prev => [...prev, { role: "assistant", content: `Встреча запланирована с ${member.name} на завтра в 10:00. Тема: "${action.text}"` }]);
+        showToast(`Встреча запланирована с ${member.name}`);
+      }
+    }
+    setPitPendingActions(prev => prev.filter(a => a !== action));
   };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
@@ -722,6 +768,29 @@ export default function Dashboard() {
                 {msg.content}
               </div>
             ))}
+            {pitPendingActions.length > 0 && (
+              <div style={{ alignSelf: "flex-start", maxWidth: "90%", display: "flex", flexDirection: "column", gap: 6 }}>
+                {pitPendingActions.map((action, i) => {
+                  const member = activeTeam?.members.find(m => m.id === action.memberId);
+                  if (!member) return null;
+                  const label = action.type === "create_task"
+                    ? `Создать задачу для ${member.name}: "${action.text}"`
+                    : `Запланировать встречу с ${member.name}: "${action.text}"`;
+                  return (
+                    <div key={i} style={{ display: "flex", gap: 6 }}>
+                      <button onClick={() => executePitAction(action)}
+                        style={{ flex: 1, background: "#1D9E75", color: "#fff", border: "none", borderRadius: 10, padding: "7px 10px", fontSize: 12, cursor: "pointer", textAlign: "left", lineHeight: 1.4 }}>
+                        ✓ {label}
+                      </button>
+                      <button onClick={() => setPitPendingActions(prev => prev.filter((_, j) => j !== i))}
+                        style={{ background: "#E8E6E1", border: "none", borderRadius: 10, padding: "7px 10px", fontSize: 12, cursor: "pointer", color: "#999" }}>
+                        ✕
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             {pitLoading && (
               <div style={{ alignSelf: "flex-start", background: "#F7F6F3", borderRadius: 14, borderBottomLeftRadius: 4, padding: "9px 12px" }}>
                 <div style={{ display: "flex", gap: 4 }}>
