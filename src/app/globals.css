@@ -1,10 +1,22 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: 'DM Sans', sans-serif;
   background: #F7F6F3;
   color: #1a1a1a;
   -webkit-font-smoothing: antialiased;
+}
+
+.app-header {
+  position: fixed !important;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30 !important;
 }
 
 input, textarea, button, select { font-family: inherit; }
