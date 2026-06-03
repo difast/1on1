@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 const BASE =
-  (process.env.EXPO_PUBLIC_API_URL || 'https://ideal-upliftment-production-2850.up.railway.app') + '/api';
+  (process.env.EXPO_PUBLIC_API_URL || 'https://fulfilling-stillness-production-a6e1.up.railway.app') + '/api';
 
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
