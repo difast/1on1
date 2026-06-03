@@ -101,11 +101,11 @@ export default function MemberPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "76px 16px 40px", paddingTop: 76 }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "160px 16px 40px" }}>
 
         {/* My profile card */}
         {profile && (
-          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14 }}>
+          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14, position: "fixed", top: 56, left: 0, right: 0, zIndex: 40, borderRadius: 0, borderLeft: "none", borderRight: "none", borderTop: "none" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: "#EEEDFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, color: "#7F77DD", flexShrink: 0 }}>
                 {initials(profile.name)}
