@@ -377,9 +377,9 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Analytics & Help */}
+        {/* Help */}
         <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Данные</Text>
+          <Text style={styles.menuSectionLabel}>Помощь</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/(tabs)/analytics' as any)}
@@ -402,11 +402,6 @@ export default function ProfileScreen() {
             <Text style={styles.menuRowTitle}>Уведомления</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
-        </View>
-
-        {/* Help */}
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Помощь</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/assistant' as any)}
