@@ -90,7 +90,7 @@ export default function MemberPage() {
       {toast && <div className="toast" style={{ background: "#1D9E75", color: "#fff" }}>{toast}</div>}
 
       {/* Header */}
-      <div className="app-header" style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
+      <div className="app-header" style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "fixed", top: 0, left: 0, right: 0, zIndex: 30 }}>
         <div className="app-header-logo" style={{ fontWeight: 600, fontSize: 16, flexShrink: 0 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => setShowRequestMeeting(true)} className="btn btn-purple" style={{ padding: "7px 12px", fontSize: 13, whiteSpace: "nowrap" }}>
@@ -101,7 +101,7 @@ export default function MemberPage() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "20px 16px" }}>
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "76px 16px 40px" }}>
 
         {/* My profile card */}
         {profile && (
