@@ -11,6 +11,33 @@ type Task = { id: string; text: string; done: boolean; due_date: string | null; 
 type MeetingRequest = { id: string; proposed_date: string; message: string | null; status: string; member_id: string; members: { name: string } };
 type Member = { id: string; name: string; role: string | null; avatar_color: string; user_id: string | null; meetings: Meeting[]; tasks: Task[]; profile?: Profile };
 type Team = { id: string; name: string; members: Member[]; invite_code: string };
+type PitMessage = { role: "user" | "assistant"; content: string };
+
+const API_BASE = "https://fulfilling-stillness-production-a6e1.up.railway.app/api";
+
+function moodScore(mood: string) { return mood === "good" ? 3 : mood === "bad" ? 1 : 2; }
+function moodColor(mood: string) { return mood === "good" ? "#1D9E75" : mood === "bad" ? "#E24B4A" : "#D0CEC7"; }
+function completedMeetings(m: Member) { return m.meetings.filter(mt => !mt.scheduled_at || new Date(mt.scheduled_at) <= new Date()); }
+
+function hasMoodDrop(member: Member): boolean {
+  const c = completedMeetings(member);
+  if (c.length < 2) return false;
+  const recent = c.slice(0, 3);
+  const scores = recent.map(m => moodScore(m.mood));
+  return scores[0] === 1 || (scores.length >= 2 && scores[0] < scores[scores.length - 1]);
+}
+
+function buildTeamContext(team: Team): string {
+  const lines = [`Команда: ${team.name}`, `Участники (${team.members.length}):`];
+  for (const m of team.members) {
+    const c = completedMeetings(m);
+    const days = c[0] ? daysSince(c[0].date) : 999;
+    const moodLabel = c[0]?.mood === "good" ? "хорошее" : c[0]?.mood === "bad" ? "плохое" : c[0] ? "нейтральное" : "нет данных";
+    const openTasks = m.tasks.filter(t => !t.done).length;
+    lines.push(`- ${m.name}${m.role ? ` (${m.role})` : ""}: последняя встреча ${days >= 999 ? "никогда" : `${days} дн. назад`}, настроение: ${moodLabel}, открытых задач: ${openTasks}`);
+  }
+  return lines.join("\n");
+}
 
 export default function Dashboard() {
   const router = useRouter();
@@ -43,6 +70,33 @@ export default function Dashboard() {
   const [toast, setToast] = useState("");
   const [copiedInvite, setCopiedInvite] = useState(false);
   const [taskFilter, setTaskFilter] = useState<'all'|'open'|'done'>('all');
+
+  // Pit AI
+  const [showPit, setShowPit] = useState(false);
+  const [pitMessages, setPitMessages] = useState<PitMessage[]>([{ role: "assistant", content: "Привет! Я Пит — знаю вашу команду и могу помочь с встречами, задачами и анализом трендов. Спрашивайте!" }]);
+  const [pitInput, setPitInput] = useState("");
+  const [pitLoading, setPitLoading] = useState(false);
+
+  const sendPit = async (text?: string) => {
+    const content = (text ?? pitInput).trim();
+    if (!content || pitLoading) return;
+    setPitInput("");
+    const newMsgs: PitMessage[] = [...pitMessages, { role: "user", content }];
+    setPitMessages(newMsgs);
+    setPitLoading(true);
+    try {
+      const context = activeTeam ? buildTeamContext(activeTeam) : "";
+      const res = await fetch(`${API_BASE}/assistant/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: newMsgs, context }),
+      });
+      const data = await res.json();
+      setPitMessages(prev => [...prev, { role: "assistant", content: data.reply ?? "Нет ответа" }]);
+    } catch {
+      setPitMessages(prev => [...prev, { role: "assistant", content: "Ошибка соединения. Попробуйте снова." }]);
+    } finally { setPitLoading(false); }
+  };
 
   const showToast = (msg: string) => { setToast(msg); setTimeout(() => setToast(""), 2500); };
 
@@ -239,6 +293,7 @@ export default function Dashboard() {
 
   const urgent = sortedMembers.filter(m => urgencyLevel(daysSince(m.meetings[0]?.date)) !== "ok").length;
   const pendingRequests = meetingRequests.length;
+  const moodAlerts = activeTeam ? activeTeam.members.filter(hasMoodDrop) : [];
 
   if (loading) return (
     <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center" }}>
@@ -319,6 +374,18 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+
+            {/* Mood drop alerts */}
+            {moodAlerts.length > 0 && (
+              <div style={{ background: "#FEF3C7", border: "1px solid #FCD34D", borderRadius: 12, padding: "12px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }} onClick={() => setShowPit(true)}>
+                <span style={{ fontSize: 20, flexShrink: 0 }}>⚠️</span>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#92400E" }}>Пит: снижение настроения</div>
+                  <div style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>{moodAlerts.map(m => m.name).join(", ")} — негативный тренд на последних встречах</div>
+                </div>
+                <span style={{ fontSize: 12, color: "#B45309", flexShrink: 0 }}>Спросить Пита →</span>
+              </div>
+            )}
 
             {/* Invite */}
             <button onClick={() => setShowInvite(true)}
@@ -467,6 +534,32 @@ export default function Dashboard() {
               );
             })()}
 
+            {/* Mood sparkline */}
+            {(() => {
+              const c = completedMeetings(selectedMember).filter(m => m.mood);
+              if (c.length < 2) return null;
+              const last12 = c.slice(0, 12).reverse();
+              return (
+                <div style={{ marginBottom: 16, padding: "12px 14px", background: "#F7F6F3", borderRadius: 12 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#999", textTransform: "uppercase", letterSpacing: "0.05em", marginBottom: 10 }}>Тренд настроения (последние {last12.length} встреч)</div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 36 }}>
+                    {last12.map((m, i) => (
+                      <div key={i} title={`${formatDate(m.date)}: ${m.mood === "good" ? "хорошо" : m.mood === "bad" ? "плохо" : "нейтрально"}`}
+                        style={{ flex: 1, height: m.mood === "good" ? 34 : m.mood === "bad" ? 10 : 20, background: moodColor(m.mood), borderRadius: 3, minWidth: 8, transition: "height 0.3s" }} />
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginTop: 8 }}>
+                    {[{ c: "#1D9E75", l: "Хорошо" }, { c: "#D0CEC7", l: "Нейтрально" }, { c: "#E24B4A", l: "Плохо" }].map(({ c, l }) => (
+                      <div key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: 2, background: c }} />
+                        <span style={{ fontSize: 10, color: "#999" }}>{l}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={{ fontWeight: 600, fontSize: 14, color: "#555", marginBottom: 10 }}>История встреч</div>
             {selectedMember.meetings.length === 0 ? (
               <div style={{ textAlign: "center", color: "#bbb", fontSize: 14, padding: "20px 0" }}>Встреч пока не было</div>
@@ -601,6 +694,51 @@ export default function Dashboard() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Pit floating button */}
+      <button onClick={() => setShowPit(v => !v)}
+        style={{ position: "fixed", bottom: 24, right: 24, width: 52, height: 52, borderRadius: 26, background: "linear-gradient(135deg, #7F77DD, #534AB7)", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, boxShadow: "0 4px 16px rgba(127,119,221,0.5)", zIndex: 100, transition: "transform 0.2s" }}
+        onMouseEnter={e => (e.currentTarget.style.transform = "scale(1.1)")}
+        onMouseLeave={e => (e.currentTarget.style.transform = "scale(1)")}>
+        {showPit ? "✕" : "✨"}
+      </button>
+
+      {/* Pit chat panel */}
+      {showPit && (
+        <div style={{ position: "fixed", bottom: 88, right: 24, width: 340, height: 480, background: "#fff", borderRadius: 20, boxShadow: "0 8px 32px rgba(0,0,0,0.15)", border: "1px solid #E8E6E1", display: "flex", flexDirection: "column", zIndex: 99, overflow: "hidden" }}>
+          <div style={{ padding: "14px 16px", borderBottom: "1px solid #E8E6E1", display: "flex", alignItems: "center", gap: 10, background: "linear-gradient(135deg, #EEEDFE, #fff)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#7F77DD", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16 }}>✨</div>
+            <div>
+              <div style={{ fontWeight: 600, fontSize: 14, color: "#1a1a1a" }}>Пит</div>
+              <div style={{ fontSize: 11, color: "#999" }}>Знает вашу команду</div>
+            </div>
+          </div>
+          <div style={{ flex: 1, overflowY: "auto", padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
+            {pitMessages.map((msg, i) => (
+              <div key={i} style={{ maxWidth: "85%", alignSelf: msg.role === "user" ? "flex-end" : "flex-start", background: msg.role === "user" ? "#7F77DD" : "#F7F6F3", color: msg.role === "user" ? "#fff" : "#1a1a1a", borderRadius: 14, borderBottomRightRadius: msg.role === "user" ? 4 : 14, borderBottomLeftRadius: msg.role === "assistant" ? 4 : 14, padding: "9px 12px", fontSize: 13, lineHeight: 1.5 }}>
+                {msg.content}
+              </div>
+            ))}
+            {pitLoading && (
+              <div style={{ alignSelf: "flex-start", background: "#F7F6F3", borderRadius: 14, borderBottomLeftRadius: 4, padding: "9px 12px" }}>
+                <div style={{ display: "flex", gap: 4 }}>
+                  {[0,1,2].map(i => <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#7F77DD", animation: `pulse 1.2s ease ${i*0.2}s infinite` }} />)}
+                </div>
+              </div>
+            )}
+          </div>
+          <div style={{ padding: "10px 12px", borderTop: "1px solid #E8E6E1", display: "flex", gap: 8, alignItems: "flex-end" }}>
+            <textarea value={pitInput} onChange={e => setPitInput(e.target.value)}
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendPit(); } }}
+              placeholder="Спросите Пита..." rows={1}
+              style={{ flex: 1, resize: "none", border: "1px solid #E8E6E1", borderRadius: 12, padding: "9px 12px", fontSize: 13, fontFamily: "inherit", outline: "none", maxHeight: 80, overflowY: "auto" }} />
+            <button onClick={() => sendPit()} disabled={!pitInput.trim() || pitLoading}
+              style={{ width: 36, height: 36, borderRadius: 18, background: pitInput.trim() ? "#7F77DD" : "#E8E6E1", border: "none", cursor: pitInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, transition: "background 0.15s" }}>
+              <span style={{ color: "#fff", fontSize: 16 }}>↑</span>
+            </button>
           </div>
         </div>
       )}

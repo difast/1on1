@@ -14,6 +14,7 @@ class ChatMessage(PydanticBase):
 
 class ChatRequest(PydanticBase):
     messages: List[ChatMessage]
+    context: str = ""
 
 
 @router.get("/diagnose")
@@ -37,7 +38,14 @@ def diagnose():
 
 @router.post("/chat")
 def pit_chat(data: ChatRequest):
-    messages = [{"role": "system", "content": PIT_SYSTEM_PROMPT}]
+    system = PIT_SYSTEM_PROMPT
+    if data.context:
+        system += f"
+
+=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===
+{data.context}
+=== КОНЕЦ КОНТЕКСТА ==="
+    messages = [{"role": "system", "content": system}]
     messages += [{"role": m.role, "content": m.content} for m in data.messages[-12:]]
     try:
         resp = httpx.post(
