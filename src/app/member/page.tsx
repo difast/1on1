@@ -90,7 +90,7 @@ export default function MemberPage() {
       {toast && <div className="toast" style={{ background: "#1D9E75", color: "#fff" }}>{toast}</div>}
 
       {/* Header */}
-      <div className="app-header" style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "sticky", top: 0, zIndex: 10 }}>
+      <div style={{ background: "#fff", borderBottom: "1px solid #E8E6E1", padding: "0 20px", display: "flex", alignItems: "center", justifyContent: "space-between", height: 56, position: "fixed", top: 0, left: 0, right: 0, zIndex: 50 }}>
         <div className="app-header-logo" style={{ fontWeight: 600, fontSize: 16, flexShrink: 0 }}>OneOn<span style={{ color: "#7F77DD" }}>One</span></div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
           <button onClick={() => setShowRequestMeeting(true)} className="btn btn-purple" style={{ padding: "7px 12px", fontSize: 13, whiteSpace: "nowrap" }}>
@@ -105,7 +105,7 @@ export default function MemberPage() {
 
         {/* My profile card */}
         {profile && (
-          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14, position: "sticky", top: 56, zIndex: 5, background: "#fff" }}>
+          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: "#EEEDFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, color: "#7F77DD", flexShrink: 0 }}>
                 {initials(profile.name)}
