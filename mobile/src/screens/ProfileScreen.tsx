@@ -6,9 +6,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { updateUser } from '../lib/api';
 import { useTheme } from '../context/theme';
+import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 
@@ -16,6 +18,7 @@ export default function ProfileScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
+  const router = useRouter();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({
@@ -32,6 +35,14 @@ export default function ProfileScreen() {
   const [newTeamName, setNewTeamName] = useState('');
   const [addRoleLoading, setAddRoleLoading] = useState(false);
   const [addRoleError, setAddRoleError] = useState('');
+
+  // Password change
+  const [showPassword, setShowPassword] = useState(false);
+  const [pwdNew, setPwdNew] = useState('');
+  const [pwdConfirm, setPwdConfirm] = useState('');
+  const [pwdLoading, setPwdLoading] = useState(false);
+  const [pwdError, setPwdError] = useState('');
+  const [pwdSuccess, setPwdSuccess] = useState('');
 
   const handleSave = async () => {
     if (!user) return;
@@ -100,6 +111,27 @@ export default function ProfileScreen() {
     await setActiveRole(nextRole);
   };
 
+  const handleChangePassword = async () => {
+    if (!pwdNew.trim()) { setPwdError('Введите новый пароль'); return; }
+    if (pwdNew.length < 6) { setPwdError('Минимум 6 символов'); return; }
+    if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return; }
+    setPwdLoading(true); setPwdError('');
+    try {
+      const { error } = await supabase.auth.updateUser({ password: pwdNew });
+      if (error) { setPwdError(error.message); return; }
+      setPwdSuccess('Пароль изменён');
+      setPwdNew(''); setPwdConfirm('');
+      setTimeout(() => { setPwdSuccess(''); setShowPassword(false); }, 1500);
+    } catch { setPwdError('Произошла ошибка'); } finally { setPwdLoading(false); }
+  };
+
+  const handleLogout = () => {
+    Alert.alert('Выйти', 'Вы уверены?', [
+      { text: 'Отмена', style: 'cancel' },
+      { text: 'Выйти', style: 'destructive', onPress: signOut },
+    ]);
+  };
+
   if (!user) return null;
 
   const currentRole = activeRole ?? user.role;
@@ -110,9 +142,6 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Профиль</Text>
-        <TouchableOpacity style={styles.logoutBtn} onPress={signOut}>
-          <Text style={styles.logoutBtnText}>Выйти</Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -231,8 +260,8 @@ export default function ProfileScreen() {
                 </View>
               ))}
               <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)}>
-                <Ionicons name="settings-outline" size={16} color={colors.accent} />
-                <Text style={styles.editBtnText}>Настройки</Text>
+                <Ionicons name="create-outline" size={16} color={colors.accent} />
+                <Text style={styles.editBtnText}>Редактировать</Text>
               </TouchableOpacity>
             </>
           ) : (
@@ -281,6 +310,97 @@ export default function ProfileScreen() {
               </View>
             </>
           )}
+        </View>
+        {/* Appearance */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Оформление</Text>
+          <TouchableOpacity style={styles.menuRow} onPress={toggleTheme} activeOpacity={0.7}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>{isDark ? 'Светлая тема' : 'Тёмная тема'}</Text>
+            <View style={[styles.toggle, isDark && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, isDark && styles.toggleThumbOn]} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* Account */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Аккаунт</Text>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => { setShowPassword(v => !v); setPwdError(''); setPwdSuccess(''); }}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="key-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Сменить пароль</Text>
+            <Ionicons name={showPassword ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          {showPassword && (
+            <View style={styles.expandedBlock}>
+              {pwdSuccess ? (
+                <Text style={styles.successText}>✓ {pwdSuccess}</Text>
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Новый пароль"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    value={pwdNew}
+                    onChangeText={v => { setPwdNew(v); setPwdError(''); }}
+                    autoCapitalize="none"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Подтвердите пароль"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    value={pwdConfirm}
+                    onChangeText={v => { setPwdConfirm(v); setPwdError(''); }}
+                    autoCapitalize="none"
+                  />
+                  {pwdError ? <Text style={[styles.errorText, { marginBottom: 4 }]}>{pwdError}</Text> : null}
+                  <TouchableOpacity
+                    style={[styles.saveBtn, pwdLoading && styles.btnDisabled]}
+                    onPress={handleChangePassword}
+                    disabled={pwdLoading}
+                  >
+                    <Text style={styles.saveBtnText}>{pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          )}
+        </View>
+
+        {/* Support */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Помощь</Text>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/(tabs)/support')}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Поддержка</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Logout */}
+        <View style={[styles.menuSection, { marginBottom: 0 }]}>
+          <TouchableOpacity style={[styles.menuRow, styles.menuRowDanger]} onPress={handleLogout} activeOpacity={0.7}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+            </View>
+            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>Выйти</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -378,4 +498,40 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   saveBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDisabled: { opacity: 0.6 },
+
+  menuSection: {
+    backgroundColor: c.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: c.border, overflow: 'hidden', marginBottom: 0,
+  },
+  menuSectionLabel: {
+    fontSize: 11, fontWeight: '700', color: c.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.6,
+    paddingHorizontal: 16, paddingTop: 14, paddingBottom: 6,
+  },
+  menuRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 14,
+    paddingHorizontal: 16, paddingVertical: 14,
+    borderTopWidth: 1, borderTopColor: c.border,
+  },
+  menuRowDanger: { borderTopWidth: 0 },
+  menuIconWrap: { width: 24, alignItems: 'center', justifyContent: 'center' },
+  menuRowTitle: { flex: 1, fontSize: 15, fontWeight: '500', color: c.textPrimary },
+
+  toggle: {
+    width: 44, height: 26, borderRadius: 13,
+    backgroundColor: c.border, justifyContent: 'center', paddingHorizontal: 2,
+  },
+  toggleOn: { backgroundColor: c.accent },
+  toggleThumb: {
+    width: 22, height: 22, borderRadius: 11, backgroundColor: '#fff',
+    shadowColor: '#000', shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2, shadowRadius: 2, elevation: 2,
+  },
+  toggleThumbOn: { alignSelf: 'flex-end' },
+
+  expandedBlock: {
+    paddingHorizontal: 16, paddingBottom: 16, paddingTop: 14, gap: 10,
+    borderTopWidth: 1, borderTopColor: c.border,
+  },
+  successText: { fontSize: 14, color: c.success, textAlign: 'center', paddingVertical: 8 },
 });

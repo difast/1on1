@@ -13,6 +13,7 @@ import { Avatar } from '../components/Avatar';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { NotificationBell } from '../components/NotificationBell';
 
 export default function MemberOverviewScreen() {
   const { colors } = useTheme();
@@ -251,6 +252,7 @@ export default function MemberOverviewScreen() {
           <Text style={styles.headerSub}>Добро пожаловать, {user?.name}</Text>
         </View>
         <View style={styles.headerActions}>
+          <NotificationBell />
           <TouchableOpacity
             style={[styles.actionBtn, showSearch && styles.actionBtnActive]}
             onPress={() => { setShowSearch(s => !s); setMemberSearch(''); }}

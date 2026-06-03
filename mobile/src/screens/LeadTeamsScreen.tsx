@@ -19,6 +19,7 @@ import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { NotificationBell } from '../components/NotificationBell';
 
 
 const STATUS_BADGE_LABEL: Record<string, string> = {
@@ -278,9 +279,12 @@ export default function LeadTeamsScreen() {
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои команды</Text>
-        <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
-          <Text style={styles.addBtnText}>+ Создать</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <NotificationBell />
+          <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
+            <Text style={styles.addBtnText}>+ Создать</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
