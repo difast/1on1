@@ -502,8 +502,8 @@ export default function Dashboard() {
 
       {/* Member detail */}
       {selectedMember && !showLogMeeting && !showSchedule && !showAddTask && (
-        <div className="modal-overlay" onClick={() => setSelectedMember(null)}>
-          <div className="modal" onClick={e => e.stopPropagation()}>
+        <div style={{ position: "fixed", top: 56, right: 0, bottom: 0, width: "min(460px, 50vw)", background: "#fff", borderLeft: "1px solid #E8E6E1", overflowY: "auto", zIndex: 20, display: "flex", flexDirection: "column" }} onClick={e => e.stopPropagation()}>
+          <div style={{ padding: 24, flex: 1 }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
                 <div style={{ position: "relative" }}>
