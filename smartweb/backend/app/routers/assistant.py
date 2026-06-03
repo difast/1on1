@@ -40,11 +40,7 @@ def diagnose():
 def pit_chat(data: ChatRequest):
     system = PIT_SYSTEM_PROMPT
     if data.context:
-        system += f"
-
-=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===
-{data.context}
-=== КОНЕЦ КОНТЕКСТА ==="
+        system += f"\n\n=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===\n{data.context}\n=== КОНЕЦ КОНТЕКСТА ==="
     messages = [{"role": "system", "content": system}]
     messages += [{"role": m.role, "content": m.content} for m in data.messages[-12:]]
     try:
