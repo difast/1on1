@@ -159,8 +159,8 @@ export const getTeamMoodSummary = (teamId: number) =>
   req<any>(`/mood/team/${teamId}/summary`);
 
 // AI Assistant
-export const assistantChat = (messages: { role: string; content: string }[]) =>
-  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages }) });
+export const assistantChat = (messages: { role: string; content: string }[], context = '') =>
+  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context }) });
 
 // Admin
 export const getAdminStats = () => req<any>('/users/admin/stats');

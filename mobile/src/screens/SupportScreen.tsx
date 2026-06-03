@@ -44,7 +44,8 @@ export default function SupportScreen() {
     setPitLoading(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     try {
-      const res = await assistantChat(newMsgs.filter(m => m.role === 'user' || m.role === 'assistant')) as any;
+      const context = user ? `Пользователь: ${(user as any).user_metadata?.name || user.email}` : '';
+      const res = await assistantChat(newMsgs.filter(m => m.role === 'user' || m.role === 'assistant'), context) as any;
       setMessages(prev => [...prev, { role: 'assistant', content: res.reply ?? 'Нет ответа' }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
