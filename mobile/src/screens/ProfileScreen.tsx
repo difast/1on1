@@ -410,7 +410,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="sparkles-outline" size={18} color={colors.accent} />
             </View>
-            <Text style={styles.menuRowTitle}>AI Ассистент</Text>
+            <Text style={styles.menuRowTitle}>Пит</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -421,7 +421,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Поддержка (Пит)</Text>
+            <Text style={styles.menuRowTitle}>Поддержка</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -457,7 +457,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   themeToggleText: { fontSize: 13, fontWeight: '600', color: c.accent },
   logoutBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1, borderColor: c.border },
   logoutBtnText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
-  content: { padding: 16, gap: 16, paddingBottom: 40 },
+  content: { padding: 16, gap: 16, paddingBottom: 100 },
 
   avatarSection: { alignItems: 'center', paddingVertical: 16 },
   avatarImg: { width: 88, height: 88, borderRadius: 44 },

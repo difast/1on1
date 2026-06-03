@@ -739,7 +739,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 8,
   },
   addBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  content: { padding: 16, gap: 12, paddingBottom: 32 },
+  content: { padding: 16, gap: 12, paddingBottom: 100 },
 
   teamTabs: { marginBottom: 4 },
   teamTab: {

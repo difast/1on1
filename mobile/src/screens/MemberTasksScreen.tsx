@@ -359,7 +359,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   addBtnActive: { backgroundColor: c.accentLight },
   addBtnText: { fontSize: 13, fontWeight: '600', color: c.accent },
   addBtnTextActive: { color: c.accent },
-  content: { padding: 16, gap: 20, paddingBottom: 32 },
+  content: { padding: 16, gap: 20, paddingBottom: 100 },
   formCard: {
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,
     padding: 14, gap: 10,

@@ -651,7 +651,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   actionBtnActive: { backgroundColor: c.accentLight, borderColor: c.accent },
   actionBtnText: { fontSize: 16 },
 
-  content: { padding: 16, gap: 20, paddingBottom: 32 },
+  content: { padding: 16, gap: 20, paddingBottom: 100 },
 
   leadCard: {
     backgroundColor: c.blue50, borderRadius: 14,

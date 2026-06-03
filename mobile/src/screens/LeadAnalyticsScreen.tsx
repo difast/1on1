@@ -3,6 +3,8 @@ import {
   View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getLeadAnalytics } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -14,6 +16,7 @@ export default function LeadAnalyticsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -37,6 +40,9 @@ export default function LeadAnalyticsScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
+          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>Аналитика</Text>
       </View>
 
@@ -155,6 +161,29 @@ function TeamStats({ team }: { team: any }) {
         </View>
       )}
 
+      {/* Mood drop alerts */}
+      {signals.filter((s: any) => s.type === 'mood_declining').length > 0 && (
+        <View style={styles.alertCard}>
+          <Text style={styles.alertTitle}>⚠️ Снижение настроения</Text>
+          {signals.filter((s: any) => s.type === 'mood_declining').map((s: any, i: number) => (
+            <Text key={i} style={styles.alertText}>• {s.member_name} — негативный тренд</Text>
+          ))}
+        </View>
+      )}
+
+      {/* Mood sparklines per member */}
+      {members.some((ms: any) => (ms.mood_trend ?? []).length > 1) && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Тренд настроения (12 встреч)</Text>
+          {members.filter((ms: any) => (ms.mood_trend ?? []).length > 1).map((ms: any) => (
+            <View key={ms.user_id} style={styles.moodRow}>
+              <Text style={styles.moodName}>{ms.name}</Text>
+              <MoodSparkline trend={ms.mood_trend ?? []} />
+            </View>
+          ))}
+        </View>
+      )}
+
       {/* Weekly chart */}
       {chart.length > 0 && (
         <View style={styles.section}>
@@ -179,6 +208,20 @@ function StatCard({ label, value, accent, danger }: any) {
         {value}
       </Text>
       <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function MoodSparkline({ trend }: { trend: string[] }) {
+  const { colors } = useTheme();
+  const last12 = trend.slice(-12);
+  const moodColor = (m: string) => m === 'good' ? '#1D9E75' : m === 'bad' ? '#E24B4A' : '#D0CEC7';
+  const moodH = (m: string) => m === 'good' ? 28 : m === 'bad' ? 8 : 16;
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 32 }}>
+      {last12.map((m, i) => (
+        <View key={i} style={{ flex: 1, height: moodH(m), backgroundColor: moodColor(m), borderRadius: 3, maxWidth: 18 }} />
+      ))}
     </View>
   );
 }
@@ -228,9 +271,9 @@ function getFlagVariant(s: any): 'red' | 'amber' | 'gray' {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
-  content: { padding: 16, gap: 16, paddingBottom: 32 },
+  content: { padding: 16, gap: 16, paddingBottom: 100 },
   emptyCard: {
     backgroundColor: c.surface, borderRadius: 16,
     borderWidth: 1, borderColor: c.border,
@@ -281,6 +324,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   memberName: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
   memberMeta: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
+
+  alertCard: {
+    backgroundColor: '#FEF3C7', borderRadius: 12,
+    borderWidth: 1, borderColor: '#FCD34D', padding: 14, gap: 6,
+  },
+  alertTitle: { fontSize: 13, fontWeight: '700', color: '#92400E' },
+  alertText: { fontSize: 12, color: '#B45309' },
+
+  moodRow: {
+    backgroundColor: c.surface, borderRadius: 12,
+    borderWidth: 1, borderColor: c.border, padding: 12, gap: 8,
+  },
+  moodName: { fontSize: 13, fontWeight: '500', color: c.textSecondary },
 
   chart: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 100,

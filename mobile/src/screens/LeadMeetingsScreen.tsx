@@ -330,7 +330,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   toggleBtnActive: { backgroundColor: c.accent },
   toggleBtnText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
   toggleBtnTextActive: { color: '#fff' },
-  content: { padding: 16, gap: 20, paddingBottom: 32 },
+  content: { padding: 16, gap: 20, paddingBottom: 100 },
   section: { gap: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },
   sectionTitle: {

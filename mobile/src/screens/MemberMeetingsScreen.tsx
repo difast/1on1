@@ -366,7 +366,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 14, paddingVertical: 8,
   },
   requestBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
-  content: { padding: 16, gap: 20, paddingBottom: 32 },
+  content: { padding: 16, gap: 20, paddingBottom: 100 },
   section: { gap: 8 },
   sectionTitle: {
     fontSize: 12, fontWeight: '700', color: c.textMuted,
