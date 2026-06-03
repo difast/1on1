@@ -377,6 +377,33 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Analytics & Help */}
+        <View style={styles.menuSection}>
+          <Text style={styles.menuSectionLabel}>Данные</Text>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/(tabs)/analytics' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="bar-chart-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Аналитика</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/(tabs)/notifications' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Уведомления</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        </View>
+
         {/* Help */}
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionLabel}>Помощь</Text>
@@ -399,7 +426,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Поддержка</Text>
+            <Text style={styles.menuRowTitle}>Поддержка (Пит)</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>

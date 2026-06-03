@@ -3,7 +3,7 @@ import { Tabs, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, View, TouchableOpacity, StyleSheet } from 'react-native';
 
 export default function TabsLayout() {
   const { session, user, loading, initializing, activeRole } = useAuth();
@@ -63,20 +63,30 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="support"
+        options={{
+          title: 'Пит',
+          tabBarIcon: () => null,
+          tabBarLabel: () => null,
+          tabBarButton: (props) => (
+            <TouchableOpacity
+              {...(props as any)}
+              style={tabStyles.pitWrap}
+              activeOpacity={0.85}
+            >
+              <View style={[tabStyles.pitBtn, { backgroundColor: colors.accent }]}>
+                <Ionicons name="sparkles" size={22} color="#fff" />
+              </View>
+            </TouchableOpacity>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="tasks"
         options={{
           title: 'Задачи',
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="checkbox-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="analytics"
-        options={{
-          title: 'Аналитика',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart-outline" size={size} color={color} />
           ),
         }}
       />
@@ -91,8 +101,24 @@ export default function TabsLayout() {
       />
       {/* Hidden screens — accessible via router.push, not shown in tab bar */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
-      <Tabs.Screen name="support" options={{ href: null }} />
+      <Tabs.Screen name="analytics" options={{ href: null }} />
       <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const tabStyles = StyleSheet.create({
+  pitWrap: {
+    flex: 1, alignItems: 'center', justifyContent: 'center',
+  },
+  pitBtn: {
+    width: 52, height: 52, borderRadius: 26,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#6366f1',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+    marginBottom: 8,
+  },
+});
