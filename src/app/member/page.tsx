@@ -105,7 +105,7 @@ export default function MemberPage() {
 
         {/* My profile card */}
         {profile && (
-          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14 }}>
+          <div className="card animate-fade" style={{ padding: 20, marginBottom: 14, position: "sticky", top: 56, zIndex: 5, background: "#fff" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
               <div style={{ width: 52, height: 52, borderRadius: 14, background: "#EEEDFE", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, fontWeight: 600, color: "#7F77DD", flexShrink: 0 }}>
                 {initials(profile.name)}
