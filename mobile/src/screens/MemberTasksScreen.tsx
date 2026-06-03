@@ -4,8 +4,9 @@ import {
   RefreshControl, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getTasks, createTask, updateTask, deleteTask } from '../lib/api';
+import { getTasks, createTask, updateTask, deleteTask, getTaskAiAdvice, getSubtasks, createSubtasks, updateSubtask } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
@@ -225,6 +226,11 @@ function TaskRow({
   const status = getTaskStatus(task);
   const cfg = STATUS_CONFIG[status];
   const overdue = isOverdue(task);
+  const [expanded, setExpanded] = useState(false);
+  const [aiSteps, setAiSteps] = useState<string[]>([]);
+  const [subtasks, setSubtasks] = useState<any[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [subtasksLoaded, setSubtasksLoaded] = useState(false);
 
   const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
     in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
@@ -234,33 +240,105 @@ function TaskRow({
   };
   const sc = statusColors[status];
 
+  const handleExpand = async () => {
+    setExpanded(v => !v);
+    if (!subtasksLoaded) {
+      setSubtasksLoaded(true);
+      try {
+        const data = await getSubtasks(task.id) as any[];
+        setSubtasks(data || []);
+      } catch {}
+    }
+  };
+
+  const handleAiAdvice = async () => {
+    if (aiSteps.length > 0) { setAiSteps([]); return; }
+    setAiLoading(true);
+    try {
+      const res = await getTaskAiAdvice(task.title || task.description, status, task.due_date) as any;
+      const steps: string[] = res.steps || [];
+      setAiSteps(steps);
+      if (steps.length > 0) {
+        const data = await createSubtasks(task.id, steps) as any[];
+        setSubtasks(data || []);
+      }
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось получить AI советы');
+    } finally { setAiLoading(false); }
+  };
+
+  const toggleSubtask = async (sub: any) => {
+    try {
+      await updateSubtask(sub.id, { completed: !sub.completed });
+      setSubtasks(prev => prev.map(s => s.id === sub.id ? { ...s, completed: !s.completed } : s));
+    } catch {}
+  };
+
   return (
     <View style={styles.taskCard}>
-      <View style={{ flex: 1 }}>
-        <Text style={[styles.taskTitle, status === 'done' && styles.taskDone]}>
-          {task.title || task.description}
-        </Text>
-        {task.description && task.title && (
-          <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
-        )}
-        {task.due_date && (
-          <Text style={[styles.taskDue, overdue && styles.taskOverdue]}>
-            {overdue ? `⚠ Просрочено · ` : 'до '}
-            {new Date(task.due_date).toLocaleDateString('ru-RU')}
+      <TouchableOpacity onPress={handleExpand} activeOpacity={0.8} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10, flex: 1 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.taskTitle, status === 'done' && styles.taskDone]}>
+            {task.title || task.description}
           </Text>
-        )}
-      </View>
-      <TouchableOpacity
-        style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
-        onPress={status !== 'done' ? onCycle : undefined}
-        activeOpacity={status !== 'done' ? 0.7 : 1}
-      >
-        <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
-      </TouchableOpacity>
-      {onDelete && (
-        <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
-          <Text style={styles.deleteBtnText}>✕</Text>
+          {task.description && task.title && (
+            <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
+          )}
+          {task.due_date && (
+            <Text style={[styles.taskDue, overdue && styles.taskOverdue]}>
+              {overdue ? '⚠ Просрочено · ' : 'до '}
+              {new Date(task.due_date).toLocaleDateString('ru-RU')}
+            </Text>
+          )}
+          {subtasks.length > 0 && (
+            <Text style={styles.subtaskProgress}>
+              {subtasks.filter(s => s.completed).length}/{subtasks.length} шагов
+            </Text>
+          )}
+        </View>
+        <TouchableOpacity
+          style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
+          onPress={status !== 'done' ? onCycle : undefined}
+          activeOpacity={status !== 'done' ? 0.7 : 1}
+        >
+          <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
         </TouchableOpacity>
+        {onDelete && (
+          <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
+            <Text style={styles.deleteBtnText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </TouchableOpacity>
+
+      {expanded && (
+        <View style={styles.taskExpanded}>
+          {/* Subtasks checklist */}
+          {subtasks.map(sub => (
+            <TouchableOpacity key={sub.id} style={styles.subtaskRow} onPress={() => toggleSubtask(sub)} activeOpacity={0.7}>
+              <Ionicons
+                name={sub.completed ? 'checkmark-circle' : 'ellipse-outline'}
+                size={18}
+                color={sub.completed ? colors.success : colors.textMuted}
+              />
+              <Text style={[styles.subtaskTitle, sub.completed && styles.subtaskDone]}>{sub.title}</Text>
+            </TouchableOpacity>
+          ))}
+
+          {/* AI advice button */}
+          {status !== 'done' && (
+            <TouchableOpacity
+              style={[styles.aiBtn, aiLoading && { opacity: 0.6 }]}
+              onPress={handleAiAdvice}
+              disabled={aiLoading}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+              <Text style={styles.aiBtnText}>
+                {aiLoading ? 'AI генерирует шаги...' : aiSteps.length > 0 ? 'Сбросить AI шаги' : 'AI-советы (4 шага)'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       )}
     </View>
   );
@@ -322,4 +400,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   statusBadgeText: { fontSize: 12, fontWeight: '600' },
   deleteBtn: { padding: 6 },
   deleteBtnText: { fontSize: 14, color: c.textMuted },
+  subtaskProgress: { fontSize: 11, color: c.textMuted, marginTop: 4 },
+  taskExpanded: { marginTop: 10, gap: 8, borderTopWidth: 1, borderTopColor: c.border, paddingTop: 10 },
+  subtaskRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  subtaskTitle: { fontSize: 13, color: c.textPrimary, flex: 1 },
+  subtaskDone: { textDecorationLine: 'line-through', color: c.textMuted },
+  aiBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 6,
+    borderWidth: 1, borderColor: c.accent, borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 7,
+    backgroundColor: c.accentLight, alignSelf: 'flex-start',
+  },
+  aiBtnText: { fontSize: 12, fontWeight: '600', color: c.accent },
 });

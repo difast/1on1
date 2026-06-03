@@ -5,7 +5,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
-import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, updateNote, deleteNote, checkInArrive, checkInLeave, getTodayCheckin } from '../lib/api';
+import { getMemberTeam, joinTeam, getMeetings, getNotes, createNote, updateNote, deleteNote, checkInArrive, checkInLeave, getTodayCheckin, submitMood } from '../lib/api';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -38,6 +39,42 @@ export default function MemberOverviewScreen() {
   // Search
   const [showSearch, setShowSearch] = useState(false);
   const [memberSearch, setMemberSearch] = useState('');
+
+  // Mood survey
+  const [showMoodSurvey, setShowMoodSurvey] = useState(false);
+  const [moodDone, setMoodDone] = useState(false);
+  const MOOD_QUESTIONS = [
+    'Как прошёл твой день?',
+    'Что давалось тяжелее всего?',
+    'Есть что-то, что хочешь обсудить с тимлидом?',
+  ];
+  const [moodAnswers, setMoodAnswers] = useState(['', '', '']);
+  const [moodLoading, setMoodLoading] = useState(false);
+  const [moodSent, setMoodSent] = useState(false);
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    AsyncStorage.getItem('moodDoneDate').then(v => {
+      if (v === today) setMoodDone(true);
+    }).catch(() => {});
+  }, []);
+
+  const handleMoodSubmit = async () => {
+    if (!team) return;
+    setMoodLoading(true);
+    try {
+      await submitMood(team.id, moodAnswers);
+      const today = new Date().toDateString();
+      await AsyncStorage.setItem('moodDoneDate', today);
+      setMoodDone(true);
+      setMoodSent(true);
+      setTimeout(() => setShowMoodSurvey(false), 1500);
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось отправить опрос');
+    } finally {
+      setMoodLoading(false);
+    }
+  };
 
   // Notes
   const [notes, setNotes] = useState<any[]>([]);
@@ -272,6 +309,60 @@ export default function MemberOverviewScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        {/* Mood survey banner */}
+        {!moodDone && team && (
+          <TouchableOpacity style={styles.moodBanner} onPress={() => setShowMoodSurvey(true)} activeOpacity={0.85}>
+            <Text style={styles.moodBannerEmoji}>🌤</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.moodBannerTitle}>Опрос настроения</Text>
+              <Text style={styles.moodBannerSub}>Как прошёл день? AI анализирует анонимно</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
+          </TouchableOpacity>
+        )}
+
+        {/* Mood survey modal */}
+        {showMoodSurvey && (
+          <View style={styles.moodModal}>
+            {moodSent ? (
+              <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
+                <Text style={{ fontSize: 36 }}>✅</Text>
+                <Text style={styles.moodDoneText}>Спасибо! Ответы отправлены</Text>
+              </View>
+            ) : (
+              <>
+                <View style={styles.moodModalHeader}>
+                  <Text style={styles.moodModalTitle}>Ежедневный опрос</Text>
+                  <TouchableOpacity onPress={() => setShowMoodSurvey(false)}>
+                    <Ionicons name="close" size={20} color={colors.textMuted} />
+                  </TouchableOpacity>
+                </View>
+                {MOOD_QUESTIONS.map((q, i) => (
+                  <View key={i} style={styles.moodQuestion}>
+                    <Text style={styles.moodQuestionText}>{q}</Text>
+                    <TextInput
+                      style={styles.moodInput}
+                      value={moodAnswers[i]}
+                      onChangeText={v => setMoodAnswers(prev => { const a = [...prev]; a[i] = v; return a; })}
+                      placeholder="Ваш ответ..."
+                      placeholderTextColor={colors.textMuted}
+                      multiline
+                      numberOfLines={2}
+                    />
+                  </View>
+                ))}
+                <TouchableOpacity
+                  style={[styles.moodSubmitBtn, moodLoading && { opacity: 0.6 }]}
+                  onPress={handleMoodSubmit}
+                  disabled={moodLoading}
+                >
+                  <Text style={styles.moodSubmitText}>{moodLoading ? 'Отправка...' : 'Отправить'}</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        )}
+
         {/* Team lead card */}
         {team.team_lead_id && (
           <View style={styles.leadCard}>
@@ -721,4 +812,35 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   checkinBtnArrive: { backgroundColor: '#22c55e' },
   checkinBtnLeave: { backgroundColor: c.textMuted },
   checkinBtnText: { fontSize: 12, fontWeight: '600', color: '#fff' },
+
+  moodBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 12,
+    backgroundColor: c.accent, borderRadius: 14,
+    padding: 14,
+  },
+  moodBannerEmoji: { fontSize: 24 },
+  moodBannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
+  moodBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
+
+  moodModal: {
+    backgroundColor: c.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: c.border,
+    padding: 16, gap: 14,
+  },
+  moodModalHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  moodModalTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
+  moodQuestion: { gap: 6 },
+  moodQuestionText: { fontSize: 13, fontWeight: '600', color: c.textSecondary },
+  moodInput: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    paddingHorizontal: 12, paddingVertical: 10,
+    fontSize: 14, color: c.textPrimary,
+    textAlignVertical: 'top', minHeight: 60,
+  },
+  moodSubmitBtn: {
+    backgroundColor: c.accent, borderRadius: 10,
+    paddingVertical: 12, alignItems: 'center',
+  },
+  moodSubmitText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  moodDoneText: { fontSize: 15, fontWeight: '600', color: c.textPrimary, textAlign: 'center' },
 });

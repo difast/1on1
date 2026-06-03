@@ -140,6 +140,24 @@ export const userSendMessage = (ticketId: number, body: string) =>
 export const userReadReply = (ticketId: number) =>
   req<any>(`/support/${ticketId}/user-read`, { method: 'PATCH' });
 
+// Subtasks
+export const getSubtasks = (taskId: number) =>
+  req<any[]>(`/subtasks/?task_id=${taskId}`);
+export const createSubtasks = (taskId: number, titles: string[]) =>
+  req<any[]>('/subtasks/bulk', { method: 'POST', body: JSON.stringify({ task_id: taskId, titles }) });
+export const updateSubtask = (subtaskId: number, data: { completed?: boolean; title?: string }) =>
+  req<any>(`/subtasks/${subtaskId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteSubtask = (subtaskId: number) =>
+  req<any>(`/subtasks/${subtaskId}`, { method: 'DELETE' });
+export const getTaskAiAdvice = (title: string, status?: string, due_date?: string, role?: string) =>
+  req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member' }) });
+
+// Mood
+export const submitMood = (team_id: number, answers: string[]) =>
+  req<any>('/mood/', { method: 'POST', body: JSON.stringify({ team_id, answers }) });
+export const getTeamMoodSummary = (teamId: number) =>
+  req<any>(`/mood/team/${teamId}/summary`);
+
 // AI Assistant
 export const assistantChat = (messages: { role: string; content: string }[]) =>
   req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages }) });
