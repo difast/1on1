@@ -140,6 +140,10 @@ export const userSendMessage = (ticketId: number, body: string) =>
 export const userReadReply = (ticketId: number) =>
   req<any>(`/support/${ticketId}/user-read`, { method: 'PATCH' });
 
+// AI Assistant
+export const assistantChat = (messages: { role: string; content: string }[]) =>
+  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages }) });
+
 // Admin
 export const getAdminStats = () => req<any>('/users/admin/stats');
 export const getAdminAnalytics = () => req<any>('/users/admin/analytics');

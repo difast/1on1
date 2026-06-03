@@ -81,6 +81,7 @@ function AppContent() {
           <Stack.Screen name="role-select" />
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="admin" />
+          <Stack.Screen name="assistant" />
           <Stack.Screen name="+not-found" />
         </Stack>
       </View>

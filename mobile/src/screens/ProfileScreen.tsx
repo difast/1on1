@@ -377,9 +377,20 @@ export default function ProfileScreen() {
           )}
         </View>
 
-        {/* Support */}
+        {/* Help */}
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionLabel}>Помощь</Text>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => router.push('/assistant' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="sparkles-outline" size={18} color={colors.accent} />
+            </View>
+            <Text style={styles.menuRowTitle}>AI Ассистент</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/(tabs)/support')}
