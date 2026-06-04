@@ -321,25 +321,50 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 
 
 <style>
-/* ── IPHONE MOCKUP */
-.iphone-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:20px}
-.iphone-glow{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:320px;height:500px;background:radial-gradient(ellipse,rgba(124,58,237,.28) 0%,transparent 70%);pointer-events:none;z-index:0}
-.iphone-frame{position:relative;width:270px;background:#0a0a0c;border-radius:46px;padding:12px;box-shadow:0 0 0 1.5px #2a2a2e,0 0 0 3px #1a1a1e,0 30px 80px rgba(0,0,0,.8),inset 0 0 0 1px rgba(255,255,255,.04);z-index:1}
-.iphone-side{position:absolute;top:80px;width:3px;height:100px;background:linear-gradient(180deg,#222 0%,#333 50%,#222 100%);border-radius:2px}
-.iphone-side-l{left:-3px}
-.iphone-side-r{right:-3px}
-.iphone-btn{position:absolute;background:linear-gradient(180deg,#1e1e22 0%,#2a2a2e 100%);border-radius:2px}
-.iphone-vol1{left:-3px;top:120px;width:3px;height:30px}
-.iphone-vol2{left:-3px;top:160px;width:3px;height:30px}
-.iphone-pwr{right:-3px;top:130px;width:3px;height:50px}
-.iphone-inner{background:#000;border-radius:36px;overflow:hidden}
+/* ── IPHONE 17 PRO MAX MOCKUP */
+.pit-grid{display:grid;grid-template-columns:1fr 1fr;gap:64px;align-items:center;padding:0 0 20px}
+.pit-phone-col{display:flex;flex-direction:column;align-items:center;gap:20px;perspective:1400px;perspective-origin:50% 50%}
+.iphone-scene{display:flex;flex-direction:column;align-items:center;gap:20px;transform-style:preserve-3d}
+.iphone-frame{
+  position:relative;width:310px;
+  background:linear-gradient(160deg,#2c2c2e 0%,#1c1c1e 35%,#252527 65%,#1a1a1c 100%);
+  border-radius:52px;padding:14px;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,.14),
+    0 0 0 2.5px rgba(0,0,0,.9),
+    0 0 0 4px rgba(255,255,255,.06),
+    0 40px 120px rgba(0,0,0,.95),
+    0 20px 50px rgba(0,0,0,.7),
+    0 0 80px rgba(124,58,237,.18),
+    inset 0 1px 0 rgba(255,255,255,.1),
+    inset 0 -1px 0 rgba(0,0,0,.5);
+  transform-style:preserve-3d;
+  will-change:transform;
+  transform:perspective(1400px) rotateY(15deg) rotateX(4deg);
+  transition:transform .08s linear;
+  cursor:grab
+}
+/* Titanium brushed sides */
+.iphone-side{position:absolute;width:4px;background:linear-gradient(180deg,#3a3a3c 0%,#545456 20%,#8e8e93 45%,#636366 65%,#48484a 80%,#3a3a3c 100%);border-radius:2px}
+.iphone-side-l{left:-4px;top:85px;height:110px}
+.iphone-side-r{right:-4px;top:85px;height:110px}
+/* Action button - left side pill */
+.iphone-action{position:absolute;left:-4px;top:62px;width:4px;height:28px;background:linear-gradient(180deg,#4a4a4c,#5a5a5e,#4a4a4c);border-radius:2px}
+/* Volume buttons */
+.iphone-btn{position:absolute;border-radius:2px;background:linear-gradient(90deg,#3a3a3c 0%,#545456 50%,#3a3a3c 100%)}
+.iphone-vol1{left:-4px;top:110px;width:4px;height:32px}
+.iphone-vol2{left:-4px;top:152px;width:4px;height:32px}
+.iphone-pwr{right:-4px;top:120px;width:4px;height:54px}
+/* Camera island bump */
+.iphone-cam{position:absolute;top:16px;right:20px;width:40px;height:40px;background:linear-gradient(135deg,#2a2a2c,#1a1a1e);border-radius:14px;box-shadow:0 0 0 1px rgba(255,255,255,.08),inset 0 1px 0 rgba(255,255,255,.06)}
+.iphone-inner{background:#000;border-radius:40px;overflow:hidden}
 .iphone-notch-bar{display:flex;align-items:center;justify-content:space-between;padding:10px 18px 6px;background:#000}
 .iphone-time{font-size:12px;font-weight:700;color:#fff;letter-spacing:-.02em;font-family:-apple-system,sans-serif;min-width:30px}
-.iphone-island{width:88px;height:26px;background:#000;border:1.5px solid #1a1a1a;border-radius:20px;position:relative;box-shadow:0 0 0 1px rgba(255,255,255,.04)}
+.iphone-island{width:92px;height:28px;background:#000;border:1.5px solid #1a1a1a;border-radius:22px;position:relative;box-shadow:0 0 0 1px rgba(255,255,255,.04),0 2px 12px rgba(0,0,0,.6)}
 .iphone-status-icons{display:flex;align-items:center;gap:5px;min-width:58px;justify-content:flex-end}
-.iphone-screen-wrap{position:relative;height:480px;overflow:hidden;background:#0d0d12}
-.iphone-home-ind{height:20px;display:flex;align-items:center;justify-content:center;background:#000}
-.iphone-home-ind::before{content:'';width:100px;height:4px;background:rgba(255,255,255,.25);border-radius:3px}
+.iphone-screen-wrap{position:relative;height:520px;overflow:hidden;background:#0d0d12}
+.iphone-home-ind{height:22px;display:flex;align-items:center;justify-content:center;background:#000}
+.iphone-home-ind::before{content:'';width:110px;height:4px;background:rgba(255,255,255,.22);border-radius:3px}
 
 /* Screens */
 .app-screen{position:absolute;inset:0;display:flex;flex-direction:column;opacity:0;transform:translateX(100%);transition:opacity .5s ease,transform .5s cubic-bezier(.4,0,.2,1);pointer-events:none;background:#0d0d12}
@@ -366,8 +391,6 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .app-tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;color:rgba(255,255,255,.3);font-size:9px;font-weight:500;transition:color .2s}
 .app-tab.app-tab-active{color:#A78BFA}
 .app-tab svg{width:18px;height:18px}
-
-/* Chat screen */
 .app-chat{flex:1;padding:8px 12px;overflow:hidden;display:flex;flex-direction:column;gap:10px}
 .chat-msg{display:flex;align-items:flex-end;gap:7px}
 .chat-msg.chat-user{flex-direction:row-reverse}
@@ -375,8 +398,7 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .chat-bubble-pit{background:rgba(124,58,237,.18);border:1px solid rgba(124,58,237,.2);color:rgba(255,255,255,.9)}
 .chat-bubble-pit b{color:#C4B5FD}
 .chat-bubble-user{background:linear-gradient(135deg,#7C3AED,#5B21B6);color:#fff}
-.typing{display:flex;align-items:center;gap:4px;padding:12px 16px}
-.typing .dot{width:6px;height:6px;border-radius:50%;background:rgba(167,139,250,.6);animation:tdot 1.4s ease-in-out infinite}
+.typing .dot{width:6px;height:6px;border-radius:50%;background:rgba(167,139,250,.6);animation:tdot 1.4s ease-in-out infinite;display:inline-block;margin:0 2px}
 .typing .dot:nth-child(2){animation-delay:.2s}
 .typing .dot:nth-child(3){animation-delay:.4s}
 @keyframes tdot{0%,80%,100%{transform:scale(.8);opacity:.5}40%{transform:scale(1.1);opacity:1}}
@@ -385,11 +407,20 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .chat-send-btn{width:30px;height:30px;background:linear-gradient(135deg,#7C3AED,#5B21B6);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0}
 .pit-av-sm{width:32px;height:32px;border-radius:50%;background:radial-gradient(ellipse at 35% 28%,#EDE9FE 0%,#A78BFA 40%,#7C3AED 70%,#3B0764 100%);flex-shrink:0}
 .pit-av-xs{width:22px;height:22px;border-radius:50%;background:radial-gradient(ellipse at 35% 28%,#EDE9FE 0%,#A78BFA 40%,#7C3AED 70%,#3B0764 100%);flex-shrink:0}
-
-/* Dots indicator */
 .iphone-dots{display:flex;gap:8px;justify-content:center}
 .iphone-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);cursor:pointer;transition:all .3s}
 .iphone-dot.active{background:#A78BFA;width:20px;border-radius:4px}
+/* Ambient glow under phone */
+.iphone-shadow{width:240px;height:24px;background:radial-gradient(ellipse,rgba(124,58,237,.35) 0%,transparent 70%);filter:blur(8px);margin-top:-8px}
+@media(max-width:960px){
+  .pit-grid{grid-template-columns:1fr;gap:40px}
+  .iphone-frame{transform:perspective(1400px) rotateY(0deg) rotateX(4deg) !important}
+  .iphone-cam{display:none}
+}
+@media(max-width:640px){
+  .iphone-frame{width:260px}
+  .iphone-screen-wrap{height:440px}
+}
 </style>
 
 <script>
@@ -404,21 +435,42 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
     cur=idx
     const next=document.getElementById(screens[cur])
     if(next){next.classList.add('active')}
-    document.querySelectorAll('.iphone-dot').forEach((d,i)=>{
-      d.classList.toggle('active',i===cur)
-    })
+    document.querySelectorAll('.iphone-dot').forEach((d,i)=>d.classList.toggle('active',i===cur))
   }
 
   function advance(){goTo((cur+1)%screens.length)}
   timer=setInterval(advance,4000)
-
   document.querySelectorAll('.iphone-dot').forEach((d,i)=>{
     d.addEventListener('click',()=>{clearInterval(timer);goTo(i);timer=setInterval(advance,4000)})
   })
-
-  // Init first screen
   const first=document.getElementById(screens[0])
   if(first)first.classList.add('active')
+
+  /* 3D scroll rotation */
+  const frame=document.getElementById('iphoneFrame')
+  const pitSec=document.getElementById('pit')
+  if(frame&&pitSec){
+    let dragging=false,startX=0,startRot=15,currentRot=15
+    function calcScroll(){
+      if(dragging)return
+      const rect=pitSec.getBoundingClientRect()
+      const vh=window.innerHeight
+      const center=rect.top+rect.height/2
+      const progress=(center-vh/2)/(vh/2+rect.height/2)
+      const clamp=(v,a,b)=>Math.max(a,Math.min(b,v))
+      const rotY=clamp(progress*28,-22,22)
+      const rotX=4-Math.abs(progress)*2
+      currentRot=rotY
+      frame.style.transform=`perspective(1400px) rotateY(${rotY}deg) rotateX(${rotX}deg)`
+    }
+    window.addEventListener('scroll',calcScroll,{passive:true})
+    calcScroll()
+
+    /* drag to spin */
+    frame.addEventListener('mousedown',e=>{dragging=true;startX=e.clientX;startRot=currentRot;frame.style.cursor='grabbing';frame.style.transition='none'})
+    window.addEventListener('mousemove',e=>{if(!dragging)return;const dx=(e.clientX-startX)/3;const r=Math.max(-30,Math.min(30,startRot+dx));frame.style.transform=`perspective(1400px) rotateY(${r}deg) rotateX(4deg)`})
+    window.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;frame.style.cursor='grab';frame.style.transition='transform .08s linear';calcScroll()})
+  }
 })()
 </script>
 
@@ -647,40 +699,38 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 <!-- ── AI PIT -->
 <section class="section bg-purple block-card" id="pit">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-badge badge-purple">05 — AI-ассистент</div>
-      <h2 class="sh df">Познакомьтесь<br>с <em style="color:#A78BFA;font-style:italic">Питом.</em></h2>
-      <p class="sh-sub">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
-    </div>
-    <div class="panel panel-purple reveal" style="margin-top:48px">
-      <div class="panel-grid">
-        <div class="panel-text">
-          <ul class="flist">
-            <li>
-              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2"/></svg></div>
-              <div><h4>Знает контекст команды</h4><p>Пит помнит все встречи, задачи и настроение каждого участника команды.</p></div>
-            </li>
-            <li>
-              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-              <div><h4>Общение на русском</h4><p>Спрашивайте как коллегу: «Кто давно не встречался?» или «Создай задачу Максиму».</p></div>
-            </li>
-            <li>
-              <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-              <div><h4>Действует, не только отвечает</h4><p>Пит создаёт встречи, ставит задачи, анализирует тренды — не просто информирует.</p></div>
-            </li>
-          </ul>
-          <a href="https://1on1-production-bb3b.up.railway.app" class="sec-link c-purple">Попробовать Пита</a>
-        </div>
-        <div class="panel-vis" style="flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;min-height:420px">
-          <div class="iphone-wrap">
-            <div class="iphone-glow"></div>
-            <div class="iphone-frame">
-              <div class="iphone-side iphone-side-l"></div>
-              <div class="iphone-side iphone-side-r"></div>
-              <div class="iphone-btn iphone-vol1"></div>
-              <div class="iphone-btn iphone-vol2"></div>
-              <div class="iphone-btn iphone-pwr"></div>
-              <div class="iphone-inner">
+    <div class="pit-grid">
+      <div class="reveal">
+        <div class="sec-badge badge-purple">05 — AI-ассистент</div>
+        <h2 class="sh df">Познакомьтесь<br>с <em style="color:#A78BFA;font-style:italic">Питом.</em></h2>
+        <p class="sh-sub">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
+        <ul class="flist" style="margin-top:32px">
+          <li>
+            <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2"/></svg></div>
+            <div><h4>Знает контекст команды</h4><p>Пит помнит все встречи, задачи и настроение каждого участника команды.</p></div>
+          </li>
+          <li>
+            <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+            <div><h4>Общение на русском</h4><p>Спрашивайте как коллегу: «Кто давно не встречался?» или «Создай задачу Максиму».</p></div>
+          </li>
+          <li>
+            <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
+            <div><h4>Действует, не только отвечает</h4><p>Пит создаёт встречи, ставит задачи, анализирует тренды — не просто информирует.</p></div>
+          </li>
+        </ul>
+        <a href="https://1on1-production-bb3b.up.railway.app" class="sec-link c-purple">Попробовать Пита</a>
+      </div>
+      <div class="pit-phone-col reveal-r">
+        <div class="iphone-scene">
+          <div class="iphone-frame" id="iphoneFrame">
+            <div class="iphone-action"></div>
+            <div class="iphone-side iphone-side-l"></div>
+            <div class="iphone-side iphone-side-r"></div>
+            <div class="iphone-btn iphone-vol1"></div>
+            <div class="iphone-btn iphone-vol2"></div>
+            <div class="iphone-btn iphone-pwr"></div>
+            <div class="iphone-cam"></div>
+            <div class="iphone-inner">
                 <div class="iphone-notch-bar">
                   <span class="iphone-time">9:41</span>
                   <div class="iphone-island"></div>
@@ -804,15 +854,15 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
                     </div>
                   </div>
                 </div>
-                <div class="iphone-home-ind"></div>
-              </div>
-            </div>
-            <div class="iphone-dots">
-              <div class="iphone-dot active" data-scr="1"></div>
-              <div class="iphone-dot" data-scr="2"></div>
-              <div class="iphone-dot" data-scr="3"></div>
+              <div class="iphone-home-ind"></div>
             </div>
           </div>
+          <div class="iphone-dots">
+            <div class="iphone-dot active"></div>
+            <div class="iphone-dot"></div>
+            <div class="iphone-dot"></div>
+          </div>
+          <div class="iphone-shadow"></div>
         </div>
       </div>
     </div>
