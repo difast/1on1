@@ -4,10 +4,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import { ActivityIndicator, View, TouchableOpacity, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabsLayout() {
   const { session, user, loading, initializing, activeRole } = useAuth();
   const { colors } = useTheme();
+  const insets = useSafeAreaInsets();
 
   // Only block UI on first initialisation with no data at all.
   // During background re-fetches (loading=true but user already loaded from cache),
@@ -37,8 +39,8 @@ export default function TabsLayout() {
           borderTopWidth: 0.5,
           elevation: 0,
           shadowOpacity: 0,
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 6,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', marginTop: 2 },

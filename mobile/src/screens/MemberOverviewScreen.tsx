@@ -321,8 +321,8 @@ export default function MemberOverviewScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Mood survey modal */}
-        {showMoodSurvey && (
+        {/* Mood survey modal — removed */}
+        {false && showMoodSurvey && (
           <View style={styles.moodModal}>
             {moodSent ? (
               <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
