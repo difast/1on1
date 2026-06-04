@@ -17,6 +17,7 @@ body {
   left: 0;
   right: 0;
   z-index: 30 !important;
+  background: #fff !important;
 }
 
 input, textarea, button, select { font-family: inherit; }

@@ -72,7 +72,6 @@ export default function Dashboard() {
   const [showRequests, setShowRequests] = useState(false);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
-  const [callLoading, setCallLoading] = useState<Record<string, boolean>>({});
 
   const [teamName, setTeamName] = useState("");
   const [memberName, setMemberName] = useState("");
@@ -323,19 +322,9 @@ export default function Dashboard() {
     showToast("Запрос отклонён");
   };
 
-  const startWebCall = async (meetingId: string, memberId: string) => {
-    setCallLoading(prev => ({ ...prev, [meetingId]: true }));
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const { data: dbUser } = await supabase.from("users").select("id").eq("supabase_uid", session?.user?.id).single();
-      const res = await fetch(`${API_BASE}/meetings/${meetingId}/start-call?user_id=${dbUser?.id}`, { method: "POST" });
-      const json = await res.json();
-      window.open(`${json.room_url}?t=${json.token}`, "_blank");
-    } catch {
-      alert("Не удалось начать созвон");
-    } finally {
-      setCallLoading(prev => ({ ...prev, [meetingId]: false }));
-    }
+  const startWebCall = (meetingId: string) => {
+    const room = `oneonone-${meetingId.replace(/-/g, "").slice(0, 20)}`;
+    window.open(`https://meet.jit.si/${room}`, "_blank");
   };
 
   const copyInvite = () => {
@@ -368,7 +357,7 @@ export default function Dashboard() {
   );
 
   return (
-    <div style={{ minHeight: "100vh", paddingBottom: 40 }}>
+    <div style={{ minHeight: "100vh", paddingBottom: 40, background: "#F7F6F3" }}>
       {toast && <div className="toast" style={{ background: "#1D9E75", color: "#fff" }}>{toast}</div>}
 
       {/* Header */}
@@ -394,7 +383,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 640, margin: "0 auto", padding: "76px 16px 40px" }}>
+      <div style={{ maxWidth: 640, margin: "0 auto", padding: "64px 16px 40px" }}>
 
         {/* Team tabs */}
         <div style={{ display: "flex", gap: 8, marginBottom: 20, flexWrap: "wrap" }}>
@@ -637,11 +626,10 @@ export default function Dashboard() {
                         {m.mood !== "neutral" && !m.scheduled_at && <span>{m.mood === "good" ? "😊" : "😟"}</span>}
                         {m.scheduled_at && new Date(m.scheduled_at) > new Date() && (
                           <button
-                            onClick={() => startWebCall(m.id, selectedMember.id)}
-                            disabled={callLoading[m.id]}
-                            style={{ background: "#0061ff", color: "#fff", border: "none", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: callLoading[m.id] ? 0.6 : 1 }}
+                            onClick={() => startWebCall(m.id)}
+                            style={{ background: "#0061ff", color: "#fff", border: "none", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer" }}
                           >
-                            {callLoading[m.id] ? "..." : "Созвон"}
+                            Созвон
                           </button>
                         )}
                       </div>
