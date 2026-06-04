@@ -340,7 +340,7 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
     inset 0 -1px 0 rgba(0,0,0,.5);
   transform-style:preserve-3d;
   will-change:transform;
-  transform:perspective(1400px) rotateY(15deg) rotateX(4deg);
+  transform:perspective(1400px) rotateY(-15deg) rotateX(4deg);
   transition:transform .08s linear;
   cursor:grab
 }
@@ -446,11 +446,12 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   const first=document.getElementById(screens[0])
   if(first)first.classList.add('active')
 
-  /* 3D scroll rotation */
-  const frame=document.getElementById('iphoneFrame')
-  const pitSec=document.getElementById('pit')
-  if(frame&&pitSec){
-    let dragging=false,startX=0,startRot=15,currentRot=15
+  /* 3D scroll rotation — init after DOM ready */
+  document.addEventListener('DOMContentLoaded',function(){
+    const frame=document.getElementById('iphoneFrame')
+    const pitSec=document.getElementById('pit')
+    if(!frame||!pitSec)return
+    let dragging=false,startX=0,startRot=-15,currentRot=-15
     function calcScroll(){
       if(dragging)return
       const rect=pitSec.getBoundingClientRect()
@@ -458,19 +459,18 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
       const center=rect.top+rect.height/2
       const progress=(center-vh/2)/(vh/2+rect.height/2)
       const clamp=(v,a,b)=>Math.max(a,Math.min(b,v))
-      const rotY=clamp(progress*28,-22,22)
+      /* enters from right (progress>0) → tilt right; exits left (progress<0) → tilt left */
+      const rotY=clamp(-progress*26,-22,22)
       const rotX=4-Math.abs(progress)*2
       currentRot=rotY
       frame.style.transform=`perspective(1400px) rotateY(${rotY}deg) rotateX(${rotX}deg)`
     }
     window.addEventListener('scroll',calcScroll,{passive:true})
     calcScroll()
-
-    /* drag to spin */
     frame.addEventListener('mousedown',e=>{dragging=true;startX=e.clientX;startRot=currentRot;frame.style.cursor='grabbing';frame.style.transition='none'})
     window.addEventListener('mousemove',e=>{if(!dragging)return;const dx=(e.clientX-startX)/3;const r=Math.max(-30,Math.min(30,startRot+dx));frame.style.transform=`perspective(1400px) rotateY(${r}deg) rotateX(4deg)`})
     window.addEventListener('mouseup',()=>{if(!dragging)return;dragging=false;frame.style.cursor='grab';frame.style.transition='transform .08s linear';calcScroll()})
-  }
+  })
 })()
 </script>
 
