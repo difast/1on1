@@ -448,6 +448,11 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 
   /* 3D scroll rotation — init after DOM ready */
   document.addEventListener('DOMContentLoaded',function(){
+    /* Live clock */
+    const clockEl=document.getElementById('iphoneTime')
+    function updateClock(){if(!clockEl)return;const n=new Date();clockEl.textContent=n.getHours()+':'+(n.getMinutes()<10?'0':'')+n.getMinutes()}
+    updateClock();setInterval(updateClock,10000)
+
     const frame=document.getElementById('iphoneFrame')
     const pitSec=document.getElementById('pit')
     if(!frame||!pitSec)return
@@ -729,10 +734,9 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
             <div class="iphone-btn iphone-vol1"></div>
             <div class="iphone-btn iphone-vol2"></div>
             <div class="iphone-btn iphone-pwr"></div>
-            <div class="iphone-cam"></div>
             <div class="iphone-inner">
                 <div class="iphone-notch-bar">
-                  <span class="iphone-time">9:41</span>
+                  <span class="iphone-time" id="iphoneTime">9:41</span>
                   <div class="iphone-island"></div>
                   <div class="iphone-status-icons">
                     <svg width="15" height="11" viewBox="0 0 15 11" fill="white" opacity=".9"><rect x="0" y="3" width="3" height="8" rx="1"/><rect x="4" y="2" width="3" height="9" rx="1"/><rect x="8" y="0" width="3" height="11" rx="1"/><rect x="12" y="0" width="3" height="11" rx="1" opacity=".3"/></svg>
