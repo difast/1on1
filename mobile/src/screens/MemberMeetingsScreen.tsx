@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall } from '../lib/api';
+import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
@@ -36,6 +36,48 @@ export default function MemberMeetingsScreen() {
   const [noteDrafts, setNoteDrafts] = useState<Record<number, string>>({});
   const [savingNote, setSavingNote] = useState<Record<number, boolean>>({});
   const [callLoading, setCallLoading] = useState<Record<number, boolean>>({});
+
+  // Reschedule with AI slots
+  const rescheduleSheetRef = useRef<BottomSheet>(null);
+  const rescheduleSnapPoints = useMemo(() => ['60%', '80%'], []);
+  const [rescheduleMeetingId, setRescheduleMeetingId] = useState<number | null>(null);
+  const [aiSlots, setAiSlots] = useState<string[]>([]);
+  const [slotsLoading, setSlotsLoading] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [customSlot, setCustomSlot] = useState('');
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+
+  const openReschedule = async (meeting: any) => {
+    setRescheduleMeetingId(meeting.id);
+    setAiSlots([]);
+    setSelectedSlot('');
+    setCustomSlot('');
+    rescheduleSheetRef.current?.expand();
+    setSlotsLoading(true);
+    try {
+      const existing = new Date(meeting.scheduled_date).toLocaleString('ru-RU');
+      const res = await assistantChat([
+        { role: 'user', content: `Предложи 3 варианта для переноса встречи (текущее время: ${existing}). Просто 3 строки в формате ГГГГ-ММ-ДД ЧЧ:ММ, без лишнего текста.` },
+      ]) as any;
+      const text: string = res.reply ?? '';
+      const matches = text.match(/\d{4}-\d{2}-\d{2} \d{2}:\d{2}/g) || [];
+      setAiSlots(matches.slice(0, 3));
+    } catch { setAiSlots([]); }
+    finally { setSlotsLoading(false); }
+  };
+
+  const handleReschedule = async () => {
+    const slot = selectedSlot || customSlot.trim();
+    if (!slot || !rescheduleMeetingId) return;
+    setRescheduleLoading(true);
+    try {
+      await updateMeeting(rescheduleMeetingId, { scheduled_date: slot, is_rescheduled: true });
+      setMeetings(prev => prev.map(m => m.id === rescheduleMeetingId ? { ...m, scheduled_date: slot, is_rescheduled: true } : m));
+      rescheduleSheetRef.current?.close();
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось перенести встречу');
+    } finally { setRescheduleLoading(false); }
+  };
 
   const handleStartCall = async (meetingId: number) => {
     if (!user) return;
@@ -160,7 +202,7 @@ export default function MemberMeetingsScreen() {
   if (loading) return <Spinner />;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Встречи</Text>
         <View style={styles.headerRight}>
@@ -226,15 +268,24 @@ export default function MemberMeetingsScreen() {
                 {upcoming.map(m => (
                   <View key={m.id} style={styles.upcomingCard}>
                     <MeetingItem meeting={m} />
-                    <TouchableOpacity
-                      style={[styles.callBtn, callLoading[m.id] && styles.btnDisabled]}
-                      onPress={() => handleStartCall(m.id)}
-                      disabled={callLoading[m.id]}
-                    >
-                      <Text style={styles.callBtnText}>
-                        {callLoading[m.id] ? 'Подключение...' : 'Начать созвон'}
-                      </Text>
-                    </TouchableOpacity>
+                    <View style={styles.upcomingActions}>
+                      <TouchableOpacity
+                        style={[styles.rescheduleBtn]}
+                        onPress={() => openReschedule(m)}
+                      >
+                        <Ionicons name="calendar-outline" size={14} color={colors.accent} />
+                        <Text style={styles.rescheduleBtnText}>Перенести</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.callBtn, callLoading[m.id] && styles.btnDisabled]}
+                        onPress={() => handleStartCall(m.id)}
+                        disabled={callLoading[m.id]}
+                      >
+                        <Text style={styles.callBtnText}>
+                          {callLoading[m.id] ? 'Подключение...' : 'Начать созвон'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ))}
               </View>
@@ -341,6 +392,60 @@ export default function MemberMeetingsScreen() {
           </View>
         </BottomSheetScrollView>
       </BottomSheet>
+
+      {/* Reschedule sheet */}
+      <BottomSheet
+        ref={rescheduleSheetRef}
+        index={-1}
+        snapPoints={rescheduleSnapPoints}
+        enablePanDownToClose
+        backgroundStyle={{ backgroundColor: colors.surface }}
+        handleIndicatorStyle={{ backgroundColor: colors.gray300 }}
+      >
+        <BottomSheetScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
+          <Text style={styles.sheetTitle}>Перенести встречу</Text>
+
+          {slotsLoading && <Text style={{ color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>Пит подбирает слоты...</Text>}
+
+          {aiSlots.length > 0 && (
+            <View style={{ gap: 8, marginBottom: 14 }}>
+              <Text style={styles.sheetLabel}>Варианты от Пита</Text>
+              {aiSlots.map(slot => (
+                <TouchableOpacity
+                  key={slot}
+                  style={[styles.slotBtn, selectedSlot === slot && styles.slotBtnActive]}
+                  onPress={() => { setSelectedSlot(slot); setCustomSlot(''); }}
+                >
+                  <Ionicons name="time-outline" size={15} color={selectedSlot === slot ? '#fff' : colors.accent} />
+                  <Text style={[styles.slotBtnText, selectedSlot === slot && styles.slotBtnTextActive]}>{slot}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <Text style={styles.sheetLabel}>Или введите своё время (ГГГГ-ММ-ДД ЧЧ:ММ)</Text>
+          <BottomSheetTextInput
+            style={styles.sheetInput}
+            value={customSlot}
+            onChangeText={v => { setCustomSlot(v); setSelectedSlot(''); }}
+            placeholder="2025-12-31 14:00"
+            placeholderTextColor={colors.textMuted}
+          />
+
+          <View style={styles.sheetRow}>
+            <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={() => rescheduleSheetRef.current?.close()}>
+              <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sheetBtn, { flex: 1 }, (!selectedSlot && !customSlot.trim() || rescheduleLoading) && styles.btnDisabled]}
+              onPress={handleReschedule}
+              disabled={!selectedSlot && !customSlot.trim() || rescheduleLoading}
+            >
+              <Text style={styles.sheetBtnText}>{rescheduleLoading ? 'Сохранение...' : 'Перенести'}</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheetScrollView>
+      </BottomSheet>
     </SafeAreaView>
   );
 }
@@ -396,11 +501,26 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   upcomingCard: {
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
   },
+  upcomingActions: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: c.border },
+  rescheduleBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: 5, paddingVertical: 10, borderRightWidth: 1, borderRightColor: c.border,
+    backgroundColor: c.accentLight,
+  },
+  rescheduleBtnText: { fontSize: 13, fontWeight: '600', color: c.accent },
   callBtn: {
-    backgroundColor: '#0061ff', paddingVertical: 10,
-    alignItems: 'center', borderTopWidth: 1, borderTopColor: c.border,
+    flex: 1, backgroundColor: '#0061ff', paddingVertical: 10,
+    alignItems: 'center',
   },
   callBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
+  slotBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderColor: c.accent, borderRadius: 10,
+    paddingHorizontal: 14, paddingVertical: 10,
+  },
+  slotBtnActive: { backgroundColor: c.accent },
+  slotBtnText: { fontSize: 14, fontWeight: '500', color: c.accent },
+  slotBtnTextActive: { color: '#fff' },
   pastCard: {
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border, overflow: 'hidden',
   },

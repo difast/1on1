@@ -113,13 +113,17 @@ export default function MemberTasksScreen() {
     ]);
   };
 
+  const [search, setSearch] = useState('');
+
   if (loading) return <Spinner />;
 
-  const active = tasks.filter(t => getTaskStatus(t) !== 'done');
-  const done = tasks.filter(t => getTaskStatus(t) === 'done');
+  const q = search.toLowerCase();
+  const filtered = q ? tasks.filter(t => (t.title || t.description || '').toLowerCase().includes(q)) : tasks;
+  const active = filtered.filter(t => getTaskStatus(t) !== 'done');
+  const done = filtered.filter(t => getTaskStatus(t) === 'done');
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Задачи</Text>
@@ -135,6 +139,22 @@ export default function MemberTasksScreen() {
             {showForm ? '✕' : '+ Задача'}
           </Text>
         </TouchableOpacity>
+      </View>
+
+      <View style={styles.searchRow}>
+        <Ionicons name="search-outline" size={16} color={colors.textMuted} style={{ marginLeft: 10 }} />
+        <TextInput
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Поиск задач..."
+          placeholderTextColor={colors.textMuted}
+        />
+        {search.length > 0 && (
+          <TouchableOpacity onPress={() => setSearch('')} style={{ paddingHorizontal: 10 }}>
+            <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       <ScrollView
@@ -359,6 +379,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   addBtnActive: { backgroundColor: c.accentLight },
   addBtnText: { fontSize: 13, fontWeight: '600', color: c.accent },
   addBtnTextActive: { color: c.accent },
+  searchRow: {
+    flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, marginBottom: 8,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10, backgroundColor: c.surface,
+  },
+  searchInput: { flex: 1, paddingVertical: 9, paddingHorizontal: 8, fontSize: 14, color: c.textPrimary },
   content: { padding: 16, gap: 20, paddingBottom: 100 },
   formCard: {
     backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,

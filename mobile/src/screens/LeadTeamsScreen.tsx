@@ -276,7 +276,7 @@ export default function LeadTeamsScreen() {
     : allMembers;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои команды</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>

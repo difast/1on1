@@ -29,7 +29,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      screenOptions={{
+      screenOptions={({ route }) => ({
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
@@ -44,26 +44,28 @@ export default function TabsLayout() {
           paddingTop: 6,
         },
         tabBarLabelStyle: { fontSize: 10, fontWeight: '500', marginTop: 2 },
-      }}
+        tabBarIcon: ({ color, size, focused }) => {
+          const iconMap: Record<string, string> = {
+            index: isLead ? 'grid-outline' : 'home-outline',
+            meetings: 'calendar-outline',
+            tasks: 'checkbox-outline',
+            profile: 'person-outline',
+          };
+          const icon = iconMap[route.name];
+          if (!icon) return null;
+          return (
+            <View style={{ alignItems: 'center' }}>
+              <Ionicons name={icon as any} size={size} color={color} />
+              {focused && (
+                <View style={[tabStyles.activeDot, { backgroundColor: colors.accent, shadowColor: colors.accent }]} />
+              )}
+            </View>
+          );
+        },
+      })}
     >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: isLead ? 'Команды' : 'Обзор',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={isLead ? 'grid-outline' : 'home-outline'} size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="meetings"
-        options={{
-          title: 'Встречи',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="index" options={{ title: isLead ? 'Команды' : 'Обзор' }} />
+      <Tabs.Screen name="meetings" options={{ title: 'Встречи' }} />
       <Tabs.Screen
         name="support"
         options={{
@@ -83,24 +85,8 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: 'Задачи',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkbox-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Профиль',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      <Tabs.Screen name="tasks" options={{ title: 'Задачи' }} />
+      <Tabs.Screen name="profile" options={{ title: 'Профиль' }} />
       {/* Hidden screens — accessible via router.push, not shown in tab bar */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="analytics" options={{ href: null }} />
@@ -122,5 +108,13 @@ const tabStyles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
     marginBottom: 8,
+  },
+  activeDot: {
+    width: 4, height: 4, borderRadius: 2,
+    marginTop: 3,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+    elevation: 4,
   },
 });

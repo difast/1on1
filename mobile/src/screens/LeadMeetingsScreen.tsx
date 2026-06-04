@@ -149,7 +149,7 @@ export default function LeadMeetingsScreen() {
   if (loading) return <Spinner />;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои встречи</Text>
         <View style={styles.viewToggle}>

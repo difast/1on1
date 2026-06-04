@@ -60,7 +60,7 @@ export default function NotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}><Text style={styles.headerTitle}>Уведомления</Text></View>
         <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
       </SafeAreaView>
@@ -68,7 +68,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>
           Уведомления{unreadCount > 0 ? ` (${unreadCount})` : ''}

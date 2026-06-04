@@ -238,7 +238,7 @@ export default function MemberOverviewScreen() {
 
   if (!team) {
     return (
-      <SafeAreaView style={styles.root}>
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Обзор</Text>
         </View>
@@ -281,7 +281,7 @@ export default function MemberOverviewScreen() {
     : otherMembers;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>

@@ -51,7 +51,7 @@ export default function AssistantScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={styles.headerIcon}>
           <Ionicons name="sparkles" size={18} color={colors.accent} />

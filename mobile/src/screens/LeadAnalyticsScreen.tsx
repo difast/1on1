@@ -38,7 +38,7 @@ export default function LeadAnalyticsScreen() {
   const teams: any[] = data?.teams ?? [];
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />

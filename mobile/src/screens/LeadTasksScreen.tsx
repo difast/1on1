@@ -55,13 +55,6 @@ export default function LeadTasksScreen() {
   const [teamsLoading, setTeamsLoading] = useState(false);
   const [teamsLoaded, setTeamsLoaded] = useState(false);
 
-  const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
-    in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
-    blocked: { bg: colors.dangerBg, border: colors.danger, text: colors.danger },
-    review: { bg: colors.accentLight, border: colors.accent, text: colors.accent },
-    done: { bg: colors.successBg, border: colors.success, text: colors.success },
-  };
-
   const loadMyTasks = useCallback(async () => {
     try {
       const data = await getTasks({ assigned_to: user!.id, assigned_by: user!.id }) as any[];
@@ -165,7 +158,7 @@ export default function LeadTasksScreen() {
   const done = tasks.filter(t => getStatus(t) === 'done');
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle}>Задачи</Text>
@@ -376,6 +369,13 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
   const [aiSteps, setAiSteps] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [subtasksLoaded, setSubtasksLoaded] = useState(false);
+
+  const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
+    in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
+    blocked: { bg: colors.dangerBg, border: colors.danger, text: colors.danger },
+    review: { bg: colors.accentLight, border: colors.accent, text: colors.accent },
+    done: { bg: colors.successBg, border: colors.success, text: colors.success },
+  };
 
   const st = getStatus(task);
   const sc = statusColors[st];

@@ -31,7 +31,7 @@ export default function MemberAnalyticsScreen() {
   if (loading) return <Spinner />;
 
   return (
-    <SafeAreaView style={styles.root}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Аналитика</Text>
       </View>

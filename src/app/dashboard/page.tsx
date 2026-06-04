@@ -72,6 +72,7 @@ export default function Dashboard() {
   const [showRequests, setShowRequests] = useState(false);
   const [showMyProfile, setShowMyProfile] = useState(false);
   const [showAddTask, setShowAddTask] = useState(false);
+  const [callLoading, setCallLoading] = useState<Record<string, boolean>>({});
 
   const [teamName, setTeamName] = useState("");
   const [memberName, setMemberName] = useState("");
@@ -320,6 +321,21 @@ export default function Dashboard() {
     await supabase.from("meeting_requests").update({ status: "declined" }).eq("id", id);
     setMeetingRequests(prev => prev.filter(r => r.id !== id));
     showToast("Запрос отклонён");
+  };
+
+  const startWebCall = async (meetingId: string, memberId: string) => {
+    setCallLoading(prev => ({ ...prev, [meetingId]: true }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const { data: dbUser } = await supabase.from("users").select("id").eq("supabase_uid", session?.user?.id).single();
+      const res = await fetch(`${API_BASE}/meetings/${meetingId}/start-call?user_id=${dbUser?.id}`, { method: "POST" });
+      const json = await res.json();
+      window.open(`${json.room_url}?t=${json.token}`, "_blank");
+    } catch {
+      alert("Не удалось начать созвон");
+    } finally {
+      setCallLoading(prev => ({ ...prev, [meetingId]: false }));
+    }
   };
 
   const copyInvite = () => {
@@ -617,7 +633,18 @@ export default function Dashboard() {
                       <span style={{ fontSize: 12, color: "#bbb", fontFamily: "'DM Mono', monospace" }}>
                         {m.scheduled_at && new Date(m.scheduled_at) > new Date() ? `📅 ${formatDateTime(m.scheduled_at)}` : formatDate(m.date)}
                       </span>
-                      {m.mood !== "neutral" && !m.scheduled_at && <span>{m.mood === "good" ? "😊" : "😟"}</span>}
+                      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                        {m.mood !== "neutral" && !m.scheduled_at && <span>{m.mood === "good" ? "😊" : "😟"}</span>}
+                        {m.scheduled_at && new Date(m.scheduled_at) > new Date() && (
+                          <button
+                            onClick={() => startWebCall(m.id, selectedMember.id)}
+                            disabled={callLoading[m.id]}
+                            style={{ background: "#0061ff", color: "#fff", border: "none", borderRadius: 6, padding: "3px 10px", fontSize: 11, fontWeight: 600, cursor: "pointer", opacity: callLoading[m.id] ? 0.6 : 1 }}
+                          >
+                            {callLoading[m.id] ? "..." : "Созвон"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                     {m.notes && <div style={{ fontSize: 13, color: "#444", lineHeight: 1.55 }}>{m.notes}</div>}
                   </div>
