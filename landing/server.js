@@ -13,6 +13,7 @@ const routes = {
   '/analytics': 'analytics.html',
   '/faq': 'faq.html',
   '/about': 'about.html',
+  '/pricing': 'pricing.html',
 }
 
 const mime = {
