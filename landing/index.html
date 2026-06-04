@@ -289,10 +289,45 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   nav{padding:10px 14px}
   .btn-xl{padding:13px 28px;font-size:15px}
   .btn-lg{padding:11px 22px;font-size:14px}
+  .pit-grid{gap:24px;padding-bottom:0}
+  .iphone-frame{width:min(260px,80vw)}
+  .iphone-screen-wrap{height:min(440px,72vw)}
+  .iphone-shadow{width:180px}
+}
+
+/* Prevent horizontal overflow */
+html,body{overflow-x:hidden}
+
+/* ── MOBILE NAV (hamburger) */
+.burger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px;background:none;border:none;z-index:300}
+.burger span{display:block;width:22px;height:2px;background:var(--txt2);border-radius:2px;transition:all .25s}
+.burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.burger.open span:nth-child(2){opacity:0}
+.burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.mobile-menu{display:none;position:fixed;inset:0;background:rgba(19,17,28,.97);backdrop-filter:blur(20px);z-index:250;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+.mobile-menu.open{display:flex}
+.mobile-menu a{font-size:24px;font-weight:600;color:var(--txt2);text-decoration:none;transition:color .15s}
+.mobile-menu a:hover{color:var(--txt)}
+.mobile-menu .mm-btns{display:flex;flex-direction:column;gap:12px;width:220px;margin-top:8px}
+.mobile-menu .mm-btns .btn{width:100%;justify-content:center}
+@media(max-width:960px){
+  .burger{display:flex}
+  .nav-r{display:none}
 }
 </style>
 </head>
 <body>
+
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#features" onclick="closeMM()">Возможности</a>
+  <a href="#how" onclick="closeMM()">Как работает</a>
+  <a href="#pricing" onclick="closeMM()">Тарифы</a>
+  <div class="mm-btns">
+    <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost" onclick="closeMM()">Войти</a>
+    <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc" onclick="closeMM()">Начать →</a>
+  </div>
+</div>
 
 <!-- NAV -->
 <nav>
@@ -306,7 +341,15 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost">Войти</a>
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc">Начать →</a>
   </div>
+  <button class="burger" id="burger" aria-label="Меню" onclick="toggleMM()">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<script>
+function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
+function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
+</script>
 
 <!-- HERO -->
 <section class="hero block-card" id="home" style="margin-top:20px">
