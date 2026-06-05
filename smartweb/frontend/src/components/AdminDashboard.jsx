@@ -6,6 +6,8 @@ import {
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
 } from '../api/client'
+import AdminUserDetail from './AdminUserDetail'
+import AdminManage from './AdminManage'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
 const ROLE_BADGE  = { team_lead: 'badge-blue', member: 'badge-gray' }
@@ -61,6 +63,7 @@ export default function AdminDashboard({ onLogout }) {
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState('users')
   const [search, setSearch]         = useState('')
+  const [detailUser, setDetailUser] = useState(null)
   const [roleFilter, setRoleFilter] = useState('all')
 
   // Tickets
@@ -245,6 +248,7 @@ export default function AdminDashboard({ onLogout }) {
           <TabBtn id="users"      label="Пользователи" />
           <TabBtn id="tickets"    label="Обращения" badge={unreadTickets} />
           <TabBtn id="broadcast"  label="Рассылка" />
+          <TabBtn id="manage"     label="Управление" />
           <TabBtn id="analytics"  label="Аналитика" />
           <TabBtn id="health"     label="Здоровье сервиса" />
           <TabBtn id="kb"         label="База знаний" />
@@ -288,10 +292,10 @@ export default function AdminDashboard({ onLogout }) {
                           <tr key={u.id} style={{ borderBottom: '1px solid var(--color-border)', opacity: u.is_blocked ? 0.55 : 1 }}>
                             <Td muted>{u.id}</Td>
                             <Td>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <div onClick={() => setDetailUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} title="Открыть детали">
                                 <div className="avatar avatar-sm avatar-accent">{(u.name || '?').charAt(0).toUpperCase()}</div>
                                 <div>
-                                  <p style={{ fontWeight: 600, margin: 0, fontSize: 13 }}>{u.name}</p>
+                                  <p style={{ fontWeight: 600, margin: 0, fontSize: 13, color: 'var(--color-accent)' }}>{u.name}</p>
                                   {u.title && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>{u.title}</p>}
                                 </div>
                               </div>
@@ -336,6 +340,11 @@ export default function AdminDashboard({ onLogout }) {
                   </table>
                 </div>
               </div>
+            )}
+
+            {/* ── УПРАВЛЕНИЕ ── */}
+            {tab === 'manage' && (
+              <AdminManage />
             )}
 
             {/* ── ОБРАЩЕНИЯ ── */}
@@ -718,6 +727,14 @@ export default function AdminDashboard({ onLogout }) {
           </>
         )}
       </main>
+
+      {detailUser && (
+        <AdminUserDetail
+          user={detailUser}
+          onClose={() => setDetailUser(null)}
+          onChanged={() => getAdminStats().then(r => setData(r.data)).catch(() => {})}
+        />
+      )}
     </div>
   )
 }
