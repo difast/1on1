@@ -1,45 +1,63 @@
-import { getTeams, getTeam, getMeetings, createTask, createMeeting } from '../api/client'
+import {
+  getTeams, getTeam, getMemberTeam, getTasks, getMeetings,
+  createTask, createMeeting,
+} from '../api/client'
 
 /**
  * Pit (AI assistant) helpers for the web — mirror of mobile/src/lib/pit.ts.
- *
- * The backend system prompt expects a team-context block where each person is
- * tagged with `[id:<user_id>]`, and can emit action tags:
- *   <<ACTION:create_task:MEMBER_ID:text>>
- *   <<ACTION:schedule_meeting:MEMBER_ID:topic>>
- * Without sending the context / executing the actions, Pit couldn't see anyone
- * or create anything. These helpers fix that.
+ * Builds a rich team context (teams/lead/members + their tasks & meetings,
+ * all with ids) and executes <<ACTION:...>> tags Pit emits.
  */
+
+const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 
 export async function buildPitContext(user) {
   const members = []
   const lines = []
+  const seen = new Set()
   const isLead = user?.role === 'team_lead'
 
-  try {
-    if (isLead) {
-      const { data: all } = await getTeams()
-      const mine = (all || []).filter(t => t.team_lead_id === user.id)
-      for (const t of mine) {
-        let detail = t
-        try { const r = await getTeam(t.id); detail = r.data } catch { /* keep base */ }
-        lines.push(`Команда "${detail.name}" [id:${detail.id}]:`)
-        for (const m of (detail.members || [])) {
-          if (m.user_id === user.id) continue
-          members.push({ id: m.user_id, name: m.user_name, teamId: detail.id, teamLeadId: user.id })
-          const last = m.last_meeting_date
-            ? `последняя встреча ${new Date(m.last_meeting_date).toLocaleDateString('ru-RU')}`
-            : 'встреч ещё не было'
-          lines.push(`  • ${m.user_name} [id:${m.user_id}] — роль: ${m.role}, ${last}`)
-        }
-      }
+  async function addTeam(detail) {
+    if (!detail || !detail.id || seen.has(detail.id)) return
+    seen.add(detail.id)
+    const leadId = detail.team_lead_id
+    lines.push(`Команда "${detail.name}" [team_id:${detail.id}], тимлид [id:${leadId}]:`)
+    for (const m of (detail.members || [])) {
+      const self = m.user_id === user.id
+      members.push({ id: m.user_id, name: m.user_name, teamId: detail.id, teamLeadId: leadId })
+      let tasksTxt = ''
+      let meetTxt = ''
+      try {
+        const { data: tasks } = await getTasks({ assigned_to: m.user_id, team_id: detail.id })
+        if (tasks?.length) tasksTxt = ' Задачи: ' + tasks.slice(0, 8)
+          .map(t => `[task_id:${t.id}] "${t.title || t.description || ''}" (${statusOf(t)})`).join('; ')
+      } catch { /* ignore */ }
+      try {
+        const { data: meets } = await getMeetings({ member_id: m.user_id, team_id: detail.id })
+        if (meets?.length) meetTxt = ' Встречи: ' + meets.slice(0, 6)
+          .map(mm => `[meeting_id:${mm.id}] ${mm.scheduled_date ? new Date(mm.scheduled_date).toLocaleDateString('ru-RU') : '—'} (${mm.status})`).join('; ')
+      } catch { /* ignore */ }
+      lines.push(`  • ${m.user_name} [id:${m.user_id}] — роль: ${m.role}${self ? ' (это текущий пользователь)' : ''}.${tasksTxt}${meetTxt}`)
     }
-  } catch { /* best effort */ }
+  }
+
+  try {
+    const { data: all } = await getTeams()
+    for (const t of (all || []).filter(t => t.team_lead_id === user.id)) {
+      try { const { data } = await getTeam(t.id); await addTeam(data) }
+      catch { lines.push(`Команда "${t.name}" [team_id:${t.id}] — не удалось загрузить участников.`) }
+    }
+  } catch { /* ignore */ }
+
+  try {
+    const { data: team } = await getMemberTeam(user.id)
+    if (team && team.id) await addTeam(team)
+  } catch { /* ignore */ }
 
   const header = `Текущий пользователь: ${user?.name || user?.email} [id:${user?.id}], роль: ${isLead ? 'тимлид' : 'участник'}.`
   const text = lines.length
-    ? `${header}\n\nУчастники команд:\n${lines.join('\n')}`
-    : header
+    ? `${header}\n\n${lines.join('\n')}`
+    : `${header}\n\nДанные команд не загрузились. Помоги с общими вопросами и предложи попробовать ещё раз.`
   return { text, members }
 }
 
@@ -79,6 +97,6 @@ export async function executePitAction(action, ctx, user) {
     })
     return `✓ Встреча с ${who} запланирована на ${when.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`
   } catch {
-    return `⚠ Не удалось выполнить действие для ${who}`
+    return `⚠ Не удалось выполнить действие для ${who}. Попробуйте ещё раз или обратитесь в поддержку.`
   }
 }

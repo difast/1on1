@@ -20,6 +20,7 @@ export const updateUser = (id, data) => api.patch(`/users/${id}`, data)
 export const createTeam = (data) => api.post('/teams/', data)
 export const getTeams = () => api.get('/teams/')
 export const getTeam = (id) => api.get(`/teams/${id}`)
+export const getMemberTeam = (userId) => api.get(`/teams/by-member/${userId}`)
 export const joinTeam = (data) => api.post('/teams/join', data)
 export const addMember = (teamId, userId, role) =>
   api.post(`/teams/${teamId}/members`, null, { params: { user_id: userId, role } })
