@@ -11,6 +11,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { StatusPicker } from '../components/StatusPicker';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
@@ -86,28 +87,28 @@ export default function LeadTasksScreen() {
     setRefreshing(false);
   };
 
-  const cycleStatus = async (task: any) => {
-    const current = getStatus(task);
-    const idx = ALL_STATUSES.indexOf(current);
-    const next = ALL_STATUSES[(idx + 1) % ALL_STATUSES.length];
+  const setTaskStatus = async (task: any, next: TaskStatus) => {
+    if (next === getStatus(task)) return;
+    const completed = next === 'done';
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
     try {
-      await updateTask(task.id, { status: next, completed: next === 'done' });
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed: next === 'done' } : t));
-    } catch {}
+      await updateTask(task.id, { status: next, completed });
+    } catch {
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: getStatus(task), completed: task.completed } : t));
+    }
   };
 
-  const cycleMemberTaskStatus = async (task: any, memberId: number) => {
-    const current = getStatus(task);
-    const idx = ALL_STATUSES.indexOf(current);
-    const next = ALL_STATUSES[(idx + 1) % ALL_STATUSES.length];
+  const setMemberTaskStatus = async (task: any, memberId: number, next: TaskStatus) => {
+    if (next === getStatus(task)) return;
+    const completed = next === 'done';
+    setMemberTasks(prev => ({
+      ...prev,
+      [memberId]: (prev[memberId] || []).map(t =>
+        t.id === task.id ? { ...t, status: next, completed } : t
+      ),
+    }));
     try {
-      await updateTask(task.id, { status: next, completed: next === 'done' });
-      setMemberTasks(prev => ({
-        ...prev,
-        [memberId]: (prev[memberId] || []).map(t =>
-          t.id === task.id ? { ...t, status: next, completed: next === 'done' } : t
-        ),
-      }));
+      await updateTask(task.id, { status: next, completed });
     } catch {}
   };
 
@@ -148,8 +149,8 @@ export default function LeadTasksScreen() {
     }
   };
 
-  const renderTask = (task: any, onCycle: () => void, onDel?: () => void) => (
-    <TaskRow key={task.id} task={task} onCycle={onCycle} onDel={onDel} />
+  const renderTask = (task: any, onSetStatus: (s: TaskStatus) => void, onDel?: () => void) => (
+    <TaskRow key={task.id} task={task} onSetStatus={onSetStatus} onDel={onDel} />
   );
 
   if (loading && tab === 'mine') return <Spinner />;
@@ -228,13 +229,13 @@ export default function LeadTasksScreen() {
             {active.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Активные</Text>
-                {active.map(t => renderTask(t, () => cycleStatus(t), () => handleDelete(t.id)))}
+                {active.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id)))}
               </View>
             )}
             {done.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Выполненные</Text>
-                {done.map(t => renderTask(t, () => cycleStatus(t), () => handleDelete(t.id)))}
+                {done.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id)))}
               </View>
             )}
           </>
@@ -286,7 +287,7 @@ export default function LeadTasksScreen() {
                               <Text style={styles.emptyText}>Нет задач</Text>
                             )}
                             {mTasks !== undefined && mTasks.map((t: any) =>
-                              renderTask(t, () => cycleMemberTaskStatus(t, member.user_id))
+                              renderTask(t, (s) => setMemberTaskStatus(t, member.user_id, s))
                             )}
                           </View>
                         )}
@@ -361,7 +362,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   subtaskText: { fontSize: 12, flex: 1 },
 });
 
-function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onDel?: () => void }) {
+function TaskRow({ task, onSetStatus, onDel }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
@@ -369,6 +370,7 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
   const [aiSteps, setAiSteps] = useState<string[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [subtasksLoaded, setSubtasksLoaded] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
     in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
@@ -409,11 +411,9 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
     await updateSubtask(sub.id, { completed: newCompleted });
     const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
     setSubtasks(updated);
-    if (newCompleted && updated.length > 0 && updated.every(s => s.completed)) {
-      try {
-        await updateTask(task.id, { status: 'done', completed: true });
-        onCycle();
-      } catch {}
+    // All subtasks checked → mark the task done (not "cycle", which landed on "Блок")
+    if (newCompleted && updated.length > 0 && updated.every(s => s.completed) && st !== 'done') {
+      onSetStatus('done');
     }
   };
 
@@ -452,7 +452,7 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
           </View>
         )}
       </View>
-      <TouchableOpacity style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]} onPress={onCycle} activeOpacity={0.7}>
+      <TouchableOpacity style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]} onPress={() => setPickerOpen(true)} activeOpacity={0.7}>
         <Text style={[styles.statusText, { color: sc.text }]}>{STATUS_CONFIG[st].short}</Text>
       </TouchableOpacity>
       {onDel && (
@@ -460,6 +460,12 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
           <Text style={styles.deleteBtnText}>✕</Text>
         </TouchableOpacity>
       )}
+      <StatusPicker
+        visible={pickerOpen}
+        current={st}
+        onSelect={onSetStatus}
+        onClose={() => setPickerOpen(false)}
+      />
     </TouchableOpacity>
   );
 }

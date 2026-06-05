@@ -12,11 +12,10 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { StatusPicker } from '../components/StatusPicker';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
-// Member can cycle through these — only lead can mark done
-const MEMBER_CYCLE: TaskStatus[] = ['in_progress', 'blocked', 'review'];
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
 
 const STATUS_CONFIG: Record<TaskStatus, { label: string; short: string }> = {
@@ -68,16 +67,17 @@ export default function MemberTasksScreen() {
     setRefreshing(false);
   };
 
-  const cycleStatus = async (task: any) => {
-    const current = getTaskStatus(task);
-    // Don't cycle 'done' tasks (lead-only)
-    if (current === 'done') return;
-    const idx = MEMBER_CYCLE.indexOf(current);
-    const next = MEMBER_CYCLE[(idx + 1) % MEMBER_CYCLE.length];
+  const setStatus = async (task: any, next: TaskStatus) => {
+    if (next === getTaskStatus(task)) return;
+    const completed = next === 'done';
+    // Optimistic update
+    setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
     try {
-      await updateTask(task.id, { status: next, completed: false });
-      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed: false } : t));
-    } catch {}
+      await updateTask(task.id, { status: next, completed });
+    } catch {
+      // Revert on failure
+      setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: getTaskStatus(task), completed: task.completed } : t));
+    }
   };
 
   const handleCreateTask = async () => {
@@ -209,7 +209,7 @@ export default function MemberTasksScreen() {
               <TaskRow
                 key={task.id}
                 task={task}
-                onCycle={() => cycleStatus(task)}
+                onSetStatus={(s) => setStatus(task, s)}
                 onDelete={task.assigned_by === user!.id ? () => handleDelete(task.id) : undefined}
                 colors={colors}
               />
@@ -224,7 +224,7 @@ export default function MemberTasksScreen() {
               <TaskRow
                 key={task.id}
                 task={task}
-                onCycle={() => cycleStatus(task)}
+                onSetStatus={(s) => setStatus(task, s)}
                 colors={colors}
               />
             ))}
@@ -236,10 +236,10 @@ export default function MemberTasksScreen() {
 }
 
 function TaskRow({
-  task, onCycle, onDelete, colors,
+  task, onSetStatus, onDelete, colors,
 }: {
   task: any;
-  onCycle: () => void;
+  onSetStatus: (status: TaskStatus) => void;
   onDelete?: () => void;
   colors: AppColors;
 }) {
@@ -252,6 +252,7 @@ function TaskRow({
   const [subtasks, setSubtasks] = useState<any[]>([]);
   const [aiLoading, setAiLoading] = useState(false);
   const [subtasksLoaded, setSubtasksLoaded] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const statusColors: Record<TaskStatus, { bg: string; border: string; text: string }> = {
     in_progress: { bg: colors.warningBg, border: colors.warning, text: colors.warning },
@@ -294,9 +295,10 @@ function TaskRow({
       await updateSubtask(sub.id, { completed: newCompleted });
       const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
       setSubtasks(updated);
-      if (newCompleted && updated.length > 0 && updated.every(s => s.completed)) {
-        await updateTask(task.id, { status: 'done', completed: true });
-        onCycle();
+      // When every subtask is checked, the parent task is done — update it
+      // directly (don't "cycle" the status, that previously landed on "Блок").
+      if (newCompleted && updated.length > 0 && updated.every(s => s.completed) && status !== 'done') {
+        onSetStatus('done');
       }
     } catch {}
   };
@@ -325,8 +327,8 @@ function TaskRow({
         </View>
         <TouchableOpacity
           style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
-          onPress={status !== 'done' ? onCycle : undefined}
-          activeOpacity={status !== 'done' ? 0.7 : 1}
+          onPress={() => setPickerOpen(true)}
+          activeOpacity={0.7}
         >
           <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
         </TouchableOpacity>
@@ -367,6 +369,13 @@ function TaskRow({
           )}
         </View>
       )}
+
+      <StatusPicker
+        visible={pickerOpen}
+        current={status}
+        onSelect={onSetStatus}
+        onClose={() => setPickerOpen(false)}
+      />
     </View>
   );
 }
