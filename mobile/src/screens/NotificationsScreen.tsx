@@ -105,9 +105,16 @@ export default function NotificationsScreen() {
             Уведомления{unreadCount > 0 ? ` (${unreadCount})` : ''}
           </Text>
         </View>
-        {unreadCount > 0 && (
-          <TouchableOpacity onPress={handleMarkAllRead} disabled={markingAll} style={styles.markAllBtn}>
-            <Text style={styles.markAllText}>{markingAll ? '...' : 'Прочитать все'}</Text>
+        {notifications.length > 0 && (
+          <TouchableOpacity
+            onPress={handleMarkAllRead}
+            disabled={markingAll || unreadCount === 0}
+            style={[styles.markAllBtn, unreadCount === 0 && styles.markAllBtnDisabled]}
+          >
+            <Ionicons name="checkmark-done" size={14} color={unreadCount === 0 ? colors.textMuted : '#fff'} />
+            <Text style={[styles.markAllText, unreadCount === 0 && styles.markAllTextDisabled]}>
+              {markingAll ? '...' : 'Прочитать все'}
+            </Text>
           </TouchableOpacity>
         )}
       </View>
@@ -148,7 +155,10 @@ export default function NotificationsScreen() {
                     <Text style={styles.broadcastBadgeText}>ОБЪЯВЛЕНИЕ</Text>
                   </View>
                 )}
-                <Text style={[styles.title, isUnread && styles.titleUnread]} numberOfLines={2}>{n.title}</Text>
+                <Text
+                  style={[styles.title, isUnread && styles.titleUnread, isBroadcast && styles.titleBroadcast]}
+                  numberOfLines={2}
+                >{n.title}</Text>
                 {n.body ? <Text style={styles.body} numberOfLines={2}>{n.body}</Text> : null}
                 <Text style={styles.time}>
                   {new Date(n.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -174,8 +184,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary, textAlign: 'left' },
-  markAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
-  markAllText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
+  markAllBtn: {
+    flexDirection: 'row', alignItems: 'center', gap: 5, flexShrink: 0,
+    paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20,
+    backgroundColor: c.accent, borderWidth: 1, borderColor: c.accent,
+  },
+  markAllBtnDisabled: { backgroundColor: c.surface, borderColor: c.border },
+  markAllText: { fontSize: 12, fontWeight: '700', color: '#fff' },
+  markAllTextDisabled: { color: c.textMuted },
 
   item: {
     flexDirection: 'row', alignItems: 'flex-start', gap: 12,
@@ -189,6 +205,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   iconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: 14, fontWeight: '500', color: c.textPrimary, lineHeight: 20 },
   titleUnread: { fontWeight: '700' },
+  titleBroadcast: { fontSize: 15, fontWeight: '800', color: '#0f172a' },
   body: { fontSize: 12, color: c.textSecondary, marginTop: 2, lineHeight: 18 },
   time: { fontSize: 11, color: c.textMuted, marginTop: 4 },
   dot: { width: 8, height: 8, borderRadius: 4, marginTop: 6, flexShrink: 0 },
