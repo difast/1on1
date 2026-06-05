@@ -126,7 +126,7 @@ export default function LoginScreen() {
 
   const handleAdminLogin = async () => {
     setError('');
-    if (adminCode !== ADMIN_CODE) { setError('Неверный код администратора'); return; }
+    if (adminCode.trim() !== ADMIN_CODE) { setError('Неверный код администратора'); return; }
     await enterAdmin();
   };
 
@@ -174,7 +174,10 @@ export default function LoginScreen() {
                   placeholder="••••••••"
                   placeholderTextColor={colors.textMuted}
                   secureTextEntry
-                  textContentType="password"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  autoComplete="off"
+                  textContentType="none"
                 />
               </View>
               {error ? (
