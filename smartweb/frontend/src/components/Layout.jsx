@@ -875,7 +875,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {children}
         </main>
       </div>
-      <PitAssistant currentUser={currentUser} />
+      <PitAssistant />
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
     </div>
   )

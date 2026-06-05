@@ -35,7 +35,12 @@ const PIT_STYLES = `
 
 const GREETING = 'Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросами о встречах, задачах и команде. Спрашивайте!'
 
-export default function PitAssistant({ currentUser }) {
+function readCurrentUser() {
+  try { return JSON.parse(localStorage.getItem('smart_user') || 'null') } catch { return null }
+}
+
+export default function PitAssistant() {
+  const currentUser = readCurrentUser()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
   const [input, setInput] = useState('')
