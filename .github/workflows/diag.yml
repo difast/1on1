@@ -1,0 +1,50 @@
+name: EAS Diagnostics
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+      - name: Install deps
+        working-directory: mobile
+        run: npm ci
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Collect EAS state
+        working-directory: mobile
+        run: |
+          {
+            echo '# EAS diagnostics'
+            echo '## eas config (runtime/updates)'
+            eas config --platform android --non-interactive 2>&1 | head -80 || true
+            echo
+            echo '## build:list (last 3 android)'
+            eas build:list --platform android --limit 3 --non-interactive 2>&1 | head -120 || true
+            echo
+            echo '## channel:view preview'
+            eas channel:view preview --non-interactive 2>&1 | head -60 || true
+            echo
+            echo '## branch:list'
+            eas branch:list --non-interactive 2>&1 | head -60 || true
+            echo
+            echo '## update:list (branch preview)'
+            eas update:list --branch preview --limit 6 --non-interactive 2>&1 | head -120 || true
+          } > ../EAS_DIAG.md 2>&1
+      - name: Commit diagnostics
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add EAS_DIAG.md
+          git commit -m "chore: EAS diagnostics output [skip ci]" || echo "no changes"
+          git push
