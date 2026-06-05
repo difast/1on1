@@ -249,7 +249,7 @@ export default function MeetingDetailScreen() {
               <Text style={styles.infoText}>{meeting.duration_minutes} минут</Text>
             </View>
           )}
-          {meeting.is_rescheduled && (
+          {meeting.is_rescheduled === true && (
             <View style={styles.infoRow}>
               <Ionicons name="refresh-outline" size={16} color={colors.warning} />
               <Text style={[styles.infoText, { color: colors.warning }]}>Перенесена</Text>
