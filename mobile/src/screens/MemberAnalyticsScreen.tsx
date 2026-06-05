@@ -1,8 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, RefreshControl,
+  View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { getMemberAnalytics } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -13,6 +15,7 @@ export default function MemberAnalyticsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -33,6 +36,11 @@ export default function MemberAnalyticsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
+        {router.canGoBack() && (
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>Аналитика</Text>
       </View>
       <ScrollView
@@ -161,7 +169,7 @@ function BarChart({ data }: { data: any[] }) {
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
   root: { flex: 1, backgroundColor: c.bg },
-  header: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+  header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
   headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
   content: { padding: 16, gap: 16, paddingBottom: 32 },
   emptyCard: {

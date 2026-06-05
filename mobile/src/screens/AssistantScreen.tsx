@@ -6,6 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useTheme } from '../context/theme';
 import { assistantChat } from '../lib/api';
 import type { AppColors } from '../constants/colors';
@@ -25,6 +26,7 @@ const STARTERS = [
 export default function AssistantScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,6 +55,11 @@ export default function AssistantScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
+        {router.canGoBack() && (
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
         <View style={styles.headerIcon}>
           <Ionicons name="sparkles" size={18} color={colors.accent} />
         </View>

@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
-import { updateUser } from '../lib/api';
+import { updateUser, deleteUser, createSupportTicket } from '../lib/api';
 import { useTheme } from '../context/theme';
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
@@ -130,6 +130,36 @@ export default function ProfileScreen() {
       { text: 'Отмена', style: 'cancel' },
       { text: 'Выйти', style: 'destructive', onPress: signOut },
     ]);
+  };
+
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      'Удалить аккаунт',
+      'Это действие необратимо. Все ваши данные будут удалены.',
+      [
+        { text: 'Отмена', style: 'cancel' },
+        {
+          text: 'Удалить',
+          style: 'destructive',
+          onPress: async () => {
+            if (!user) return;
+            setDeletingAccount(true);
+            try {
+              await createSupportTicket({
+                user_id: user.id,
+                subject: '[SYSTEM] Удаление аккаунта',
+                body: `Пользователь ${user.name} (${user.email}, id=${user.id}) запросил удаление аккаунта.`,
+              }).catch(() => {});
+              await deleteUser(user.id);
+              await signOut();
+            } catch {
+              Alert.alert('Ошибка', 'Не удалось удалить аккаунт. Попробуйте позже.');
+            } finally { setDeletingAccount(false); }
+          },
+        },
+      ]
+    );
   };
 
   if (!user) return null;
@@ -426,13 +456,33 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Logout */}
+        {/* Documents + Logout + Delete */}
         <View style={[styles.menuSection, { marginBottom: 0 }]}>
-          <TouchableOpacity style={[styles.menuRow, styles.menuRowDanger]} onPress={handleLogout} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.menuRow, styles.menuRowDanger, { opacity: 0.5 }]} activeOpacity={1}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Документы</Text>
+            <Text style={{ fontSize: 11, color: colors.textMuted }}>скоро</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.menuRow} onPress={handleLogout} activeOpacity={0.7}>
             <View style={styles.menuIconWrap}>
               <Ionicons name="log-out-outline" size={18} color={colors.danger} />
             </View>
             <Text style={[styles.menuRowTitle, { color: colors.danger }]}>Выйти</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.menuRow, deletingAccount && styles.btnDisabled]}
+            onPress={handleDeleteAccount}
+            activeOpacity={0.7}
+            disabled={deletingAccount}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="trash-outline" size={18} color={colors.danger} />
+            </View>
+            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>
+              {deletingAccount ? 'Удаление...' : 'Удалить аккаунт'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

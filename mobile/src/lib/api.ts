@@ -43,6 +43,8 @@ export const getUsers = () => req('/users/');
 export const getUser = (id: number) => req(`/users/${id}`);
 export const getUserByEmail = (email: string) =>
   req(`/users/by-email/${encodeURIComponent(email)}`);
+export const deleteUser = (id: number) =>
+  req<any>(`/users/${id}`, { method: 'DELETE' });
 export const updateUser = (id: number, data: unknown) =>
   req(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
@@ -68,6 +70,7 @@ export const getMeetings = (params: Record<string, string | number>) => {
     .join('&');
   return req<any[]>(`/meetings/?${qs}`);
 };
+export const getMeeting = (id: number) => req<any>(`/meetings/${id}`);
 export const updateMeeting = (id: number, data: unknown) =>
   req(`/meetings/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const requestMeeting = (data: unknown) =>

@@ -405,8 +405,16 @@ function TaskRow({ task, onCycle, onDel }: { task: any; onCycle: () => void; onD
   };
 
   const onToggleSub = async (sub: any) => {
-    await updateSubtask(sub.id, { completed: !sub.completed });
-    setSubtasks(prev => prev.map(s => s.id === sub.id ? { ...s, completed: !s.completed } : s));
+    const newCompleted = !sub.completed;
+    await updateSubtask(sub.id, { completed: newCompleted });
+    const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
+    setSubtasks(updated);
+    if (newCompleted && updated.length > 0 && updated.every(s => s.completed)) {
+      try {
+        await updateTask(task.id, { status: 'done', completed: true });
+        onCycle();
+      } catch {}
+    }
   };
 
   return (

@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall } from '../lib/api';
 import { useTheme } from '../context/theme';
+import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
@@ -18,6 +19,8 @@ export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
+  const router = useRouter();
+  const goToDetail = (m: any) => router.push({ pathname: '/meeting-detail', params: { id: String(m.id) } } as any);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [usersMap, setUsersMap] = useState<Record<number, any>>({});
   const [notes, setNotes] = useState<any[]>([]);
@@ -207,10 +210,12 @@ export default function LeadMeetingsScreen() {
                 </View>
                 {requests.map(m => (
                   <View key={m.id} style={{ gap: 8 }}>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
                     <MeetingItem
                       meeting={m}
                       subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
                     />
+                    </TouchableOpacity>
                     <View style={styles.actionRow}>
                       <TouchableOpacity
                         style={[styles.confirmBtn, actionLoading[m.id] && styles.btnDisabled]}
@@ -237,10 +242,12 @@ export default function LeadMeetingsScreen() {
                 <Text style={styles.sectionTitle}>Предстоящие</Text>
                 {upcoming.map(m => (
                   <View key={m.id} style={styles.upcomingCard}>
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
                     <MeetingItem
                       meeting={m}
                       subtitle={usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`}
                     />
+                    </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.callBtn, callLoading[m.id] && styles.btnDisabled]}
                       onPress={() => handleStartCall(m.id)}
@@ -266,7 +273,9 @@ export default function LeadMeetingsScreen() {
                   const saving = savingNote[m.id] ?? false;
                   return (
                     <View key={m.id} style={styles.pastMeetingCard}>
-                      <MeetingItem meeting={m} subtitle={memberName} />
+                      <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
+                        <MeetingItem meeting={m} subtitle={memberName} />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.noteToggleBtn, styles.noteToggleRow]}
                         onPress={() => setExpandedNoteId(isOpen ? null : m.id)}

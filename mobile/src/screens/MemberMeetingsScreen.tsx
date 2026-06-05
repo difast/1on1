@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat } from '../lib/api';
 import { useTheme } from '../context/theme';
+import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
@@ -19,6 +20,8 @@ export default function MemberMeetingsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
+  const router = useRouter();
+  const goToDetail = (m: any) => router.push({ pathname: '/meeting-detail', params: { id: String(m.id) } } as any);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -267,7 +270,9 @@ export default function MemberMeetingsScreen() {
                 <Text style={styles.sectionTitle}>Предстоящие</Text>
                 {upcoming.map(m => (
                   <View key={m.id} style={styles.upcomingCard}>
-                    <MeetingItem meeting={m} />
+                    <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
+                      <MeetingItem meeting={m} />
+                    </TouchableOpacity>
                     <View style={styles.upcomingActions}>
                       <TouchableOpacity
                         style={[styles.rescheduleBtn]}
@@ -301,7 +306,9 @@ export default function MemberMeetingsScreen() {
                   const saving = savingNote[m.id] ?? false;
                   return (
                     <View key={m.id} style={styles.pastCard}>
-                      <MeetingItem meeting={m} />
+                      <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
+                        <MeetingItem meeting={m} />
+                      </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.noteToggleBtn, styles.noteToggleRow]}
                         onPress={() => setExpandedNoteId(isOpen ? null : m.id)}

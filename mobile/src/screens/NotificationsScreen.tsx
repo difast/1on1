@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { getNotifications, markRead, markAllRead } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -24,6 +25,7 @@ export default function NotificationsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
+  const router = useRouter();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -70,6 +72,11 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
+        {router.canGoBack() && (
+          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        )}
         <Text style={styles.headerTitle}>
           Уведомления{unreadCount > 0 ? ` (${unreadCount})` : ''}
         </Text>

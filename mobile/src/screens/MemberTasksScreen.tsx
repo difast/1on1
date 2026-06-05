@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getTasks, createTask, updateTask, deleteTask, getTaskAiAdvice, getSubtasks, createSubtasks, updateSubtask } from '../lib/api';
+// updateTask imported for auto-complete when all subtasks done
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
@@ -289,8 +290,14 @@ function TaskRow({
 
   const toggleSubtask = async (sub: any) => {
     try {
-      await updateSubtask(sub.id, { completed: !sub.completed });
-      setSubtasks(prev => prev.map(s => s.id === sub.id ? { ...s, completed: !s.completed } : s));
+      const newCompleted = !sub.completed;
+      await updateSubtask(sub.id, { completed: newCompleted });
+      const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
+      setSubtasks(updated);
+      if (newCompleted && updated.length > 0 && updated.every(s => s.completed)) {
+        await updateTask(task.id, { status: 'done', completed: true });
+        onCycle();
+      }
     } catch {}
   };
 
