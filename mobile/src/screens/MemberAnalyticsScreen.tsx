@@ -37,7 +37,7 @@ export default function MemberAnalyticsScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.canGoBack() ? router.back() : router.navigate('/(tabs)/profile' as any)}
+          onPress={() => router.navigate('/(tabs)/profile' as any)}
           style={{ marginRight: 8 }}
         >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />

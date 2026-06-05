@@ -412,7 +412,7 @@ export default function ProfileScreen() {
           <Text style={styles.menuSectionLabel}>Помощь</Text>
           <TouchableOpacity
             style={styles.menuRow}
-            onPress={() => router.push('/(tabs)/analytics' as any)}
+            onPress={() => router.push({ pathname: '/(tabs)/analytics', params: { from: 'profile' } } as any)}
             activeOpacity={0.7}
           >
             <View style={styles.menuIconWrap}>
@@ -423,7 +423,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuRow}
-            onPress={() => router.push('/(tabs)/notifications' as any)}
+            onPress={() => router.push({ pathname: '/(tabs)/notifications', params: { from: 'profile' } } as any)}
             activeOpacity={0.7}
           >
             <View style={styles.menuIconWrap}>
@@ -445,7 +445,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuRow}
-            onPress={() => router.push('/(tabs)/support')}
+            onPress={() => router.push({ pathname: '/(tabs)/support', params: { from: 'profile' } } as any)}
             activeOpacity={0.7}
           >
             <View style={styles.menuIconWrap}>

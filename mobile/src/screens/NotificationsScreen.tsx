@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { getNotifications, markRead, markAllRead } from '../lib/api';
 import { useTheme } from '../context/theme';
@@ -58,7 +58,10 @@ export default function NotificationsScreen() {
     } catch {} finally { setMarkingAll(false); }
   };
 
-  const goToProfile = () => {
+  const { from } = useLocalSearchParams<{ from?: string }>();
+  const goBack = () => {
+    // Opened from the Profile → Help section: always return to the Profile tab.
+    if (from === 'profile') { router.navigate('/(tabs)/profile' as any); return; }
     if (router.canGoBack()) router.back();
     else router.navigate('/(tabs)/profile' as any);
   };
@@ -98,7 +101,7 @@ export default function NotificationsScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={goToProfile} style={{ marginRight: 8 }}>
+          <TouchableOpacity onPress={goBack} style={{ marginRight: 8 }}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
