@@ -3,14 +3,17 @@ import { supabase } from './supabase';
 const BASE =
   (process.env.EXPO_PUBLIC_API_URL || 'https://fulfilling-stillness-production-a6e1.up.railway.app') + '/api';
 
-async function req<T>(path: string, options?: RequestInit): Promise<T> {
+async function req<T>(path: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const { data: { session } } = await supabase.auth.getSession();
   const authHeader: Record<string, string> = session?.access_token
     ? { Authorization: `Bearer ${session.access_token}` }
     : {};
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 15000);
+  // 30s default — the backend runs on a free Railway instance that cold-starts
+  // slowly; a 15s timeout aborted long operations (e.g. broadcast) on the client
+  // even though the server completed them, showing a false "error".
+  const timer = setTimeout(() => controller.abort(), options?.timeoutMs ?? 30000);
 
   try {
     const res = await fetch(`${BASE}${path}`, {
@@ -172,7 +175,9 @@ export const blockUser = (id: number) => req<any>(`/users/${id}/block`, { method
 export const unblockUser = (id: number) => req<any>(`/users/${id}/unblock`, { method: 'PATCH' });
 export const getServiceHealth = () => req<any>('/health/detailed');
 export const broadcastNotification = (data: { title: string; body?: string; target?: string }) =>
-  req<any>('/notifications/broadcast', { method: 'POST', body: JSON.stringify(data) });
+  // Broadcast fans out to every user — give it a generous timeout so a slow
+  // (but successful) server response isn't reported as an error to the admin.
+  req<any>('/notifications/broadcast', { method: 'POST', body: JSON.stringify(data), timeoutMs: 60000 });
 export const getSupportTickets = () => req<any[]>('/support/');
 export const adminReplyTicket = (ticketId: number, body: string) =>
   req<any>(`/support/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
