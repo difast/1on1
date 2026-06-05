@@ -116,8 +116,10 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
           const isWeekend = di >= 5;
 
           if (showOutside && isOutside) {
+            // Days from the previous/next month — clearly faded so they don't
+            // blend with the current month ("...29 30 1 2 3...").
             return (
-              <View key={di} style={[styles.cell, isWeekend && styles.cellWeekend]}>
+              <View key={di} style={[styles.cell, styles.cellOutside]}>
                 <Text style={[styles.cellText, styles.cellOutsideText]}>{date.getDate()}</Text>
               </View>
             );
@@ -317,7 +319,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   cellPastText: { color: c.textMuted },
   cellTodayText: { color: c.accent, fontWeight: '700' },
   cellSelectedText: { color: '#fff', fontWeight: '700' },
-  cellOutsideText: { color: c.gray300 },
+  cellOutside: { opacity: 0.35 },
+  cellOutsideText: { color: c.gray300, fontWeight: '400' },
   dot: {
     width: 6, height: 6, borderRadius: 3,
     backgroundColor: c.accent, marginTop: 2,

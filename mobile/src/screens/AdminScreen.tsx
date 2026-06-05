@@ -11,16 +11,21 @@ import { useTheme } from '../context/theme';
 import {
   getAdminStats, blockUser, unblockUser, getServiceHealth,
   broadcastNotification, getSupportTickets, adminReplyTicket, getUsers,
+  getTeams, getMeetings, getTasks, createTeam, createTask, createMeeting,
+  updateUser, deleteUser,
 } from '../lib/api';
 import { Avatar } from '../components/Avatar';
+import { DateTimePickerField } from '../components/DateTimePickerField';
+import { UserDetailModal } from '../components/admin/UserDetailModal';
 import type { AppColors } from '../constants/colors';
 
-type Tab = 'users' | 'tickets' | 'broadcast' | 'health' | 'monetize';
+type Tab = 'users' | 'tickets' | 'broadcast' | 'manage' | 'health' | 'monetize';
 
 const TABS: { id: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'users', label: 'Пользователи', icon: 'people-outline' },
   { id: 'tickets', label: 'Обращения', icon: 'chatbubbles-outline' },
   { id: 'broadcast', label: 'Рассылка', icon: 'megaphone-outline' },
+  { id: 'manage', label: 'Управление', icon: 'construct-outline' },
   { id: 'health', label: 'Здоровье', icon: 'pulse-outline' },
   { id: 'monetize', label: 'Монетизация', icon: 'card-outline' },
 ];
@@ -51,9 +56,67 @@ export default function AdminScreen() {
   const [bcSending, setBcSending] = useState(false);
   const [bcResult, setBcResult] = useState('');
 
+  // Users search + detail
+  const [search, setSearch] = useState('');
+  const [selectedUser, setSelectedUser] = useState<any>(null);
+
+  // Manage (create by ID)
+  const [mgTeamName, setMgTeamName] = useState('');
+  const [mgTeamLead, setMgTeamLead] = useState('');
+  const [mgTaskTitle, setMgTaskTitle] = useState('');
+  const [mgTaskAssignee, setMgTaskAssignee] = useState('');
+  const [mgTaskTeam, setMgTaskTeam] = useState('');
+  const [mgMeetTeam, setMgMeetTeam] = useState('');
+  const [mgMeetLead, setMgMeetLead] = useState('');
+  const [mgMeetMember, setMgMeetMember] = useState('');
+  const [mgMeetDate, setMgMeetDate] = useState('');
+  const [mgBusy, setMgBusy] = useState(false);
+  const [mgMsg, setMgMsg] = useState('');
+
   // Health
   const [health, setHealth] = useState<any>(null);
   const [statsError, setStatsError] = useState(false);
+
+  const mgNotify = (msg: string) => { setMgMsg(msg); setTimeout(() => setMgMsg(''), 3500); };
+
+  const handleCreateTeam = async () => {
+    if (!mgTeamName.trim() || !mgTeamLead.trim()) { mgNotify('Укажите название и ID тимлида'); return; }
+    setMgBusy(true);
+    try {
+      await createTeam({ name: mgTeamName.trim(), team_lead_id: Number(mgTeamLead) });
+      setMgTeamName(''); setMgTeamLead(''); mgNotify('✓ Команда создана');
+    } catch { mgNotify('Ошибка создания команды'); } finally { setMgBusy(false); }
+  };
+
+  const handleCreateTask = async () => {
+    if (!mgTaskTitle.trim() || !mgTaskAssignee.trim()) { mgNotify('Укажите задачу и ID исполнителя'); return; }
+    setMgBusy(true);
+    try {
+      await createTask({
+        title: mgTaskTitle.trim(),
+        assigned_to: Number(mgTaskAssignee),
+        assigned_by: Number(mgTaskAssignee),
+        team_id: mgTaskTeam.trim() ? Number(mgTaskTeam) : null,
+      });
+      setMgTaskTitle(''); setMgTaskAssignee(''); setMgTaskTeam(''); mgNotify('✓ Задача создана');
+    } catch { mgNotify('Ошибка создания задачи'); } finally { setMgBusy(false); }
+  };
+
+  const handleCreateMeeting = async () => {
+    if (!mgMeetTeam.trim() || !mgMeetLead.trim() || !mgMeetMember.trim() || !mgMeetDate) {
+      mgNotify('Заполните team_id, ID тимлида, ID участника и дату'); return;
+    }
+    setMgBusy(true);
+    try {
+      await createMeeting({
+        team_id: Number(mgMeetTeam),
+        team_lead_id: Number(mgMeetLead),
+        member_id: Number(mgMeetMember),
+        scheduled_date: mgMeetDate,
+      });
+      setMgMeetTeam(''); setMgMeetLead(''); setMgMeetMember(''); setMgMeetDate(''); mgNotify('✓ Встреча создана');
+    } catch { mgNotify('Ошибка создания встречи'); } finally { setMgBusy(false); }
+  };
 
   const loadStats = useCallback(async () => {
     try { setStats(await getAdminStats()); setStatsError(false); }
@@ -179,9 +242,20 @@ export default function AdminScreen() {
               </TouchableOpacity>
             </View>
           )}
-          {tab === 'users' && !statsError && stats && (
+          {tab === 'users' && !statsError && stats && (() => {
+            const q = search.trim().toLowerCase();
+            const allUsers = (stats.users ?? []) as any[];
+            const filtered = q
+              ? allUsers.filter(u =>
+                  String(u.id) === q ||
+                  (u.name || '').toLowerCase().includes(q) ||
+                  (u.email || '').toLowerCase().includes(q) ||
+                  (u.title || '').toLowerCase().includes(q))
+              : allUsers;
+            return (
             <ScrollView
-              contentContainerStyle={styles.content}
+              contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
+              keyboardShouldPersistTaps="handled"
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
             >
               <View style={styles.statsGrid}>
@@ -200,37 +274,54 @@ export default function AdminScreen() {
                 ))}
               </View>
 
-              <Text style={styles.sectionLabel}>Все пользователи ({stats.users?.length ?? 0})</Text>
-              {(stats.users ?? []).map((u: any) => (
-                <View key={u.id} style={[styles.userCard, u.is_blocked && styles.userCardBlocked]}>
+              <View style={styles.searchRow}>
+                <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+                <TextInput
+                  style={styles.searchInput}
+                  value={search}
+                  onChangeText={setSearch}
+                  placeholder="Поиск по имени, email, должности или ID"
+                  placeholderTextColor={colors.textMuted}
+                  autoCapitalize="none"
+                />
+                {search.length > 0 && (
+                  <TouchableOpacity onPress={() => setSearch('')}>
+                    <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+                  </TouchableOpacity>
+                )}
+              </View>
+
+              <Text style={styles.sectionLabel}>Пользователи ({filtered.length})</Text>
+              {filtered.map((u: any) => (
+                <TouchableOpacity
+                  key={u.id}
+                  style={[styles.userCard, u.is_blocked && styles.userCardBlocked]}
+                  onPress={() => setSelectedUser(u)}
+                  activeOpacity={0.7}
+                >
                   <Avatar name={u.name} size={40} />
                   <View style={{ flex: 1, minWidth: 0 }}>
                     <Text style={styles.userName} numberOfLines={1}>{u.name}</Text>
                     <Text style={styles.userEmail} numberOfLines={1}>{u.email}</Text>
                     <View style={styles.userMeta}>
+                      <View style={styles.idChip}><Text style={styles.idChipText}>ID {u.id}</Text></View>
                       <View style={[styles.roleBadge, u.role === 'team_lead' ? styles.roleLead : styles.roleMember]}>
                         <Text style={styles.roleBadgeText}>{u.role === 'team_lead' ? 'Тимлид' : 'Участник'}</Text>
                       </View>
-                      <Text style={styles.userStat}>{u.meetings_count} встреч · {u.tasks_count} задач</Text>
+                      <Text style={styles.userStat}>{u.meetings_count} встр · {u.tasks_count} зад</Text>
                     </View>
                   </View>
-                  <TouchableOpacity
-                    style={[styles.blockBtn, u.is_blocked && styles.unblockBtn]}
-                    onPress={() => handleToggleBlock(u)}
-                  >
-                    <Text style={[styles.blockBtnText, u.is_blocked && styles.unblockBtnText]}>
-                      {u.is_blocked ? 'Разблок.' : 'Блок'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
               ))}
             </ScrollView>
-          )}
+            );
+          })()}
 
           {/* TICKETS */}
           {tab === 'tickets' && !activeTicket && (
             <ScrollView
-              contentContainerStyle={styles.content}
+              contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
             >
               {tickets.length === 0 ? (
@@ -343,10 +434,73 @@ export default function AdminScreen() {
             </KeyboardAvoidingView>
           )}
 
+          {/* MANAGE — create by ID */}
+          {tab === 'manage' && (
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+              <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
+                <View style={styles.infoBanner}>
+                  <Ionicons name="construct-outline" size={18} color={colors.accent} />
+                  <Text style={styles.infoBannerText}>Ручное создание по ID. ID пользователей и команд смотрите во вкладке «Пользователи» (тап по пользователю).</Text>
+                </View>
+
+                {mgMsg ? (
+                  <View style={mgMsg.startsWith('✓') ? styles.successBanner : styles.errorBox}>
+                    <Text style={mgMsg.startsWith('✓') ? styles.successBannerText : styles.errorText}>{mgMsg}</Text>
+                  </View>
+                ) : null}
+
+                {/* Create team */}
+                <Text style={styles.sectionLabel}>Создать команду</Text>
+                <View style={styles.field}><Text style={styles.label}>Название</Text>
+                  <TextInput style={styles.input} value={mgTeamName} onChangeText={setMgTeamName} placeholder="Название команды" placeholderTextColor={colors.textMuted} />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>ID тимлида</Text>
+                  <TextInput style={styles.input} value={mgTeamLead} onChangeText={setMgTeamLead} placeholder="напр. 12" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTeam} disabled={mgBusy}>
+                  <Text style={styles.submitBtnText}>Создать команду</Text>
+                </TouchableOpacity>
+
+                {/* Create task */}
+                <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать задачу</Text>
+                <View style={styles.field}><Text style={styles.label}>Задача</Text>
+                  <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder="Текст задачи" placeholderTextColor={colors.textMuted} />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>ID исполнителя (assigned_to)</Text>
+                  <TextInput style={styles.input} value={mgTaskAssignee} onChangeText={setMgTaskAssignee} placeholder="напр. 7" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>team_id (необязательно)</Text>
+                  <TextInput style={styles.input} value={mgTaskTeam} onChangeText={setMgTaskTeam} placeholder="напр. 3" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTask} disabled={mgBusy}>
+                  <Text style={styles.submitBtnText}>Создать задачу</Text>
+                </TouchableOpacity>
+
+                {/* Create meeting */}
+                <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать встречу</Text>
+                <View style={styles.field}><Text style={styles.label}>team_id</Text>
+                  <TextInput style={styles.input} value={mgMeetTeam} onChangeText={setMgMeetTeam} placeholder="напр. 3" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>ID тимлида</Text>
+                  <TextInput style={styles.input} value={mgMeetLead} onChangeText={setMgMeetLead} placeholder="напр. 12" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>ID участника</Text>
+                  <TextInput style={styles.input} value={mgMeetMember} onChangeText={setMgMeetMember} placeholder="напр. 7" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
+                </View>
+                <View style={styles.field}><Text style={styles.label}>Дата и время</Text>
+                  <DateTimePickerField value={mgMeetDate} onChange={setMgMeetDate} />
+                </View>
+                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateMeeting} disabled={mgBusy}>
+                  <Text style={styles.submitBtnText}>Создать встречу</Text>
+                </TouchableOpacity>
+              </ScrollView>
+            </KeyboardAvoidingView>
+          )}
+
           {/* HEALTH */}
           {tab === 'health' && (
             <ScrollView
-              contentContainerStyle={styles.content}
+              contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
             >
               {!health ? (
@@ -405,7 +559,7 @@ export default function AdminScreen() {
 
           {/* MONETIZE */}
           {tab === 'monetize' && (
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}>
               <View style={styles.infoBanner}>
                 <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
                 <Text style={styles.infoBannerText}>Монетизация пока не подключена</Text>
@@ -428,6 +582,12 @@ export default function AdminScreen() {
           )}
         </>
       )}
+
+      <UserDetailModal
+        user={selectedUser}
+        onClose={() => setSelectedUser(null)}
+        onChanged={loadStats}
+      />
     </SafeAreaView>
   );
 }
@@ -471,6 +631,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 11, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 8,
   },
+  searchRow: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    borderWidth: 1, borderColor: c.border, borderRadius: 10,
+    backgroundColor: c.surface, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4,
+  },
+  searchInput: { flex: 1, paddingVertical: 8, fontSize: 14, color: c.textPrimary },
+  idChip: { backgroundColor: c.surface2, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
+  idChipText: { fontSize: 10, fontWeight: '700', color: c.textSecondary },
 
   userCard: {
     flexDirection: 'row', alignItems: 'center', gap: 12,
