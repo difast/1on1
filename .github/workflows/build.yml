@@ -4,8 +4,18 @@ on:
   push:
     branches:
       - main
+    # Only rebuild the native app when something native changes.
+    # Everyday JS/TS changes ship over-the-air via update.yml instead.
     paths:
-      - 'mobile/**'
+      - 'mobile/package.json'
+      - 'mobile/package-lock.json'
+      - 'mobile/app.json'
+      - 'mobile/eas.json'
+      - 'mobile/babel.config.js'
+      - 'mobile/metro.config.js'
+      - 'mobile/plugins/**'
+      - 'mobile/assets/**'
+      - '.github/workflows/build.yml'
   workflow_dispatch:
 
 env:
