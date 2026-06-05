@@ -82,7 +82,7 @@ export const broadcastNotification = (data) => api.post('/notifications/broadcas
 export const getServiceHealth = () => api.get('/health/detailed')
 
 // Assistant (Пит)
-export const pitChat = (messages) => api.post('/assistant/chat', { messages })
+export const pitChat = (messages, context = '') => api.post('/assistant/chat', { messages, context })
 
 // Knowledge Base
 export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)

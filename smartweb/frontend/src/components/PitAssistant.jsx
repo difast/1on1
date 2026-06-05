@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
+import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 
 const PIT_STYLES = `
 @keyframes pitFloat {
@@ -34,7 +35,7 @@ const PIT_STYLES = `
 
 const GREETING = 'Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросами о встречах, задачах и команде. Спрашивайте!'
 
-export default function PitAssistant() {
+export default function PitAssistant({ currentUser }) {
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
   const [input, setInput] = useState('')
@@ -42,6 +43,7 @@ export default function PitAssistant() {
   const [shifted, setShifted] = useState(false)
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
+  const ctxRef = useRef(null)
 
   useEffect(() => {
     const handler = (e) => setShifted(e.detail.open)
@@ -65,8 +67,23 @@ export default function PitAssistant() {
     setInput('')
     setLoading(true)
     try {
-      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'))
-      setMessages(prev => [...prev, { role: 'assistant', content: data.reply }])
+      // Build (and cache) the team context so Pit can see members and ids.
+      if (!ctxRef.current && currentUser) {
+        ctxRef.current = await buildPitContext(currentUser)
+      }
+      const context = ctxRef.current?.text || ''
+      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), context)
+      const rawReply = data.reply || 'Нет ответа'
+
+      const { clean, actions } = parsePitActions(rawReply)
+      let reply = clean || rawReply
+      if (actions.length && ctxRef.current && currentUser) {
+        const results = await Promise.all(
+          actions.map(a => executePitAction(a, ctxRef.current, currentUser)),
+        )
+        reply = [clean, ...results].filter(Boolean).join('\n\n')
+      }
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
       const detail = err?.response?.data?.detail || err?.message || 'неизвестная ошибка'
       setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${detail}` }])

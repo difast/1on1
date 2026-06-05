@@ -11,6 +11,7 @@ import { useAuth } from '../context/auth';
 import {
   createSupportTicket, assistantChat, getUserTickets, userSendMessage, userReadReply,
 } from '../lib/api';
+import { buildPitContext, parsePitActions, executePitAction, type PitContext } from '../lib/pit';
 import { useTheme } from '../context/theme';
 import { Avatar } from '../components/Avatar';
 import type { AppColors } from '../constants/colors';
@@ -28,9 +29,11 @@ const PIT_STARTERS = [
 export default function SupportScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { user } = useAuth();
+  const { user, activeRole } = useAuth();
   const router = useRouter();
   const [tab, setTab] = useState<Tab>('pit');
+  const isLead = (activeRole ?? user?.role) === 'team_lead';
+  const pitCtxRef = useRef<PitContext | null>(null);
 
   // ── Пит chat ──
   const [messages, setMessages] = useState<Message[]>([
@@ -49,9 +52,24 @@ export default function SupportScreen() {
     setPitLoading(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     try {
-      const context = user ? `Пользователь: ${user.name || user.email}` : '';
+      // Build (and cache) the team context so Pit can see members and their ids.
+      if (!pitCtxRef.current && user) {
+        pitCtxRef.current = await buildPitContext(user, isLead);
+      }
+      const context = pitCtxRef.current?.text ?? (user ? `Пользователь: ${user.name || user.email}` : '');
       const res = await assistantChat(newMsgs, context) as any;
-      setMessages(prev => [...prev, { role: 'assistant', content: res.reply ?? 'Нет ответа' }]);
+      const rawReply: string = res.reply ?? 'Нет ответа';
+
+      // Run any actions Pit requested (create task / schedule meeting).
+      const { clean, actions } = parsePitActions(rawReply);
+      let reply = clean || rawReply;
+      if (actions.length && pitCtxRef.current && user) {
+        const results = await Promise.all(
+          actions.map(a => executePitAction(a, pitCtxRef.current!, user)),
+        );
+        reply = [clean, ...results].filter(Boolean).join('\n\n');
+      }
+      setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
       setMessages(prev => [...prev, { role: 'assistant', content: 'Произошла ошибка. Попробуйте ещё раз.' }]);

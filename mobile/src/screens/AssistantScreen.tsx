@@ -8,7 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../context/theme';
+import { useAuth } from '../context/auth';
 import { assistantChat } from '../lib/api';
+import { buildPitContext, parsePitActions, executePitAction, type PitContext } from '../lib/pit';
 import type { AppColors } from '../constants/colors';
 
 interface Message {
@@ -27,6 +29,9 @@ export default function AssistantScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
+  const { user, activeRole } = useAuth();
+  const isLead = (activeRole ?? user?.role) === 'team_lead';
+  const pitCtxRef = useRef<PitContext | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,8 +46,21 @@ export default function AssistantScreen() {
     setLoading(true);
     setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     try {
-      const res = await assistantChat(newMessages) as any;
-      const reply = res.reply ?? 'Нет ответа';
+      if (!pitCtxRef.current && user) {
+        pitCtxRef.current = await buildPitContext(user, isLead);
+      }
+      const context = pitCtxRef.current?.text ?? '';
+      const res = await assistantChat(newMessages, context) as any;
+      const rawReply: string = res.reply ?? 'Нет ответа';
+
+      const { clean, actions } = parsePitActions(rawReply);
+      let reply = clean || rawReply;
+      if (actions.length && pitCtxRef.current && user) {
+        const results = await Promise.all(
+          actions.map(a => executePitAction(a, pitCtxRef.current!, user)),
+        );
+        reply = [clean, ...results].filter(Boolean).join('\n\n');
+      }
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
