@@ -8,19 +8,28 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '../src/context/auth';
 import { useTheme } from '../src/context/theme';
-import { getMeeting, getNotes, createNote, updateNote, startCall } from '../src/lib/api';
+import {
+  getMeeting, getNotes, createNote, updateNote, startCall,
+  getUsers, confirmMeeting, declineMeeting, updateMeeting,
+} from '../src/lib/api';
 import type { AppColors } from '../src/constants/colors';
 
 const STATUS_LABEL: Record<string, string> = {
   pending: 'Ожидает',
+  requested: 'Запрос',
+  scheduled: 'Запланирована',
   confirmed: 'Подтверждена',
+  in_progress: 'Идёт',
   declined: 'Отклонена',
   completed: 'Завершена',
   cancelled: 'Отменена',
 };
 const STATUS_COLOR: Record<string, string> = {
   pending: '#F59E0B',
+  requested: '#F59E0B',
+  scheduled: '#0061ff',
   confirmed: '#10B981',
+  in_progress: '#0061ff',
   declined: '#EF4444',
   completed: '#6366F1',
   cancelled: '#6B7280',
@@ -36,6 +45,12 @@ export default function MeetingDetailScreen() {
   const [meeting, setMeeting] = useState<any>(params.data ? JSON.parse(params.data) : null);
   const [loading, setLoading] = useState(!meeting);
   const [callLoading, setCallLoading] = useState(false);
+  const [usersMap, setUsersMap] = useState<Record<number, any>>({});
+  const [actionLoading, setActionLoading] = useState(false);
+
+  // Reschedule
+  const [showReschedule, setShowReschedule] = useState(false);
+  const [newDate, setNewDate] = useState('');
 
   const [notes, setNotes] = useState<any[]>([]);
   const [noteText, setNoteText] = useState('');
@@ -52,6 +67,18 @@ export default function MeetingDetailScreen() {
       router.back();
     } finally { setLoading(false); }
   }, [params.id]);
+
+  // Resolve participant names — the meetings API returns ids only.
+  const loadUsers = useCallback(async () => {
+    try {
+      const users = await getUsers() as any[];
+      const map: Record<number, any> = {};
+      for (const u of (users || [])) map[u.id] = u;
+      setUsersMap(map);
+    } catch {}
+  }, []);
+
+  useEffect(() => { loadUsers(); }, []);
 
   const loadNotes = useCallback(async () => {
     if (!user) return;
@@ -84,6 +111,45 @@ export default function MeetingDetailScreen() {
     } finally { setCallLoading(false); }
   };
 
+  const handleConfirm = async () => {
+    if (!meeting) return;
+    setActionLoading(true);
+    try {
+      await confirmMeeting(meeting.id);
+      setMeeting((prev: any) => ({ ...prev, status: 'confirmed' }));
+    } catch { Alert.alert('Ошибка', 'Не удалось подтвердить встречу'); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleDecline = async () => {
+    if (!meeting) return;
+    setActionLoading(true);
+    try {
+      await declineMeeting(meeting.id);
+      setMeeting((prev: any) => ({ ...prev, status: 'declined' }));
+    } catch { Alert.alert('Ошибка', 'Не удалось отклонить встречу'); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleReschedule = async () => {
+    const slot = newDate.trim();
+    if (!slot || !meeting) return;
+    // Accept "YYYY-MM-DD HH:MM" or "YYYY-MM-DDTHH:MM"
+    const iso = slot.replace(' ', 'T');
+    if (isNaN(new Date(iso).getTime())) {
+      Alert.alert('Неверная дата', 'Формат: ГГГГ-ММ-ДД ЧЧ:ММ');
+      return;
+    }
+    setActionLoading(true);
+    try {
+      await updateMeeting(meeting.id, { scheduled_date: iso, is_rescheduled: true });
+      setMeeting((prev: any) => ({ ...prev, scheduled_date: iso, is_rescheduled: true, status: prev.status === 'declined' || prev.status === 'cancelled' ? 'scheduled' : prev.status }));
+      setShowReschedule(false);
+      setNewDate('');
+    } catch { Alert.alert('Ошибка', 'Не удалось перенести встречу'); }
+    finally { setActionLoading(false); }
+  };
+
   const handleSaveNote = async () => {
     if (!noteText.trim() || !user || !meeting) return;
     setNoteLoading(true);
@@ -109,12 +175,26 @@ export default function MeetingDetailScreen() {
     );
   }
 
-  const scheduledAt = meeting.scheduled_at ? new Date(meeting.scheduled_at) : null;
+  // Backend field is `scheduled_date` (older code read `scheduled_at`, so the
+  // date never rendered). Support both for safety.
+  const rawDate = meeting.scheduled_date ?? meeting.scheduled_at;
+  const scheduledAt = rawDate ? new Date(rawDate) : null;
   const statusColor = STATUS_COLOR[meeting.status] ?? colors.textMuted;
   const statusLabel = STATUS_LABEL[meeting.status] ?? meeting.status;
   const isUpcoming = scheduledAt && scheduledAt > new Date();
 
-  const otherName = meeting.member_name ?? meeting.lead_name ?? meeting.participant_name ?? 'Участник';
+  // Show the *other* participant's real name (resolved from the users list).
+  const isLead = user?.id === meeting.team_lead_id;
+  const otherId = isLead ? meeting.member_id : meeting.team_lead_id;
+  const otherName =
+    usersMap[otherId]?.name
+    ?? meeting.member_name ?? meeting.lead_name ?? meeting.participant_name
+    ?? (otherId ? `Участник #${otherId}` : 'Участник');
+
+  const isFinal = ['declined', 'cancelled', 'completed'].includes(meeting.status);
+  // The lead can accept/decline incoming requests; both sides can reschedule a live meeting.
+  const canAct = !isFinal;
+  const canConfirm = canAct && ['requested', 'pending', 'scheduled'].includes(meeting.status);
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
@@ -123,7 +203,7 @@ export default function MeetingDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={22} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>Встреча</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{otherName}</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -176,6 +256,69 @@ export default function MeetingDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Actions: confirm / decline / reschedule */}
+        {canAct && (
+          <View style={styles.actions}>
+            {canConfirm && (
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, actionLoading && styles.btnDisabled]}
+                  onPress={handleConfirm}
+                  disabled={actionLoading}
+                >
+                  <Ionicons name="checkmark" size={18} color="#fff" />
+                  <Text style={styles.confirmBtnText}>Подтвердить</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.declineBtn, actionLoading && styles.btnDisabled]}
+                  onPress={handleDecline}
+                  disabled={actionLoading}
+                >
+                  <Ionicons name="close" size={18} color={colors.danger} />
+                  <Text style={styles.declineBtnText}>Отклонить</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+
+            <TouchableOpacity
+              style={styles.rescheduleBtn}
+              onPress={() => setShowReschedule(s => !s)}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="calendar-outline" size={18} color={colors.accent} />
+              <Text style={styles.rescheduleBtnText}>Перенести встречу</Text>
+            </TouchableOpacity>
+
+            {showReschedule && (
+              <View style={styles.rescheduleBox}>
+                <TextInput
+                  style={styles.rescheduleInput}
+                  value={newDate}
+                  onChangeText={setNewDate}
+                  placeholder="Новая дата: ГГГГ-ММ-ДД ЧЧ:ММ"
+                  placeholderTextColor={colors.textMuted}
+                  autoFocus
+                />
+                <View style={styles.noteInputRow}>
+                  <TouchableOpacity
+                    style={styles.noteCancelBtn}
+                    onPress={() => { setShowReschedule(false); setNewDate(''); }}
+                  >
+                    <Text style={styles.noteCancelText}>Отмена</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.noteSaveBtn, (!newDate.trim() || actionLoading) && styles.btnDisabled]}
+                    onPress={handleReschedule}
+                    disabled={!newDate.trim() || actionLoading}
+                  >
+                    <Text style={styles.noteSaveText}>{actionLoading ? '...' : 'Перенести'}</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Call button */}
         {(isUpcoming || meeting.status === 'confirmed') && (
@@ -268,6 +411,33 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5,
   },
   callBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
+  actions: { gap: 10 },
+  actionRow: { flexDirection: 'row', gap: 10 },
+  confirmBtn: {
+    flex: 1, backgroundColor: c.success, borderRadius: 12, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  confirmBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  declineBtn: {
+    flex: 1, backgroundColor: c.dangerBg, borderWidth: 1, borderColor: c.danger,
+    borderRadius: 12, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+  },
+  declineBtnText: { fontSize: 15, fontWeight: '700', color: c.danger },
+  rescheduleBtn: {
+    backgroundColor: c.accentLight, borderWidth: 1, borderColor: c.accent,
+    borderRadius: 12, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+  },
+  rescheduleBtnText: { fontSize: 15, fontWeight: '700', color: c.accent },
+  rescheduleBox: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,
+    padding: 12, gap: 10,
+  },
+  rescheduleInput: {
+    borderWidth: 1, borderColor: c.border, borderRadius: 8,
+    paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: c.textPrimary, backgroundColor: c.bg,
+  },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
   sectionTitle: { fontSize: 13, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
   noteCard: {
