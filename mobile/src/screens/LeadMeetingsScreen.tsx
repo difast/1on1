@@ -1,12 +1,12 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, TextInput, Alert, Linking,
+  RefreshControl, TextInput, Alert, Linking, Modal, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall } from '../lib/api';
+import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall, getTeams, getTeam, createMeeting } from '../lib/api';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
@@ -14,6 +14,7 @@ import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
+import { DateTimePickerField } from '../components/DateTimePickerField';
 
 export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
@@ -29,6 +30,51 @@ export default function LeadMeetingsScreen() {
   const [actionLoading, setActionLoading] = useState<Record<number, boolean>>({});
   const [calendarView, setCalendarView] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  // Create-meeting flow (pick participant + date)
+  const [showCreate, setShowCreate] = useState(false);
+  const [teamMembers, setTeamMembers] = useState<{ user_id: number; user_name: string; team_id: number }[]>([]);
+  const [createMemberId, setCreateMemberId] = useState<number | null>(null);
+  const [createDate, setCreateDate] = useState('');
+  const [createTopic, setCreateTopic] = useState('');
+  const [creating, setCreating] = useState(false);
+
+  const openCreate = async () => {
+    setShowCreate(true);
+    if (teamMembers.length === 0) {
+      try {
+        const all = await getTeams() as any[];
+        const mine = (all || []).filter((t: any) => t.team_lead_id === user!.id);
+        const details = await Promise.all(mine.map((t: any) => getTeam(t.id)));
+        const members: { user_id: number; user_name: string; team_id: number }[] = [];
+        for (const t of details as any[]) {
+          for (const m of (t.members || [])) {
+            if (m.user_id !== user!.id) members.push({ user_id: m.user_id, user_name: m.user_name, team_id: t.id });
+          }
+        }
+        setTeamMembers(members);
+      } catch {}
+    }
+  };
+
+  const handleCreateMeeting = async () => {
+    const member = teamMembers.find(m => m.user_id === createMemberId);
+    if (!member || !createDate) { Alert.alert('Заполните поля', 'Выберите участника и дату'); return; }
+    setCreating(true);
+    try {
+      await createMeeting({
+        team_id: member.team_id,
+        team_lead_id: user!.id,
+        member_id: member.user_id,
+        scheduled_date: createDate,
+        agenda: createTopic.trim() || undefined,
+      });
+      setShowCreate(false);
+      setCreateMemberId(null); setCreateDate(''); setCreateTopic('');
+      await load();
+    } catch { Alert.alert('Ошибка', 'Не удалось создать встречу'); }
+    finally { setCreating(false); }
+  };
 
   // Meeting notes state
   const [expandedNoteId, setExpandedNoteId] = useState<number | null>(null);
@@ -155,21 +201,81 @@ export default function LeadMeetingsScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Мои встречи</Text>
-        <View style={styles.viewToggle}>
-          <TouchableOpacity
-            style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
-            onPress={() => setCalendarView(false)}
-          >
-            <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>Список</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
-            onPress={() => setCalendarView(true)}
-          >
-            <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <View style={styles.viewToggle}>
+            <TouchableOpacity
+              style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
+              onPress={() => setCalendarView(false)}
+            >
+              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>Список</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
+              onPress={() => setCalendarView(true)}
+            >
+              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
+            </TouchableOpacity>
+          </View>
+          <TouchableOpacity style={styles.createBtn} onPress={openCreate}>
+            <Ionicons name="add" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Create meeting modal */}
+      <Modal visible={showCreate} transparent animationType="fade" onRequestClose={() => setShowCreate(false)}>
+        <Pressable style={styles.modalBackdrop} onPress={() => setShowCreate(false)}>
+          <Pressable style={styles.modalSheet} onPress={() => {}}>
+            <Text style={styles.modalTitle}>Новая встреча</Text>
+
+            <Text style={styles.modalLabel}>Участник</Text>
+            {teamMembers.length === 0 ? (
+              <Text style={styles.modalHint}>Нет участников в командах</Text>
+            ) : (
+              <ScrollView style={{ maxHeight: 160 }} keyboardShouldPersistTaps="handled">
+                {teamMembers.map(m => (
+                  <TouchableOpacity
+                    key={m.user_id}
+                    style={[styles.memberPick, createMemberId === m.user_id && styles.memberPickActive]}
+                    onPress={() => setCreateMemberId(m.user_id)}
+                  >
+                    <View style={styles.memberPickAvatar}>
+                      <Text style={styles.memberPickAvatarText}>{(m.user_name || '?').charAt(0).toUpperCase()}</Text>
+                    </View>
+                    <Text style={styles.memberPickName}>{m.user_name}</Text>
+                    {createMemberId === m.user_id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            )}
+
+            <Text style={styles.modalLabel}>Дата и время</Text>
+            <DateTimePickerField value={createDate} onChange={setCreateDate} />
+
+            <Text style={styles.modalLabel}>Тема (необязательно)</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={createTopic}
+              onChangeText={setCreateTopic}
+              placeholder="О чём встреча"
+              placeholderTextColor={colors.textMuted}
+            />
+
+            <View style={styles.modalActions}>
+              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowCreate(false)}>
+                <Text style={styles.modalCancelText}>Отмена</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalCreate, (!createMemberId || !createDate || creating) && styles.btnDisabled]}
+                onPress={handleCreateMeeting}
+                disabled={!createMemberId || !createDate || creating}
+              >
+                <Text style={styles.modalCreateText}>{creating ? 'Создание...' : 'Создать встречу'}</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ScrollView
         contentContainerStyle={styles.content}
@@ -339,6 +445,23 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   toggleBtnActive: { backgroundColor: c.accent },
   toggleBtnText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
   toggleBtnTextActive: { color: '#fff' },
+  createBtn: { width: 34, height: 34, borderRadius: 10, backgroundColor: c.accent, alignItems: 'center', justifyContent: 'center' },
+  modalBackdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center', padding: 20 },
+  modalSheet: { width: '100%', maxWidth: 380, backgroundColor: c.surface, borderRadius: 18, borderWidth: 1, borderColor: c.border, padding: 18, gap: 6 },
+  modalTitle: { fontSize: 18, fontWeight: '700', color: c.textPrimary, marginBottom: 4 },
+  modalLabel: { fontSize: 13, fontWeight: '600', color: c.textSecondary, marginTop: 8 },
+  modalHint: { fontSize: 13, color: c.textMuted, paddingVertical: 8 },
+  memberPick: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 8, borderRadius: 10 },
+  memberPickActive: { backgroundColor: c.accentLight },
+  memberPickAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.accentLight, alignItems: 'center', justifyContent: 'center' },
+  memberPickAvatarText: { fontSize: 14, fontWeight: '700', color: c.accent },
+  memberPickName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.textPrimary },
+  modalInput: { borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: c.textPrimary, backgroundColor: c.bg },
+  modalActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
+  modalCancel: { flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  modalCancelText: { fontSize: 14, fontWeight: '600', color: c.textSecondary },
+  modalCreate: { flex: 2, backgroundColor: c.accent, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },
+  modalCreateText: { fontSize: 14, fontWeight: '700', color: '#fff' },
   content: { padding: 16, gap: 20, paddingBottom: 100 },
   section: { gap: 8 },
   sectionHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 4 },

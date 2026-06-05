@@ -15,6 +15,7 @@ import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
+import { DateTimePickerField } from '../components/DateTimePickerField';
 
 export default function MemberMeetingsScreen() {
   const { colors } = useTheme();
@@ -363,14 +364,8 @@ export default function MemberMeetingsScreen() {
         <BottomSheetScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.sheetTitle}>Запросить встречу</Text>
 
-          <Text style={styles.sheetLabel}>Дата и время (ГГГГ-ММ-ДД ЧЧ:ММ)</Text>
-          <BottomSheetTextInput
-            style={styles.sheetInput}
-            value={meetingDate}
-            onChangeText={setMeetingDate}
-            placeholder="2025-12-31 14:00"
-            placeholderTextColor={colors.textMuted}
-          />
+          <Text style={styles.sheetLabel}>Дата и время</Text>
+          <DateTimePickerField value={meetingDate} onChange={setMeetingDate} />
 
           <Text style={styles.sheetLabel}>Тема (необязательно)</Text>
           <BottomSheetTextInput

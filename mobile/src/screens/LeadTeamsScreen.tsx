@@ -18,6 +18,7 @@ import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 import { StatusBadge } from '../components/StatusBadge';
 import { EmptyState } from '../components/EmptyState';
+import { DateTimePickerField } from '../components/DateTimePickerField';
 import { Spinner } from '../components/Spinner';
 import { NotificationBell } from '../components/NotificationBell';
 
@@ -617,14 +618,8 @@ export default function LeadTeamsScreen() {
           {sheetType === 'scheduleMeeting' && scheduleMember && (
             <>
               <Text style={styles.sheetTitle}>Встреча с {scheduleMember.user_name}</Text>
-              <Text style={styles.sheetLabel}>Дата и время (ГГГГ-ММ-ДД ЧЧ:ММ)</Text>
-              <BottomSheetTextInput
-                style={styles.sheetInput}
-                value={scheduleDate}
-                onChangeText={setScheduleDate}
-                placeholder="2025-12-31 14:00"
-                placeholderTextColor={colors.textMuted}
-              />
+              <Text style={styles.sheetLabel}>Дата и время</Text>
+              <DateTimePickerField value={scheduleDate} onChange={setScheduleDate} />
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
                   <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>

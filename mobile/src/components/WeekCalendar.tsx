@@ -113,10 +113,11 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
           const isSel = k === selectedKey;
           const isPast = date < today;
           const isOutside = date.getMonth() !== monthYear.month;
+          const isWeekend = di >= 5;
 
           if (showOutside && isOutside) {
             return (
-              <View key={di} style={styles.cell}>
+              <View key={di} style={[styles.cell, isWeekend && styles.cellWeekend]}>
                 <Text style={[styles.cellText, styles.cellOutsideText]}>{date.getDate()}</Text>
               </View>
             );
@@ -125,12 +126,13 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
           return (
             <TouchableOpacity
               key={di}
-              style={[styles.cell, isToday && styles.cellToday, isSel && styles.cellSelected]}
+              style={[styles.cell, isWeekend && !isToday && !isSel && styles.cellWeekend, isToday && styles.cellToday, isSel && styles.cellSelected]}
               onPress={() => setSelectedKey(isSel ? null : k)}
               activeOpacity={0.7}
             >
               <Text style={[
                 styles.cellText,
+                isWeekend && !isToday && !isSel && styles.cellWeekendText,
                 isPast && !isToday && styles.cellPastText,
                 isToday && styles.cellTodayText,
                 isSel && styles.cellSelectedText,
@@ -171,8 +173,8 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
 
       {/* Day headers */}
       <View style={styles.dayRow}>
-        {DAYS.map(d => (
-          <Text key={d} style={styles.dayLabel}>{d}</Text>
+        {DAYS.map((d, i) => (
+          <Text key={d} style={[styles.dayLabel, i >= 5 && styles.dayLabelWeekend]}>{d}</Text>
         ))}
       </View>
 
@@ -194,15 +196,17 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
                   const isToday = k === todayKey;
                   const isSel = k === selectedKey;
                   const isPast = date < today;
+                  const isWeekend = di >= 5;
                   return (
                     <TouchableOpacity
                       key={di}
-                      style={[styles.cell, isToday && styles.cellToday, isSel && styles.cellSelected]}
+                      style={[styles.cell, isWeekend && !isToday && !isSel && styles.cellWeekend, isToday && styles.cellToday, isSel && styles.cellSelected]}
                       onPress={() => setSelectedKey(isSel ? null : k)}
                       activeOpacity={0.7}
                     >
                       <Text style={[
                         styles.cellText,
+                        isWeekend && !isToday && !isSel && styles.cellWeekendText,
                         isPast && !isToday && styles.cellPastText,
                         isToday && styles.cellTodayText,
                         isSel && styles.cellSelectedText,
@@ -300,12 +304,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     fontSize: 11, fontWeight: '600', color: c.textMuted,
     paddingBottom: 6,
   },
+  dayLabelWeekend: { color: '#ef4444' },
   cell: {
     flex: 1, alignItems: 'center', justifyContent: 'center',
     paddingVertical: 6, borderRadius: 8, minHeight: 40,
   },
   cellToday: { backgroundColor: c.accentLight },
   cellSelected: { backgroundColor: c.accent },
+  cellWeekend: { backgroundColor: '#ef444410' },
+  cellWeekendText: { color: '#ef4444' },
   cellText: { fontSize: 14, fontWeight: '500', color: c.textPrimary },
   cellPastText: { color: c.textMuted },
   cellTodayText: { color: c.accent, fontWeight: '700' },
