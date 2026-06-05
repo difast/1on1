@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
-  RefreshControl, ActivityIndicator,
+  RefreshControl, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -58,6 +58,31 @@ export default function NotificationsScreen() {
     } catch {} finally { setMarkingAll(false); }
   };
 
+  const goToProfile = () => {
+    if (router.canGoBack()) router.back();
+    else router.navigate('/(tabs)/profile' as any);
+  };
+
+  // Open the screen a notification refers to, based on its type/payload.
+  const handlePress = (n: any) => {
+    if (!n.read) handleMarkRead(n.id);
+    const data = n.data ?? {};
+    const type: string = n.type ?? '';
+    if (type === 'call_started' && data.room_url) {
+      Linking.openURL(data.room_url).catch(() => {});
+      return;
+    }
+    if (type.startsWith('meeting') && data.meeting_id) {
+      router.push({ pathname: '/meeting-detail', params: { id: String(data.meeting_id) } } as any);
+      return;
+    }
+    if ((type === 'new_task' || type === 'task_assigned')) {
+      router.navigate('/(tabs)/tasks' as any);
+      return;
+    }
+    // broadcast / generic — no destination, just mark read
+  };
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   if (loading) {
@@ -72,14 +97,14 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        {router.canGoBack() && (
-          <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>
+        <View style={styles.headerLeft}>
+          <TouchableOpacity onPress={goToProfile} style={{ marginRight: 8 }}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-        )}
-        <Text style={styles.headerTitle}>
-          Уведомления{unreadCount > 0 ? ` (${unreadCount})` : ''}
-        </Text>
+          <Text style={styles.headerTitle}>
+            Уведомления{unreadCount > 0 ? ` (${unreadCount})` : ''}
+          </Text>
+        </View>
         {unreadCount > 0 && (
           <TouchableOpacity onPress={handleMarkAllRead} disabled={markingAll} style={styles.markAllBtn}>
             <Text style={styles.markAllText}>{markingAll ? '...' : 'Прочитать все'}</Text>
@@ -102,14 +127,16 @@ export default function NotificationsScreen() {
           const isBroadcast = n.is_broadcast;
           const isUnread = !n.read;
           const meta = TYPE_ICON[n.type] ?? { name: 'notifications-outline' as keyof typeof Ionicons.glyphMap, color: colors.textMuted };
+          const isRead = !isUnread && !isBroadcast;
           return (
             <TouchableOpacity
-              onPress={() => { if (isUnread) handleMarkRead(n.id); }}
+              onPress={() => handlePress(n)}
               activeOpacity={0.7}
               style={[
                 styles.item,
                 isUnread && styles.itemUnread,
                 isBroadcast && styles.itemBroadcast,
+                isRead && styles.itemRead,
               ]}
             >
               <View style={[styles.iconWrap, { backgroundColor: meta.color + '18' }]}>
@@ -127,7 +154,9 @@ export default function NotificationsScreen() {
                   {new Date(n.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
                 </Text>
               </View>
-              {isUnread && <View style={[styles.dot, { backgroundColor: isBroadcast ? '#ef4444' : colors.accent }]} />}
+              {isUnread
+                ? <View style={[styles.dot, { backgroundColor: isBroadcast ? '#ef4444' : colors.accent }]} />
+                : <Ionicons name="checkmark-circle" size={18} color="#10b981" style={{ marginTop: 2, flexShrink: 0 }} />}
             </TouchableOpacity>
           );
         }}
@@ -143,7 +172,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingHorizontal: 16, paddingTop: 16, paddingBottom: 12,
     borderBottomWidth: 1, borderBottomColor: c.border,
   },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary },
+  headerLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
+  headerTitle: { fontSize: 22, fontWeight: '700', color: c.textPrimary, textAlign: 'left' },
   markAllBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
   markAllText: { fontSize: 12, fontWeight: '600', color: c.textSecondary },
 
@@ -155,6 +185,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   itemUnread: { backgroundColor: '#eef4ff', borderLeftColor: c.accent },
   itemBroadcast: { backgroundColor: '#fff5f5', borderLeftColor: '#ef4444' },
+  itemRead: { backgroundColor: '#f0fdf4', borderLeftColor: '#10b981' },
   iconWrap: { width: 38, height: 38, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   title: { fontSize: 14, fontWeight: '500', color: c.textPrimary, lineHeight: 20 },
   titleUnread: { fontWeight: '700' },

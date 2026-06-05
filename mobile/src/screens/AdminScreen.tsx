@@ -4,7 +4,7 @@ import {
   TextInput, RefreshControl, ActivityIndicator, Alert,
   KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
@@ -29,6 +29,9 @@ export default function AdminScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { exitAdmin } = useAuth();
+  const insets = useSafeAreaInsets();
+  // Android's on-screen nav bar overlaps fixed bottom inputs — pad by the inset.
+  const bottomPad = Math.max(insets.bottom, 8);
 
   const [tab, setTab] = useState<Tab>('users');
   const [stats, setStats] = useState<any>(null);
@@ -270,7 +273,7 @@ export default function AdminScreen() {
                   </View>
                 ))}
               </ScrollView>
-              <View style={styles.replyBar}>
+              <View style={[styles.replyBar, { paddingBottom: bottomPad }]}>
                 <TextInput
                   style={styles.replyInput}
                   value={replyText}
@@ -293,7 +296,7 @@ export default function AdminScreen() {
           {/* BROADCAST */}
           {tab === 'broadcast' && (
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-              <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+              <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
                   <Text style={styles.infoBannerText}>Сообщение придёт всем пользователям как уведомление с красной плашкой</Text>
