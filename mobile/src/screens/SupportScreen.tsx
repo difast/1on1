@@ -6,7 +6,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../context/auth';
 import {
   createSupportTicket, assistantChat, getUserTickets, userSendMessage, userReadReply,
@@ -31,6 +31,7 @@ export default function SupportScreen() {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, activeRole } = useAuth();
   const router = useRouter();
+  const { from } = useLocalSearchParams<{ from?: string }>();
   const [tab, setTab] = useState<Tab>('pit');
   const isLead = (activeRole ?? user?.role) === 'team_lead';
   const pitCtxRef = useRef<PitContext | null>(null);
@@ -76,104 +77,76 @@ export default function SupportScreen() {
     } finally { setPitLoading(false); }
   };
 
-  // ── Support tickets ──
+  // ── Support: single continuous dialog ──
   const [tickets, setTickets] = useState<any[]>([]);
   const [ticketsLoading, setTicketsLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [replyText, setReplyText] = useState('');
   const [replying, setReplying] = useState(false);
-  const [showNewTicket, setShowNewTicket] = useState(false);
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
-  const [ticketLoading, setTicketLoading] = useState(false);
   const [error, setError] = useState('');
   const threadRef = useRef<ScrollView>(null);
 
   const loadTickets = useCallback(async () => {
     if (!user) return;
     try {
-      const data = await getUserTickets(user.id);
+      const data = await getUserTickets(user.id) as any[];
       setTickets(data ?? []);
+      // Mark any admin replies as read — it's a single conversation now.
+      (data ?? []).forEach((t: any) => { if (t.has_unread_reply) userReadReply(t.id).catch(() => {}); });
     } catch { setTickets([]); }
   }, [user]);
 
   useEffect(() => {
     if (tab === 'ticket') {
       setTicketsLoading(true);
-      loadTickets().finally(() => setTicketsLoading(false));
+      loadTickets().finally(() => {
+        setTicketsLoading(false);
+        setTimeout(() => threadRef.current?.scrollToEnd({ animated: false }), 200);
+      });
     }
   }, [tab]);
 
   const onRefresh = async () => {
     setRefreshing(true);
     await loadTickets();
-    if (selectedTicket) {
-      const updated = tickets.find(t => t.id === selectedTicket.id);
-      if (updated) setSelectedTicket(updated);
-    }
     setRefreshing(false);
   };
 
-  const handleOpenTicket = async (ticket: any) => {
-    setSelectedTicket(ticket);
-    if (ticket.has_unread_reply) {
-      userReadReply(ticket.id).catch(() => {});
-    }
-    setTimeout(() => threadRef.current?.scrollToEnd({ animated: false }), 100);
-  };
+  // All messages from every ticket, merged into one chronological dialog.
+  const threadMessages = useMemo(() => {
+    const msgs: any[] = [];
+    for (const t of tickets) for (const m of (t.messages ?? [])) msgs.push(m);
+    return msgs.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  }, [tickets]);
 
-  const handleReply = async () => {
-    if (!replyText.trim() || replying || !selectedTicket || !user) return;
-    setReplying(true);
+  // The active (non-closed, most recent) ticket we append to.
+  const openTicket = tickets.find(t => t.status !== 'closed') ?? null;
+
+  const handleSend = async () => {
+    const text = replyText.trim();
+    if (!text || replying || !user) return;
+    setReplying(true); setError('');
     try {
-      const updated = await userSendMessage(selectedTicket.id, replyText.trim());
-      setReplyText('');
-      // Refresh ticket data
-      const data = await getUserTickets(user.id);
-      setTickets(data ?? []);
-      const refreshed = (data ?? []).find((t: any) => t.id === selectedTicket.id);
-      if (refreshed) {
-        setSelectedTicket(refreshed);
-        setTimeout(() => threadRef.current?.scrollToEnd({ animated: true }), 100);
+      if (openTicket) {
+        await userSendMessage(openTicket.id, text);
+      } else {
+        // First message (or all previous tickets closed) — open a new conversation.
+        await createSupportTicket({ user_id: user.id, subject: text.slice(0, 60), body: text });
       }
+      setReplyText('');
+      await loadTickets();
+      setTimeout(() => threadRef.current?.scrollToEnd({ animated: true }), 150);
     } catch {
       setError('Ошибка отправки');
     } finally { setReplying(false); }
-  };
-
-  const handleSubmitTicket = async () => {
-    if (!subject.trim() || !body.trim()) { setError('Заполните тему и содержание'); return; }
-    if (!user) return;
-    setTicketLoading(true); setError('');
-    try {
-      await createSupportTicket({ user_id: user.id, subject: subject.trim(), body: body.trim() });
-      setSubject(''); setBody('');
-      setShowNewTicket(false);
-      const data = await getUserTickets(user.id);
-      setTickets(data ?? []);
-    } catch {
-      setError('Ошибка при отправке. Попробуйте ещё раз.');
-    } finally { setTicketLoading(false); }
-  };
-
-  const statusLabel: Record<string, string> = {
-    open: 'Открыто',
-    in_progress: 'В работе',
-    closed: 'Закрыто',
-  };
-  const statusColor: Record<string, string> = {
-    open: '#f59e0b',
-    in_progress: colors.accent,
-    closed: colors.textMuted,
   };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       {/* Header */}
       <View style={styles.header}>
-        {(selectedTicket || showNewTicket) && tab === 'ticket' ? (
-          <TouchableOpacity onPress={() => { setSelectedTicket(null); setShowNewTicket(false); setError(''); }} style={{ marginRight: 8 }}>
+        {from === 'profile' ? (
+          <TouchableOpacity onPress={() => router.navigate('/(tabs)/profile' as any)} style={{ marginRight: 8 }}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         ) : router.canGoBack() ? (
@@ -181,13 +154,11 @@ export default function SupportScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         ) : null}
-        <Text style={styles.headerTitle}>
-          {selectedTicket ? selectedTicket.subject : showNewTicket ? 'Новое обращение' : 'Поддержка'}
-        </Text>
+        <Text style={styles.headerTitle}>Поддержка</Text>
       </View>
 
       {/* Tabs */}
-      {!selectedTicket && !showNewTicket && (
+      {(
         <View style={styles.tabs}>
           <TouchableOpacity style={[styles.tab, tab === 'pit' && styles.tabActive]} onPress={() => setTab('pit')}>
             <Ionicons name="sparkles-outline" size={15} color={tab === 'pit' ? colors.accent : colors.textMuted} />
@@ -259,163 +230,73 @@ export default function SupportScreen() {
         </KeyboardAvoidingView>
       )}
 
-      {/* ── Ticket tab ── */}
-      {tab === 'ticket' && !selectedTicket && !showNewTicket && (
-        <View style={{ flex: 1 }}>
-          {ticketsLoading ? (
+      {/* ── Support: single dialog ── */}
+      {tab === 'ticket' && (
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+          {ticketsLoading && threadMessages.length === 0 ? (
             <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
           ) : (
             <ScrollView
-              contentContainerStyle={styles.content}
+              ref={threadRef}
+              contentContainerStyle={styles.threadContent}
               refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
+              onContentSizeChange={() => threadRef.current?.scrollToEnd({ animated: false })}
+              keyboardShouldPersistTaps="always"
             >
-              <TouchableOpacity style={styles.newTicketBtn} onPress={() => { setShowNewTicket(true); setError(''); }}>
-                <Ionicons name="add" size={18} color="#fff" />
-                <Text style={styles.newTicketBtnText}>Новое обращение</Text>
-              </TouchableOpacity>
-
-              {tickets.length === 0 ? (
+              {threadMessages.length === 0 ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-                  <Text style={styles.emptyText}>Нет обращений</Text>
-                  <Text style={styles.emptySubText}>Создайте обращение, если нужна помощь</Text>
+                  <Text style={styles.emptyText}>Напишите в поддержку</Text>
+                  <Text style={styles.emptySubText}>Опишите вопрос — мы ответим прямо здесь, в этом чате</Text>
                 </View>
               ) : (
-                tickets.map(ticket => (
-                  <TouchableOpacity key={ticket.id} style={styles.ticketCard} onPress={() => handleOpenTicket(ticket)} activeOpacity={0.8}>
-                    <View style={styles.ticketTop}>
-                      <Text style={styles.ticketSubject} numberOfLines={1}>{ticket.subject}</Text>
-                      {ticket.has_unread_reply && <View style={styles.unreadDot} />}
+                threadMessages.map((msg: any, i: number) => {
+                  const isUser = msg.sender === 'user';
+                  return (
+                    <View key={msg.id ?? i} style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAI]}>
+                      {!isUser && (
+                        <View style={styles.supportAvatar}>
+                          <Ionicons name="headset-outline" size={14} color={colors.accent} />
+                        </View>
+                      )}
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{msg.body}</Text>
+                        {msg.created_at && (
+                          <Text style={[styles.msgTime, isUser && { color: 'rgba(255,255,255,0.6)' }]}>
+                            {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.ticketMeta}>
-                      <Text style={[styles.ticketStatus, { color: statusColor[ticket.status] ?? colors.textMuted }]}>
-                        {statusLabel[ticket.status] ?? ticket.status}
-                      </Text>
-                      <Text style={styles.ticketDate}>
-                        {ticket.created_at ? new Date(ticket.created_at).toLocaleDateString('ru-RU') : ''}
-                      </Text>
-                    </View>
-                    {ticket.messages?.length > 0 && (
-                      <Text style={styles.ticketPreview} numberOfLines={1}>
-                        {ticket.messages[ticket.messages.length - 1]?.body ?? ''}
-                      </Text>
-                    )}
-                  </TouchableOpacity>
-                ))
+                  );
+                })
               )}
             </ScrollView>
           )}
-        </View>
-      )}
-
-      {/* ── Ticket thread ── */}
-      {tab === 'ticket' && selectedTicket && (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView
-            ref={threadRef}
-            contentContainerStyle={styles.threadContent}
-            onContentSizeChange={() => threadRef.current?.scrollToEnd({ animated: false })}
-          >
-            {(selectedTicket.messages ?? []).map((msg: any, i: number) => {
-              const isUser = msg.sender === 'user';
-              return (
-                <View key={i} style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAI]}>
-                  {!isUser && (
-                    <View style={styles.supportAvatar}>
-                      <Ionicons name="headset-outline" size={14} color={colors.accent} />
-                    </View>
-                  )}
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.bubbleText, isUser && styles.bubbleTextUser]}>{msg.body}</Text>
-                    {msg.created_at && (
-                      <Text style={[styles.msgTime, isUser && { color: 'rgba(255,255,255,0.6)' }]}>
-                        {new Date(msg.created_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                      </Text>
-                    )}
-                  </View>
-                </View>
-              );
-            })}
-          </ScrollView>
-          {selectedTicket.status !== 'closed' && (
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.chatInput}
-                value={replyText}
-                onChangeText={setReplyText}
-                placeholder="Ваш ответ..."
-                placeholderTextColor={colors.textMuted}
-                multiline
-                maxLength={1000}
-              />
-              <TouchableOpacity
-                style={[styles.sendBtn, (!replyText.trim() || replying) && styles.sendBtnDisabled]}
-                onPress={handleReply}
-                disabled={!replyText.trim() || replying}
-                activeOpacity={0.7}
-              >
-                {replying ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="arrow-up" size={18} color="#fff" />}
-              </TouchableOpacity>
+          {error ? (
+            <View style={[styles.errorBox, { marginHorizontal: 16, marginBottom: 6 }]}>
+              <Text style={styles.errorText}>{error}</Text>
             </View>
-          )}
-          {selectedTicket.status === 'closed' && (
-            <View style={styles.closedBanner}>
-              <Text style={styles.closedText}>Обращение закрыто</Text>
-            </View>
-          )}
-        </KeyboardAvoidingView>
-      )}
-
-      {/* ── New ticket form ── */}
-      {tab === 'ticket' && showNewTicket && (
-        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="always">
-            <View style={styles.form}>
-              {user && (
-                <View style={styles.userChip}>
-                  <Avatar name={user.name} imageUrl={user.avatar} size={36} />
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.userName}>{user.name}</Text>
-                    <Text style={styles.userEmail}>{user.email}</Text>
-                  </View>
-                </View>
-              )}
-              <View style={styles.field}>
-                <Text style={styles.label}>Тема</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Кратко опишите суть"
-                  placeholderTextColor={colors.textMuted}
-                  value={subject}
-                  onChangeText={v => { setSubject(v); setError(''); }}
-                  maxLength={300}
-                />
-              </View>
-              <View style={styles.field}>
-                <Text style={styles.label}>Содержание</Text>
-                <TextInput
-                  style={[styles.input, styles.textarea]}
-                  placeholder="Подробно опишите вашу проблему или вопрос..."
-                  placeholderTextColor={colors.textMuted}
-                  value={body}
-                  onChangeText={v => { setBody(v); setError(''); }}
-                  multiline textAlignVertical="top"
-                />
-              </View>
-              {error ? (
-                <View style={styles.errorBox}>
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              ) : null}
-              <TouchableOpacity
-                style={[styles.submitBtn, (ticketLoading || !subject.trim() || !body.trim()) && styles.btnDisabled]}
-                onPress={handleSubmitTicket}
-                disabled={ticketLoading || !subject.trim() || !body.trim()}
-              >
-                <Text style={styles.submitBtnText}>{ticketLoading ? 'Отправка...' : 'Отправить обращение'}</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
+          ) : null}
+          <View style={styles.inputRow}>
+            <TextInput
+              style={styles.chatInput}
+              value={replyText}
+              onChangeText={v => { setReplyText(v); setError(''); }}
+              placeholder="Сообщение в поддержку..."
+              placeholderTextColor={colors.textMuted}
+              multiline
+              maxLength={1000}
+            />
+            <TouchableOpacity
+              style={[styles.sendBtn, (!replyText.trim() || replying) && styles.sendBtnDisabled]}
+              onPress={handleSend}
+              disabled={!replyText.trim() || replying}
+              activeOpacity={0.7}
+            >
+              {replying ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="arrow-up" size={18} color="#fff" />}
+            </TouchableOpacity>
+          </View>
         </KeyboardAvoidingView>
       )}
     </SafeAreaView>
