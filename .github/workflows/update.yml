@@ -42,3 +42,7 @@ jobs:
       - name: Publish update
         working-directory: mobile
         run: eas update --branch preview --message "OTA ${{ github.sha }}" --non-interactive
+
+      - name: Ensure channel 'preview' points to branch 'preview'
+        working-directory: mobile
+        run: eas channel:edit preview --branch preview --non-interactive || true

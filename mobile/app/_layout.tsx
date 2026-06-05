@@ -10,6 +10,24 @@ import { ThemeProvider, useTheme } from '../src/context/theme';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import * as Updates from 'expo-updates';
+
+// Check for an OTA update on launch and apply it immediately (reload),
+// so users don't have to restart the app twice to get the new bundle.
+function useOtaUpdates() {
+  useEffect(() => {
+    if (__DEV__ || !Updates.isEnabled) return;
+    (async () => {
+      try {
+        const res = await Updates.checkForUpdateAsync();
+        if (res.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
+        }
+      } catch { /* offline / no update — ignore */ }
+    })();
+  }, []);
+}
 
 function AppContent() {
   const { session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding } = useAuth();
@@ -91,6 +109,7 @@ function AppContent() {
 }
 
 export default function RootLayout() {
+  useOtaUpdates();
   return (
     <ErrorBoundary>
       <GestureHandlerRootView style={{ flex: 1 }}>
