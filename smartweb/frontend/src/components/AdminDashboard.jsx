@@ -412,9 +412,10 @@ export default function AdminDashboard({ onLogout }) {
                         </div>
                         <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{activeTicket.subject}</p>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-secondary)', background: 'var(--gray-100,#f1f5f9)', borderRadius: 6, padding: '2px 7px' }}>ID {activeTicket.user_id}</span>
                           <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{activeTicket.user_name} · {activeTicket.user_email}</span>
                           <span className={`badge ${ROLE_BADGE[activeTicket.user_role] || 'badge-gray'}`} style={{ fontSize: 10 }}>{ROLE_LABEL[activeTicket.user_role] || activeTicket.user_role}</span>
-                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{new Date(activeTicket.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
+                          <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>обращение #{activeTicket.id} · {new Date(activeTicket.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</span>
                         </div>
                       </div>
 
