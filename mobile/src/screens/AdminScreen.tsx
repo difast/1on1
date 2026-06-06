@@ -300,6 +300,10 @@ export default function AdminScreen() {
                 )}
               </View>
 
+              <View style={styles.usersHint}>
+                <Ionicons name="hand-left-outline" size={14} color={colors.accent} />
+                <Text style={styles.usersHintText}>Нажмите на пользователя — откроются детали, команды, встречи, задачи и управление (роль, блок, удаление).</Text>
+              </View>
               <Text style={styles.sectionLabel}>Пользователи ({filtered.length})</Text>
               {filtered.map((u: any) => (
                 <TouchableOpacity
@@ -320,7 +324,10 @@ export default function AdminScreen() {
                       <Text style={styles.userStat}>{u.meetings_count} встр · {u.tasks_count} зад</Text>
                     </View>
                   </View>
-                  <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+                  <View style={styles.manageHintPill}>
+                    <Text style={styles.manageHintPillText}>Управление</Text>
+                    <Ionicons name="chevron-forward" size={14} color={colors.accent} />
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -353,7 +360,7 @@ export default function AdminScreen() {
 
           {/* TICKET THREAD */}
           {tab === 'tickets' && activeTicket && (
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={90}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
               <View style={styles.threadHeader}>
                 <TouchableOpacity onPress={() => setActiveTicket(null)} style={styles.backBtn}>
                   <Ionicons name="arrow-back" size={20} color={colors.textPrimary} />
@@ -364,6 +371,14 @@ export default function AdminScreen() {
                 </View>
               </View>
               <ScrollView ref={ticketScrollRef} contentContainerStyle={styles.threadContent}>
+                {/* Full user info for the admin */}
+                <View style={styles.userInfoCard}>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Пользователь</Text><Text style={styles.userInfoV}>{activeTicket.user_name}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>ID</Text><Text style={styles.userInfoV}>{activeTicket.user_id}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Email</Text><Text style={styles.userInfoV} numberOfLines={1}>{activeTicket.user_email}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Роль</Text><Text style={styles.userInfoV}>{activeTicket.user_role === 'team_lead' ? 'Тимлид' : activeTicket.user_role === 'member' ? 'Участник' : activeTicket.user_role}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Обращение</Text><Text style={styles.userInfoV}>#{activeTicket.id}{activeTicket.created_at ? ` · ${new Date(activeTicket.created_at).toLocaleDateString('ru-RU')}` : ''}</Text></View>
+                </View>
                 <View style={[styles.bubble, styles.bubbleUser]}>
                   <Text style={styles.bubbleBody}>{activeTicket.body}</Text>
                 </View>
@@ -395,7 +410,7 @@ export default function AdminScreen() {
 
           {/* BROADCAST */}
           {tab === 'broadcast' && (
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
               <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
@@ -445,7 +460,7 @@ export default function AdminScreen() {
 
           {/* MANAGE — create by ID */}
           {tab === 'manage' && (
-            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
               <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="construct-outline" size={18} color={colors.accent} />
@@ -645,6 +660,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   searchInput: { flex: 1, paddingVertical: 8, fontSize: 14, color: c.textPrimary },
   hintNote: { fontSize: 11, color: c.textMuted, marginTop: -4, marginBottom: 6, fontStyle: 'italic' },
+  usersHint: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, backgroundColor: c.accentLight, borderRadius: 10, padding: 10, marginTop: 8 },
+  usersHintText: { flex: 1, fontSize: 12, color: c.textSecondary, lineHeight: 17 },
+  manageHintPill: { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: c.accentLight, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 5, flexShrink: 0 },
+  manageHintPillText: { fontSize: 11, fontWeight: '700', color: c.accent },
   idChip: { backgroundColor: c.surface2, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   idChipText: { fontSize: 10, fontWeight: '700', color: c.textSecondary },
 
@@ -697,6 +716,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   backBtn: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   threadSubject: { fontSize: 15, fontWeight: '700', color: c.textPrimary },
   threadUser: { fontSize: 12, color: c.textMuted, marginTop: 1 },
+  userInfoCard: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 12, marginBottom: 8, gap: 6 },
+  userInfoRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 12 },
+  userInfoK: { fontSize: 12, color: c.textMuted },
+  userInfoV: { fontSize: 13, fontWeight: '600', color: c.textPrimary, flexShrink: 1, textAlign: 'right' },
   threadContent: { padding: 16, gap: 10 },
   bubble: { maxWidth: '85%', borderRadius: 14, padding: 12 },
   bubbleUser: { alignSelf: 'flex-start', backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },

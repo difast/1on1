@@ -4,6 +4,7 @@ import {
   ActivityIndicator, Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTheme } from '../../context/theme';
 import {
   getTeams, getMemberTeam, getMeetings, getTasks,
@@ -22,6 +23,7 @@ export function UserDetailModal({
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
   const [loading, setLoading] = useState(false);
   const [teams, setTeams] = useState<{ id: number; name: string; role: string }[]>([]);
   const [meetings, setMeetings] = useState<any[]>([]);
@@ -100,7 +102,7 @@ export function UserDetailModal({
   return (
     <Modal visible={!!user} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={() => {}}>
+        <Pressable style={[styles.sheet, { paddingBottom: Math.max(insets.bottom, 16) }]} onPress={() => {}}>
           <View style={styles.handle} />
           <ScrollView showsVerticalScrollIndicator={false}>
             <Text style={styles.name}>{user.name}</Text>
