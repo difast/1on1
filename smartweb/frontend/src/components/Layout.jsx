@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
+import LegalModal from './LegalModal'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -28,6 +29,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
+  const [showDocs, setShowDocs] = useState(false)
   const userMenuRef = useRef(null)
   const notifRef = useRef(null)
   const [switchingRole, setSwitchingRole] = useState(false)
@@ -526,6 +528,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>
                   Поддержка
                 </MenuItemBtn>
+                <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowDocs(true) }}>
+                  Документы
+                </MenuItemBtn>
                 <div style={{ height: 1, background: 'var(--color-border)', margin: '3px 0' }} />
                 <MenuItemBtn danger onClick={() => { setShowUserMenu(false); onLogout?.() }}>
                   Выйти
@@ -877,6 +882,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       </div>
       <PitAssistant />
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
+      <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
     </div>
   )
 }

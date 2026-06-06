@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { supabase } from '../lib/supabase'
+import LegalModal from './LegalModal'
 
 const ADMIN_PASSWORD = '1on12026'
 
@@ -20,6 +21,7 @@ export default function AuthPage({ onAdminLogin }) {
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [showConsent, setShowConsent] = useState(false)
   const [error, setError] = useState('')
   const [adminPwd, setAdminPwd] = useState('')
 
@@ -208,6 +210,17 @@ export default function AuthPage({ onAdminLogin }) {
                   ? (mode === 'login' ? 'Входим...' : 'Регистрируемся...')
                   : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
               </button>
+
+              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 14, lineHeight: 1.5 }}>
+                {mode === 'register' ? 'Регистрируясь' : 'Продолжая'}, вы даёте{' '}
+                <button
+                  type="button"
+                  onClick={() => setShowConsent(true)}
+                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
+                >
+                  согласие на обработку персональных данных
+                </button>.
+              </p>
             </form>
 
             {/* Admin link */}
@@ -222,6 +235,7 @@ export default function AuthPage({ onAdminLogin }) {
           </div>
         )}
       </div>
+      <LegalModal open={showConsent} initialKey="privacy" onClose={() => setShowConsent(false)} />
     </div>
   )
 }

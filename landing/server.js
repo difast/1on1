@@ -14,6 +14,7 @@ const routes = {
   '/faq': 'faq.html',
   '/about': 'about.html',
   '/pricing': 'pricing.html',
+  '/documents': 'documents.html',
 }
 
 const mime = {

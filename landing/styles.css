@@ -356,3 +356,15 @@ html,body{overflow-x:hidden}
 }
 @media(max-width:640px){.pit-runner{width:42px;height:42px}}
 @media(prefers-reduced-motion:reduce){.pit-runner{display:none}}
+
+/* Footer document dropdowns */
+.foot-doc{margin:0}
+.foot-doc summary{list-style:none;cursor:pointer;font-size:14px;color:rgba(255,255,255,.65);font-weight:400;line-height:1.4;transition:color .15s;outline:none}
+.foot-doc summary::-webkit-details-marker{display:none}
+.foot-doc summary::after{content:' ▾';font-size:10px;opacity:.5}
+.foot-doc[open] summary{color:#fff}
+.foot-doc[open] summary::after{content:' ▴'}
+.foot-doc summary:hover{color:#fff}
+.foot-doc-menu{display:flex;flex-direction:column;gap:10px;padding:10px 0 2px 12px}
+.foot-doc-menu a{font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;transition:color .15s;line-height:1.4}
+.foot-doc-menu a:hover{color:#A78BFA}
