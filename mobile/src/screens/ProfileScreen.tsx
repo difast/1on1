@@ -13,11 +13,13 @@ import { useTheme } from '../context/theme';
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
+import { LegalDocsModal } from '../components/LegalDocsModal';
 
 export default function ProfileScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
+  const [showDocs, setShowDocs] = useState(false);
   const router = useRouter();
 
   const [editing, setEditing] = useState(false);
@@ -454,6 +456,17 @@ export default function ProfileScreen() {
             <Text style={styles.menuRowTitle}>Поддержка</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuRow}
+            onPress={() => setShowDocs(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Документы</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
         </View>
 
         {/* Documents + Logout + Delete */}
@@ -486,6 +499,7 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+      <LegalDocsModal visible={showDocs} onClose={() => setShowDocs(false)} />
     </SafeAreaView>
   );
 }

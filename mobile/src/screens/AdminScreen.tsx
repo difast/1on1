@@ -11,12 +11,13 @@ import { useTheme } from '../context/theme';
 import {
   getAdminStats, blockUser, unblockUser, getServiceHealth,
   broadcastNotification, getSupportTickets, adminReplyTicket, getUsers,
-  getTeams, getMeetings, getTasks, createTeam, createTask, createMeeting,
+  getTeams, getTeam, getMeetings, getTasks, createTeam, createTask, createMeeting,
   updateUser, deleteUser,
 } from '../lib/api';
 import { Avatar } from '../components/Avatar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { UserDetailModal } from '../components/admin/UserDetailModal';
+import { EntityPicker } from '../components/admin/EntityPicker';
 import type { AppColors } from '../constants/colors';
 
 type Tab = 'users' | 'tickets' | 'broadcast' | 'manage' | 'health' | 'monetize';
@@ -60,18 +61,18 @@ export default function AdminScreen() {
   const [search, setSearch] = useState('');
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  // Manage (create by ID)
+  // Manage (create — pick people/teams by name)
   const [mgTeamName, setMgTeamName] = useState('');
-  const [mgTeamLead, setMgTeamLead] = useState('');
+  const [mgTeamLead, setMgTeamLead] = useState<number | null>(null);
   const [mgTaskTitle, setMgTaskTitle] = useState('');
-  const [mgTaskAssignee, setMgTaskAssignee] = useState('');
-  const [mgTaskTeam, setMgTaskTeam] = useState('');
-  const [mgMeetTeam, setMgMeetTeam] = useState('');
-  const [mgMeetLead, setMgMeetLead] = useState('');
-  const [mgMeetMember, setMgMeetMember] = useState('');
+  const [mgTaskAssignee, setMgTaskAssignee] = useState<number | null>(null);
+  const [mgTaskTeam, setMgTaskTeam] = useState<number | null>(null);
+  const [mgMeetTeam, setMgMeetTeam] = useState<number | null>(null);
+  const [mgMeetMember, setMgMeetMember] = useState<number | null>(null);
   const [mgMeetDate, setMgMeetDate] = useState('');
   const [mgBusy, setMgBusy] = useState(false);
   const [mgMsg, setMgMsg] = useState('');
+  const [mgTeamsData, setMgTeamsData] = useState<any[]>([]);
 
   // Health
   const [health, setHealth] = useState<any>(null);
@@ -80,41 +81,40 @@ export default function AdminScreen() {
   const mgNotify = (msg: string) => { setMgMsg(msg); setTimeout(() => setMgMsg(''), 3500); };
 
   const handleCreateTeam = async () => {
-    if (!mgTeamName.trim() || !mgTeamLead.trim()) { mgNotify('Укажите название и ID тимлида'); return; }
+    if (!mgTeamName.trim() || !mgTeamLead) { mgNotify('Укажите название и тимлида'); return; }
     setMgBusy(true);
     try {
-      await createTeam({ name: mgTeamName.trim(), team_lead_id: Number(mgTeamLead) });
-      setMgTeamName(''); setMgTeamLead(''); mgNotify('✓ Команда создана');
+      await createTeam({ name: mgTeamName.trim(), team_lead_id: mgTeamLead });
+      setMgTeamName(''); setMgTeamLead(null); mgNotify('✓ Команда создана');
     } catch { mgNotify('Ошибка создания команды'); } finally { setMgBusy(false); }
   };
 
   const handleCreateTask = async () => {
-    if (!mgTaskTitle.trim() || !mgTaskAssignee.trim()) { mgNotify('Укажите задачу и ID исполнителя'); return; }
+    if (!mgTaskTitle.trim() || !mgTaskAssignee) { mgNotify('Укажите задачу и исполнителя'); return; }
     setMgBusy(true);
     try {
       await createTask({
         title: mgTaskTitle.trim(),
-        assigned_to: Number(mgTaskAssignee),
-        assigned_by: Number(mgTaskAssignee),
-        team_id: mgTaskTeam.trim() ? Number(mgTaskTeam) : null,
+        assigned_to: mgTaskAssignee,
+        assigned_by: mgTaskAssignee,
+        team_id: mgTaskTeam ?? null,
       });
-      setMgTaskTitle(''); setMgTaskAssignee(''); setMgTaskTeam(''); mgNotify('✓ Задача создана');
+      setMgTaskTitle(''); setMgTaskAssignee(null); setMgTaskTeam(null); mgNotify('✓ Задача создана');
     } catch { mgNotify('Ошибка создания задачи'); } finally { setMgBusy(false); }
   };
 
   const handleCreateMeeting = async () => {
-    if (!mgMeetTeam.trim() || !mgMeetLead.trim() || !mgMeetMember.trim() || !mgMeetDate) {
-      mgNotify('Заполните team_id, ID тимлида, ID участника и дату'); return;
-    }
+    const team = mgTeamsData.find(t => t.id === mgMeetTeam);
+    if (!team || !mgMeetMember || !mgMeetDate) { mgNotify('Выберите команду, участника и дату'); return; }
     setMgBusy(true);
     try {
       await createMeeting({
-        team_id: Number(mgMeetTeam),
-        team_lead_id: Number(mgMeetLead),
-        member_id: Number(mgMeetMember),
+        team_id: team.id,
+        team_lead_id: team.team_lead_id,
+        member_id: mgMeetMember,
         scheduled_date: mgMeetDate,
       });
-      setMgMeetTeam(''); setMgMeetLead(''); setMgMeetMember(''); setMgMeetDate(''); mgNotify('✓ Встреча создана');
+      setMgMeetTeam(null); setMgMeetMember(null); setMgMeetDate(''); mgNotify('✓ Встреча создана');
     } catch { mgNotify('Ошибка создания встречи'); } finally { setMgBusy(false); }
   };
 
@@ -136,6 +136,15 @@ export default function AdminScreen() {
   useEffect(() => {
     if (tab === 'tickets') loadTickets();
     if (tab === 'health') loadHealth();
+    if (tab === 'manage' && mgTeamsData.length === 0) {
+      (async () => {
+        try {
+          const all = await getTeams() as any[];
+          const det = await Promise.all((all || []).map(t => getTeam(t.id).catch(() => t)));
+          setMgTeamsData(det as any[]);
+        } catch {}
+      })();
+    }
   }, [tab]);
 
   const onRefresh = async () => {
@@ -196,7 +205,7 @@ export default function AdminScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
@@ -440,7 +449,7 @@ export default function AdminScreen() {
               <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="construct-outline" size={18} color={colors.accent} />
-                  <Text style={styles.infoBannerText}>Ручное создание по ID. ID пользователей и команд смотрите во вкладке «Пользователи» (тап по пользователю).</Text>
+                  <Text style={styles.infoBannerText}>Выбирайте людей и команды по имени — ID подставляются автоматически.</Text>
                 </View>
 
                 {mgMsg ? (
@@ -449,50 +458,48 @@ export default function AdminScreen() {
                   </View>
                 ) : null}
 
-                {/* Create team */}
-                <Text style={styles.sectionLabel}>Создать команду</Text>
-                <View style={styles.field}><Text style={styles.label}>Название</Text>
-                  <TextInput style={styles.input} value={mgTeamName} onChangeText={setMgTeamName} placeholder="Название команды" placeholderTextColor={colors.textMuted} />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>ID тимлида</Text>
-                  <TextInput style={styles.input} value={mgTeamLead} onChangeText={setMgTeamLead} placeholder="напр. 12" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTeam} disabled={mgBusy}>
-                  <Text style={styles.submitBtnText}>Создать команду</Text>
-                </TouchableOpacity>
+                {(() => {
+                  const userItems = (stats?.users ?? []).map((u: any) => ({ id: u.id, label: u.name, sub: `${u.email} · ${u.role === 'team_lead' ? 'тимлид' : 'участник'}` }));
+                  const teamItems = mgTeamsData.map((t: any) => ({ id: t.id, label: t.name, sub: `тимлид #${t.team_lead_id}` }));
+                  const meetTeam = mgTeamsData.find((t: any) => t.id === mgMeetTeam);
+                  const memberItems = (meetTeam?.members ?? []).map((m: any) => ({ id: m.user_id, label: m.user_name, sub: m.role }));
+                  return (
+                  <>
+                    {/* Create team */}
+                    <Text style={styles.sectionLabel}>Создать команду</Text>
+                    <View style={styles.field}><Text style={styles.label}>Название</Text>
+                      <TextInput style={styles.input} value={mgTeamName} onChangeText={setMgTeamName} placeholder="Название команды" placeholderTextColor={colors.textMuted} />
+                    </View>
+                    <EntityPicker label="Тимлид" placeholder="Выберите тимлида" valueId={mgTeamLead} items={userItems} onSelect={setMgTeamLead} />
+                    <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTeam} disabled={mgBusy}>
+                      <Text style={styles.submitBtnText}>Создать команду</Text>
+                    </TouchableOpacity>
 
-                {/* Create task */}
-                <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать задачу</Text>
-                <View style={styles.field}><Text style={styles.label}>Задача</Text>
-                  <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder="Текст задачи" placeholderTextColor={colors.textMuted} />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>ID исполнителя (assigned_to)</Text>
-                  <TextInput style={styles.input} value={mgTaskAssignee} onChangeText={setMgTaskAssignee} placeholder="напр. 7" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>team_id (необязательно)</Text>
-                  <TextInput style={styles.input} value={mgTaskTeam} onChangeText={setMgTaskTeam} placeholder="напр. 3" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTask} disabled={mgBusy}>
-                  <Text style={styles.submitBtnText}>Создать задачу</Text>
-                </TouchableOpacity>
+                    {/* Create task */}
+                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать задачу</Text>
+                    <View style={styles.field}><Text style={styles.label}>Задача</Text>
+                      <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder="Текст задачи" placeholderTextColor={colors.textMuted} />
+                    </View>
+                    <EntityPicker label="Исполнитель" placeholder="Выберите пользователя" valueId={mgTaskAssignee} items={userItems} onSelect={setMgTaskAssignee} />
+                    <EntityPicker label="Команда (необязательно)" placeholder="Без команды" valueId={mgTaskTeam} items={teamItems} onSelect={setMgTaskTeam} emptyText="Команды не загружены" />
+                    <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTask} disabled={mgBusy}>
+                      <Text style={styles.submitBtnText}>Создать задачу</Text>
+                    </TouchableOpacity>
 
-                {/* Create meeting */}
-                <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать встречу</Text>
-                <View style={styles.field}><Text style={styles.label}>team_id</Text>
-                  <TextInput style={styles.input} value={mgMeetTeam} onChangeText={setMgMeetTeam} placeholder="напр. 3" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>ID тимлида</Text>
-                  <TextInput style={styles.input} value={mgMeetLead} onChangeText={setMgMeetLead} placeholder="напр. 12" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>ID участника</Text>
-                  <TextInput style={styles.input} value={mgMeetMember} onChangeText={setMgMeetMember} placeholder="напр. 7" placeholderTextColor={colors.textMuted} keyboardType="number-pad" />
-                </View>
-                <View style={styles.field}><Text style={styles.label}>Дата и время</Text>
-                  <DateTimePickerField value={mgMeetDate} onChange={setMgMeetDate} />
-                </View>
-                <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateMeeting} disabled={mgBusy}>
-                  <Text style={styles.submitBtnText}>Создать встречу</Text>
-                </TouchableOpacity>
+                    {/* Create meeting */}
+                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать встречу</Text>
+                    <EntityPicker label="Команда" placeholder="Выберите команду" valueId={mgMeetTeam} items={teamItems} onSelect={(id) => { setMgMeetTeam(id); setMgMeetMember(null); }} emptyText="Команды не загружены" />
+                    <EntityPicker label="Участник" placeholder={mgMeetTeam ? 'Выберите участника' : 'Сначала выберите команду'} valueId={mgMeetMember} items={memberItems} onSelect={setMgMeetMember} emptyText="В команде нет участников" />
+                    <View style={styles.field}><Text style={styles.label}>Дата и время</Text>
+                      <DateTimePickerField value={mgMeetDate} onChange={setMgMeetDate} />
+                    </View>
+                    <Text style={styles.hintNote}>Тимлид встречи определяется автоматически по выбранной команде.</Text>
+                    <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateMeeting} disabled={mgBusy}>
+                      <Text style={styles.submitBtnText}>Создать встречу</Text>
+                    </TouchableOpacity>
+                  </>
+                  );
+                })()}
               </ScrollView>
             </KeyboardAvoidingView>
           )}
@@ -637,6 +644,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.surface, paddingHorizontal: 12, paddingVertical: 4, marginTop: 4,
   },
   searchInput: { flex: 1, paddingVertical: 8, fontSize: 14, color: c.textPrimary },
+  hintNote: { fontSize: 11, color: c.textMuted, marginTop: -4, marginBottom: 6, fontStyle: 'italic' },
   idChip: { backgroundColor: c.surface2, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   idChipText: { fontSize: 10, fontWeight: '700', color: c.textSecondary },
 
