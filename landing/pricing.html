@@ -18,16 +18,16 @@
 .pr-save{display:inline-block;font-size:11px;font-weight:700;color:#4ADE80;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);border-radius:99px;padding:3px 10px;margin-left:8px;vertical-align:middle}
 
 /* Plan cards */
-.plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin-top:56px}
-.plan{padding:36px 28px 44px;position:relative;border-right:1px solid rgba(255,255,255,.06);transition:background .2s}
+.plans-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin-top:56px}
+.plan{padding:30px 20px 40px;position:relative;border-right:1px solid rgba(255,255,255,.06);transition:background .2s}
 .plan:last-child{border-right:none}
 .plan:hover{background:rgba(255,255,255,.025)}
 .plan.popular{background:linear-gradient(180deg,rgba(124,58,237,.1) 0%,rgba(124,58,237,.04) 100%);border-top:2px solid #7C3AED}
 .plan-badge{font-size:10px;font-weight:700;color:#A78BFA;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block;min-height:16px}
 .plan-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px}
 .plan-name.acc{color:#A78BFA}
-.plan-price{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;letter-spacing:-.04em;line-height:1;color:#fff}
-.plan-price small{font-family:'Inter',sans-serif;font-size:14px;font-weight:400;color:rgba(255,255,255,.35)}
+.plan-price{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05;color:#fff}
+.plan-price small{font-family:'Inter',sans-serif;font-size:12px;font-weight:400;color:rgba(255,255,255,.35)}
 .plan-price .annual{display:none}
 .show-annual .plan-price .monthly{display:none}
 .show-annual .plan-price .annual{display:inline}
@@ -73,7 +73,45 @@
 .pfaq-a{font-size:14px;color:rgba(255,255,255,.55);line-height:1.75;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease}
 .pfaq-item.open .pfaq-a{max-height:300px;padding-top:12px}
 
-@media(max-width:1100px){.plans-grid{grid-template-columns:1fr 1fr}}
+/* Calculator */
+.calc-section{padding:72px 0 0}
+.calc-card{max-width:860px;margin:48px auto 0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:36px 34px}
+.calc-plans{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.calc-plan{padding:9px 18px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
+.calc-plan:hover{color:#fff;border-color:rgba(255,255,255,.25)}
+.calc-plan.active{background:#7C3AED;border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+.calc-billing{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px;gap:4px;margin:22px auto 0}
+.calc-billing button{padding:7px 18px;border-radius:99px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:rgba(255,255,255,.5);background:transparent;font-family:'Inter',sans-serif;transition:all .15s}
+.calc-billing button.active{background:#7C3AED;color:#fff}
+.calc-slider-wrap{margin:28px 0 8px}
+.calc-slider-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
+.calc-slider-label{font-size:13px;color:rgba(255,255,255,.5)}
+.calc-slider-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#fff}
+.calc-slider-val small{font-family:'Inter',sans-serif;font-size:13px;font-weight:400;color:rgba(255,255,255,.4)}
+.calc-range{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.12);outline:none}
+.calc-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#7C3AED;cursor:pointer;border:3px solid #fff;box-shadow:0 2px 8px rgba(124,58,237,.5)}
+.calc-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#7C3AED;cursor:pointer;border:3px solid #fff}
+.calc-range-minmax{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.3);margin-top:6px}
+.calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
+.calc-res{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 16px;text-align:center}
+.calc-res.accent{background:linear-gradient(180deg,rgba(124,58,237,.16),rgba(124,58,237,.05));border-color:rgba(124,58,237,.35)}
+.calc-res-label{font-size:11px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
+.calc-res-val{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;line-height:1.1;letter-spacing:-.02em}
+.calc-res.accent .calc-res-val{color:#4ADE80}
+.calc-res-val small{font-family:'Inter',sans-serif;font-size:12px;font-weight:400;color:rgba(255,255,255,.35)}
+.calc-bar-wrap{margin-top:26px}
+.calc-bar-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.calc-bar-name{width:96px;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);flex-shrink:0}
+.calc-bar-track{flex:1;height:30px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;position:relative}
+.calc-bar-fill{height:100%;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:12px;font-weight:700;color:#fff;transition:width .4s ease;white-space:nowrap}
+.calc-bar-fill.ours{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
+.calc-bar-fill.lattice{background:rgba(255,255,255,.18)}
+.calc-msg{text-align:center;font-size:15px;color:rgba(255,255,255,.6);padding:32px 0 8px;line-height:1.6}
+.calc-msg a{color:#A78BFA;text-decoration:none;font-weight:600}
+@media(max-width:640px){.calc-card{padding:24px 18px}.calc-results{grid-template-columns:1fr}.calc-bar-name{width:72px;font-size:12px}}
+
+@media(max-width:1280px){.plans-grid{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:880px){.plans-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:640px){
   .plans-grid{grid-template-columns:1fr;border-radius:16px}
   .plan{border-right:none;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -146,82 +184,109 @@
         <div class="plan-section-label">Команда</div>
         <ul class="plan-features">
           <li><strong>1</strong> команда</li>
-          <li>До <strong>5</strong> участников</li>
-          <li>До <strong>10</strong> встреч в месяц</li>
+          <li>До <strong>3</strong> участников</li>
+          <li>До <strong>5</strong> встреч в месяц</li>
+          <li>История <strong>14 дней</strong></li>
         </ul>
         <div class="plan-section-label">Функции</div>
         <ul class="plan-features">
           <li>Планирование встреч</li>
           <li>Базовые заметки</li>
-          <li>История <strong>30 дней</strong></li>
+          <li>Трекинг задач</li>
           <li class="no">AI-ассистент Пит</li>
           <li class="no">Mood tracking</li>
           <li class="no">Аналитика команды</li>
           <li class="no">Видеозвонки</li>
-          <li class="no">Экспорт данных</li>
         </ul>
       </div>
 
-      <!-- PRO -->
-      <div class="plan popular">
-        <span class="plan-badge">⭐ Популярный</span>
-        <div class="plan-name acc">Pro</div>
+      <!-- СТАРТ -->
+      <div class="plan">
+        <span class="plan-badge">&nbsp;</span>
+        <div class="plan-name">Старт</div>
         <div class="plan-price">
-          <span class="monthly">990₽</span>
-          <span class="annual">792₽</span>
+          <span class="monthly">1 490₽</span>
+          <span class="annual">1 192₽</span>
           <small> /мес</small>
         </div>
-        <div class="plan-desc">Для активных команд.<br>Всё необходимое в одном.</div>
-        <a href="https://1on1-production-bb3b.up.railway.app" class="plan-btn prim">Выбрать Pro</a>
+        <div class="plan-desc">Для одной команды.<br>С AI-ассистентом Пит.</div>
+        <a href="https://1on1-production-bb3b.up.railway.app" class="plan-btn">Выбрать Старт</a>
         <div class="plan-divider"></div>
         <div class="plan-section-label">Команда</div>
         <ul class="plan-features">
-          <li>До <strong>3</strong> команд</li>
-          <li>До <strong>20</strong> участников</li>
-          <li><strong>Неограниченно</strong> встреч</li>
+          <li><strong>1</strong> команда</li>
+          <li>До <strong>10</strong> участников</li>
+          <li><strong>Без лимита</strong> встреч</li>
+          <li>История <strong>без ограничений</strong></li>
         </ul>
         <div class="plan-section-label">Функции</div>
         <ul class="plan-features">
-          <li>Планирование встреч</li>
-          <li>AI-ассистент Пит</li>
+          <li>Всё из Free</li>
+          <li><strong>AI-ассистент Пит</strong></li>
+          <li>Предложение слотов AI</li>
+          <li>Запросы на русском</li>
+          <li class="no">Mood tracking</li>
+          <li class="no">Видеозвонки</li>
+        </ul>
+      </div>
+
+      <!-- КОМАНДА (popular) -->
+      <div class="plan popular">
+        <span class="plan-badge">⭐ Популярный</span>
+        <div class="plan-name acc">Команда</div>
+        <div class="plan-price">
+          <span class="monthly">490₽</span>
+          <span class="annual">392₽</span>
+          <small> /чел·мес</small>
+        </div>
+        <div class="plan-desc">Для растущих команд.<br>Полная аналитика и AI.</div>
+        <a href="https://1on1-production-bb3b.up.railway.app" class="plan-btn prim">Выбрать Команда</a>
+        <div class="plan-divider"></div>
+        <div class="plan-section-label">Команда</div>
+        <ul class="plan-features">
+          <li><strong>5–25</strong> участников</li>
+          <li>До <strong>5</strong> команд</li>
+          <li><strong>Без лимита</strong> встреч</li>
+          <li>История <strong>без ограничений</strong></li>
+        </ul>
+        <div class="plan-section-label">Функции</div>
+        <ul class="plan-features">
+          <li>Всё из Старт</li>
           <li>AI-декомпозиция задач</li>
           <li>Mood tracking</li>
           <li>Полная аналитика команды</li>
-          <li>История <strong>без ограничений</strong></li>
+          <li>Зоны риска и алерты</li>
           <li>Экспорт CSV</li>
           <li class="no">Видеозвонки</li>
-          <li class="no">Транскрипты встреч</li>
         </ul>
       </div>
 
-      <!-- MAX -->
+      <!-- КОМПАНИЯ -->
       <div class="plan">
         <span class="plan-badge">&nbsp;</span>
-        <div class="plan-name">Max</div>
+        <div class="plan-name">Компания</div>
         <div class="plan-price">
-          <span class="monthly">2 490₽</span>
-          <span class="annual">1 992₽</span>
-          <small> /мес</small>
+          <span class="monthly">349₽</span>
+          <span class="annual">279₽</span>
+          <small> /чел·мес</small>
         </div>
-        <div class="plan-desc">Для быстрорастущих команд.<br>Видео, транскрипты и учёт времени.</div>
-        <a href="https://1on1-production-bb3b.up.railway.app" class="plan-btn">Выбрать Max</a>
+        <div class="plan-desc">Для крупных команд.<br>Видео, транскрипты, учёт времени.</div>
+        <a href="https://1on1-production-bb3b.up.railway.app" class="plan-btn">Выбрать Компания</a>
         <div class="plan-divider"></div>
         <div class="plan-section-label">Команда</div>
         <ul class="plan-features">
-          <li>До <strong>10</strong> команд</li>
-          <li>До <strong>100</strong> участников</li>
-          <li><strong>Неограниченно</strong> встреч</li>
+          <li><strong>25–100</strong> участников</li>
+          <li>До <strong>15</strong> команд</li>
+          <li><strong>Без лимита</strong> встреч</li>
+          <li>История <strong>без ограничений</strong></li>
         </ul>
         <div class="plan-section-label">Функции</div>
         <ul class="plan-features">
-          <li>Всё из Pro</li>
+          <li>Всё из Команда</li>
           <li>Встроенные видеозвонки</li>
           <li>Автотранскрипты встреч</li>
           <li>Учёт рабочего времени</li>
-          <li>Зоны риска и алерты</li>
-          <li>Расширенный экспорт</li>
           <li>Приоритетная поддержка</li>
-          <li class="no">On-premise деплой</li>
         </ul>
       </div>
 
@@ -229,31 +294,66 @@
       <div class="plan">
         <span class="plan-badge">&nbsp;</span>
         <div class="plan-name" style="color:rgba(167,139,250,.6)">Enterprise</div>
-        <div class="plan-price" style="font-size:32px;margin-top:8px">
-          <span class="monthly">По запросу</span>
-          <span class="annual">По запросу</span>
+        <div class="plan-price" style="font-size:26px;margin-top:8px">
+          <span class="monthly">По согласованию</span>
+          <span class="annual">По согласованию</span>
         </div>
-        <div class="plan-desc">Для крупных организаций.<br>SLA, SSO и индивидуальные условия.</div>
+        <div class="plan-desc">Для организаций.<br>On-premise, SSO и SLA.</div>
         <a href="mailto:oneonone.io@yandex.com" class="plan-btn ent">Связаться с нами</a>
         <div class="plan-divider"></div>
         <div class="plan-section-label">Команда</div>
         <ul class="plan-features">
-          <li><strong>Неограниченно</strong> команд</li>
-          <li><strong>Неограниченно</strong> участников</li>
+          <li><strong>Без ограничений</strong></li>
           <li>Кастомные лимиты</li>
         </ul>
         <div class="plan-section-label">Функции</div>
         <ul class="plan-features">
-          <li>Всё из Max</li>
+          <li>Всё из Компания</li>
           <li>On-premise деплой</li>
           <li>SSO / SAML</li>
           <li>Кастомные интеграции</li>
           <li>SLA 99.9%</li>
           <li>Поддержка 24/7</li>
           <li>Выделенный менеджер</li>
-          <li>Обучение команды</li>
         </ul>
       </div>
+    </div>
+  </div>
+</section>
+
+<!-- CALCULATOR -->
+<section class="calc-section">
+  <div class="wrap">
+    <div style="text-align:center">
+      <h2 class="sh df" style="margin:0 auto">Калькулятор стоимости</h2>
+      <p class="sh-sub" style="margin:12px auto 0;text-align:center">Выберите тариф и рассчитайте точную сумму для вашей команды.</p>
+    </div>
+    <div class="calc-card">
+      <div class="calc-plans" id="calcPlans">
+        <button class="calc-plan" data-plan="free">Free</button>
+        <button class="calc-plan" data-plan="start">Старт</button>
+        <button class="calc-plan active" data-plan="team">Команда</button>
+        <button class="calc-plan" data-plan="company">Компания</button>
+        <button class="calc-plan" data-plan="enterprise">Enterprise</button>
+      </div>
+
+      <div style="text-align:center">
+        <div class="calc-billing" id="calcBilling">
+          <button class="active" data-bill="monthly">Ежемесячно</button>
+          <button data-bill="annual">Ежегодно −20%</button>
+        </div>
+      </div>
+
+      <div class="calc-slider-wrap" id="calcSliderWrap">
+        <div class="calc-slider-top">
+          <span class="calc-slider-label">Количество участников</span>
+          <span class="calc-slider-val"><span id="calcPeople">10</span> <small>чел.</small></span>
+        </div>
+        <input type="range" class="calc-range" id="calcRange" min="5" max="25" value="10" step="1">
+        <div class="calc-range-minmax"><span id="calcMin">5</span><span id="calcMax">25</span></div>
+      </div>
+
+      <div id="calcBody"></div>
     </div>
   </div>
 </section>
@@ -269,47 +369,48 @@
     <table class="comp-table">
       <thead>
         <tr>
-          <th style="width:36%">Функция</th>
+          <th style="width:28%">Функция</th>
           <th>Free</th>
-          <th class="pop-col">Pro</th>
-          <th>Max</th>
+          <th>Старт</th>
+          <th class="pop-col">Команда</th>
+          <th>Компания</th>
           <th>Enterprise</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="cat-row"><td colspan="5">Команда и лимиты</td></tr>
-        <tr><td>Количество команд</td><td>1</td><td class="pop-col">3</td><td>10</td><td>∞</td></tr>
-        <tr><td>Участников в команде</td><td>до 5</td><td class="pop-col">до 20</td><td>до 100</td><td>∞</td></tr>
-        <tr><td>Встреч в месяц</td><td>до 10</td><td class="pop-col">∞</td><td>∞</td><td>∞</td></tr>
-        <tr><td>История данных</td><td>30 дней</td><td class="pop-col">∞</td><td>∞</td><td>∞</td></tr>
+        <tr class="cat-row"><td colspan="6">Команда и лимиты</td></tr>
+        <tr><td>Количество команд</td><td>1</td><td>1</td><td class="pop-col">до 5</td><td>до 15</td><td>∞</td></tr>
+        <tr><td>Участников</td><td>до 3</td><td>до 10</td><td class="pop-col">5–25</td><td>25–100</td><td>∞</td></tr>
+        <tr><td>Встреч в месяц</td><td>до 5</td><td>∞</td><td class="pop-col">∞</td><td>∞</td><td>∞</td></tr>
+        <tr><td>История данных</td><td>14 дней</td><td>∞</td><td class="pop-col">∞</td><td>∞</td><td>∞</td></tr>
 
-        <tr class="cat-row"><td colspan="5">Встречи и задачи</td></tr>
-        <tr><td>Планирование встреч</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Базовые заметки</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Трекинг задач</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>AI-декомпозиция задач</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Встроенные видеозвонки</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Автотранскрипты встреч</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="6">Встречи и задачи</td></tr>
+        <tr><td>Планирование встреч</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Базовые заметки</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Трекинг задач</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>AI-декомпозиция задач</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Встроенные видеозвонки</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Автотранскрипты встреч</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
 
-        <tr class="cat-row"><td colspan="5">AI-ассистент Пит</td></tr>
-        <tr><td>AI-ассистент Пит</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Предложение слотов AI</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Запросы на русском языке</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="6">AI-ассистент Пит</td></tr>
+        <tr><td>AI-ассистент Пит</td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Предложение слотов AI</td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Запросы на русском языке</td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
 
-        <tr class="cat-row"><td colspan="5">Аналитика и мониторинг</td></tr>
-        <tr><td>Mood tracking</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Аналитика команды</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Зоны риска и алерты</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Учёт рабочего времени</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Экспорт CSV</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="6">Аналитика и мониторинг</td></tr>
+        <tr><td>Mood tracking</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Аналитика команды</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Зоны риска и алерты</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Учёт рабочего времени</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Экспорт CSV</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
 
-        <tr class="cat-row"><td colspan="5">Безопасность и поддержка</td></tr>
-        <tr><td>Шифрование данных</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>SSO / SAML</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>On-premise деплой</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>SLA</td><td>—</td><td class="pop-col">—</td><td>—</td><td>99.9%</td></tr>
-        <tr><td>Поддержка</td><td>Email</td><td class="pop-col">Email</td><td>Приоритет</td><td>24/7</td></tr>
-        <tr><td>Выделенный менеджер</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="6">Безопасность и поддержка</td></tr>
+        <tr><td>Шифрование данных</td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>SSO / SAML</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>On-premise деплой</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>SLA</td><td>—</td><td>—</td><td class="pop-col">—</td><td>—</td><td>99.9%</td></tr>
+        <tr><td>Поддержка</td><td>Email</td><td>Email</td><td class="pop-col">Email</td><td>Приоритет</td><td>24/7</td></tr>
+        <tr><td>Выделенный менеджер</td><td><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
       </tbody>
     </table>
     </div>
@@ -325,31 +426,38 @@
     <div class="pfaq">
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Можно ли перейти с одного тарифа на другой?</span>
+          <span>Как считается стоимость тарифов Команда и Компания?</span>
           <span class="pfaq-icon">+</span>
         </div>
-        <div class="pfaq-a">Да, вы можете повысить или понизить тариф в любое время. При повышении — доступ к новым функциям открывается сразу, разница в стоимости рассчитывается пропорционально. При понижении изменения вступают в силу с начала следующего расчётного периода.</div>
+        <div class="pfaq-a">Оплата — по количеству участников на момент выставления счёта. Минимальная сумма считается от нижней границы тарифа: для «Команда» — от 5 человек, для «Компания» — от 25 человек. Добавляете людей — пересчёт со следующего счёта.</div>
       </div>
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Нужна ли карта для регистрации на Free?</span>
+          <span>Можно ли перейти с одного тарифа на другой?</span>
+          <span class="pfaq-icon">+</span>
+        </div>
+        <div class="pfaq-a">Да. Повышение тарифа вступает в силу сразу — новые функции открываются немедленно. Понижение применяется с начала нового расчётного периода.</div>
+      </div>
+      <div class="pfaq-item">
+        <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
+          <span>Нужна ли карта для Free?</span>
           <span class="pfaq-icon">+</span>
         </div>
         <div class="pfaq-a">Нет. Бесплатный тариф не требует ввода платёжных данных. Карта понадобится только при переходе на платный план.</div>
       </div>
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Что произойдёт если лимит участников будет превышен?</span>
+          <span>Есть ли пробный период?</span>
           <span class="pfaq-icon">+</span>
         </div>
-        <div class="pfaq-a">Вы получите уведомление и предложение перейти на следующий тариф. Существующие данные и доступ сотрудников сохраняются — добавить новых участников станет невозможно до смены тарифа.</div>
+        <div class="pfaq-a">Да — 14 дней бесплатно для тарифов «Старт» и «Команда», без ввода карты. Вы получаете полный доступ к функциям тарифа и можете отменить в любой момент.</div>
       </div>
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
           <span>Как работает годовая оплата?</span>
           <span class="pfaq-icon">+</span>
         </div>
-        <div class="pfaq-a">При выборе годовой подписки вы платите за 12 месяцев вперёд и получаете скидку 20%. Итоговая сумма списывается единовременно. Возврат возможен в течение 14 дней с момента оплаты, если вы ещё не пользовались платными функциями.</div>
+        <div class="pfaq-a">При годовой подписке — скидка 20%. Сумма за 12 месяцев списывается единовременно. Возврат возможен в течение 14 дней с момента оплаты, если вы ещё не пользовались платными функциями.</div>
       </div>
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
@@ -357,13 +465,6 @@
           <span class="pfaq-icon">+</span>
         </div>
         <div class="pfaq-a">Да. Все данные передаются по HTTPS и хранятся в зашифрованном виде. Серверы расположены в России. Enterprise-клиентам доступен on-premise деплой — данные остаются полностью на вашей инфраструктуре.</div>
-      </div>
-      <div class="pfaq-item">
-        <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
-          <span>Есть ли пробный период для платных тарифов?</span>
-          <span class="pfaq-icon">+</span>
-        </div>
-        <div class="pfaq-a">Да, для тарифов Pro и Max действует 14-дневный бесплатный пробный период без ввода карты. Вы получаете полный доступ ко всем функциям тарифа и можете отменить в любой момент.</div>
       </div>
     </div>
   </div>
@@ -375,9 +476,9 @@
   <div class="lift-door lift-r"></div>
   <div class="hero-badge" style="display:inline-flex;margin-bottom:28px"><div class="bdot"></div>Начните бесплатно</div>
   <h2 class="cta-h df">Попробуйте бесплатно<br>уже сегодня.</h2>
-  <p class="cta-sub">14 дней Pro без карты. Отмена в любой момент.</p>
+  <p class="cta-sub">14 дней тарифа Команда без карты. Отмена в любой момент.</p>
   <div class="cta-btns">
-    <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Создать аккаунт →</a>
+    <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc btn-xl">Начать бесплатно →</a>
     <a href="mailto:oneonone.io@yandex.com" class="btn btn-ghost btn-lg">Связаться с нами</a>
   </div>
 </section>
@@ -455,6 +556,81 @@ function setBilling(type, btn){
   if(type==='annual') grid.classList.add('show-annual')
   else grid.classList.remove('show-annual')
 }
+
+/* ── Cost calculator ── */
+(function(){
+  const LATTICE = 1000; // ₽/чел·мес — ориентир западного аналога
+  const PRICES = {
+    start:   { monthly: 1490, annual: 1192, perPerson: false },
+    team:    { monthly: 490,  annual: 392,  perPerson: true,  min: 5,  max: 25,  def: 12 },
+    company: { monthly: 349,  annual: 279,  perPerson: true,  min: 25, max: 100, def: 40 },
+  };
+  let plan = 'team', bill = 'monthly', people = PRICES.team.def;
+  const fmt = n => Math.round(n).toLocaleString('ru-RU');
+  const sliderWrap = document.getElementById('calcSliderWrap');
+  const range = document.getElementById('calcRange');
+  const peopleEl = document.getElementById('calcPeople');
+  const minEl = document.getElementById('calcMin');
+  const maxEl = document.getElementById('calcMax');
+  const body = document.getElementById('calcBody');
+  if(!body) return;
+
+  function render(){
+    const cfg = PRICES[plan];
+    const perPerson = cfg && cfg.perPerson;
+    sliderWrap.style.display = perPerson ? 'block' : 'none';
+
+    if(plan === 'free'){
+      body.innerHTML = '<div class="calc-msg">Тариф <strong style="color:#fff">Free</strong> — бесплатно навсегда. Карта не нужна.</div>';
+      return;
+    }
+    if(plan === 'enterprise'){
+      body.innerHTML = '<div class="calc-msg"><strong style="color:#fff">Enterprise</strong> — стоимость по согласованию.<br><a href="mailto:oneonone.io@yandex.com">Связаться с нами →</a></div>';
+      return;
+    }
+
+    const unit = bill === 'annual' ? cfg.annual : cfg.monthly;
+    const ourMonthly = perPerson ? unit * people : unit;
+    const latticeMonthly = perPerson ? LATTICE * people : LATTICE * 10; // Старт — сравнение за 10 человек
+    const ourYear = ourMonthly * 12;
+    const saveYear = Math.max(0, (latticeMonthly - ourMonthly) * 12);
+    const maxBar = Math.max(ourMonthly, latticeMonthly, 1);
+    const ourPct = Math.round(ourMonthly / maxBar * 100);
+
+    body.innerHTML =
+      '<div class="calc-results">' +
+        '<div class="calc-res"><div class="calc-res-label">Ваша стоимость в месяц</div><div class="calc-res-val">' + fmt(ourMonthly) + '₽ <small>/мес</small></div></div>' +
+        '<div class="calc-res"><div class="calc-res-label">В год итого</div><div class="calc-res-val">' + fmt(ourYear) + '₽ <small>/год</small></div></div>' +
+        '<div class="calc-res accent"><div class="calc-res-label">Экономия vs Lattice</div><div class="calc-res-val">' + fmt(saveYear) + '₽ <small>/год</small></div></div>' +
+      '</div>' +
+      '<div class="calc-bar-wrap">' +
+        '<div class="calc-bar-row"><span class="calc-bar-name">OneOnOne</span><div class="calc-bar-track"><div class="calc-bar-fill ours" style="width:' + ourPct + '%">' + fmt(ourMonthly) + '₽</div></div></div>' +
+        '<div class="calc-bar-row"><span class="calc-bar-name">Lattice</span><div class="calc-bar-track"><div class="calc-bar-fill lattice" style="width:100%">' + fmt(latticeMonthly) + '₽</div></div></div>' +
+        '<p style="font-size:11px;color:rgba(255,255,255,.3);text-align:center;margin-top:10px">Lattice — западный аналог, ~1 000 ₽/чел·мес' + (perPerson ? '' : ' (расчёт для 10 человек)') + '. Сравнение по стоимости в месяц.</p>' +
+      '</div>';
+  }
+
+  function setPlan(p){
+    plan = p;
+    document.querySelectorAll('#calcPlans .calc-plan').forEach(b => b.classList.toggle('active', b.dataset.plan === p));
+    const cfg = PRICES[p];
+    if(cfg && cfg.perPerson){
+      range.min = cfg.min; range.max = cfg.max; range.value = cfg.def; people = cfg.def;
+      peopleEl.textContent = people; minEl.textContent = cfg.min; maxEl.textContent = cfg.max;
+    }
+    render();
+  }
+
+  document.querySelectorAll('#calcPlans .calc-plan').forEach(b => b.addEventListener('click', () => setPlan(b.dataset.plan)));
+  document.querySelectorAll('#calcBilling button').forEach(b => b.addEventListener('click', () => {
+    bill = b.dataset.bill;
+    document.querySelectorAll('#calcBilling button').forEach(x => x.classList.toggle('active', x === b));
+    render();
+  }));
+  range.addEventListener('input', () => { people = +range.value; peopleEl.textContent = people; render(); });
+
+  setPlan('team');
+})();
 
 /* Reveal on scroll */
 const revEls=document.querySelectorAll('.reveal,.reveal-l,.reveal-r')
