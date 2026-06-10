@@ -468,10 +468,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* Payment stub — team lead only */}
+          {/* My plan stub — team lead only */}
           {user?.role === 'team_lead' && (
             <button
-              onClick={() => alert('Оплата — скоро будет доступна')}
+              onClick={() => alert('Скоро появится')}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 fontSize: 12, fontWeight: 700, color: '#16a34a',
@@ -488,7 +488,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <path d="M1 5.5h11" stroke="#16a34a" strokeWidth="1.1"/>
                 <rect x="2.5" y="7.5" width="3" height="1.2" rx="0.4" fill="#16a34a"/>
               </svg>
-              <span className="payment-label">Оплата</span>
+              <span className="payment-label">Мой тариф</span>
             </button>
           )}
 
