@@ -202,10 +202,9 @@ export default function Onboarding({ email, onComplete }) {
     <>
       <style>{STYLES}</style>
       <div style={{
-        minHeight:'100vh', position:'relative', overflow:'hidden',
-        background:'linear-gradient(135deg,#0f0c29 0%,#302b63 50%,#24243e 100%)',
-        display:'flex', alignItems:'center', justifyContent:'center',
-        padding:'20px', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+        minHeight:'100vh', position:'relative', overflowY:'auto',
+        background:'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
+        display:'flex', padding:'56px 20px', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
       }}>
         {/* Orbs */}
         <div style={{ position:'absolute',top:'8%',left:'5%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(99,102,241,0.22) 0%,transparent 70%)',animation:'obOrb1 9s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
@@ -213,7 +212,7 @@ export default function Onboarding({ email, onComplete }) {
         <div style={{ position:'absolute',top:'50%',left:'68%',width:190,height:190,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,130,246,0.14) 0%,transparent 70%)',animation:'obOrb3 7s ease-in-out infinite',pointerEvents:'none' }} />
         <div style={{ position:'absolute',top:'72%',left:'12%',width:150,height:150,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(167,139,250,0.16) 0%,transparent 70%)',animation:'obOrb1 13s ease-in-out infinite reverse',pointerEvents:'none' }} />
 
-        <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1 }}>
+        <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1,margin:'auto' }}>
           <div style={{ display:'flex',justifyContent:'center',marginBottom:16 }}><PitBig /></div>
 
           <div style={{ textAlign:'center',marginBottom:20 }}>
