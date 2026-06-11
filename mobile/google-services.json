@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "823630098054",
+    "project_id": "on1-push",
+    "storage_bucket": "on1-push.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:823630098054:android:78e4be39eb7da36d3ceb07",
+        "android_client_info": {
+          "package_name": "com.oneonone.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCBLWvikZfQInuwNGyqdUWfkTbwgG-CezI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

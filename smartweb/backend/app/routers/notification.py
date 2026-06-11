@@ -76,4 +76,25 @@ def broadcast(data: BroadcastBody, db: Session = Depends(get_db)):
         db.add(notif)
         created += 1
     db.commit()
+
+    # Also deliver as a system push (same as in-app notifications)
+    try:
+        from app.utils.push import send_push_bulk
+        messages = [
+            {
+                "to": u.push_token,
+                "title": data.title,
+                "body": data.body or "",
+                "sound": "default",
+                "priority": "high",
+                "data": {"type": "broadcast"},
+            }
+            for u in users
+            if u.push_token and str(u.push_token).startswith("ExponentPushToken")
+        ]
+        if messages:
+            send_push_bulk(messages)
+    except Exception:
+        pass
+
     return {"ok": True, "sent": created}

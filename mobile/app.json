@@ -29,7 +29,10 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#F8F9FC"
       },
-      "package": "com.oneonone.app"
+      "package": "com.oneonone.app",
+      "googleServicesFile": "./google-services.json",
+      "useNextNotificationsApi": true,
+      "permissions": ["POST_NOTIFICATIONS"]
     },
     "web": {
       "bundler": "metro",
@@ -41,6 +44,12 @@
         "expo-secure-store",
         {
           "faceIDPermission": "Allow OneOnOne to use Face ID for authentication."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#6366F1"
         }
       ],
       "./plugins/withGradle813"

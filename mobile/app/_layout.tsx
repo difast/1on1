@@ -11,6 +11,32 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Updates from 'expo-updates';
+import * as Notifications from 'expo-notifications';
+import { configureNotifications, registerPushToken, routeFromNotificationData } from '../src/lib/push';
+
+configureNotifications();
+
+// Register the device push token once the user is known, and route taps.
+function usePushNotifications(userId: number | undefined) {
+  const router = useRouter();
+  useEffect(() => {
+    if (!userId) return;
+    registerPushToken(userId);
+  }, [userId]);
+
+  useEffect(() => {
+    // App opened by tapping a notification (cold start)
+    Notifications.getLastNotificationResponseAsync().then(res => {
+      const data = res?.notification?.request?.content?.data;
+      if (data) setTimeout(() => routeFromNotificationData(router, data), 600);
+    }).catch(() => {});
+    // Tap while running
+    const sub = Notifications.addNotificationResponseReceivedListener(res => {
+      routeFromNotificationData(router, res.notification.request.content.data);
+    });
+    return () => sub.remove();
+  }, []);
+}
 
 // Check for an OTA update on launch and apply it immediately (reload),
 // so users don't have to restart the app twice to get the new bundle.
@@ -34,6 +60,7 @@ function AppContent() {
   const { isDark } = useTheme();
   const router = useRouter();
   const segments = useSegments();
+  usePushNotifications(user?.id);
 
   useEffect(() => {
     // Block only when there's genuinely no data to navigate with yet.
