@@ -131,6 +131,19 @@ def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
 
     return meeting
 
+@router.post("/{meeting_id}/end-call", response_model=MeetingOut)
+def end_call(meeting_id: int, db: Session = Depends(get_db)):
+    """End an active call — moves the meeting out of 'in_progress' so the
+    'call in progress' banner disappears for both participants."""
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    if meeting.status == "in_progress":
+        meeting.status = "completed"
+        db.commit()
+        db.refresh(meeting)
+    return meeting
+
 @router.post("/{meeting_id}/start-call")
 def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends(get_db)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()

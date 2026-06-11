@@ -82,6 +82,8 @@ export const confirmMeeting = (id: number) =>
   req(`/meetings/${id}/confirm`, { method: 'POST' });
 export const declineMeeting = (id: number) =>
   req(`/meetings/${id}/decline`, { method: 'POST' });
+export const endCall = (id: number) =>
+  req<any>(`/meetings/${id}/end-call`, { method: 'POST' });
 export const startCall = (meetingId: number, userId: number) =>
   req<{ room_url: string; token: string; room_name: string }>(
     `/meetings/${meetingId}/start-call?user_id=${userId}`,
