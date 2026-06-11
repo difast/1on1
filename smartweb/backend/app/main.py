@@ -2,6 +2,7 @@ import os
 import time
 import asyncio
 import httpx
+from datetime import datetime
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,11 +25,62 @@ async def _keep_alive():
                 pass
             await asyncio.sleep(240)  # 4 minutes
 
+def _send_mood_reminders():
+    """Create + push the daily 'fill the mood survey' reminder (once/day, deduped)."""
+    from app.database import SessionLocal
+    from app.models.user import User
+    from app.models.notification import Notification
+    from app.utils.push import send_push_bulk
+    db = SessionLocal()
+    try:
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+        already = db.query(Notification).filter(
+            Notification.type == "mood_reminder",
+            Notification.created_at >= today,
+        ).first()
+        if already:
+            return
+        members = db.query(User).filter(User.is_blocked == False, User.role == "member").all()
+        title = "Как прошёл ваш день?"
+        body = "Пройдите короткий опрос настроения в приложении"
+        msgs = []
+        for u in members:
+            db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
+            if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
+                msgs.append({
+                    "to": u.push_token, "title": title, "body": body,
+                    "sound": "default", "priority": "high", "data": {"type": "mood_reminder"},
+                })
+        db.commit()
+        if msgs:
+            send_push_bulk(msgs)
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
+async def _mood_reminder_loop():
+    """Fire the mood-survey reminder daily at 20:00 МСК (17:00 UTC). In-process
+    scheduler since Celery beat is not running on this deployment."""
+    await asyncio.sleep(90)
+    while True:
+        try:
+            now = datetime.utcnow()
+            if now.hour == 17 and now.minute < 5:  # 20:00 Moscow time
+                await asyncio.to_thread(_send_mood_reminders)
+        except Exception:
+            pass
+        await asyncio.sleep(60)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     task = asyncio.create_task(_keep_alive())
+    mood_task = asyncio.create_task(_mood_reminder_loop())
     yield
     task.cancel()
+    mood_task.cancel()
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0", lifespan=lifespan)
 
