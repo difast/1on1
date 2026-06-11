@@ -1,4 +1,8 @@
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+import os
+
+# Prefer the AITUNNEL_KEY env var (rotate the key without a code change). The
+# literal below is kept only as a fallback so existing deployments keep working.
+AITUNNEL_KEY = os.getenv("AITUNNEL_KEY", "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku")
 
 
 def task_ai_prompt(title: str, role_ctx: str, status_label: str, due_ctx: str) -> str:

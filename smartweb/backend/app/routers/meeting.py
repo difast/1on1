@@ -188,7 +188,8 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
 
     return meeting
 
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+import os
+AITUNNEL_KEY = os.getenv("AITUNNEL_KEY", "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku")
 
 class SlotRequest(PydanticBase):
     meeting_id: int
