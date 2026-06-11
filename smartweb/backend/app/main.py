@@ -4,7 +4,7 @@ import asyncio
 import httpx
 from datetime import datetime
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -191,6 +191,11 @@ def health_detailed(db: Session = Depends(get_db)):
 
 @app.post("/api/dev/reset-db", include_in_schema=False)
 def reset_db(db: Session = Depends(get_db)):
+    # DESTRUCTIVE: wipes every table. Disabled unless explicitly enabled via env
+    # so it can never be triggered against the production database. To use it in a
+    # local/dev environment set ENABLE_DEV_ENDPOINTS=1.
+    if os.getenv("ENABLE_DEV_ENDPOINTS", "").lower() not in ("1", "true", "yes"):
+        raise HTTPException(status_code=404, detail="Not found")
     db.execute(text("TRUNCATE notifications, tasks, meetings, team_members, teams, users RESTART IDENTITY CASCADE"))
     db.commit()
     return {"ok": True}
