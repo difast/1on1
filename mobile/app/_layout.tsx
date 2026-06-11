@@ -11,8 +11,7 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Updates from 'expo-updates';
-import * as Notifications from 'expo-notifications';
-import { configureNotifications, registerPushToken, routeFromNotificationData } from '../src/lib/push';
+import { configureNotifications, registerPushToken, setupNotificationTapHandler } from '../src/lib/push';
 
 configureNotifications();
 
@@ -24,18 +23,7 @@ function usePushNotifications(userId: number | undefined) {
     registerPushToken(userId);
   }, [userId]);
 
-  useEffect(() => {
-    // App opened by tapping a notification (cold start)
-    Notifications.getLastNotificationResponseAsync().then(res => {
-      const data = res?.notification?.request?.content?.data;
-      if (data) setTimeout(() => routeFromNotificationData(router, data), 600);
-    }).catch(() => {});
-    // Tap while running
-    const sub = Notifications.addNotificationResponseReceivedListener(res => {
-      routeFromNotificationData(router, res.notification.request.content.data);
-    });
-    return () => sub.remove();
-  }, []);
+  useEffect(() => setupNotificationTapHandler(router), []);
 }
 
 // Check for an OTA update on launch and apply it immediately (reload),

@@ -1,30 +1,38 @@
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
 import { Platform, Linking } from 'react-native';
+import Constants from 'expo-constants';
 import { updateUser } from './api';
+
+// Lazy-require so that an OLD build (OTA-updated but WITHOUT the
+// expo-notifications native module) degrades gracefully instead of crashing.
+let Notifications: any = null;
+try { Notifications = require('expo-notifications'); } catch { Notifications = null; }
 
 const PROJECT_ID =
   (Constants.expoConfig as any)?.extra?.eas?.projectId ?? '69071943-c55a-4a87-9bf4-92fda7e75220';
 
 /** Foreground display behaviour — show the banner like a normal push. */
 export function configureNotifications() {
-  Notifications.setNotificationHandler({
-    handleNotification: async () => ({
-      shouldShowBanner: true,
-      shouldShowList: true,
-      shouldPlaySound: true,
-      shouldSetBadge: false,
-    }),
-  });
+  if (!Notifications?.setNotificationHandler) return;
+  try {
+    Notifications.setNotificationHandler({
+      handleNotification: async () => ({
+        shouldShowBanner: true,
+        shouldShowList: true,
+        shouldPlaySound: true,
+        shouldSetBadge: false,
+      }),
+    });
+  } catch { /* native module missing — ignore */ }
 }
 
 /** Ask permission, get the Expo push token, save it to the backend (push_token). */
 export async function registerPushToken(userId: number): Promise<void> {
+  if (!Notifications?.getExpoPushTokenAsync) return;
   try {
     if (Platform.OS === 'android') {
       await Notifications.setNotificationChannelAsync('default', {
         name: 'Уведомления',
-        importance: Notifications.AndroidImportance.MAX,
+        importance: Notifications.AndroidImportance?.MAX ?? 5,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#6366F1',
       });
@@ -40,7 +48,7 @@ export async function registerPushToken(userId: number): Promise<void> {
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: PROJECT_ID })).data;
     if (token) await updateUser(userId, { push_token: token });
   } catch {
-    // Emulator / no Google Play / offline — ignore, in-app notifications still work.
+    // Emulator / no Google Play / offline / no native module — ignore.
   }
 }
 
@@ -61,4 +69,21 @@ export function routeFromNotificationData(router: any, data: any) {
     return;
   }
   router.navigate('/(tabs)/notifications');
+}
+
+/** Attach tap handlers (running + cold-start). Returns a cleanup fn. */
+export function setupNotificationTapHandler(router: any): () => void {
+  if (!Notifications?.addNotificationResponseReceivedListener) return () => {};
+  try {
+    Notifications.getLastNotificationResponseAsync?.().then((res: any) => {
+      const data = res?.notification?.request?.content?.data;
+      if (data) setTimeout(() => routeFromNotificationData(router, data), 600);
+    }).catch(() => {});
+    const sub = Notifications.addNotificationResponseReceivedListener((res: any) => {
+      routeFromNotificationData(router, res?.notification?.request?.content?.data);
+    });
+    return () => { try { sub?.remove?.(); } catch {} };
+  } catch {
+    return () => {};
+  }
 }
