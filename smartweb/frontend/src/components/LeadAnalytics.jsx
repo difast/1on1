@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, pitChat } from '../api/client'
 import XLSXStyle from 'xlsx-js-style'
 
 // ─── Animated number counter ──────────────────────────────────────────────────
@@ -224,12 +224,27 @@ function MemberRow({ s, delay }) {
 // ─── Risk card ────────────────────────────────────────────────────────────────
 function RiskCard({ s, delay }) {
   const [vis, setVis] = useState(false)
+  const [advice, setAdvice] = useState('')
+  const [loading, setLoading] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t) }, [delay])
   const reasons = []
   if (s.warning_flags.includes('no_meeting_14_days')) reasons.push(`${s.days_since_last ?? '14+'} дн. без встречи`)
   if (s.warning_flags.includes('mood_declining')) reasons.push('Настроение падает')
   if (s.warning_flags.includes('many_incomplete_tasks')) reasons.push(`${s.open_tasks} незакрытых задач`)
   const isUrgent = s.days_since_last >= 21 || s.warning_flags.length >= 2
+
+  const getAdvice = async () => {
+    if (advice) { setAdvice(''); return }
+    setLoading(true)
+    try {
+      const prompt = `Тимлид видит сигнал риска по участнику "${s.name}": ${reasons.join(', ') || 'риск выгорания'}. `
+        + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`
+      const { data } = await pitChat([{ role: 'user', content: prompt }])
+      setAdvice(data.reply || 'Не удалось получить совет.')
+    } catch { setAdvice('Не удалось получить совет. Попробуйте позже.') }
+    finally { setLoading(false) }
+  }
+
   return (
     <div style={{
       padding: '14px 16px', borderRadius: 12,
@@ -242,9 +257,26 @@ function RiskCard({ s, delay }) {
         <div style={{ width: 8, height: 8, borderRadius: '50%', background: isUrgent ? '#ef4444' : '#f59e0b', flexShrink: 0 }} />
         <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{s.name}</span>
       </div>
-      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
         {reasons.map((r, i) => <span key={i} className={`badge ${isUrgent ? 'badge-red' : 'badge-amber'}`} style={{ fontSize: 11 }}>{r}</span>)}
       </div>
+      <button
+        onClick={getAdvice}
+        disabled={loading}
+        style={{
+          display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer',
+          fontSize: 12, fontWeight: 700, color: 'var(--color-accent)',
+          background: 'var(--color-accent-light, #eef2ff)', border: '1px solid var(--color-accent)',
+          borderRadius: 8, padding: '7px 12px',
+        }}
+      >
+        ✨ {advice ? 'Скрыть совет' : loading ? 'AI думает…' : 'Совет от AI'}
+      </button>
+      {advice && (
+        <div style={{ marginTop: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>
+          {advice}
+        </div>
+      )}
     </div>
   )
 }
