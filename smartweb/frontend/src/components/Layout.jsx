@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
@@ -22,6 +22,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const [scrolled, setScrolled] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeCallNotif, setActiveCallNotif] = useState(null)
+  const [activeCallMeeting, setActiveCallMeeting] = useState(null)
   const [toasts, setToasts] = useState([])
   const shownToastIds = useRef(new Set())
   const isFirstPoll = useRef(true)
@@ -147,6 +148,28 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     checkNotifs()
     const interval = setInterval(checkNotifs, 20000)
     return () => clearInterval(interval)
+  }, [currentUser?.id])
+
+  // Persistent "call in progress" bar — shown to lead AND member while the
+  // meeting is actually in_progress (both roles checked), the whole call.
+  useEffect(() => {
+    if (!currentUser?.id) return
+    let alive = true
+    const poll = async () => {
+      try {
+        const [a, b] = await Promise.all([
+          getMeetings({ member_id: currentUser.id, status: 'in_progress' }).catch(() => ({ data: [] })),
+          getMeetings({ team_lead_id: currentUser.id, status: 'in_progress' }).catch(() => ({ data: [] })),
+        ])
+        const active = [...(a.data || []), ...(b.data || [])]
+          .filter(m => m.jitsi_room_url)
+          .sort((x, y) => new Date(y.scheduled_date) - new Date(x.scheduled_date))[0] || null
+        if (alive) setActiveCallMeeting(active)
+      } catch {}
+    }
+    poll()
+    const t = setInterval(poll, 10000)
+    return () => { alive = false; clearInterval(t) }
   }, [currentUser?.id])
 
   useEffect(() => {
@@ -541,41 +564,42 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </div>
       </header>
 
-      {/* Active call banner */}
-      {activeCallNotif && (
+      {/* Active call banner — persists for both lead & member while the call is in progress */}
+      {activeCallMeeting && (
         <div className="active-call-bar" style={{
           position: 'fixed', top: 58, left: 240, right: 0, zIndex: 120,
           background: 'var(--color-accent)', color: '#fff',
-          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 16,
+          padding: '10px 24px', display: 'flex', alignItems: 'center', gap: 14,
           boxShadow: '0 2px 12px rgba(0,97,255,0.3)',
         }}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="4" width="11" height="10" rx="2" fill="rgba(255,255,255,0.9)"/><path d="M12 7l5-3v10l-5-3V7z" fill="rgba(255,255,255,0.9)"/></svg>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>{activeCallNotif.title}</span>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>Идёт созвон</span>
           </div>
           <button
             onClick={() => {
-              const url = activeCallNotif.data.room_url
-              const roomName = url.split('/').pop()
-              if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: null })
+              const url = activeCallMeeting.jitsi_room_url
+              const roomName = activeCallMeeting.jitsi_room_name || url.split('/').pop()
+              if (onJoinCall) onJoinCall({ room_name: roomName, room_url: url, meeting_id: activeCallMeeting.id })
               else window.open(url, '_blank')
-              markRead(activeCallNotif.id).catch(() => {})
-              setActiveCallNotif(null)
             }}
             style={{
               padding: '6px 18px', fontSize: 13, fontWeight: 700,
               background: '#fff', color: 'var(--color-accent)',
-              border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
-              flexShrink: 0,
+              border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0,
             }}
           >
-            Присоединиться
+            Войти
           </button>
           <button
-            onClick={() => setActiveCallNotif(null)}
-            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 18, flexShrink: 0, padding: 4 }}
+            onClick={async () => { try { await endCall(activeCallMeeting.id) } catch {} setActiveCallMeeting(null) }}
+            style={{
+              padding: '6px 14px', fontSize: 13, fontWeight: 700,
+              background: 'transparent', color: '#fff',
+              border: '1px solid rgba(255,255,255,0.5)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0,
+            }}
           >
-            ✕
+            Завершить
           </button>
         </div>
       )}
