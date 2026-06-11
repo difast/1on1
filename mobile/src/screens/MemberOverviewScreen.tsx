@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, TextInput, Alert,
+  RefreshControl, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, Pressable,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/auth';
@@ -321,47 +321,50 @@ export default function MemberOverviewScreen() {
           </TouchableOpacity>
         )}
 
-        {/* Mood survey modal — removed */}
-        {false && showMoodSurvey && (
-          <View style={styles.moodModal}>
-            {moodSent ? (
-              <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
-                <Text style={{ fontSize: 36 }}>✅</Text>
-                <Text style={styles.moodDoneText}>Спасибо! Ответы отправлены</Text>
-              </View>
-            ) : (
-              <>
-                <View style={styles.moodModalHeader}>
-                  <Text style={styles.moodModalTitle}>Ежедневный опрос</Text>
-                  <TouchableOpacity onPress={() => setShowMoodSurvey(false)}>
-                    <Ionicons name="close" size={20} color={colors.textMuted} />
-                  </TouchableOpacity>
-                </View>
-                {MOOD_QUESTIONS.map((q, i) => (
-                  <View key={i} style={styles.moodQuestion}>
-                    <Text style={styles.moodQuestionText}>{q}</Text>
-                    <TextInput
-                      style={styles.moodInput}
-                      value={moodAnswers[i]}
-                      onChangeText={v => setMoodAnswers(prev => { const a = [...prev]; a[i] = v; return a; })}
-                      placeholder="Ваш ответ..."
-                      placeholderTextColor={colors.textMuted}
-                      multiline
-                      numberOfLines={2}
-                    />
+        {/* Mood survey modal */}
+        <Modal visible={showMoodSurvey} transparent animationType="slide" onRequestClose={() => setShowMoodSurvey(false)}>
+          <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+            <Pressable style={styles.moodBackdrop} onPress={() => setShowMoodSurvey(false)}>
+              <Pressable style={styles.moodModal} onPress={() => {}}>
+                {moodSent ? (
+                  <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
+                    <Text style={{ fontSize: 36 }}>✅</Text>
+                    <Text style={styles.moodDoneText}>Спасибо! Ответы отправлены</Text>
                   </View>
-                ))}
-                <TouchableOpacity
-                  style={[styles.moodSubmitBtn, moodLoading && { opacity: 0.6 }]}
-                  onPress={handleMoodSubmit}
-                  disabled={moodLoading}
-                >
-                  <Text style={styles.moodSubmitText}>{moodLoading ? 'Отправка...' : 'Отправить'}</Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        )}
+                ) : (
+                  <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                    <View style={styles.moodModalHeader}>
+                      <Text style={styles.moodModalTitle}>Ежедневный опрос</Text>
+                      <TouchableOpacity onPress={() => setShowMoodSurvey(false)}>
+                        <Ionicons name="close" size={20} color={colors.textMuted} />
+                      </TouchableOpacity>
+                    </View>
+                    {MOOD_QUESTIONS.map((q, i) => (
+                      <View key={i} style={styles.moodQuestion}>
+                        <Text style={styles.moodQuestionText}>{q}</Text>
+                        <TextInput
+                          style={styles.moodInput}
+                          value={moodAnswers[i]}
+                          onChangeText={v => setMoodAnswers(prev => { const a = [...prev]; a[i] = v; return a; })}
+                          placeholder="Ваш ответ..."
+                          placeholderTextColor={colors.textMuted}
+                          multiline
+                        />
+                      </View>
+                    ))}
+                    <TouchableOpacity
+                      style={[styles.moodSubmitBtn, (moodLoading || moodAnswers.every(a => !a.trim())) && { opacity: 0.6 }]}
+                      onPress={handleMoodSubmit}
+                      disabled={moodLoading || moodAnswers.every(a => !a.trim())}
+                    >
+                      <Text style={styles.moodSubmitText}>{moodLoading ? 'Отправка...' : 'Отправить'}</Text>
+                    </TouchableOpacity>
+                  </ScrollView>
+                )}
+              </Pressable>
+            </Pressable>
+          </KeyboardAvoidingView>
+        </Modal>
 
         {/* Team lead card */}
         {team.team_lead_id && (
@@ -822,7 +825,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   moodBannerTitle: { fontSize: 14, fontWeight: '700', color: '#fff' },
   moodBannerSub: { fontSize: 12, color: 'rgba(255,255,255,0.8)', marginTop: 2 },
 
+  moodBackdrop: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center', alignItems: 'center', padding: 20,
+  },
   moodModal: {
+    width: '100%', maxWidth: 440, maxHeight: '82%',
     backgroundColor: c.surface, borderRadius: 16,
     borderWidth: 1, borderColor: c.border,
     padding: 16, gap: 14,

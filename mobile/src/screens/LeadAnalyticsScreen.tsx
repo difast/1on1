@@ -1,16 +1,62 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity,
+  View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getLeadAnalytics } from '../lib/api';
+import { getLeadAnalytics, assistantChat } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 import { StatusBadge } from '../components/StatusBadge';
+
+function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [advice, setAdvice] = useState<string>('');
+  const [loading, setLoading] = useState(false);
+  const variant = getFlagVariant(signal);
+  const tint = variant === 'red' ? '#ef4444' : variant === 'amber' ? '#f59e0b' : colors.textMuted;
+
+  const getAdvice = async () => {
+    if (advice) { setAdvice(''); return; }
+    setLoading(true);
+    try {
+      const prompt = `Тимлид видит сигнал риска по участнику "${signal.member_name}": ${getFlagDesc(signal)}. `
+        + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`;
+      const res = await assistantChat([{ role: 'user', content: prompt }]) as any;
+      setAdvice(res.reply ?? 'Не удалось получить совет.');
+    } catch { setAdvice('Не удалось получить совет. Попробуйте позже.'); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <View style={[styles.riskCard, { borderLeftColor: tint }]}>
+      <View style={styles.riskTop}>
+        <View style={[styles.riskIcon, { backgroundColor: tint + '1A' }]}>
+          <Ionicons name="alert-circle" size={18} color={tint} />
+        </View>
+        <View style={{ flex: 1, minWidth: 0 }}>
+          <Text style={styles.riskMember}>{signal.member_name}</Text>
+          <Text style={styles.riskDesc}>{getFlagDesc(signal)}</Text>
+        </View>
+        <StatusBadge label={getFlagLabel(signal)} variant={variant} />
+      </View>
+      <TouchableOpacity style={styles.aiBtn} onPress={getAdvice} disabled={loading} activeOpacity={0.8}>
+        {loading
+          ? <ActivityIndicator size="small" color={colors.accent} />
+          : <Ionicons name="sparkles" size={14} color={colors.accent} />}
+        <Text style={styles.aiBtnText}>{advice ? 'Скрыть совет' : loading ? 'AI думает...' : 'Совет от AI'}</Text>
+      </TouchableOpacity>
+      {!!advice && (
+        <View style={styles.aiBox}>
+          <Text style={styles.aiText}>{advice}</Text>
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function LeadAnalyticsScreen() {
   const { colors } = useTheme();
@@ -114,18 +160,16 @@ function TeamStats({ team }: { team: any }) {
         </View>
       )}
 
-      {/* Warnings */}
+      {/* Risk signals */}
       {signals.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Сигналы</Text>
+          <View style={styles.riskHeader}>
+            <Ionicons name="warning-outline" size={16} color="#ef4444" />
+            <Text style={styles.riskHeaderText}>Зоны риска · выгорание</Text>
+            <View style={styles.riskCountBadge}><Text style={styles.riskCountText}>{signals.length}</Text></View>
+          </View>
           {signals.map((s: any, i: number) => (
-            <View key={i} style={styles.signalRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.signalMember}>{s.member_name}</Text>
-                <Text style={styles.signalDesc}>{getFlagDesc(s)}</Text>
-              </View>
-              <StatusBadge label={getFlagLabel(s)} variant={getFlagVariant(s)} />
-            </View>
+            <RiskSignalCard key={i} signal={s} colors={colors} />
           ))}
         </View>
       )}
@@ -317,6 +361,26 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     borderWidth: 1, borderColor: '#FCA5A5',
     padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10,
   },
+  riskHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 10 },
+  riskHeaderText: { flex: 1, fontSize: 14, fontWeight: '700', color: c.textPrimary },
+  riskCountBadge: { backgroundColor: '#fee2e2', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2 },
+  riskCountText: { fontSize: 12, fontWeight: '800', color: '#dc2626' },
+  riskCard: {
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border,
+    borderLeftWidth: 4, padding: 14, marginBottom: 10, gap: 10,
+  },
+  riskTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  riskIcon: { width: 34, height: 34, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
+  riskMember: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+  riskDesc: { fontSize: 12, color: c.textSecondary, marginTop: 1 },
+  aiBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,
+    borderWidth: 1, borderColor: c.accent, backgroundColor: c.accentLight,
+    borderRadius: 10, paddingVertical: 9,
+  },
+  aiBtnText: { fontSize: 13, fontWeight: '700', color: c.accent },
+  aiBox: { backgroundColor: c.surface2, borderRadius: 10, padding: 12 },
+  aiText: { fontSize: 13, lineHeight: 20, color: c.textPrimary },
   signalMember: { fontSize: 14, fontWeight: '600', color: c.textPrimary },
   signalDesc: { fontSize: 12, color: c.textSecondary, marginTop: 2 },
 

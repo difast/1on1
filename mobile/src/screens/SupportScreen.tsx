@@ -4,7 +4,7 @@ import {
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '../context/auth';
@@ -29,6 +29,7 @@ const PIT_STARTERS = [
 export default function SupportScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
   const { user, activeRole } = useAuth();
   const router = useRouter();
   const { from } = useLocalSearchParams<{ from?: string }>();
@@ -208,7 +209,7 @@ export default function SupportScreen() {
               </View>
             )}
           </ScrollView>
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 10) + 12 }]}>
             <TextInput
               style={styles.chatInput}
               value={pitInput}
@@ -278,7 +279,7 @@ export default function SupportScreen() {
               <Text style={styles.errorText}>{error}</Text>
             </View>
           ) : null}
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 10) + 12 }]}>
             <TextInput
               style={styles.chatInput}
               value={replyText}

@@ -19,6 +19,7 @@ const TYPE_ICON: Record<string, { name: keyof typeof Ionicons.glyphMap; color: s
   meeting_declined:   { name: 'close-circle-outline',  color: '#ef4444' },
   call_started:       { name: 'videocam-outline',      color: '#0061ff' },
   new_task:           { name: 'checkbox-outline',      color: '#4f46e5' },
+  mood_reminder:      { name: 'happy-outline',         color: '#f59e0b' },
 };
 
 export default function NotificationsScreen() {

@@ -25,18 +25,35 @@ export function configureNotifications() {
   } catch { /* native module missing — ignore */ }
 }
 
+async function ensureAndroidChannel() {
+  if (Platform.OS !== 'android' || !Notifications?.setNotificationChannelAsync) return;
+  try {
+    await Notifications.setNotificationChannelAsync('default', {
+      name: 'Уведомления',
+      importance: Notifications.AndroidImportance?.MAX ?? 5,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#6366F1',
+    });
+  } catch {}
+}
+
+/** Ask for notification permission right away (on first app open). */
+export async function ensureNotificationPermission(): Promise<void> {
+  if (!Notifications?.getPermissionsAsync) return;
+  try {
+    await ensureAndroidChannel();
+    const current = await Notifications.getPermissionsAsync();
+    if (current.status !== 'granted') {
+      await Notifications.requestPermissionsAsync();
+    }
+  } catch {}
+}
+
 /** Ask permission, get the Expo push token, save it to the backend (push_token). */
 export async function registerPushToken(userId: number): Promise<void> {
   if (!Notifications?.getExpoPushTokenAsync) return;
   try {
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync('default', {
-        name: 'Уведомления',
-        importance: Notifications.AndroidImportance?.MAX ?? 5,
-        vibrationPattern: [0, 250, 250, 250],
-        lightColor: '#6366F1',
-      });
-    }
+    await ensureAndroidChannel();
     const current = await Notifications.getPermissionsAsync();
     let status = current.status;
     if (status !== 'granted') {
@@ -66,6 +83,10 @@ export function routeFromNotificationData(router: any, data: any) {
   }
   if (data.task_id || type === 'new_task' || type === 'task_assigned') {
     router.navigate('/(tabs)/tasks');
+    return;
+  }
+  if (type === 'mood_reminder') {
+    router.navigate('/(tabs)');  // home — daily mood survey banner
     return;
   }
   router.navigate('/(tabs)/notifications');

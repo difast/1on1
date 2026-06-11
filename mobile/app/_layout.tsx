@@ -11,13 +11,15 @@ import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { CallBanner } from '../src/components/CallBanner';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import * as Updates from 'expo-updates';
-import { configureNotifications, registerPushToken, setupNotificationTapHandler } from '../src/lib/push';
+import { configureNotifications, ensureNotificationPermission, registerPushToken, setupNotificationTapHandler } from '../src/lib/push';
 
 configureNotifications();
 
 // Register the device push token once the user is known, and route taps.
 function usePushNotifications(userId: number | undefined) {
   const router = useRouter();
+  // Ask for notification permission immediately on first app open.
+  useEffect(() => { ensureNotificationPermission(); }, []);
   useEffect(() => {
     if (!userId) return;
     registerPushToken(userId);

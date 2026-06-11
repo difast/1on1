@@ -4,7 +4,7 @@ import {
   TouchableOpacity, KeyboardAvoidingView, Platform,
   ActivityIndicator,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useTheme } from '../context/theme';
@@ -28,6 +28,7 @@ const STARTERS = [
 export default function AssistantScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
+  const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, activeRole } = useAuth();
   const isLead = (activeRole ?? user?.role) === 'team_lead';
@@ -134,7 +135,7 @@ export default function AssistantScreen() {
           )}
         </ScrollView>
 
-        <View style={styles.inputRow}>
+        <View style={[styles.inputRow, { paddingBottom: Math.max(insets.bottom, 10) + 12 }]}>
           <TextInput
             style={styles.input}
             value={input}
