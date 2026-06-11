@@ -11,7 +11,8 @@ from app.models.mood import MoodEntry
 
 router = APIRouter()
 
-AITUNNEL_KEY = "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku"
+import os
+AITUNNEL_KEY = os.getenv("AITUNNEL_KEY", "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku")
 
 def _analyze_survey(answers: List[str]) -> dict:
     filled = [a.strip() for a in answers if a.strip()]
