@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/styles.css">
 <style>
 /* ── PRICING PAGE SPECIFIC */
@@ -129,8 +129,8 @@
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
   <a href="/#features" onclick="closeMM()">Возможности</a>
+  <a href="/features" onclick="closeMM()">Как работает</a>
   <a href="/pricing" onclick="closeMM()">Тарифы</a>
-  <a href="/#how" onclick="closeMM()">Как работает</a>
   <div class="mm-btns">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost" onclick="closeMM()">Войти</a>
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-acc" onclick="closeMM()">Начать →</a>
@@ -142,8 +142,8 @@
   <a href="/" class="logo"><div class="logo-mark">1:1</div>OneOnOne</a>
   <div class="nav-links">
     <a href="/#features">Возможности</a>
+    <a href="/features">Как работает</a>
     <a href="/pricing" style="color:#fff">Тарифы</a>
-    <a href="/#how">Как работает</a>
   </div>
   <div class="nav-r">
     <a href="https://1on1-production-bb3b.up.railway.app" class="btn btn-ghost">Войти</a>
@@ -644,5 +644,6 @@ const ctaKids=document.querySelectorAll('.cta-child')
 ctaKids.forEach((el,i)=>{const cio2=new IntersectionObserver(([e])=>{if(e.isIntersecting){el.style.transitionDelay=i*.12+'s';el.style.opacity='1'}},{threshold:.2});cio2.observe(el)})
 </script>
 <script src="/store.js"></script>
+<script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){n.classList.toggle("scrolled",window.scrollY>12)};window.addEventListener("scroll",s,{passive:true});s();})();</script>
 </body>
 </html>
