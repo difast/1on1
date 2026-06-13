@@ -362,8 +362,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="logo" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
-            <img src="/favicon.png" alt="" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
+          <span className="logo" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center' }} onClick={() => window.location.reload()}>
+            <img src="/favicon.png" alt="" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0, marginRight: 8 }} />
             <span>OneOn<span className="accent">One</span></span>
           </span>
         </div>
