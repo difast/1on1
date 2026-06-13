@@ -13,7 +13,7 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .df{font-family:'Playfair Display',Georgia,serif}
 
 /* ── NAV */
-nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:rgba(19,17,28,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}
+nav{position:sticky;top:0;transition:padding .25s ease,background .25s ease;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:rgba(19,17,28,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}nav.scrolled{padding:8px 40px;background:rgba(19,17,28,.97)}nav.scrolled .logo-mark{width:34px;height:34px;font-size:18px;border-radius:9px}
 .logo{font-size:16px;font-weight:700;color:var(--txt);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;font-family:'Playfair Display',serif}
 .logo-mark{width:40px;height:40px;background:linear-gradient(135deg,#7C3AED,#4F46E5);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em;box-shadow:0 2px 10px rgba(124,58,237,.4)}
 .nav-links a{font-size:14px;color:var(--txt2);text-decoration:none;padding:6px 14px;border-radius:6px;transition:all .15s;font-weight:500}
@@ -24,8 +24,8 @@ nav{position:sticky;top:0;z-index:200;display:flex;align-items:center;justify-co
 .btn-ghost:hover{background:rgba(255,255,255,.05);color:var(--txt)}
 .btn-ghost-hero{background:rgba(255,255,255,.1);color:#fff;border:1px solid rgba(255,255,255,.4);backdrop-filter:blur(8px)}
 .btn-ghost-hero:hover{background:rgba(255,255,255,.2);color:#fff;border-color:rgba(255,255,255,.6)}
-.btn-acc{background:#7C3AED;color:#fff}
-.btn-acc:hover{background:#6D28D9;transform:translateY(-1px)}
+.btn-acc{background:#0A6CFF;color:#fff}
+.btn-acc:hover{background:#0852D6;transform:translateY(-1px)}
 .btn-lg{padding:12px 28px;font-size:15px}
 .btn-xl{padding:14px 36px;font-size:16px;border-radius:9px}
 
@@ -174,8 +174,8 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .plist li.dim::before{color:var(--txt3)}
 .pbtn{display:block;width:100%;padding:11px;border-radius:7px;text-align:center;font-weight:600;font-size:13px;border:1px solid var(--brd2);background:transparent;color:var(--txt2);text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif;cursor:pointer}
 .pbtn:hover{background:rgba(255,255,255,.05);color:var(--txt)}
-.pbtn.prim{background:#7C3AED;border-color:transparent;color:#fff}
-.pbtn.prim:hover{background:#6D28D9}
+.pbtn.prim{background:#0A6CFF;border-color:transparent;color:#fff}
+.pbtn.prim:hover{background:#0852D6}
 
 /* ── TESTIMONIALS */
 .tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:52px}
