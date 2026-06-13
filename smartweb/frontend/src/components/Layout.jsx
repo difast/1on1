@@ -899,19 +899,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           )}
 
           {/* App download buttons */}
-          <div style={{ padding: '12px 20px 16px', borderTop: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>
-              Приложение
+          <div style={{ padding: '12px 20px 16px', borderTop: '1px solid var(--color-border)' }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+              Приложения
             </p>
-            <StoreBtn label="App Store" icon={
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-            } />
-            <StoreBtn label="Google Play" icon={
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.35.19.75.24 1.15.12l12.48-7.2-2.64-2.64-10.99 9.72zm-1.56-20.4C1.27 3.7 1 4.12 1 4.68v14.64c0 .56.27.98.62 1.32l.08.07 8.2-8.2v-.19L1.62 3.29zM20.1 10.26l-2.56-1.48-2.92 2.92 2.92 2.92 2.58-1.49c.74-.42.74-1.44-.02-1.87zM4.33.12L16.81 7.32l-2.64 2.64L3.18.24C3.58.12 3.98.17 4.33.36z"/></svg>
-            } />
-            <StoreBtn label="RuStore" href="https://www.rustore.ru/catalog/app/com.oneonone.app" icon={
-              <svg width="16" height="16" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#0077FF"/><path d="M10 12h10.5c3.6 0 6 2 6 5.2 0 2.2-1.1 3.9-2.9 4.7l3.4 6.1h-4.2l-2.9-5.4H13.8V28H10V12zm3.8 7.5h6.4c1.5 0 2.4-.8 2.4-2.2s-.9-2.2-2.4-2.2h-6.4v4.4z" fill="white"/></svg>
-            } />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <StoreBtn compact title="App Store" icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+              } />
+              <StoreBtn compact title="Google Play" icon={
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.35.19.75.24 1.15.12l12.48-7.2-2.64-2.64-10.99 9.72zm-1.56-20.4C1.27 3.7 1 4.12 1 4.68v14.64c0 .56.27.98.62 1.32l.08.07 8.2-8.2v-.19L1.62 3.29zM20.1 10.26l-2.56-1.48-2.92 2.92 2.92 2.92 2.58-1.49c.74-.42.74-1.44-.02-1.87zM4.33.12L16.81 7.32l-2.64 2.64L3.18.24C3.58.12 3.98.17 4.33.36z"/></svg>
+              } />
+              <StoreBtn compact title="RuStore" href="https://www.rustore.ru/catalog/app/com.oneonone.app" icon={
+                <svg width="18" height="18" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="9" fill="#0077FF"/><path d="M10 12h10.5c3.6 0 6 2 6 5.2 0 2.2-1.1 3.9-2.9 4.7l3.4 6.1h-4.2l-2.9-5.4H13.8V28H10V12zm3.8 7.5h6.4c1.5 0 2.4-.8 2.4-2.2s-.9-2.2-2.4-2.2h-6.4v4.4z" fill="white"/></svg>
+              } />
+            </div>
           </div>
         </aside>
 
@@ -970,28 +972,35 @@ function SocialLink({ icon, label, value, href, display, placeholder }) {
   )
 }
 
-function StoreBtn({ label, icon, href }) {
-  const base = {
-    display: 'flex', alignItems: 'center', gap: 9, width: '100%',
-    padding: '8px 10px', borderRadius: 'var(--radius-sm)',
-    border: '1px solid var(--color-border)', background: 'var(--color-surface)',
-    color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 600,
-    textDecoration: 'none', textAlign: 'left',
-  }
-  const inner = <>{icon}<span style={{ flex: 1 }}>{label}</span></>
+function StoreBtn({ label, title, icon, href, compact }) {
+  const base = compact
+    ? {
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        flex: 1, height: 40, borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+        color: 'var(--color-text-primary)', textDecoration: 'none',
+      }
+    : {
+        display: 'flex', alignItems: 'center', gap: 9, width: '100%',
+        padding: '8px 10px', borderRadius: 'var(--radius-sm)',
+        border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+        color: 'var(--color-text-primary)', fontSize: 12, fontWeight: 600,
+        textDecoration: 'none', textAlign: 'left',
+      }
+  const inner = compact ? icon : <>{icon}<span style={{ flex: 1 }}>{label}</span></>
   if (href) {
     return (
-      <a href={href} target="_blank" rel="noopener noreferrer" style={{ ...base, cursor: 'pointer' }}>
+      <a href={href} title={title || label} target="_blank" rel="noopener noreferrer" style={{ ...base, cursor: 'pointer' }}>
         {inner}
       </a>
     )
   }
   // Stores not published yet — graceful placeholder.
   return (
-    <button type="button" onClick={() => alert('Появится позже')}
+    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => alert('Появится позже')}
       style={{ ...base, opacity: 0.55, cursor: 'pointer' }}>
       {inner}
-      <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>скоро</span>
+      {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>скоро</span>}
     </button>
   )
 }

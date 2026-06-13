@@ -121,6 +121,11 @@ html, body, #root {
   width: 100%;
   max-width: 100%;
   margin: 0;
+}
+/* Horizontal overflow is clipped on #root only. Putting overflow-x:hidden on
+   html/body breaks `position: fixed` in Chrome (fixed elements scroll with the
+   page) — that's what made the left profile card drift on long pages (Analytics). */
+#root {
   overflow-x: hidden;
 }
 
