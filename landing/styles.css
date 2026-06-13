@@ -13,9 +13,9 @@ body{font-family:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;background:
 .df{font-family:'Playfair Display',Georgia,serif}
 
 /* ── NAV */
-nav{position:sticky;top:0;transition:padding .25s ease,background .25s ease;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:rgba(19,17,28,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}nav.scrolled{padding:8px 40px;background:rgba(19,17,28,.97)}nav.scrolled .logo-mark{width:34px;height:34px;font-size:18px;border-radius:9px}
+nav{position:sticky;top:0;transition:padding .25s ease,background .25s ease;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:14px 40px;background:rgba(19,17,28,.88);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid var(--brd)}nav.scrolled{padding-top:8px;padding-bottom:8px;background:rgba(19,17,28,.97)}nav.scrolled .logo-mark{width:34px;height:34px;font-size:18px;border-radius:9px}
 .logo{font-size:16px;font-weight:700;color:var(--txt);text-decoration:none;letter-spacing:-.02em;display:flex;align-items:center;gap:10px;font-family:'Playfair Display',serif}
-.logo-mark{width:40px;height:40px;background:linear-gradient(135deg,#7C3AED,#4F46E5);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em;box-shadow:0 2px 10px rgba(124,58,237,.4)}
+.logo-mark{width:40px;height:40px;background:linear-gradient(135deg,#7C3AED,#4F46E5);border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em;box-shadow:0 2px 10px rgba(10,108,255,.45);object-fit:cover}
 .nav-links a{font-size:14px;color:var(--txt2);text-decoration:none;padding:6px 14px;border-radius:6px;transition:all .15s;font-weight:500}
 .nav-links a:hover{background:rgba(255,255,255,.06);color:var(--txt)}
 .nav-r{display:flex;gap:8px}
