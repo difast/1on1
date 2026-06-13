@@ -346,9 +346,13 @@ textarea.input { resize: vertical; min-height: 90px; }
   border-bottom: 1px solid var(--color-border-light);
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 24px; position: sticky; top: 0; z-index: 100;
-  transition: box-shadow var(--dur-normal) var(--ease-smooth);
+  transition: box-shadow var(--dur-normal) var(--ease-smooth), height 0.25s var(--ease-smooth);
 }
-.header.scrolled { box-shadow: var(--shadow-sm); }
+.header.scrolled { box-shadow: var(--shadow-sm); height: 46px; }
+
+/* Smooth, dynamic press feedback for every button in the app */
+button { transition: transform var(--dur-fast) var(--ease-smooth), opacity var(--dur-fast) var(--ease-smooth); }
+button:active:not(:disabled) { transform: scale(0.96); }
 
 .logo { font-size: 17px; font-weight: 600; letter-spacing: -0.4px; color: var(--color-text-primary); }
 .logo .accent { color: var(--color-accent); }

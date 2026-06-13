@@ -364,7 +364,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           </button>
           <span className="logo" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
             <img src="/favicon.png" alt="" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
-            OneOn<span className="accent">One</span>
+            <span>OneOn<span className="accent">One</span></span>
           </span>
         </div>
 
@@ -776,7 +776,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           top: 0,
           bottom: 0,
           left: 0,
-          paddingTop: 58,
+          paddingTop: scrolled ? 46 : 58,
+          transition: 'padding-top 0.25s var(--ease-smooth)',
           overflowY: 'auto',
           background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
