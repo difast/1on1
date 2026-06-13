@@ -362,7 +362,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" />
             </svg>
           </button>
-          <span className="logo" style={{ cursor: 'pointer' }} onClick={() => window.location.reload()}>OneOn<span className="accent">One</span></span>
+          <span className="logo" style={{ cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 8 }} onClick={() => window.location.reload()}>
+            <img src="/favicon.png" alt="" style={{ width: 28, height: 28, borderRadius: 7, flexShrink: 0 }} />
+            OneOn<span className="accent">One</span>
+          </span>
         </div>
 
         <nav className="nav">
@@ -770,9 +773,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <aside className={`app-sidebar${sidebarOpen ? ' open' : ''}`} style={{
           width: 240,
           position: 'fixed',
-          top: 58,
+          top: 0,
           bottom: 0,
           left: 0,
+          paddingTop: 58,
           overflowY: 'auto',
           background: 'var(--color-surface)',
           borderRight: '1px solid var(--color-border)',
