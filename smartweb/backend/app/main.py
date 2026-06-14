@@ -10,7 +10,20 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing
+
+
+def _seed_billing():
+    """Ensure the plan catalog exists (idempotent)."""
+    from app.database import SessionLocal
+    from app.services.plans import seed_plans
+    db = SessionLocal()
+    try:
+        seed_plans(db)
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 async def _keep_alive():
     """Ping own health endpoint every 4 minutes to prevent Railway from sleeping."""
@@ -76,6 +89,7 @@ async def _mood_reminder_loop():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())
     yield
@@ -116,6 +130,7 @@ app.include_router(assistant.router, prefix="/api/assistant", tags=["assistant"]
 app.include_router(subtask.router, prefix="/api/subtasks", tags=["subtasks"])
 app.include_router(checkin.router, prefix="/api/checkins", tags=["checkins"])
 app.include_router(support.router, prefix="/api/support", tags=["support"])
+app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
 
 @app.get("/")
 @app.get("/api/health")
