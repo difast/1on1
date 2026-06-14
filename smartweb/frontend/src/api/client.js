@@ -135,6 +135,7 @@ export const startTrialSubscription = (data) => api.post('/admin/billing/subscri
 export const extendSubscription = (id) => api.post(`/admin/billing/subscriptions/${id}/extend`)
 export const cancelSubscription = (id) => api.post(`/admin/billing/subscriptions/${id}/cancel`)
 export const setUserOverride = (id, data) => api.patch(`/admin/billing/users/${id}/override`, data)
+export const getAdminMetrics = () => api.get('/admin/billing/metrics')
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })

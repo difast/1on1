@@ -19,8 +19,15 @@ from app import online as online_cache
 router = APIRouter()
 
 @router.post("/{user_id}/heartbeat")
-def heartbeat(user_id: int):
+def heartbeat(user_id: int, db: Session = Depends(get_db)):
     online_cache.ping(user_id)
+    # Persist last activity for DAU/WAU metrics (cheap targeted update).
+    try:
+        from datetime import datetime as _dt
+        db.query(User).filter(User.id == user_id).update({User.last_active_at: _dt.utcnow()})
+        db.commit()
+    except Exception:
+        db.rollback()
     return {"ok": True}
 
 @router.get("/by-email/{email}", response_model=UserOut)

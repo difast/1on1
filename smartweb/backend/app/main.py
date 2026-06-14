@@ -87,14 +87,67 @@ async def _mood_reminder_loop():
         await asyncio.sleep(60)
 
 
+def _billing_sweep():
+    """Dunning: handle expired trials/periods.
+    - trialing expired (no card) -> downgrade to free
+    - active expired -> past_due; after GRACE days -> downgrade to free
+    GRACE configurable via BILLING_GRACE_DAYS (default 3).
+    """
+    from datetime import timedelta
+    from app.database import SessionLocal
+    from app.models.subscription import Subscription
+    from app.services import subscriptions as subs
+    grace = int(os.getenv("BILLING_GRACE_DAYS", "3"))
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+        rows = db.query(Subscription).filter(
+            Subscription.status.in_(("trialing", "active", "past_due")),
+        ).all()
+        for s in rows:
+            end = s.current_period_end
+            if not end or end > now:
+                continue
+            if s.status == "trialing":
+                subs.downgrade_to_free(db, s)
+            elif s.status == "active":
+                subs.set_status(db, s, "past_due")
+            elif s.status == "past_due":
+                if end + timedelta(days=grace) <= now:
+                    subs.downgrade_to_free(db, s)
+        # Daily investor-metrics snapshot for historical charts.
+        try:
+            from app.services import metrics as _metrics
+            _metrics.snapshot(db)
+        except Exception:
+            db.rollback()
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
+async def _billing_sweep_loop():
+    """Run the billing sweep daily (in-process scheduler, no Celery beat here)."""
+    await asyncio.sleep(120)
+    while True:
+        try:
+            await asyncio.to_thread(_billing_sweep)
+        except Exception:
+            pass
+        await asyncio.sleep(6 * 3600)  # every 6 hours
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())
+    billing_task = asyncio.create_task(_billing_sweep_loop())
     yield
     task.cancel()
     mood_task.cancel()
+    billing_task.cancel()
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0", lifespan=lifespan)
 

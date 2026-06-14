@@ -21,4 +21,5 @@ class User(Base):
     billing_override_note = Column(Text, nullable=True)
     billing_override_by = Column(Integer, nullable=True)
     billing_override_at = Column(DateTime, nullable=True)
+    last_active_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
