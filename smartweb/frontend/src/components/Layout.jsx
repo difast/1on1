@@ -5,6 +5,7 @@ import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
 import LegalModal from './LegalModal'
+import Billing from './Billing'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -31,6 +32,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
+  const [showBilling, setShowBilling] = useState(false)
   const userMenuRef = useRef(null)
   const notifRef = useRef(null)
   const [switchingRole, setSwitchingRole] = useState(false)
@@ -497,7 +499,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {/* My plan stub — team lead only */}
           {user?.role === 'team_lead' && (
             <button
-              onClick={() => alert('Скоро появится')}
+              onClick={() => setShowBilling(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
                 fontSize: 12, fontWeight: 700, color: '#16a34a',
@@ -930,6 +932,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       <PitAssistant />
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
+      <Billing open={showBilling} currentUser={currentUser} onClose={() => setShowBilling(false)} />
     </div>
   )
 }
