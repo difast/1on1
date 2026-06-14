@@ -7,6 +7,12 @@ class Settings(BaseSettings):
     celery_result_backend: str = "redis://localhost:6379/2"
     secret_key: str = "change-me"
 
+    # --- Auth (billing foundation). Enforcement stays OFF until AUTH_ENFORCE is
+    # set in the environment, so deploying this never breaks access. ---
+    auth_enforce: bool = False
+    supabase_jwt_secret: str = ""
+    admin_api_token: str = ""
+
     class Config:
         env_file = ".env"
 
