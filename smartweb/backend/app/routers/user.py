@@ -135,6 +135,7 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
                 "role": u.role,
                 "title": u.title or "",
                 "is_blocked": bool(getattr(u, "is_blocked", False)),
+                "billing_override": bool(getattr(u, "billing_override", False)),
                 "created_at": u.created_at.isoformat() if u.created_at else None,
                 "meetings_count": user_meeting_counts.get(u.id, 0),
                 "tasks_count": user_task_counts.get(u.id, 0),

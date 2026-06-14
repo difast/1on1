@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing
 
 
 def _seed_billing():
@@ -131,6 +131,7 @@ app.include_router(subtask.router, prefix="/api/subtasks", tags=["subtasks"])
 app.include_router(checkin.router, prefix="/api/checkins", tags=["checkins"])
 app.include_router(support.router, prefix="/api/support", tags=["support"])
 app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
+app.include_router(admin_billing.router, prefix="/api/admin/billing", tags=["admin-billing"])
 
 @app.get("/")
 @app.get("/api/health")
