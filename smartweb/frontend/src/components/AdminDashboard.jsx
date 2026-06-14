@@ -5,6 +5,7 @@ import {
   blockUser, unblockUser, deleteUser,
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
+  setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import AdminManage from './AdminManage'
@@ -66,6 +67,11 @@ export default function AdminDashboard({ onLogout }) {
   const [detailUser, setDetailUser] = useState(null)
   const [roleFilter, setRoleFilter] = useState('all')
 
+  // Billing
+  const [subs, setSubs]             = useState([])
+  const [paymentsList, setPaymentsList] = useState([])
+  const [billingLoading, setBillingLoading] = useState(false)
+
   // Tickets
   const [tickets, setTickets]           = useState([])
   const [ticketsLoading, setTicketsLoading] = useState(false)
@@ -116,6 +122,13 @@ export default function AdminDashboard({ onLogout }) {
       setKbLoading(true)
       getAdminArticles().then(r => setArticles(r.data)).catch(() => {}).finally(() => setKbLoading(false))
     }
+    if (tab === 'billing') {
+      setBillingLoading(true)
+      Promise.all([
+        getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}),
+        getAdminPayments().then(r => setPaymentsList(r.data)).catch(() => {}),
+      ]).finally(() => setBillingLoading(false))
+    }
     if (tab === 'broadcast' && allUsers.length === 0) {
       getUsers().then(r => setAllUsers(r.data)).catch(() => {})
     }
@@ -165,6 +178,13 @@ export default function AdminDashboard({ onLogout }) {
     if (!confirm('Удалить пользователя? Это действие необратимо.')) return
     await deleteUser(userId).catch(() => {})
     setData(d => ({ ...d, users: d.users.filter(u => u.id !== userId) }))
+  }
+
+  const handleOverride = async (userId, current) => {
+    const enabled = !current
+    if (enabled && !confirm('Выдать полный доступ без подписки этому аккаунту?')) return
+    await setUserOverride(userId, { enabled, note: enabled ? 'Выдано из админ-панели' : null }).catch(() => {})
+    setData(d => ({ ...d, users: d.users.map(u => u.id === userId ? { ...u, billing_override: enabled } : u) }))
   }
 
   const handleBroadcast = async (e) => {
@@ -253,6 +273,7 @@ export default function AdminDashboard({ onLogout }) {
           <TabBtn id="health"     label="Здоровье сервиса" />
           <TabBtn id="kb"         label="База знаний" />
           <TabBtn id="monetize"   label="Монетизация" />
+          <TabBtn id="billing"    label="Биллинг" />
         </div>
 
         {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' ? (
@@ -322,6 +343,16 @@ export default function AdminDashboard({ onLogout }) {
                                     borderColor: u.is_blocked ? '#bbf7d0' : '#fed7aa',
                                   }}>
                                   {u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
+                                </button>
+                                <button
+                                  onClick={() => handleOverride(u.id, u.billing_override)}
+                                  title="Полный доступ без подписки"
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap',
+                                    background: u.billing_override ? '#eef2ff' : '#f8fafc',
+                                    color: u.billing_override ? '#4f46e5' : '#64748b',
+                                    borderColor: u.billing_override ? '#c7d2fe' : '#e2e8f0',
+                                  }}>
+                                  {u.billing_override ? '★ Полный доступ' : 'Выдать полный доступ'}
                                 </button>
                                 <button
                                   onClick={() => handleDelete(u.id)}
@@ -668,6 +699,82 @@ export default function AdminDashboard({ onLogout }) {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* ── БИЛЛИНГ ── */}
+            {tab === 'billing' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Подписки</p>
+                {billingLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
+                ) : (
+                  <>
+                    <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            {['Subject', 'Тариф', 'Статус', 'Мест', 'Период', 'Действует до', 'Действия'].map(h => (
+                              <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {subs.map(s => (
+                            <tr key={s.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <Td mono>{s.subject_type}#{s.subject_id}</Td>
+                              <Td>{s.plan_code}</Td>
+                              <Td><span className={`badge ${s.status === 'active' ? 'badge-green' : s.status === 'trialing' ? 'badge-blue' : s.status === 'past_due' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>{s.status}</span></Td>
+                              <Td center>{s.seats}</Td>
+                              <Td muted>{s.billing_period}</Td>
+                              <Td muted>{s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('ru-RU') : '—'}</Td>
+                              <Td>
+                                <div style={{ display: 'flex', gap: 4 }}>
+                                  <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Продлить</button>
+                                  <button onClick={async () => { if (!confirm('Отменить подписку?')) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
+                                </div>
+                              </Td>
+                            </tr>
+                          ))}
+                          {subs.length === 0 && (
+                            <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Подписок пока нет</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Платежи</p>
+                    <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+                        <thead>
+                          <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
+                            {['ID', 'Subject', 'Сумма', 'Статус', 'Провайдер', 'Дата'].map(h => (
+                              <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                            ))}
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {paymentsList.map(p => (
+                            <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+                              <Td mono>{p.id}</Td>
+                              <Td mono>{p.subject_type}#{p.subject_id}</Td>
+                              <Td>{(p.amount / 100).toLocaleString('ru-RU')} {p.currency}</Td>
+                              <Td><span className={`badge ${p.status === 'succeeded' ? 'badge-green' : p.status === 'failed' ? 'badge-red' : 'badge-gray'}`} style={{ fontSize: 11 }}>{p.status}</span></Td>
+                              <Td muted>{p.provider || '—'}</Td>
+                              <Td muted>{p.created_at ? new Date(p.created_at).toLocaleDateString('ru-RU') : '—'}</Td>
+                            </tr>
+                          ))}
+                          {paymentsList.length === 0 && (
+                            <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Платежей пока нет</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
+                      Полный доступ без подписки выдаётся во вкладке «Пользователи» (кнопка «Выдать полный доступ»).
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
