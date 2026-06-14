@@ -4,6 +4,7 @@ from sqlalchemy import func
 from typing import List
 from datetime import datetime, timedelta
 from app.database import get_db
+from app.utils.auth import require_admin
 from app.models.user import User
 from app.models.team import Team
 from app.models.meeting import Meeting
@@ -41,7 +42,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     return user
 
 @router.get("/admin/stats")
-def get_admin_stats(db: Session = Depends(get_db)):
+def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     now = datetime.utcnow()
     ago30 = now - timedelta(days=30)
     ago14 = now - timedelta(days=14)
@@ -168,7 +169,7 @@ def get_admin_stats(db: Session = Depends(get_db)):
     }
 
 @router.get("/admin/analytics")
-def get_admin_analytics(db: Session = Depends(get_db)):
+def get_admin_analytics(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Funnel, retention, and weekly growth data for admin dashboard."""
     from app.models.team import TeamMember
     now = datetime.utcnow()
@@ -277,7 +278,7 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     return user
 
 @router.patch("/{user_id}/block")
-def block_user(user_id: int, db: Session = Depends(get_db)):
+def block_user(user_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -286,7 +287,7 @@ def block_user(user_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 @router.patch("/{user_id}/unblock")
-def unblock_user(user_id: int, db: Session = Depends(get_db)):
+def unblock_user(user_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -295,7 +296,7 @@ def unblock_user(user_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 @router.delete("/{user_id}")
-def delete_user(user_id: int, db: Session = Depends(get_db)):
+def delete_user(user_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
