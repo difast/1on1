@@ -115,6 +115,12 @@ def _billing_sweep():
             elif s.status == "past_due":
                 if end + timedelta(days=grace) <= now:
                     subs.downgrade_to_free(db, s)
+        # Daily investor-metrics snapshot for historical charts.
+        try:
+            from app.services import metrics as _metrics
+            _metrics.snapshot(db)
+        except Exception:
+            db.rollback()
     except Exception:
         pass
     finally:

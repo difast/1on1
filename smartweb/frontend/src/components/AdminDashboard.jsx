@@ -6,6 +6,7 @@ import {
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
+  getAdminMetrics,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import AdminManage from './AdminManage'
@@ -72,6 +73,10 @@ export default function AdminDashboard({ onLogout }) {
   const [paymentsList, setPaymentsList] = useState([])
   const [billingLoading, setBillingLoading] = useState(false)
 
+  // Investor metrics
+  const [metrics, setMetrics]       = useState(null)
+  const [metricsLoading, setMetricsLoading] = useState(false)
+
   // Tickets
   const [tickets, setTickets]           = useState([])
   const [ticketsLoading, setTicketsLoading] = useState(false)
@@ -121,6 +126,10 @@ export default function AdminDashboard({ onLogout }) {
     if (tab === 'kb' && articles.length === 0) {
       setKbLoading(true)
       getAdminArticles().then(r => setArticles(r.data)).catch(() => {}).finally(() => setKbLoading(false))
+    }
+    if (tab === 'metrics' && !metrics) {
+      setMetricsLoading(true)
+      getAdminMetrics().then(r => setMetrics(r.data)).catch(() => {}).finally(() => setMetricsLoading(false))
     }
     if (tab === 'billing') {
       setBillingLoading(true)
@@ -274,6 +283,7 @@ export default function AdminDashboard({ onLogout }) {
           <TabBtn id="kb"         label="База знаний" />
           <TabBtn id="monetize"   label="Монетизация" />
           <TabBtn id="billing"    label="Биллинг" />
+          <TabBtn id="metrics"    label="Инвест-метрики" />
         </div>
 
         {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' ? (
@@ -773,6 +783,53 @@ export default function AdminDashboard({ onLogout }) {
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
                       Полный доступ без подписки выдаётся во вкладке «Пользователи» (кнопка «Выдать полный доступ»).
                     </p>
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* ── ИНВЕСТ-МЕТРИКИ ── */}
+            {tab === 'metrics' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Инвест-метрики</p>
+                {metricsLoading || !metrics ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(190px,100%), 1fr))', gap: 14 }}>
+                      {[
+                        ['DAU', metrics.current.dau],
+                        ['WAU', metrics.current.wau],
+                        ['Workspaces', metrics.current.workspaces],
+                        ['1-on-1 встреч', metrics.current.meetings_1on1],
+                        ['MRR', `${metrics.current.mrr.toLocaleString('ru-RU')} ₽`],
+                        ['ARPU', `${metrics.current.arpu.toLocaleString('ru-RU')} ₽`],
+                        ['Платящих', metrics.current.paid_count],
+                        ['На триале', metrics.current.trialing_count],
+                        ['Free→Paid', `${metrics.current.free_to_paid_pct}%`],
+                        ['Retention 30d', `${metrics.current.retention_30d_pct}%`],
+                        ['LTV', `${(metrics.current.ltv || 0).toLocaleString('ru-RU')} ₽`],
+                        ['LTV/CAC', metrics.current.ltv_cac_ratio ?? '—'],
+                        ['CAC', metrics.current.cac != null ? `${metrics.current.cac.toLocaleString('ru-RU')} ₽` : '—'],
+                        ['ROI/клиент', metrics.current.roi_per_customer_value != null ? `${metrics.current.roi_per_customer_value.toLocaleString('ru-RU')} ₽` : '—'],
+                      ].map(([label, val]) => (
+                        <div key={label} className="card" style={{ padding: '16px 18px' }}>
+                          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>{label}</p>
+                          <p style={{ fontSize: 24, fontWeight: 800, margin: 0 }}>{val}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.6 }}>
+                      DAU/WAU/Workspaces/встречи/MRR/Retention/конверсия считаются из данных автоматически.
+                      CAC, LTV/CAC и ROI требуют входных данных (расходы на маркетинг, отток, ставка) —
+                      задаются в переменных окружения сервера: MARKETING_SPEND_KOPECKS, NEW_PAID_CUSTOMERS,
+                      MONTHLY_CHURN, ROI_HOURLY_RATE_KOPECKS.
+                    </p>
+                    {metrics.history?.length > 1 && (
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
+                        История: {metrics.history.length} дн. снимков (для графиков динамики).
+                      </p>
+                    )}
                   </>
                 )}
               </div>

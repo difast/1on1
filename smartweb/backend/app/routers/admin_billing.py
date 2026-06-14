@@ -14,8 +14,31 @@ from app.models.user import User
 from app.models.subscription import Subscription, Payment, Invoice
 from app.utils.auth import require_admin
 from app.services import subscriptions as subs
+from app.services import metrics as metrics_service
+from sqlalchemy import text
 
 router = APIRouter()
+
+
+@router.get("/metrics")
+def investor_metrics(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Investor / SaaS KPIs (DAU/WAU/Workspaces/MRR/Retention/conversion/CAC/LTV/ROI)."""
+    current = metrics_service.compute(db)
+    history = []
+    try:
+        rows = db.execute(text(
+            "SELECT day, dau, wau, workspaces, meetings_total, paid_count, trialing_count, mrr "
+            "FROM metrics_daily ORDER BY day DESC LIMIT 90"
+        )).fetchall()
+        history = [
+            {"day": str(r[0]), "dau": r[1], "wau": r[2], "workspaces": r[3],
+             "meetings_total": r[4], "paid_count": r[5], "trialing_count": r[6],
+             "mrr": round((r[7] or 0) / 100, 2)}
+            for r in rows
+        ]
+    except Exception:
+        pass
+    return {"current": current, "history": history}
 
 
 def _sub_dict(s: Subscription):
