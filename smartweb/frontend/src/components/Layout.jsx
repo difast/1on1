@@ -33,6 +33,20 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const [showSupport, setShowSupport] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showBilling, setShowBilling] = useState(false)
+  const [billingPlan, setBillingPlan] = useState(null)
+
+  // Open "Мой тариф" automatically when arriving from the landing/app (?upgrade=1).
+  useEffect(() => {
+    try {
+      const q = new URLSearchParams(window.location.search)
+      if (q.get('upgrade') === '1' || window.location.pathname.includes('/billing')) {
+        setBillingPlan(q.get('plan') || null)
+        setShowBilling(true)
+        // clean the URL so refresh doesn't reopen
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    } catch {}
+  }, [])
   const userMenuRef = useRef(null)
   const notifRef = useRef(null)
   const [switchingRole, setSwitchingRole] = useState(false)
@@ -932,7 +946,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       <PitAssistant />
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
-      <Billing open={showBilling} currentUser={currentUser} onClose={() => setShowBilling(false)} />
+      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
     </div>
   )
 }
