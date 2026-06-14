@@ -11,3 +11,4 @@ from app.models.checkin import WorkCheckin
 from app.models.support_ticket import SupportTicket
 from app.models.ticket_message import TicketMessage
 from app.models.plan import Plan, UsageCounter
+from app.models.subscription import Subscription, Payment, Invoice

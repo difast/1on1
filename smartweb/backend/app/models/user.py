@@ -16,4 +16,9 @@ class User(Base):
     avatar = Column(Text, nullable=True)
     push_token = Column(String(512), nullable=True)
     is_blocked = Column(Boolean, nullable=False, default=False, server_default='false')
+    # Full-access override: grants complete rights without any subscription.
+    billing_override = Column(Boolean, nullable=False, default=False, server_default='false')
+    billing_override_note = Column(Text, nullable=True)
+    billing_override_by = Column(Integer, nullable=True)
+    billing_override_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, server_default=func.now())
