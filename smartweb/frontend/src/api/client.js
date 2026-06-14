@@ -126,6 +126,7 @@ export const getAdminAnalytics = () => api.get('/users/admin/analytics')
 // Billing (public)
 export const getBillingPlans = () => api.get('/billing/plans')
 export const getBillingMe = (userId) => api.get('/billing/me', { params: userId ? { user_id: userId } : {} })
+export const checkoutPlan = (data) => api.post('/billing/checkout', data)
 // Admin billing
 export const getAdminSubscriptions = () => api.get('/admin/billing/subscriptions')
 export const getAdminPayments = () => api.get('/admin/billing/payments')
