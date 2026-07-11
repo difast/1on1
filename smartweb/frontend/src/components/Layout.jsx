@@ -844,7 +844,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {/* Social links + stats */}
           {!editing && (
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-              <SocialLink icon="✈" label="Telegram" value={user?.telegram}
+              <SocialLink icon="TG" label="Telegram" value={user?.telegram}
                 href={user?.telegram ? `https://t.me/${user.telegram.replace(/^@/, '')}` : null}
                 display={user?.telegram ? `@${user.telegram.replace(/^@/, '')}` : null}
                 placeholder="не указан" />

@@ -259,7 +259,7 @@ export default function SupportPage({ currentUser, onClose }) {
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>Назад</button>
                     <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2 }}>
-                      {submitting ? 'Отправка...' : '📨 Отправить'}
+                      {submitting ? 'Отправка...' : 'Отправить'}
                     </button>
                   </div>
                 </form>

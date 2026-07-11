@@ -216,9 +216,9 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
                 width: 40, height: 40, borderRadius: 10,
                 background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, flexShrink: 0,
+                flexShrink: 0,
               }}>
-                📄
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/></svg>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 4 }}>{a.title}</p>
@@ -233,8 +233,12 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
               </div>
               {canEdit && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={(e) => openEdit(a, e)} className="btn btn-secondary btn-sm" style={{ fontSize: 11 }}>✏️</button>
-                  <button onClick={(e) => handleDelete(a.id, e)} disabled={deleting === a.id} className="btn btn-danger btn-sm" style={{ fontSize: 11 }}>🗑</button>
+                  <button onClick={(e) => openEdit(a, e)} className="btn btn-secondary btn-sm" aria-label="Редактировать статью" title="Редактировать">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
+                  </button>
+                  <button onClick={(e) => handleDelete(a.id, e)} disabled={deleting === a.id} className="btn btn-danger btn-sm" aria-label="Удалить статью" title="Удалить">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
+                  </button>
                 </div>
               )}
             </div>
