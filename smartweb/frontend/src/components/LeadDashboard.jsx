@@ -532,7 +532,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
     const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
-      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #a78bfa' : undefined }}>
+      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #5B8EF8' : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <div style={{
             width: 46, height: 46, borderRadius: 'var(--radius-md)',
@@ -560,14 +560,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {stLabel[m.status] || m.status}
             </span>
             {m.is_rescheduled && !['cancelled','declined'].includes(m.status) && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#2554D4', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
                 ↻ Перенесена
               </span>
             )}
           </div>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0, position: 'relative' }}>
-              <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
+              <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#2554D4,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 В календарь
               </button>
@@ -1789,7 +1789,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="modal-header" style={{ paddingBottom: 12 }}>
             <div>
               <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #a855f7, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✦</span>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✦</span>
                 AI предлагает слоты
               </span>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
@@ -1800,7 +1800,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
-              <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#8b5cf6' }} />
+              <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#3B6EF0' }} />
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI подбирает слоты...</span>
             </div>
           ) : aiSlots.length > 0 ? (

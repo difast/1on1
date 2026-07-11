@@ -63,7 +63,7 @@ export default function MoodPrompt({ teamId }) {
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            borderLeft: '4px solid #8b5cf6',
+            borderLeft: '4px solid #3B6EF0',
             borderRadius: 14,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             padding: '14px 18px',
@@ -73,7 +73,7 @@ export default function MoodPrompt({ teamId }) {
           }}
         >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#8b5cf6" opacity="0.9"/>
+              <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#3B6EF0" opacity="0.9"/>
             </svg>
           <div style={{ flex: 1 }}>
             <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>

@@ -985,7 +985,7 @@ export default function LeadAnalytics({ user }) {
             )}
           </div>
           {moodLinePoints.length >= 2
-            ? <LineChart points={moodLinePoints} color="#8b5cf6" height={100} />
+            ? <LineChart points={moodLinePoints} color="#3B6EF0" height={100} />
             : <p style={{ fontSize: 13, color: 'var(--color-text-muted)', paddingTop: 20 }}>Нет данных по настроению — участники ещё не заполняли опросник</p>}
           {mood?.recent_summaries?.length > 0 && (
             <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 5 }}>

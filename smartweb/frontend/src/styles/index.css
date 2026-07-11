@@ -188,9 +188,9 @@ button { cursor: pointer; border: none; background: none; }
   90%       { transform: rotate(0deg); }
 }
 @keyframes markAllPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(99,102,241,0.5); }
-  70%  { box-shadow: 0 0 0 6px rgba(99,102,241,0); }
-  100% { box-shadow: 0 0 0 0 rgba(99,102,241,0); }
+  0%   { box-shadow: 0 0 0 0 rgba(37,84,212,0.5); }
+  70%  { box-shadow: 0 0 0 6px rgba(37,84,212,0); }
+  100% { box-shadow: 0 0 0 0 rgba(37,84,212,0); }
 }
 @keyframes toastSlide {
   from { opacity: 0; transform: translateX(-50%) translateY(-16px) scale(0.94); }
@@ -201,9 +201,9 @@ button { cursor: pointer; border: none; background: none; }
   50%       { border-color: var(--blue-400); }
 }
 @keyframes aiPulse {
-  0%   { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.6), 0 0 12px rgba(139,92,246,0.4); }
-  70%  { box-shadow: 0 0 0 8px rgba(139, 92, 246, 0), 0 0 12px rgba(139,92,246,0.4); }
-  100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0), 0 0 12px rgba(139,92,246,0.4); }
+  0%   { box-shadow: 0 0 0 0 rgba(59,110,240, 0.6), 0 0 12px rgba(59,110,240,0.4); }
+  70%  { box-shadow: 0 0 0 8px rgba(59,110,240, 0), 0 0 12px rgba(59,110,240,0.4); }
+  100% { box-shadow: 0 0 0 0 rgba(59,110,240, 0), 0 0 12px rgba(59,110,240,0.4); }
 }
 @keyframes aiGradient {
   0%   { background-position: 0% 50%; }
@@ -704,3 +704,4 @@ button:active:not(:disabled) { transform: scale(0.96); }
 .bill-msg{margin-top:16px;font-size:13px;color:var(--color-accent);font-weight:600}
 .bill-foot{margin-top:16px;font-size:12px;color:var(--color-text-muted);line-height:1.6}
 @media (max-width:600px){.bill-body{padding:18px 16px 22px}.bill-price{font-size:26px}}
+.bill-price.ent{font-size:17px;font-weight:700;letter-spacing:0;line-height:1.2}
