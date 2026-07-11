@@ -924,7 +924,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               )}
               {myTasks.length === 0 ? (
                 <div className="empty-state">
-                  <div className="empty-icon">○</div>
+                  <div className="empty-icon">◎</div>
                   <p className="empty-title">Нет задач</p>
                   <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
                 </div>
