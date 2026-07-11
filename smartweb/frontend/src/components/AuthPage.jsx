@@ -166,17 +166,21 @@ export default function AuthPage({ onAdminLogin }) {
             </div>
 
             <form onSubmit={mode === 'login' ? handleLogin : handleRegister}>
+              {/* Labels tied to inputs (htmlFor/id) — required for screen readers
+                  and for browser password managers to autofill correctly. */}
               <div className="form-group">
-                <label className="form-label">Email</label>
+                <label className="form-label" htmlFor="auth-email">Email</label>
                 <input
+                  id="auth-email"
                   type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="ivan@company.com" className="input" required autoComplete="email"
                 />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Пароль</label>
+                <label className="form-label" htmlFor="auth-password">Пароль</label>
                 <input
+                  id="auth-password"
                   type="password" value={password} onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••" className="input" required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
@@ -184,8 +188,9 @@ export default function AuthPage({ onAdminLogin }) {
 
               {mode === 'register' && (
                 <div className="form-group">
-                  <label className="form-label">Повторите пароль</label>
+                  <label className="form-label" htmlFor="auth-confirm">Повторите пароль</label>
                   <input
+                    id="auth-confirm"
                     type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
                     placeholder="••••••••" className="input" required autoComplete="new-password"
                   />
