@@ -818,6 +818,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
                   <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  {/* Empty state should invite the first action, not read as a blank/bug */}
+                  <p className="empty-desc">Запишите мысль или договорённость — заметки видите только вы.</p>
                 </div>
               )}
             </div>
@@ -1258,10 +1260,32 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           )}
 
           {teams.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">◎</div>
-              <p className="empty-title">Нет команд</p>
-              <p className="empty-desc">Создайте первую команду, чтобы начать</p>
+            /* First-run guide instead of a bare empty state: a new lead lands here
+               with nothing, so we show the 3 steps to the first value moment and a
+               single primary CTA. Progressive disclosure — no overlay tour needed. */
+            <div className="card" style={{ maxWidth: 520, margin: '8px auto', padding: '28px 26px', textAlign: 'left' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Начните за 3 шага</h2>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 18 }}>
+                Соберите команду и проведите первую встречу один-на-один.
+              </p>
+              <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  ['Создайте команду', 'Дайте ей название — это ваше рабочее пространство.'],
+                  ['Пригласите участников', 'Отправьте код приглашения коллегам.'],
+                  ['Запланируйте встречу', 'Назначьте первую 1-на-1 с участником.'],
+                ].map(([t, d], i) => (
+                  <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <span aria-hidden="true" style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{t}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)' }}>{d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent" style={{ fontWeight: 700 }}>
+                Создать команду
+              </button>
             </div>
           )}
 
@@ -1796,7 +1820,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
               </p>
             </div>
-            <button className="modal-close" onClick={() => setRescheduleModal(null)}>✕</button>
+            <button className="modal-close" aria-label="Закрыть" onClick={() => setRescheduleModal(null)}>✕</button>
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
@@ -1852,7 +1876,7 @@ function Modal({ title, onClose, children }) {
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
         </div>
         {children}
       </div>

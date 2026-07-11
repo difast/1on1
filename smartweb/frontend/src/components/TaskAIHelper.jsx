@@ -81,7 +81,7 @@ export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded })
                 </span>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>Конкретные шаги по выполнению задачи</p>
               </div>
-              <button className="modal-close" onClick={() => setOpen(false)}>✕</button>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setOpen(false)}>✕</button>
             </div>
 
             <div style={{ background: 'linear-gradient(135deg, #f5f3ff, #E0EAFF)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, border: '1px solid #ddd6fe' }}>

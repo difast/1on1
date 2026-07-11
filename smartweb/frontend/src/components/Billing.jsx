@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getBillingMe, getBillingPlans, checkoutPlan } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 // "Мой тариф" — sales-oriented plan screen + CloudPayments checkout.
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
@@ -57,6 +58,8 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
 
+  useEscapeKey(onClose, open)  // Esc closes the dialog (keyboard escape hatch)
+
   const refresh = () => { if (currentUser?.id) getBillingMe(currentUser.id).then(r => setMe(r.data)).catch(() => {}) }
 
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
       <div className="bill-modal" onClick={e => e.stopPropagation()}>
         <div className="bill-head">
           <h2>Мой тариф</h2>
-          <button className="bill-x" onClick={onClose}>✕</button>
+          <button className="bill-x" aria-label="Закрыть" onClick={onClose}>✕</button>
         </div>
 
         <div className="bill-body">

@@ -628,7 +628,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">Сменить пароль</span>
-              <button className="modal-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowPasswordModal(false)}>✕</button>
             </div>
             {pwdSuccess ? (
               <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>

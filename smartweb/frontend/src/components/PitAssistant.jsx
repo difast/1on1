@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
+import useEscapeKey from '../lib/useEscapeKey'
 
 const PIT_STYLES = `
 @keyframes pitFloat {
@@ -49,6 +50,7 @@ export default function PitAssistant() {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const ctxRef = useRef(null)
+  useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
 
   useEffect(() => {
     const handler = (e) => setShifted(e.detail.open)

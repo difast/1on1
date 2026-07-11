@@ -3,6 +3,7 @@ import {
   getTeams, getMemberTeam, getMeetings, getTasks,
   updateUser, deleteUser, blockUser, unblockUser,
 } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 
@@ -10,6 +11,7 @@ const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 // plus role change / block / delete. Responsive (full-width on mobile).
 export default function AdminUserDetail({ user, onClose, onChanged }) {
   const [loading, setLoading] = useState(false)
+  useEscapeKey(onClose)  // keyboard escape hatch
   const [teams, setTeams] = useState([])
   const [meetings, setMeetings] = useState([])
   const [tasks, setTasks] = useState([])

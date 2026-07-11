@@ -332,13 +332,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             </p>
             <form onSubmit={handleJoin} style={{ textAlign: 'left' }}>
               <div className="form-group">
-                <label className="form-label">Код приглашения</label>
+                {/* label tied to input (htmlFor/id) so screen readers announce it */}
+                <label className="form-label" htmlFor="join-code">Код приглашения</label>
                 <input
+                  id="join-code"
                   type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)}
                   placeholder="ABC123" className="input"
                   style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                   autoFocus
                 />
+                {/* Prevent the dead-end feeling for members who have no code yet */}
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                  Нет кода? Попросите тимлида отправить вам приглашение.
+                </p>
               </div>
               {joinError && (
                 <div style={{
@@ -913,6 +919,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
                   <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  {/* Empty state should invite the first action, not read as a blank/bug */}
+                  <p className="empty-desc">Запишите мысль или вопрос к встрече — заметки видите только вы.</p>
                 </div>
               )}
             </div>
@@ -1021,7 +1029,7 @@ function Modal({ title, onClose, children }) {
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
         </div>
         {children}
       </div>
