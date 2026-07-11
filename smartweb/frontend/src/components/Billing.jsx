@@ -1,31 +1,63 @@
 import { useState, useEffect } from 'react'
 import { getBillingMe, getBillingPlans, checkoutPlan } from '../api/client'
 
-// "Мой тариф" — current plan, usage and self-serve purchase via CloudPayments.
+// "Мой тариф" — sales-oriented plan screen + CloudPayments checkout.
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
+
+const DESC = {
+  free: 'Для знакомства с продуктом. Без карты.',
+  start: 'Одна команда с AI-ассистентом Пит.',
+  team: 'Растущим командам: аналитика и AI целиком.',
+  company: 'Крупным командам: видео, транскрипты, учёт времени.',
+  enterprise: 'Организациям: On-premise, SSO и SLA.',
+}
+const POPULAR = 'team'
+const FEATURE_LABELS = [
+  ['pit', 'AI-ассистент Пит'],
+  ['analytics', 'Аналитика команды'],
+  ['risk_alerts', 'Зоны риска и алерты'],
+  ['video_calls', 'Встроенные видеозвонки'],
+  ['transcripts', 'Автотранскрипты встреч'],
+  ['csv_export', 'Экспорт CSV'],
+]
 
 function loadCpWidget() {
   return new Promise((resolve, reject) => {
     if (window.cp) return resolve(window.cp)
     const s = document.createElement('script')
-    s.src = CP_WIDGET
-    s.onload = () => resolve(window.cp)
-    s.onerror = reject
+    s.src = CP_WIDGET; s.onload = () => resolve(window.cp); s.onerror = reject
     document.head.appendChild(s)
   })
+}
+
+const Check = () => (
+  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.5 3.5l-6 6L2.5 6.8" stroke="var(--color-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+)
+
+const fmt = (v) => (v === null || v === undefined || v < 0) ? '∞' : v
+
+function planBullets(p) {
+  const l = p.limits || {}, f = l.features || {}
+  const out = []
+  if (l.max_members_per_team != null) out.push(`До ${fmt(l.max_members_per_team)} участников`)
+  else out.push('Участников без лимита')
+  out.push(`Команд: ${fmt(l.max_teams)}`)
+  out.push(`Встреч/мес: ${fmt(l.max_meetings_per_month)}`)
+  for (const [key, label] of FEATURE_LABELS) {
+    if (f[key]) out.push(label)
+    if (out.length >= 6) break
+  }
+  return out
 }
 
 export default function Billing({ open, currentUser, initialPlan, onClose }) {
   const [me, setMe] = useState(null)
   const [plans, setPlans] = useState([])
   const [period, setPeriod] = useState('month')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
 
-  const refresh = () => {
-    if (!currentUser?.id) return
-    getBillingMe(currentUser.id).then(r => setMe(r.data)).catch(() => {})
-  }
+  const refresh = () => { if (currentUser?.id) getBillingMe(currentUser.id).then(r => setMe(r.data)).catch(() => {}) }
 
   useEffect(() => {
     if (!open) return
@@ -35,105 +67,93 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
 
   if (!open) return null
 
-  const handleBuy = async (plan) => {
-    if (plan.is_enterprise) { window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise'; return }
-    setBusy(true); setMsg('')
+  const handleBuy = async (p) => {
+    if (p.is_enterprise) { window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return }
+    setBusy(p.code); setMsg('')
     try {
-      const { data } = await checkoutPlan({ plan_code: plan.code, period, user_id: currentUser.id })
+      const { data } = await checkoutPlan({ plan_code: p.code, period, user_id: currentUser.id })
       const cfg = data.checkout
-      if (!cfg?.configured || !cfg.public_id) {
-        setMsg('Платёжная система ещё не подключена администратором.')
-        setBusy(false); return
-      }
+      if (!cfg?.configured || !cfg.public_id) { setMsg('Платёжная система ещё не подключена администратором.'); setBusy(''); return }
       const cp = await loadCpWidget()
-      const widget = new cp.CloudPayments()
-      widget.pay('charge', {
-        publicId: cfg.public_id,
-        description: cfg.description,
-        amount: cfg.amount,
-        currency: cfg.currency || 'RUB',
-        accountId: cfg.account_id,
-        invoiceId: cfg.invoice_id,
+      new cp.CloudPayments().pay('charge', {
+        publicId: cfg.public_id, description: cfg.description, amount: cfg.amount,
+        currency: cfg.currency || 'RUB', accountId: cfg.account_id, invoiceId: cfg.invoice_id,
         ...(cfg.recurrent ? { data: { cloudPayments: { recurrent: { interval: cfg.recurrent.interval, period: cfg.recurrent.period } } } } : {}),
       }, {
         onSuccess: () => { setMsg('Оплата прошла! Тариф активируется в течение минуты.'); setTimeout(refresh, 3000) },
-        onFail: () => { setMsg('Оплата не завершена.') },
-        onComplete: () => setBusy(false),
+        onFail: () => setMsg('Оплата не завершена.'),
+        onComplete: () => setBusy(''),
       })
-    } catch {
-      setMsg('Не удалось открыть оплату.'); setBusy(false)
-    }
+    } catch { setMsg('Не удалось открыть оплату.'); setBusy('') }
   }
 
-  const fmt = (v) => v < 0 ? '∞' : v
   const limits = me?.limits || {}
+  const meetLimit = limits.max_meetings_per_month
+  const meetUsed = me?.usage?.meetings_this_month ?? 0
+  const currentCode = me?.full_access_override ? 'unlimited' : (me?.plan_code || 'free')
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 9600, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '24px 16px', overflowY: 'auto' }}>
-      <div onClick={e => e.stopPropagation()} className="card" style={{ width: '100%', maxWidth: 920, marginTop: 24, padding: 0, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 22px', borderBottom: '1px solid var(--color-border)' }}>
-          <strong style={{ fontSize: 17 }}>Мой тариф</strong>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 22, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+    <div className="bill-overlay" onClick={onClose}>
+      <div className="bill-modal" onClick={e => e.stopPropagation()}>
+        <div className="bill-head">
+          <h2>Мой тариф</h2>
+          <button className="bill-x" onClick={onClose}>✕</button>
         </div>
 
-        <div style={{ padding: '20px 22px' }}>
-          {/* Current plan */}
-          <div className="card" style={{ padding: '14px 18px', marginBottom: 18, background: 'var(--color-bg)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Текущий тариф:</span>
-              <span className="badge badge-blue" style={{ fontSize: 13, textTransform: 'uppercase' }}>
-                {me?.full_access_override ? 'Полный доступ' : (me?.plan_code || 'free')}
-              </span>
-              {me?.usage && (
-                <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Встречи в этом месяце: {me.usage.meetings_this_month ?? 0}{limits.meetings_per_month >= 0 ? ` / ${limits.meetings_per_month}` : ''}
-                </span>
-              )}
-            </div>
+        <div className="bill-body">
+          <p className="bill-hero">Выберите тариф под размер команды. Оплата картой или СБП, годовая подписка — на 20% выгоднее. Повышение действует сразу.</p>
+
+          {/* Current plan + usage */}
+          <div className="bill-current">
+            <span className="lbl">Текущий тариф</span>
+            <span className="bill-chip">{me?.full_access_override ? 'Полный доступ' : (me?.plan_code || 'free')}</span>
+            {meetLimit != null && meetLimit >= 0 && (
+              <div className="bill-usage">
+                <div className="cap">Встречи в этом месяце: {meetUsed} / {meetLimit}</div>
+                <div className="track"><div className="fill" style={{ width: `${Math.min(100, (meetUsed / Math.max(meetLimit, 1)) * 100)}%` }} /></div>
+              </div>
+            )}
           </div>
 
           {/* Period toggle */}
-          <div style={{ display: 'inline-flex', background: 'var(--color-bg)', borderRadius: 10, padding: 3, marginBottom: 16, border: '1px solid var(--color-border)' }}>
-            {[['month', 'Ежемесячно'], ['year', 'Годовая −20%']].map(([k, label]) => (
-              <button key={k} onClick={() => setPeriod(k)} style={{
-                padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
-                background: period === k ? 'var(--color-accent)' : 'transparent',
-                color: period === k ? '#fff' : 'var(--color-text-secondary)',
-              }}>{label}</button>
-            ))}
+          <div className="bill-toggle">
+            <button className={period === 'month' ? 'on' : ''} onClick={() => setPeriod('month')}>Ежемесячно</button>
+            <button className={period === 'year' ? 'on' : ''} onClick={() => setPeriod('year')}>Годовая <span className="bill-save">−20%</span></button>
           </div>
 
           {/* Plans */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(220px,100%), 1fr))', gap: 12 }}>
+          <div className="bill-grid">
             {plans.map(p => {
+              const isCurrent = currentCode === p.code
+              const popular = p.code === POPULAR
               const price = period === 'year' ? p.price_year : p.price_month
-              const isCurrent = (me?.plan_code === p.code)
               return (
-                <div key={p.code} className="card" style={{ padding: '16px 16px', display: 'flex', flexDirection: 'column', gap: 8, border: isCurrent ? '2px solid var(--color-accent)' : undefined }}>
-                  <strong style={{ fontSize: 15 }}>{p.name}</strong>
-                  <div style={{ fontSize: 20, fontWeight: 800 }}>
-                    {p.is_enterprise ? 'По согласованию' : `${price}₽`}
-                    {!p.is_enterprise && <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--color-text-muted)' }}>{p.per_seat ? ' /чел·мес' : ' /мес'}</span>}
+                <div key={p.code} className={`bill-card${popular ? ' popular' : ''}${isCurrent ? ' current' : ''}`}>
+                  {popular && <span className="bill-ribbon">Популярный</span>}
+                  <span className="bill-name">{p.name}</span>
+                  <div className="bill-price">
+                    {p.is_enterprise ? 'Индивидуально' : <>{price}₽<small>{p.per_seat ? ' /чел·мес' : ' /мес'}</small>{period === 'year' && !p.is_enterprise && price > 0 && <span className="old">{p.price_month}₽</span>}</>}
                   </div>
-                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-                    {(p.limits?.max_team_members >= 0) && <div>До {fmt(p.limits.max_team_members)} участников</div>}
-                    {(p.limits?.max_teams >= 0) && <div>Команд: {fmt(p.limits.max_teams)}</div>}
-                    <div>Встреч/мес: {fmt(p.limits?.meetings_per_month)}</div>
-                  </div>
-                  <button
-                    disabled={busy || isCurrent}
-                    onClick={() => handleBuy(p)}
-                    className={isCurrent ? 'btn btn-secondary btn-sm' : 'btn btn-accent btn-sm'}
-                    style={{ marginTop: 'auto' }}
-                  >
-                    {isCurrent ? 'Текущий' : p.is_enterprise ? 'Связаться' : (p.code === 'free' ? 'Бесплатно' : 'Выбрать')}
-                  </button>
+                  <div className="bill-desc">{DESC[p.code] || ''}</div>
+                  <ul className="bill-feats">
+                    {planBullets(p).map((b, i) => (<li key={i}><Check />{b}</li>))}
+                  </ul>
+                  {isCurrent ? (
+                    <button className="bill-cta muted" disabled>Текущий тариф</button>
+                  ) : p.code === 'free' ? (
+                    <button className="bill-cta ghost" disabled>Базовый</button>
+                  ) : (
+                    <button className="bill-cta" disabled={busy === p.code} onClick={() => handleBuy(p)}>
+                      {busy === p.code ? '...' : p.is_enterprise ? 'Связаться' : 'Выбрать'}
+                    </button>
+                  )}
                 </div>
               )
             })}
           </div>
 
-          {msg && <p style={{ marginTop: 16, fontSize: 13, color: 'var(--color-accent)' }}>{msg}</p>}
+          {msg && <p className="bill-msg">{msg}</p>}
+          <p className="bill-foot">Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
         </div>
       </div>
     </div>
