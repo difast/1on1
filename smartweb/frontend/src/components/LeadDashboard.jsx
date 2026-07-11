@@ -1796,7 +1796,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
               </p>
             </div>
-            <button className="modal-close" onClick={() => setRescheduleModal(null)}>✕</button>
+            <button className="modal-close" aria-label="Закрыть" onClick={() => setRescheduleModal(null)}>✕</button>
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
@@ -1852,7 +1852,7 @@ function Modal({ title, onClose, children }) {
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
         </div>
         {children}
       </div>

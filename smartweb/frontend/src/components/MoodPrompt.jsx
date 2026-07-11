@@ -130,7 +130,7 @@ export default function MoodPrompt({ teamId }) {
                       Анонимно · ответы анализирует ИИ
                     </p>
                   </div>
-                  <button className="modal-close" onClick={() => setOpen(false)}>✕</button>
+                  <button className="modal-close" aria-label="Закрыть" onClick={() => setOpen(false)}>✕</button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0 8px' }}>

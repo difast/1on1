@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { LEGAL_DOCS } from '../lib/legalDocs'
+import useEscapeKey from '../lib/useEscapeKey'
 
 // Modal showing the legal documents inside the web app.
 // Used from the user menu ("Документы") and from the auth page consent link.
 export default function LegalModal({ open, initialKey, onClose }) {
   const [active, setActive] = useState(initialKey || LEGAL_DOCS[0].key)
   useEffect(() => { if (open && initialKey) setActive(initialKey) }, [open, initialKey])
+  useEscapeKey(onClose, open)  // keyboard escape hatch
   if (!open) return null
   const doc = LEGAL_DOCS.find(d => d.key === active) || LEGAL_DOCS[0]
 
