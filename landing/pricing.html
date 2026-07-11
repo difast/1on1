@@ -12,10 +12,10 @@
 <link rel="stylesheet" href="/styles.css">
 <style>
 /* ── PRICING PAGE SPECIFIC */
-.pr-hero{padding:100px 40px 72px;text-align:center;background:linear-gradient(180deg,rgba(124,58,237,.08) 0%,transparent 100%)}
+.pr-hero{padding:100px 40px 72px;text-align:center;background:linear-gradient(180deg,rgba(10,108,255,.08) 0%,transparent 100%)}
 .pr-toggle{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px;gap:4px;margin:32px auto 0}
 .pr-toggle button{padding:8px 22px;border-radius:99px;border:none;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif;color:rgba(255,255,255,.5);background:transparent}
-.pr-toggle button.active{background:#7C3AED;color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+.pr-toggle button.active{background:#0A6CFF;color:#fff;box-shadow:0 2px 12px rgba(10,108,255,.4)}
 .pr-save{display:inline-block;font-size:11px;font-weight:700;color:#4ADE80;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);border-radius:99px;padding:3px 10px;margin-left:8px;vertical-align:middle}
 
 /* Plan cards */
@@ -23,10 +23,10 @@
 .plan{padding:30px 20px 40px;position:relative;border-right:1px solid rgba(255,255,255,.06);transition:background .2s}
 .plan:last-child{border-right:none}
 .plan:hover{background:rgba(255,255,255,.025)}
-.plan.popular{background:linear-gradient(180deg,rgba(124,58,237,.1) 0%,rgba(124,58,237,.04) 100%);border-top:2px solid #7C3AED}
-.plan-badge{font-size:10px;font-weight:700;color:#A78BFA;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block;min-height:16px}
+.plan.popular{background:linear-gradient(180deg,rgba(10,108,255,.1) 0%,rgba(10,108,255,.04) 100%);border-top:2px solid #0A6CFF}
+.plan-badge{font-size:10px;font-weight:700;color:#5AA0FF;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block;min-height:16px}
 .plan-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px}
-.plan-name.acc{color:#A78BFA}
+.plan-name.acc{color:#5AA0FF}
 .plan-price{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05;color:#fff}
 .plan-price small{font-family:'Inter',sans-serif;font-size:12px;font-weight:400;color:rgba(255,255,255,.35)}
 .plan-price .annual{display:none}
@@ -35,15 +35,15 @@
 .plan-desc{font-size:13px;color:rgba(255,255,255,.4);margin:10px 0 28px;line-height:1.5}
 .plan-btn{display:block;width:100%;padding:11px 16px;border-radius:8px;text-align:center;font-weight:600;font-size:13px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.65);text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif;cursor:pointer;margin-bottom:28px}
 .plan-btn:hover{background:rgba(255,255,255,.06);color:#fff}
-.plan-btn.prim{background:#7C3AED;border-color:transparent;color:#fff}
-.plan-btn.prim:hover{background:#6D28D9}
-.plan-btn.ent{border-color:rgba(167,139,250,.25);color:rgba(167,139,250,.75)}
-.plan-btn.ent:hover{background:rgba(124,58,237,.1);color:#C4B5FD}
+.plan-btn.prim{background:#0A6CFF;border-color:transparent;color:#fff}
+.plan-btn.prim:hover{background:#0852D6}
+.plan-btn.ent{border-color:rgba(90,160,255,.25);color:rgba(90,160,255,.75)}
+.plan-btn.ent:hover{background:rgba(10,108,255,.1);color:#A9CCFF}
 .plan-divider{height:1px;background:rgba(255,255,255,.07);margin:0 0 20px}
 .plan-section-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
 .plan-features li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
-.plan-features li::before{content:'✓';color:#7C3AED;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px}
+.plan-features li::before{content:'✓';color:#0A6CFF;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px}
 .plan-features li.no{color:rgba(255,255,255,.2)}
 .plan-features li.no::before{content:'—';color:rgba(255,255,255,.15)}
 .plan-features li strong{color:#fff;font-weight:600}
@@ -53,16 +53,16 @@
 .comp-table{width:100%;border-collapse:collapse;margin-top:48px}
 .comp-table th{padding:16px 20px;font-size:12px;font-weight:700;text-align:left;color:rgba(255,255,255,.4);letter-spacing:.08em;text-transform:uppercase;border-bottom:1px solid rgba(255,255,255,.08)}
 .comp-table th:not(:first-child){text-align:center}
-.comp-table th.pop-col{color:#A78BFA}
+.comp-table th.pop-col{color:#5AA0FF}
 .comp-table td{padding:14px 20px;font-size:14px;color:rgba(255,255,255,.7);border-bottom:1px solid rgba(255,255,255,.05)}
 .comp-table td:not(:first-child){text-align:center}
-.comp-table td.pop-col{background:rgba(124,58,237,.04)}
+.comp-table td.pop-col{background:rgba(10,108,255,.04)}
 .comp-table tr:hover td{background:rgba(255,255,255,.02)}
-.comp-table tr:hover td.pop-col{background:rgba(124,58,237,.07)}
+.comp-table tr:hover td.pop-col{background:rgba(10,108,255,.07)}
 .comp-table td .yes{color:#4ADE80;font-size:16px}
 .comp-table td .no-x{color:rgba(255,255,255,.2);font-size:15px}
 .comp-table .cat-row td{font-size:11px;font-weight:700;color:rgba(255,255,255,.3);letter-spacing:.1em;text-transform:uppercase;padding-top:24px;padding-bottom:8px;border-bottom:none;background:transparent!important}
-.comp-table .cat-row td.pop-col{background:rgba(124,58,237,.04)!important}
+.comp-table .cat-row td.pop-col{background:rgba(10,108,255,.04)!important}
 
 /* FAQ pricing */
 .pfaq{max-width:720px;margin:0 auto;margin-top:48px}
@@ -70,7 +70,7 @@
 .pfaq-q{display:flex;justify-content:space-between;align-items:center;cursor:pointer;gap:16px}
 .pfaq-q span{font-size:15px;font-weight:500;color:#fff}
 .pfaq-icon{font-size:18px;color:rgba(255,255,255,.3);transition:transform .2s;flex-shrink:0}
-.pfaq-item.open .pfaq-icon{transform:rotate(45deg);color:#A78BFA}
+.pfaq-item.open .pfaq-icon{transform:rotate(45deg);color:#5AA0FF}
 .pfaq-a{font-size:14px;color:rgba(255,255,255,.55);line-height:1.75;max-height:0;overflow:hidden;transition:max-height .35s ease,padding .35s ease}
 .pfaq-item.open .pfaq-a{max-height:300px;padding-top:12px}
 
@@ -80,22 +80,22 @@
 .calc-plans{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
 .calc-plan{padding:9px 18px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.6);font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all .15s}
 .calc-plan:hover{color:#fff;border-color:rgba(255,255,255,.25)}
-.calc-plan.active{background:#7C3AED;border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(124,58,237,.4)}
+.calc-plan.active{background:#0A6CFF;border-color:transparent;color:#fff;box-shadow:0 2px 12px rgba(10,108,255,.4)}
 .calc-billing{display:inline-flex;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px;gap:4px;margin:22px auto 0}
 .calc-billing button{padding:7px 18px;border-radius:99px;border:none;font-size:12px;font-weight:600;cursor:pointer;color:rgba(255,255,255,.5);background:transparent;font-family:'Inter',sans-serif;transition:all .15s}
-.calc-billing button.active{background:#7C3AED;color:#fff}
+.calc-billing button.active{background:#0A6CFF;color:#fff}
 .calc-slider-wrap{margin:28px 0 8px}
 .calc-slider-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px}
 .calc-slider-label{font-size:13px;color:rgba(255,255,255,.5)}
 .calc-slider-val{font-family:'Playfair Display',serif;font-size:28px;font-weight:700;color:#fff}
 .calc-slider-val small{font-family:'Inter',sans-serif;font-size:13px;font-weight:400;color:rgba(255,255,255,.4)}
 .calc-range{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.12);outline:none}
-.calc-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#7C3AED;cursor:pointer;border:3px solid #fff;box-shadow:0 2px 8px rgba(124,58,237,.5)}
-.calc-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#7C3AED;cursor:pointer;border:3px solid #fff}
+.calc-range::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:#0A6CFF;cursor:pointer;border:3px solid #fff;box-shadow:0 2px 8px rgba(10,108,255,.5)}
+.calc-range::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#0A6CFF;cursor:pointer;border:3px solid #fff}
 .calc-range-minmax{display:flex;justify-content:space-between;font-size:11px;color:rgba(255,255,255,.3);margin-top:6px}
 .calc-results{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:28px}
 .calc-res{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:18px 16px;text-align:center}
-.calc-res.accent{background:linear-gradient(180deg,rgba(124,58,237,.16),rgba(124,58,237,.05));border-color:rgba(124,58,237,.35)}
+.calc-res.accent{background:linear-gradient(180deg,rgba(10,108,255,.16),rgba(10,108,255,.05));border-color:rgba(10,108,255,.35)}
 .calc-res-label{font-size:11px;color:rgba(255,255,255,.45);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
 .calc-res-val{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;color:#fff;line-height:1.1;letter-spacing:-.02em}
 .calc-res.accent .calc-res-val{color:#4ADE80}
@@ -105,10 +105,10 @@
 .calc-bar-name{width:96px;font-size:13px;font-weight:600;color:rgba(255,255,255,.7);flex-shrink:0}
 .calc-bar-track{flex:1;height:30px;background:rgba(255,255,255,.05);border-radius:8px;overflow:hidden;position:relative}
 .calc-bar-fill{height:100%;border-radius:8px;display:flex;align-items:center;justify-content:flex-end;padding-right:10px;font-size:12px;font-weight:700;color:#fff;transition:width .4s ease;white-space:nowrap}
-.calc-bar-fill.ours{background:linear-gradient(90deg,#7C3AED,#A78BFA)}
+.calc-bar-fill.ours{background:linear-gradient(90deg,#0A6CFF,#5AA0FF)}
 .calc-bar-fill.lattice{background:rgba(255,255,255,.18)}
 .calc-msg{text-align:center;font-size:15px;color:rgba(255,255,255,.6);padding:32px 0 8px;line-height:1.6}
-.calc-msg a{color:#A78BFA;text-decoration:none;font-weight:600}
+.calc-msg a{color:#5AA0FF;text-decoration:none;font-weight:600}
 @media(max-width:640px){.calc-card{padding:24px 18px}.calc-results{grid-template-columns:1fr}.calc-bar-name{width:72px;font-size:12px}}
 
 @media(max-width:1280px){.plans-grid{grid-template-columns:repeat(3,1fr)}}
@@ -294,7 +294,7 @@
       <!-- ENTERPRISE -->
       <div class="plan">
         <span class="plan-badge">&nbsp;</span>
-        <div class="plan-name" style="color:rgba(167,139,250,.6)">Enterprise</div>
+        <div class="plan-name" style="color:rgba(90,160,255,.6)">Enterprise</div>
         <div class="plan-price" style="font-size:26px;margin-top:8px">
           <span class="monthly">По согласованию</span>
           <span class="annual">По согласованию</span>
@@ -488,7 +488,7 @@
 <footer class="site-footer">
   <div class="footer-top">
     <div>
-      <div class="footer-logo"><div class="footer-logo-mark">1:1</div>OneOn<span style="color:#7C3AED">One</span></div>
+      <div class="footer-logo"><div class="footer-logo-mark">1:1</div>OneOn<span style="color:#0A6CFF">One</span></div>
       <div class="footer-cols">
         <div class="footer-col">
           <a href="/#features">Возможности</a>
