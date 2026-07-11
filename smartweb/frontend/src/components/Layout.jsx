@@ -510,25 +510,24 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* My plan stub — team lead only */}
+          {/* My plan — team lead only */}
           {user?.role === 'team_lead' && (
             <button
               onClick={() => setShowBilling(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 700, color: '#16a34a',
-                padding: '5px 12px', borderRadius: 8,
-                border: '1px solid #dcfce7', background: '#f0fdf4', cursor: 'pointer',
-                letterSpacing: '0.02em', whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
+                fontSize: 12, fontWeight: 700, color: '#fff',
+                padding: '6px 14px', borderRadius: 99,
+                border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-hover))',
+                boxShadow: 'var(--shadow-blue)', letterSpacing: '0.02em', whiteSpace: 'nowrap',
+                transition: 'transform 0.15s var(--ease-spring), box-shadow 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
-              onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-blue-lg)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-blue)' }}
             >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
-                <rect x="1" y="2.5" width="11" height="8" rx="1.5" stroke="#16a34a" strokeWidth="1.3"/>
-                <path d="M1 5.5h11" stroke="#16a34a" strokeWidth="1.1"/>
-                <rect x="2.5" y="7.5" width="3" height="1.2" rx="0.4" fill="#16a34a"/>
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M7 1l1.7 3.6L12.5 5l-2.9 2.7.7 4L7 9.8 3.7 11.7l.7-4L1.5 5l3.8-.4L7 1z" fill="#fff"/>
               </svg>
               <span className="payment-label">Мой тариф</span>
             </button>

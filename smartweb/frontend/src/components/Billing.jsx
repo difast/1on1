@@ -131,8 +131,8 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                 <div key={p.code} className={`bill-card${popular ? ' popular' : ''}${isCurrent ? ' current' : ''}`}>
                   {popular && <span className="bill-ribbon">Популярный</span>}
                   <span className="bill-name">{p.name}</span>
-                  <div className="bill-price">
-                    {p.is_enterprise ? 'Индивидуально' : <>{price}₽<small>{p.per_seat ? ' /чел·мес' : ' /мес'}</small>{period === 'year' && !p.is_enterprise && price > 0 && <span className="old">{p.price_month}₽</span>}</>}
+                  <div className={`bill-price${p.is_enterprise ? ' ent' : ''}`}>
+                    {p.is_enterprise ? 'По запросу' : <>{price}₽<small>{p.per_seat ? ' /чел·мес' : ' /мес'}</small>{period === 'year' && !p.is_enterprise && price > 0 && <span className="old">{p.price_month}₽</span>}</>}
                   </div>
                   <div className="bill-desc">{DESC[p.code] || ''}</div>
                   <ul className="bill-feats">
