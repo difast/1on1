@@ -9,6 +9,7 @@ import {
   getAdminMetrics,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
+import { toast, confirmDialog } from '../lib/ui'
 import AdminManage from './AdminManage'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
@@ -184,14 +185,14 @@ export default function AdminDashboard({ onLogout }) {
   }
 
   const handleDelete = async (userId) => {
-    if (!confirm('Удалить пользователя? Это действие необратимо.')) return
+    if (!await confirmDialog({ title: 'Удалить пользователя?', message: 'Это действие необратимо.', confirmText: 'Удалить', danger: true })) return
     await deleteUser(userId).catch(() => {})
     setData(d => ({ ...d, users: d.users.filter(u => u.id !== userId) }))
   }
 
   const handleOverride = async (userId, current) => {
     const enabled = !current
-    if (enabled && !confirm('Выдать полный доступ без подписки этому аккаунту?')) return
+    if (enabled && !await confirmDialog({ title: 'Выдать полный доступ?', message: 'Аккаунт получит все функции без подписки.', confirmText: 'Выдать' })) return
     await setUserOverride(userId, { enabled, note: enabled ? 'Выдано из админ-панели' : null }).catch(() => {})
     setData(d => ({ ...d, users: d.users.map(u => u.id === userId ? { ...u, billing_override: enabled } : u) }))
   }
@@ -232,7 +233,7 @@ export default function AdminDashboard({ onLogout }) {
   }
 
   const handleKbDelete = async (id) => {
-    if (!confirm('Удалить статью?')) return
+    if (!await confirmDialog({ title: 'Удалить статью?', confirmText: 'Удалить', danger: true })) return
     await deleteAdminArticle(id).catch(() => {})
     setArticles(prev => prev.filter(a => a.id !== id))
   }
@@ -741,7 +742,7 @@ export default function AdminDashboard({ onLogout }) {
                               <Td>
                                 <div style={{ display: 'flex', gap: 4 }}>
                                   <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Продлить</button>
-                                  <button onClick={async () => { if (!confirm('Отменить подписку?')) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
+                                  <button onClick={async () => { if (!await confirmDialog({ title: 'Отменить подписку?', confirmText: 'Отменить', danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
                                 </div>
                               </Td>
                             </tr>

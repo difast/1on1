@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import { getTaskAIAdvice, createSubtasks } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded }) {
   const [open, setOpen] = useState(false)
+  useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
   const [loading, setLoading] = useState(false)
   const [adding, setAdding] = useState(false)
   const [steps, setSteps] = useState(null)

@@ -1,3 +1,4 @@
+import { confirmDialog } from '../lib/ui'
 import { useState, useEffect } from 'react'
 import { getKnowledgeArticles, createKnowledgeArticle, updateKnowledgeArticle, deleteKnowledgeArticle } from '../api/client'
 
@@ -67,7 +68,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation()
-    if (!window.confirm('Удалить статью?')) return
+    if (!await confirmDialog({ title: 'Удалить статью?', confirmText: 'Удалить', danger: true })) return
     setDeleting(id)
     try {
       await deleteKnowledgeArticle(id)

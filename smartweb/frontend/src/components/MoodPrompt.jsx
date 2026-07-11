@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { submitMood } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 const QUESTIONS = [
   { id: 'overall', label: 'Как прошёл день?', placeholder: 'Расскажите в нескольких словах...', required: true },
@@ -13,6 +14,7 @@ const todayKey = () => `mood_submitted_${new Date().toDateString()}`
 export default function MoodPrompt({ teamId }) {
   const [visible, setVisible] = useState(false)
   const [open, setOpen] = useState(false)
+  useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
   const [answers, setAnswers] = useState({ overall: '', energy: '', blocker: '', team: '' })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)

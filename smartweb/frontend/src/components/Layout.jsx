@@ -6,6 +6,8 @@ import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
+import WelcomeTour from './WelcomeTour'
+import { toast } from '../lib/ui'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -946,6 +948,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
       <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
+      {/* First-run product tour — self-gates via localStorage, shown once */}
+      <WelcomeTour currentUser={currentUser} />
     </div>
   )
 }
@@ -1018,7 +1022,7 @@ function StoreBtn({ label, title, icon, href, compact }) {
   }
   // Stores not published yet — graceful placeholder.
   return (
-    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => alert('Появится позже')}
+    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => toast('Появится позже')}
       style={{ ...base, opacity: 0.55, cursor: 'pointer' }}>
       {inner}
       {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>скоро</span>}
