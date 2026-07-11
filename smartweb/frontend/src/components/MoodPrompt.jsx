@@ -153,7 +153,7 @@ export default function MoodPrompt({ teamId }) {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flex: 1 }}>
-                    🔒 Имя не сохраняется
+                    Имя не сохраняется
                   </span>
                   <button
                     onClick={handleSubmit}

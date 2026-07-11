@@ -231,9 +231,13 @@ export default function Onboarding({ email, onComplete }) {
                 Пит поможет настроить рабочее пространство. Кто вы?
               </p>
               <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
+                {/* Role icons are purposeful line-icons, not emoji — keeps the
+                    first screen clean and professional (no decorative clutter). */}
                 {[
-                  { role:'team_lead', emoji:'👔', title:'Тимлид', desc:'Провожу 1-on-1 встречи, управляю командой и задачами' },
-                  { role:'member',    emoji:'🧑‍💻', title:'Участник команды', desc:'Участвую во встречах, работаю над задачами' },
+                  { role:'team_lead', title:'Тимлид', desc:'Провожу 1-on-1 встречи, управляю командой и задачами',
+                    icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>) },
+                  { role:'member', title:'Участник команды', desc:'Участвую во встречах, работаю над задачами',
+                    icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
                 ].map(opt => (
                   <button key={opt.role} onClick={() => handleRoleSelect(opt.role)} style={{
                     textAlign:'left',width:'100%',cursor:'pointer',padding:'18px 20px',
@@ -242,7 +246,7 @@ export default function Onboarding({ email, onComplete }) {
                   }}
                   onMouseEnter={e=>{e.currentTarget.style.background='rgba(37,84,212,0.15)';e.currentTarget.style.borderColor='rgba(37,84,212,0.5)';e.currentTarget.style.transform='translateY(-2px)'}}
                   onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.borderColor='rgba(255,255,255,0.1)';e.currentTarget.style.transform='translateY(0)'}}>
-                    <div style={{ fontSize:28,marginBottom:8 }}>{opt.emoji}</div>
+                    <div style={{ marginBottom:8 }}>{opt.icon}</div>
                     <p style={{ fontWeight:700,fontSize:16,color:'#fff',marginBottom:4 }}>{opt.title}</p>
                     <p style={{ fontSize:13,color:'rgba(255,255,255,0.5)' }}>{opt.desc}</p>
                   </button>
@@ -256,7 +260,7 @@ export default function Onboarding({ email, onComplete }) {
             <div style={glass}>
               <button onClick={() => setStep(1)} style={{ background:'none',border:'none',color:'rgba(255,255,255,0.45)',cursor:'pointer',fontSize:13,marginBottom:16,padding:0,display:'flex',alignItems:'center',gap:4 }}>← Назад</button>
               <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:4 }}>
-                {role === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник'}
+                {role === 'team_lead' ? 'Тимлид' : 'Участник'}
               </h2>
               <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:22 }}>Расскажите немного о себе</p>
               <form onSubmit={handleProfileSubmit}>

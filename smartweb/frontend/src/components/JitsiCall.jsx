@@ -211,7 +211,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
       }}>
         {/* Left: title + timer */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>📹 Созвон</span>
+          <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Созвон</span>
           {!loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {/* Progress bar */}

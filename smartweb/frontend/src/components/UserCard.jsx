@@ -71,7 +71,7 @@ export default function UserCard({ user, onClose }) {
         {/* Social links */}
         <div className="space-y-2">
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
-            <span className="text-gray-400 w-5 text-center">✈</span>
+            <span className="text-gray-400 w-5 text-center">TG</span>
             <span className="text-sm font-medium text-gray-500 w-20">Telegram</span>
             {user.telegram ? (
               <a href={`https://t.me/${user.telegram.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">

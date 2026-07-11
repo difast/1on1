@@ -270,7 +270,7 @@ function RiskCard({ s, delay }) {
           borderRadius: 8, padding: '7px 12px',
         }}
       >
-        ✨ {advice ? 'Скрыть совет' : loading ? 'AI думает…' : 'Совет от AI'}
+        {advice ? 'Скрыть совет' : loading ? 'AI думает…' : 'Совет от AI'}
       </button>
       {advice && (
         <div style={{ marginTop: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>
@@ -482,7 +482,7 @@ export default function LeadAnalytics({ user }) {
     addMerge(ws0, noteRow, noteRow, 1, 5)
 
     setRef(ws0, noteRow, 6)
-    XLSX.utils.book_append_sheet(wb, ws0, '⭐ Обложка')
+    XLSX.utils.book_append_sheet(wb, ws0, 'Обложка')
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 1 — СВОДКА (Team overview table)
@@ -539,7 +539,7 @@ export default function LeadAnalytics({ user }) {
     ws1['!rows'].push({ hpt: 24 })
 
     setRef(ws1, footRow, HDR1.length - 1)
-    XLSX.utils.book_append_sheet(wb, ws1, '📊 Сводка')
+    XLSX.utils.book_append_sheet(wb, ws1, 'Сводка')
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 2 — КАРТОЧКИ УЧАСТНИКОВ (per-member detail cards)
@@ -639,7 +639,7 @@ export default function LeadAnalytics({ user }) {
     })
 
     setRef(ws2, curRow, 7)
-    XLSX.utils.book_append_sheet(wb, ws2, '👤 Карточки')
+    XLSX.utils.book_append_sheet(wb, ws2, 'Карточки')
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 3 — РИСКИ & СИГНАЛЫ
@@ -728,7 +728,7 @@ export default function LeadAnalytics({ user }) {
     }
 
     setRef(ws3, r3, 5)
-    XLSX.utils.book_append_sheet(wb, ws3, '⚠️ Риски')
+    XLSX.utils.book_append_sheet(wb, ws3, 'Риски')
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 4 — НАСТРОЕНИЕ & АКТИВНОСТЬ
@@ -888,7 +888,7 @@ export default function LeadAnalytics({ user }) {
     }
 
     setRef(ws4, r4, 6)
-    XLSX.utils.book_append_sheet(wb, ws4, '📈 Активность')
+    XLSX.utils.book_append_sheet(wb, ws4, 'Активность')
 
     // ─────────────────────────────────────────────────────────────────────────
     // WRITE

@@ -362,7 +362,7 @@ export default function AdminDashboard({ onLogout }) {
                                     color: u.billing_override ? '#4f46e5' : '#64748b',
                                     borderColor: u.billing_override ? '#c7d2fe' : '#e2e8f0',
                                   }}>
-                                  {u.billing_override ? '★ Полный доступ' : 'Выдать полный доступ'}
+                                  {u.billing_override ? 'Полный доступ' : 'Выдать полный доступ'}
                                 </button>
                                 <button
                                   onClick={() => handleDelete(u.id)}

@@ -623,7 +623,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               title={m.ai_summary}
               style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}
             >
-              ✨ AI
+              AI
             </span>
           )}
           {!isPast && !isRequest && (
@@ -632,7 +632,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 onClick={() => handleOpenReschedule(m)}
                 style={{ fontSize: 12, fontWeight: 500, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 9px', flexShrink: 0 }}
               >
-                ✦ Перенести
+                Перенести
               </button>
               <button
                 onClick={() => handleStartCall(m.id)}
@@ -670,7 +670,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         })()}
         {m.ai_summary && (
           <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--blue-50)', borderRadius: 8, border: '1px solid var(--blue-200)', borderLeft: '3px solid var(--color-accent)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>✨ AI Резюме</p>
+            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>AI Резюме</p>
             <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.7, margin: 0 }}>{m.ai_summary}</p>
           </div>
         )}
@@ -981,7 +981,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             } catch {}
                           }} canMarkDone={true} />
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать">✎</button>
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           <button onClick={() => handleDeleteMyTask(task.id)}
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
@@ -1097,7 +1097,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         } catch {}
                                       }} canMarkDone={true} />
                                       <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
+                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                                       {!task.completed && (
                                         <TaskAIHelper
                                           task={task}
@@ -1307,7 +1307,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         disabled={regenerating}
                         title="Сгенерировать новый код"
                       >
-                        {regenerating ? '...' : '🔄 Новый код'}
+                        {regenerating ? '...' : 'Новый код'}
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); setShowAddMember(true) }}
@@ -1789,7 +1789,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="modal-header" style={{ paddingBottom: 12 }}>
             <div>
               <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✦</span>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
                 AI предлагает слоты
               </span>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>

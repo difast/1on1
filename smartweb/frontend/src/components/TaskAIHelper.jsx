@@ -65,8 +65,9 @@ export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded })
         }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(59,110,240,0.8)' }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(59,110,240,0.5)' }}
+        aria-label="AI-помощник по задаче"
       >
-        ✦
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>
       </button>
 
       {open && (
@@ -75,7 +76,7 @@ export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded })
             <div className="modal-header" style={{ paddingBottom: 12 }}>
               <div>
                 <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0 }}>✦</span>
+                  <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
                   AI-помощник
                 </span>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>Конкретные шаги по выполнению задачи</p>

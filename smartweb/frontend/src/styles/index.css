@@ -39,7 +39,9 @@
   --color-border-light: rgba(0,0,0,0.06);
   --color-text-primary:   #1E2333;
   --color-text-secondary: #6B7590;
-  --color-text-muted:     #9AA3B8;
+  /* Darkened from #9AA3B8 (~2.6:1, failed WCAG AA) to meet 4.5:1 on white —
+     muted text (empty-state hints, secondary labels) must stay legible. */
+  --color-text-muted:     #667085;
   --color-accent:       #3B6EF0;
   --color-accent-light: #E0EAFF;
   --color-accent-hover: #2554D4;
