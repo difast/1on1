@@ -82,7 +82,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
             <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{user.name}</h3>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+          <button aria-label="Закрыть" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           <span style={chip}>ID: {user.id}</span>
