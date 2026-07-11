@@ -10,6 +10,7 @@ import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
@@ -38,7 +39,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { alert('Не удалось начать созвон') }
+    } catch { toast('Не удалось начать созвон', 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -63,7 +64,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { alert('Не удалось загрузить запись') }
+    } catch { toast('Не удалось загрузить запись', 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -161,7 +162,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setCallResult(data)
       setCallStep('done')
       loadMyMeetings()
-    } catch { alert('Не удалось создать созвон') }
+    } catch { toast('Не удалось создать созвон', 'error') }
     finally { setCallModalLoading(false) }
   }
 
@@ -175,7 +176,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
-    } catch { alert('Не удалось создать созвон') }
+    } catch { toast('Не удалось создать созвон', 'error') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
 
@@ -1602,7 +1603,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button
                 onClick={() => {
                   const all = (teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => m.user_id)
-                  if (all.length === 0) return alert('Нет участников в команде')
+                  if (all.length === 0) return toast('Нет участников в команде', 'error')
                   handleStartSpontaneousCall(all, true)
                 }}
                 disabled={callModalLoading}

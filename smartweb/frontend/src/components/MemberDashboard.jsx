@@ -5,6 +5,7 @@ import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
 import TaskAIHelper from './TaskAIHelper'
@@ -75,7 +76,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { alert('Не удалось начать созвон') }
+    } catch { toast('Не удалось начать созвон', 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -99,7 +100,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { alert('Не удалось загрузить запись') }
+    } catch { toast('Не удалось загрузить запись', 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
