@@ -6,6 +6,7 @@ import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
+import WelcomeTour from './WelcomeTour'
 import { toast } from '../lib/ui'
 
 const TOAST_META = {
@@ -947,6 +948,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
       <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
+      {/* First-run product tour — self-gates via localStorage, shown once */}
+      <WelcomeTour currentUser={currentUser} />
     </div>
   )
 }
