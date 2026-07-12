@@ -707,7 +707,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </div>
 
         {/* View tabs */}
-        <div className="tabs" style={{ width: 'fit-content', marginBottom: 24 }}>
+        <div className="tabs" data-tour="views" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
             { key: 'teams', label: 'Команды' },
             { key: 'meetings', label: 'Мои встречи' },
