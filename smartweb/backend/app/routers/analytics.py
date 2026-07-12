@@ -9,7 +9,9 @@ from app.models import Meeting, Task, Team, TeamMember, User
 router = APIRouter()
 
 MOOD_ORDER = {"great": 4, "good": 3, "neutral": 2, "bad": 1}
-MOOD_EMOJI = {"great": "😊", "good": "🙂", "neutral": "😐", "bad": "😔"}
+# Нейтральные текстовые метки настроения вместо эмодзи: интерфейс продукта
+# ведётся без эмодзи, а метки клиенты сами превращают в цветовые индикаторы.
+MOOD_LABEL = {"great": "Отлично", "good": "Хорошо", "neutral": "Нейтрально", "bad": "Плохо"}
 
 
 def _member_stats(user_id: int, user_name: str, role: str, meetings: list, tasks: list, now: datetime, user_created_at=None):
@@ -62,7 +64,7 @@ def _member_stats(user_id: int, user_name: str, role: str, meetings: list, tasks
         "open_tasks": open_t,
         "completed_tasks": done_t,
         "total_tasks": total_t,
-        "mood_trend": [{"mood": m, "emoji": MOOD_EMOJI.get(m, "❓")} for m in mood_seq],
+        "mood_trend": [{"mood": m, "label": MOOD_LABEL.get(m, "—")} for m in mood_seq],
         "warning_flags": flags,
     }
 
@@ -186,7 +188,7 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
         days_since = max((now - meetings[0].scheduled_date).days, 0)
 
     mood_trend = [
-        {"date": m.scheduled_date.strftime("%d.%m"), "mood": m.mood, "emoji": MOOD_EMOJI.get(m.mood, "❓")}
+        {"date": m.scheduled_date.strftime("%d.%m"), "mood": m.mood, "label": MOOD_LABEL.get(m.mood, "—")}
         for m in reversed(meetings[:8]) if m.mood
     ]
 

@@ -647,7 +647,7 @@ export default function LeadAnalytics({ user }) {
       if (s.mood_trend && s.mood_trend.length > 0) {
         sc(ws2, curRow, 0, 'Настроение (последние)', S.cardLbl)
         s.mood_trend.slice(0, 7).forEach((m, ci) => {
-          sc(ws2, curRow, ci + 1, m.emoji || m.mood || '', S.moodEmoji)
+          sc(ws2, curRow, ci + 1, m.label || m.mood || '', S.moodEmoji)
         })
         ws2['!rows'].push({ hpt: 22 })
         curRow++
