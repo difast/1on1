@@ -1,4 +1,10 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
+import { fmtDate, fmtTime } from '../lib/datetime'
+import AiSummary from './AiSummary'
+import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
+import EmptyState from './EmptyState'
+import { coachingEnabled, buildAgendaSuggestions } from '../lib/coaching'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
 import Layout from './Layout'
 
@@ -10,6 +16,7 @@ import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
@@ -28,7 +35,6 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [callLoading, setCallLoading] = useState({})
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
-  const fileInputRefs = useRef({})
 
   const [activeCall, setActiveCall] = useState(null) // { room_name, room_url, meeting_id }
 
@@ -38,7 +44,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { alert('Не удалось начать созвон') }
+    } catch { toast('Не удалось начать созвон', 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -63,7 +69,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { alert('Не удалось загрузить запись') }
+    } catch { toast('Не удалось загрузить запись', 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -78,6 +84,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleAgenda, setScheduleAgenda] = useState('')
   const [formLoading, setFormLoading] = useState(false)
+  // Коучинг-подсказки к повестке: скрываются на время текущей встречи и
+  // перерисовываются, когда пользователь переключает функцию в настройках.
+  const [coachHidden, setCoachHidden] = useState(false)
+  const [coachTick, setCoachTick] = useState(0)
+  useEffect(() => { if (showSchedule) setCoachHidden(false) }, [showSchedule, scheduleMember])
+  useEffect(() => {
+    const h = () => setCoachTick(t => t + 1)
+    window.addEventListener('pit-coaching-changed', h)
+    return () => window.removeEventListener('pit-coaching-changed', h)
+  }, [])
   const [copied, setCopied] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -152,16 +168,19 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   const handleStartSpontaneousCall = async (memberIds, isGroup = false) => {
-    if (!selectedTeamId || memberIds.length === 0) return
+    // Fall back to the first team so a spontaneous call still works if no team
+    // is explicitly selected yet.
+    const teamId = selectedTeamId || teams[0]?.id
+    if (!teamId || memberIds.length === 0) return
     setCallModalLoading(true)
     try {
       const { data } = await startSpontaneousCall({
-        lead_id: user.id, team_id: selectedTeamId, member_ids: memberIds, is_group: isGroup,
+        lead_id: user.id, team_id: teamId, member_ids: memberIds, is_group: isGroup,
       })
       setCallResult(data)
       setCallStep('done')
       loadMyMeetings()
-    } catch { alert('Не удалось создать созвон') }
+    } catch { toast('Не удалось создать созвон', 'error') }
     finally { setCallModalLoading(false) }
   }
 
@@ -175,7 +194,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
-    } catch { alert('Не удалось создать созвон') }
+    } catch { toast('Не удалось создать созвон', 'error') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
 
@@ -529,23 +548,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const noteState = meetingNotes[m.id]
     const isPast = new Date(m.scheduled_date) < new Date()
     const isRequest = m.status === 'requested'
-    const stBadge = { scheduled: 'badge-blue', confirmed: 'badge-green', completed: 'badge-gray', in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red', requested: 'badge-amber' }
-    const stLabel = { scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена', in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена', requested: 'Запрошена' }
     return (
-      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #a78bfa' : undefined }}>
+      <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #5B8EF8' : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{
-            width: 46, height: 46, borderRadius: 'var(--radius-md)',
-            background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
-            </span>
-            <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-              {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-            </span>
-          </div>
+          <MeetingDateBadge date={m.scheduled_date} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
             {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
@@ -556,18 +562,18 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             )}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
-            <span className={`badge ${stBadge[m.status] || 'badge-gray'}`}>
-              {stLabel[m.status] || m.status}
+            <span className={`badge ${meetingStatusBadge(m.status)}`}>
+              {meetingStatusLabel(m.status)}
             </span>
             {m.is_rescheduled && !['cancelled','declined'].includes(m.status) && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#2554D4', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
                 ↻ Перенесена
               </span>
             )}
           </div>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0, position: 'relative' }}>
-              <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#6366f1,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
+              <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#2554D4,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
                 <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>
                 В календарь
               </button>
@@ -600,39 +606,18 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </button>
           )}
           {isPast && !isRequest && !m.ai_summary && (
-            <>
-              <input
-                ref={el => fileInputRefs.current[m.id] = el}
-                type="file"
-                accept="audio/*,video/*"
-                style={{ display: 'none' }}
-                onChange={e => { if (e.target.files[0]) handleUploadRecording(m.id, e.target.files[0]) }}
-              />
-              <button
-                onClick={() => fileInputRefs.current[m.id]?.click()}
-                disabled={uploadLoading[m.id] || uploadDone[m.id]}
-                title="Загрузить запись созвона для AI-анализа"
-                style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
-              >
-                {uploadLoading[m.id] ? 'Загрузка...' : uploadDone[m.id] ? '✓ Анализирую...' : 'Запись'}
-              </button>
-            </>
+            <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
           )}
-          {isPast && !isRequest && m.ai_summary && (
-            <span
-              title={m.ai_summary}
-              style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}
-            >
-              ✨ AI
-            </span>
-          )}
-          {!isPast && !isRequest && (
+          {isPast && !isRequest && m.ai_summary && <AiBadge summary={m.ai_summary} />}
+          {/* Call must stay available for any active meeting, even if its
+              scheduled time has passed (a late/in-progress 1-on-1). */}
+          {!['completed', 'cancelled', 'declined'].includes(m.status) && !isRequest && (
             <>
               <button
                 onClick={() => handleOpenReschedule(m)}
                 style={{ fontSize: 12, fontWeight: 500, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 9px', flexShrink: 0 }}
               >
-                ✦ Перенести
+                Перенести
               </button>
               <button
                 onClick={() => handleStartCall(m.id)}
@@ -645,35 +630,15 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           )}
         </div>
         {noteState?.expanded && (
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-            <textarea
-              value={noteState.draft}
-              onChange={e => setMeetingNotes(prev => ({ ...prev, [m.id]: { ...prev[m.id], draft: e.target.value } }))}
-              placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
-              className="input"
-              style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
-            />
-            <button onClick={() => handleSaveMeetingNote(m.id)} disabled={noteState.saving} className="btn btn-accent btn-sm" style={{ marginTop: 6 }}>
-              {noteState.saving ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
+          <MeetingNoteEditor
+            value={noteState.draft}
+            onChange={e => setMeetingNotes(prev => ({ ...prev, [m.id]: { ...prev[m.id], draft: e.target.value } }))}
+            onSave={() => handleSaveMeetingNote(m.id)}
+            saving={noteState.saving}
+          />
         )}
-        {!noteState?.expanded && m.notes && (() => {
-          const lines = m.notes.split('\n').filter(l => l.trim())
-          return lines.length > 0 ? (
-            <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {lines.map((line, i) => (
-                <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
-              ))}
-            </ul>
-          ) : null
-        })()}
-        {m.ai_summary && (
-          <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--blue-50)', borderRadius: 8, border: '1px solid var(--blue-200)', borderLeft: '3px solid var(--color-accent)' }}>
-            <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>✨ AI Резюме</p>
-            <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.7, margin: 0 }}>{m.ai_summary}</p>
-          </div>
-        )}
+        {!noteState?.expanded && <NotesPreview text={m.notes} />}
+        <AiSummary summary={m.ai_summary} />
       </div>
     )
   }
@@ -728,7 +693,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
-            {selectedTeamId && (
+            {/* Spontaneous call — shown whenever the lead has any team, next to
+                'Создать команду' (was gated on selectedTeamId, which could lag). */}
+            {teams.length > 0 && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
                 Созвон
               </button>
@@ -818,6 +785,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
                   <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  {/* Empty state should invite the first action, not read as a blank/bug */}
+                  <p className="empty-desc">Запишите мысль или договорённость — заметки видите только вы.</p>
                 </div>
               )}
             </div>
@@ -845,7 +814,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{memberName}</span>
                             <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 8 }}>
-                              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                              {fmtDate(m.scheduled_date)}
                             </span>
                           </div>
                           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{noteLines.length} стр.</span>
@@ -920,11 +889,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               )}
               {myTasks.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">○</div>
-                  <p className="empty-title">Нет задач</p>
-                  <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
-                </div>
+                <EmptyState title="Нет задач" desc="Добавьте личные задачи, которые видите только вы" />
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -981,7 +946,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             } catch {}
                           }} canMarkDone={true} />
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать">✎</button>
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           <button onClick={() => handleDeleteMyTask(task.id)}
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
@@ -1016,11 +981,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {tasksSubTab === 'members' && (
               <div>
                 {teams.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">◎</div>
-                    <p className="empty-title">Нет команд</p>
-                    <p className="empty-desc">Создайте команду, чтобы видеть задачи участников</p>
-                  </div>
+                  <EmptyState title="Нет команд" desc="Создайте команду, чтобы видеть задачи участников" />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -1097,7 +1058,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         } catch {}
                                       }} canMarkDone={true} />
                                       <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
+                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                                       {!task.completed && (
                                         <TaskAIHelper
                                           task={task}
@@ -1158,11 +1119,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       )
                     })}
                     {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                      <div className="empty-state">
-                        <div className="empty-icon">◎</div>
-                        <p className="empty-title">Нет участников</p>
-                        <p className="empty-desc">Добавьте участников в команду</p>
-                      </div>
+                      <EmptyState title="Нет участников" desc="Добавьте участников в команду" />
                     )}
                   </div>
                 )}
@@ -1258,10 +1215,32 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           )}
 
           {teams.length === 0 && (
-            <div className="empty-state">
-              <div className="empty-icon">◎</div>
-              <p className="empty-title">Нет команд</p>
-              <p className="empty-desc">Создайте первую команду, чтобы начать</p>
+            /* First-run guide instead of a bare empty state: a new lead lands here
+               with nothing, so we show the 3 steps to the first value moment and a
+               single primary CTA. Progressive disclosure — no overlay tour needed. */
+            <div className="card" style={{ maxWidth: 520, margin: '8px auto', padding: '28px 26px', textAlign: 'left' }}>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Начните за 3 шага</h2>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 18 }}>
+                Соберите команду и проведите первую встречу один-на-один.
+              </p>
+              <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {[
+                  ['Создайте команду', 'Дайте ей название — это ваше рабочее пространство.'],
+                  ['Пригласите участников', 'Отправьте код приглашения коллегам.'],
+                  ['Запланируйте встречу', 'Назначьте первую 1-на-1 с участником.'],
+                ].map(([t, d], i) => (
+                  <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                    <span aria-hidden="true" style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{t}</span>
+                      <span style={{ display: 'block', fontSize: 12, color: 'var(--color-text-muted)' }}>{d}</span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent" style={{ fontWeight: 700 }}>
+                Создать команду
+              </button>
             </div>
           )}
 
@@ -1307,7 +1286,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         disabled={regenerating}
                         title="Сгенерировать новый код"
                       >
-                        {regenerating ? '...' : '🔄 Новый код'}
+                        {regenerating ? '...' : 'Новый код'}
                       </button>
                       <button
                         onClick={e => { e.stopPropagation(); setShowAddMember(true) }}
@@ -1545,7 +1524,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     </div>
                   ) : (
                     <div className="empty-state">
-                      <div className="empty-icon">◎</div>
+                      <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
                       <p className="empty-title">{searchQuery ? 'Участники не найдены' : 'Нет участников'}</p>
                       <p className="empty-desc">{searchQuery ? 'Попробуйте изменить запрос' : 'Добавьте первого участника в команду'}</p>
                       {!searchQuery && (
@@ -1578,7 +1557,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button
                 onClick={() => {
                   const all = (teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => m.user_id)
-                  if (all.length === 0) return alert('Нет участников в команде')
+                  if (all.length === 0) return toast('Нет участников в команде', 'error')
                   handleStartSpontaneousCall(all, true)
                 }}
                 disabled={callModalLoading}
@@ -1764,6 +1743,48 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="input"
                 style={{ resize: 'none', minHeight: 80 }}
               />
+              {/*
+                Коучинг "до встречи": подсказки стоят прямо у поля повестки, а не
+                отдельным советом дня, потому что именно здесь руководитель решает,
+                о чём говорить. Рождаются из данных участника (каденция, просрочки).
+                Полностью опциональны — прячутся кнопкой и глобально выключаются в
+                меню (coachingEnabled). coachTick заставляет пересчитать при
+                переключении настройки. Читаем задачи участника из memberTasks.
+              */}
+              {!coachHidden && coachingEnabled(user.id) && (() => {
+                const sugg = buildAgendaSuggestions({
+                  member: scheduleMember,
+                  tasks: memberTasks[scheduleMember.user_id] || [],
+                })
+                void coachTick
+                if (sugg.length === 0) return null
+                const add = (line) => setScheduleAgenda(prev => prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`)
+                return (
+                  <div style={{ marginTop: 10, padding: '12px 14px', background: 'var(--blue-50)', border: '1px solid var(--blue-200)', borderRadius: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.02em' }}>Пит подсказывает темы</span>
+                      <button type="button" onClick={() => setCoachHidden(true)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>
+                        Скрыть
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {sugg.map(s => (
+                        <div key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.4 }}>{s.line}</p>
+                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{s.reason}</p>
+                          </div>
+                          <button type="button" onClick={() => add(s.line)}
+                            style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}>
+                            Добавить
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
@@ -1789,18 +1810,18 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="modal-header" style={{ paddingBottom: 12 }}>
             <div>
               <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #a855f7, #6366f1)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, flexShrink: 0 }}>✦</span>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
                 AI предлагает слоты
               </span>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
                 Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
               </p>
             </div>
-            <button className="modal-close" onClick={() => setRescheduleModal(null)}>✕</button>
+            <button className="modal-close" aria-label="Закрыть" onClick={() => setRescheduleModal(null)}>✕</button>
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
-              <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#8b5cf6' }} />
+              <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#3B6EF0' }} />
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI подбирает слоты...</span>
             </div>
           ) : aiSlots.length > 0 ? (
@@ -1852,7 +1873,7 @@ function Modal({ title, onClose, children }) {
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
         </div>
         {children}
       </div>

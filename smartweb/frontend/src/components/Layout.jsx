@@ -6,6 +6,9 @@ import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
+import WelcomeTour from './WelcomeTour'
+import { coachingEnabled, setCoaching } from '../lib/coaching'
+import { toast } from '../lib/ui'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -78,6 +81,18 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  // Переключатель встроенного AI-коучинга. Живёт в меню настроек рядом с темой —
+  // не в отдельном разделе, — потому что это тумблер поведения продукта, а не
+  // самостоятельная функция. Выключенный коучинг оставляет чистый органайзер встреч.
+  const [coachOn, setCoachOn] = useState(() => coachingEnabled(currentUser?.id))
+  useEffect(() => { setCoachOn(coachingEnabled(currentUser?.id)) }, [currentUser?.id])
+  const toggleCoaching = () => {
+    const next = !coachOn
+    setCoachOn(next)
+    setCoaching(currentUser?.id, next)
+    setShowUserMenu(false)
+  }
 
   // ── Deadline banner (inline, replaces DeadlineBanner component) ──────────────
   const [deadlineBanner, setDeadlineBanner] = useState(null)
@@ -510,25 +525,24 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* My plan stub — team lead only */}
+          {/* My plan — team lead only */}
           {user?.role === 'team_lead' && (
             <button
               onClick={() => setShowBilling(true)}
               style={{
                 display: 'flex', alignItems: 'center', gap: 6,
-                fontSize: 12, fontWeight: 700, color: '#16a34a',
-                padding: '5px 12px', borderRadius: 8,
-                border: '1px solid #dcfce7', background: '#f0fdf4', cursor: 'pointer',
-                letterSpacing: '0.02em', whiteSpace: 'nowrap',
-                transition: 'all 0.15s',
+                fontSize: 12, fontWeight: 700, color: '#fff',
+                padding: '6px 14px', borderRadius: 99,
+                border: 'none', cursor: 'pointer',
+                background: 'linear-gradient(135deg, var(--color-accent), var(--color-accent-hover))',
+                boxShadow: 'var(--shadow-blue)', letterSpacing: '0.02em', whiteSpace: 'nowrap',
+                transition: 'transform 0.15s var(--ease-spring), box-shadow 0.15s',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = '#dcfce7'}
-              onMouseLeave={e => e.currentTarget.style.background = '#f0fdf4'}
+              onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = 'var(--shadow-blue-lg)' }}
+              onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-blue)' }}
             >
-              <svg width="13" height="13" viewBox="0 0 13 13" fill="none" style={{ flexShrink: 0 }}>
-                <rect x="1" y="2.5" width="11" height="8" rx="1.5" stroke="#16a34a" strokeWidth="1.3"/>
-                <path d="M1 5.5h11" stroke="#16a34a" strokeWidth="1.1"/>
-                <rect x="2.5" y="7.5" width="3" height="1.2" rx="0.4" fill="#16a34a"/>
+              <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
+                <path d="M7 1l1.7 3.6L12.5 5l-2.9 2.7.7 4L7 9.8 3.7 11.7l.7-4L1.5 5l3.8-.4L7 1z" fill="#fff"/>
               </svg>
               <span className="payment-label">Мой тариф</span>
             </button>
@@ -563,6 +577,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </MenuItemBtn>
                 <MenuItemBtn onClick={toggleDark}>
                   {isDark ? 'Светлая тема' : 'Тёмная тема'}
+                </MenuItemBtn>
+                <MenuItemBtn onClick={toggleCoaching}>
+                  {coachOn ? 'Подсказки Пита: вкл' : 'Подсказки Пита: выкл'}
                 </MenuItemBtn>
                 <MenuItemBtn onClick={handleSwitchRole}>
                   {switchingRole ? 'Переключение...' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
@@ -629,7 +646,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">Сменить пароль</span>
-              <button className="modal-close" onClick={() => setShowPasswordModal(false)}>✕</button>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowPasswordModal(false)}>✕</button>
             </div>
             {pwdSuccess ? (
               <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
@@ -845,7 +862,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {/* Social links + stats */}
           {!editing && (
             <div style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
-              <SocialLink icon="✈" label="Telegram" value={user?.telegram}
+              <SocialLink icon="TG" label="Telegram" value={user?.telegram}
                 href={user?.telegram ? `https://t.me/${user.telegram.replace(/^@/, '')}` : null}
                 display={user?.telegram ? `@${user.telegram.replace(/^@/, '')}` : null}
                 placeholder="не указан" />
@@ -947,6 +964,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
       <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
+      {/* First-run product tour — self-gates via localStorage, shown once */}
+      <WelcomeTour currentUser={currentUser} />
     </div>
   )
 }
@@ -1019,7 +1038,7 @@ function StoreBtn({ label, title, icon, href, compact }) {
   }
   // Stores not published yet — graceful placeholder.
   return (
-    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => alert('Появится позже')}
+    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => toast('Появится позже')}
       style={{ ...base, opacity: 0.55, cursor: 'pointer' }}>
       {inner}
       {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>скоро</span>}

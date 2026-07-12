@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
+import useEscapeKey from '../lib/useEscapeKey'
 
 const PIT_STYLES = `
 @keyframes pitFloat {
@@ -16,8 +17,8 @@ const PIT_STYLES = `
   50%      { transform: scaleX(0.65); opacity: 0.12; }
 }
 @keyframes pitGlow {
-  0%, 100% { box-shadow: 0 8px 28px rgba(99,102,241,0.45), 0 0 0 0 rgba(99,102,241,0); }
-  50%      { box-shadow: 0 12px 36px rgba(99,102,241,0.65), 0 0 18px 4px rgba(99,102,241,0.2); }
+  0%, 100% { box-shadow: 0 8px 28px rgba(37,84,212,0.45), 0 0 0 0 rgba(37,84,212,0); }
+  50%      { box-shadow: 0 12px 36px rgba(37,84,212,0.65), 0 0 18px 4px rgba(37,84,212,0.2); }
 }
 @keyframes pitAntenna {
   0%, 100% { box-shadow: 0 0 6px 2px rgba(165,180,252,0.7); }
@@ -49,6 +50,7 @@ export default function PitAssistant() {
   const bottomRef = useRef(null)
   const inputRef = useRef(null)
   const ctxRef = useRef(null)
+  useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
 
   useEffect(() => {
     const handler = (e) => setShifted(e.detail.open)
@@ -109,7 +111,7 @@ export default function PitAssistant() {
           background: '#ffffff',
           border: '1px solid #e2e8f0',
           borderRadius: 20,
-          boxShadow: '0 20px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(99,102,241,0.12)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.22), 0 4px 16px rgba(37,84,212,0.12)',
           overflow: 'hidden',
           animation: 'pitChatIn 0.22s ease',
         }}>
@@ -117,12 +119,12 @@ export default function PitAssistant() {
           <div style={{
             display: 'flex', alignItems: 'center', gap: 10,
             padding: '13px 16px',
-            background: 'linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)',
+            background: 'linear-gradient(135deg, #4f46e5 0%, #2554D4 100%)',
             flexShrink: 0,
           }}>
             <div style={{
               width: 34, height: 34, borderRadius: '50%', flexShrink: 0,
-              background: 'radial-gradient(ellipse at 38% 30%, #a5b4fc 0%, #6366f1 45%, #312e81 100%)',
+              background: 'radial-gradient(ellipse at 38% 30%, #a5b4fc 0%, #2554D4 45%, #312e81 100%)',
               border: '2px solid rgba(255,255,255,0.3)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
             }}>
@@ -152,11 +154,11 @@ export default function PitAssistant() {
                   maxWidth: '78%', padding: '9px 13px',
                   borderRadius: m.role === 'user' ? '16px 16px 4px 16px' : '4px 16px 16px 16px',
                   background: m.role === 'user'
-                    ? 'linear-gradient(135deg, #6366f1, #4f46e5)'
+                    ? 'linear-gradient(135deg, #2554D4, #4f46e5)'
                     : '#f1f5f9',
                   color: m.role === 'user' ? '#fff' : '#1e293b',
                   fontSize: 13, lineHeight: 1.55,
-                  boxShadow: m.role === 'user' ? '0 2px 8px rgba(99,102,241,0.3)' : 'none',
+                  boxShadow: m.role === 'user' ? '0 2px 8px rgba(37,84,212,0.3)' : 'none',
                 }}>{m.content}</div>
               </div>
             ))}
@@ -166,7 +168,7 @@ export default function PitAssistant() {
                 <div style={{ padding: '10px 14px', borderRadius: '4px 16px 16px 16px', background: '#f1f5f9' }}>
                   <div style={{ display: 'flex', gap: 5, alignItems: 'center' }}>
                     {[0, 1, 2].map(i => (
-                      <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#6366f1', animation: `pitTyping 1.2s ease-in-out infinite`, animationDelay: `${i * 0.22}s` }} />
+                      <div key={i} style={{ width: 6, height: 6, borderRadius: '50%', background: '#2554D4', animation: `pitTyping 1.2s ease-in-out infinite`, animationDelay: `${i * 0.22}s` }} />
                     ))}
                   </div>
                 </div>
@@ -198,7 +200,7 @@ export default function PitAssistant() {
               disabled={!input.trim() || loading}
               style={{
                 width: 38, height: 38, borderRadius: 12, flexShrink: 0,
-                background: input.trim() && !loading ? 'linear-gradient(135deg, #6366f1, #4f46e5)' : 'var(--color-border)',
+                background: input.trim() && !loading ? 'linear-gradient(135deg, #2554D4, #4f46e5)' : 'var(--color-border)',
                 border: 'none', cursor: input.trim() && !loading ? 'pointer' : 'default',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 transition: 'background 0.2s',
@@ -233,7 +235,7 @@ export default function PitAssistant() {
           style={{
             width: 62, height: 62, borderRadius: '50%', cursor: 'pointer',
             position: 'relative', marginBottom: 2,
-            background: 'radial-gradient(ellipse at 36% 30%, #c7d2fe 0%, #6366f1 38%, #3730a3 68%, #1e1b4b 100%)',
+            background: 'radial-gradient(ellipse at 36% 30%, #c7d2fe 0%, #2554D4 38%, #3730a3 68%, #1e1b4b 100%)',
             animation: 'pitFloat 3.2s ease-in-out infinite, pitGlow 3.2s ease-in-out infinite',
             transition: 'transform 0.15s',
           }}
@@ -244,7 +246,7 @@ export default function PitAssistant() {
           <div style={{
             position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
             width: 3, height: 12,
-            background: 'linear-gradient(to top, #6366f1, #a5b4fc)',
+            background: 'linear-gradient(to top, #2554D4, #a5b4fc)',
             borderRadius: 3,
           }}>
             {/* Antenna tip */}
@@ -303,7 +305,7 @@ export default function PitAssistant() {
           background: 'var(--color-surface)',
           border: '1px solid #c7d2fe',
           borderRadius: 8, padding: '2px 10px',
-          boxShadow: '0 2px 8px rgba(99,102,241,0.15)',
+          boxShadow: '0 2px 8px rgba(37,84,212,0.15)',
           letterSpacing: '0.03em',
         }}>Пит</div>
       </div>

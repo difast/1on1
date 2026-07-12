@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { createSupportTicket, getUserTickets, userSendMessage, userReadReply } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 function MessageBubble({ msg }) {
   const isAdmin = msg.sender === 'admin'
@@ -97,6 +98,7 @@ function TicketThread({ ticket, currentUser, onUpdate }) {
 }
 
 export default function SupportPage({ currentUser, onClose }) {
+  useEscapeKey(onClose)  // keyboard escape hatch
   const [view, setView] = useState('list') // 'list' | 'new' | 'thread'
   const [tickets, setTickets] = useState([])
   const [loading, setLoading] = useState(true)
@@ -259,7 +261,7 @@ export default function SupportPage({ currentUser, onClose }) {
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>Назад</button>
                     <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2 }}>
-                      {submitting ? 'Отправка...' : '📨 Отправить'}
+                      {submitting ? 'Отправка...' : 'Отправить'}
                     </button>
                   </div>
                 </form>

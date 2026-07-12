@@ -3,6 +3,8 @@ import {
   getTeams, getMemberTeam, getMeetings, getTasks,
   updateUser, deleteUser, blockUser, unblockUser,
 } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
+import { confirmDialog } from '../lib/ui'
 
 const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 
@@ -10,6 +12,7 @@ const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 // plus role change / block / delete. Responsive (full-width on mobile).
 export default function AdminUserDetail({ user, onClose, onChanged }) {
   const [loading, setLoading] = useState(false)
+  useEscapeKey(onClose)  // keyboard escape hatch
   const [teams, setTeams] = useState([])
   const [meetings, setMeetings] = useState([])
   const [tasks, setTasks] = useState([])
@@ -61,7 +64,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
     finally { setBusy(false) }
   }
   const handleDelete = async () => {
-    if (!confirm(`Удалить ${user.name} (id ${user.id}) безвозвратно?`)) return
+    if (!await confirmDialog({ title: 'Удалить пользователя?', message: `${user.name} (id ${user.id}) будет удалён безвозвратно.`, confirmText: 'Удалить', danger: true })) return
     setBusy(true)
     try { await deleteUser(user.id); onChanged?.(); onClose() }
     finally { setBusy(false) }
@@ -80,7 +83,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
             <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{user.name}</h3>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+          <button aria-label="Закрыть" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           <span style={chip}>ID: {user.id}</span>

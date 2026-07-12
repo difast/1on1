@@ -1,10 +1,16 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
+import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
+import { fmtDate, fmtTime } from '../lib/datetime'
+import AiSummary from './AiSummary'
+import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
+import EmptyState from './EmptyState'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import QuickWidget from './QuickWidget'
+import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
 import MoodPrompt from './MoodPrompt'
 import TaskAIHelper from './TaskAIHelper'
@@ -51,7 +57,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [callLoading, setCallLoading] = useState({})
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
-  const fileInputRefs = useRef({})
   const [activeCall, setActiveCall] = useState(null)
 
   useEffect(() => {
@@ -75,7 +80,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { alert('Не удалось начать созвон') }
+    } catch { toast('Не удалось начать созвон', 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -99,7 +104,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { alert('Не удалось загрузить запись') }
+    } catch { toast('Не удалось загрузить запись', 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -297,16 +302,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const freeNotes = notes.filter(n => !n.meeting_id)
 
-  const statusBadge = {
-    scheduled: 'badge badge-blue', completed: 'badge badge-green',
-    in_progress: 'badge badge-green', cancelled: 'badge badge-red',
-    requested: 'badge badge-amber', confirmed: 'badge badge-green',
-  }
-  const statusLabel = {
-    scheduled: 'Запланирована', completed: 'Завершена',
-    in_progress: 'Идёт созвон', cancelled: 'Отменена',
-    requested: 'Запрошена', confirmed: 'Подтверждена',
-  }
 
   if (loadingTeam) {
     return (
@@ -323,7 +318,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate}>
         <div style={{ maxWidth: 420, margin: '48px auto' }}>
           <div className="card" style={{ padding: 32, textAlign: 'center' }}>
-            <div className="empty-icon" style={{ margin: '0 auto 20px' }}>◎</div>
+            <div className="empty-icon" style={{ margin: '0 auto 20px' }} aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
             <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--color-text-primary)', marginBottom: 6 }}>
               Присоединитесь к команде
             </h2>
@@ -332,13 +327,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             </p>
             <form onSubmit={handleJoin} style={{ textAlign: 'left' }}>
               <div className="form-group">
-                <label className="form-label">Код приглашения</label>
+                {/* label tied to input (htmlFor/id) so screen readers announce it */}
+                <label className="form-label" htmlFor="join-code">Код приглашения</label>
                 <input
+                  id="join-code"
                   type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)}
                   placeholder="ABC123" className="input"
                   style={{ fontFamily: 'var(--font-mono)', textTransform: 'uppercase', letterSpacing: '0.1em' }}
                   autoFocus
                 />
+                {/* Prevent the dead-end feeling for members who have no code yet */}
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                  Нет кода? Попросите тимлида отправить вам приглашение.
+                </p>
               </div>
               {joinError && (
                 <div style={{
@@ -378,8 +379,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
           <div className="page-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                Пришёл: {new Date(checkin.arrived_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                {checkin.left_at && ` · Ушёл: ${new Date(checkin.left_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}`}
+                Пришёл: {fmtTime(checkin.arrived_at)}
+                {checkin.left_at && ` · Ушёл: ${fmtTime(checkin.left_at)}`}
               </span>
             )}
             {!checkin?.arrived_at ? (
@@ -465,10 +466,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
                         }}>
                           <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-                            {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                            {fmtDate(m.scheduled_date)}
                           </span>
                           <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-                            {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                            {fmtTime(m.scheduled_date)}
                           </span>
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
@@ -482,8 +483,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             </p>
                           )}
                         </div>
-                        <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                          {statusLabel[m.status] || m.status}
+                        <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                          {meetingStatusLabel(m.status)}
                         </span>
                         <button
                           onClick={() => handleStartCall(m.id)}
@@ -512,10 +513,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid #bbf7d0',
                       }}>
                         <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-success)', lineHeight: 1.2 }}>
-                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                          {fmtDate(m.scheduled_date)}
                         </span>
                         <span style={{ fontSize: 10, color: '#86efac' }}>
-                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                          {fmtTime(m.scheduled_date)}
                         </span>
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -524,8 +525,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         </p>
                         {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
                       </div>
-                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                        {statusLabel[m.status] || m.status}
+                      <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                        {meetingStatusLabel(m.status)}
                       </span>
                     </div>
                   )
@@ -617,18 +618,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 return (
                   <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{
-                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
-                        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-                      }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-                          {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
-                        </span>
-                        <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-                          {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                        </span>
-                      </div>
+                      <MeetingDateBadge date={m.scheduled_date} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
                           {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { weekday: 'long' })}
@@ -639,8 +629,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           </p>
                         )}
                       </div>
-                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                        {statusLabel[m.status] || m.status}
+                      <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                        {meetingStatusLabel(m.status)}
                       </span>
                       {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0 }}>
@@ -648,7 +638,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
                         </div>
                       )}
-                      {!isPast && (
+                      {/* Call must stay available for any active meeting, even
+                          if its scheduled time has passed (a late/in-progress
+                          1-on-1) — only hide it once it's finished/cancelled. */}
+                      {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <button
                           onClick={() => handleStartCall(m.id)}
                           disabled={callLoading[m.id]}
@@ -666,74 +659,26 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         </button>
                       )}
                       {isPast && !m.ai_summary && (
-                        <>
-                          <input
-                            ref={el => fileInputRefs.current[m.id] = el}
-                            type="file"
-                            accept="audio/*,video/*"
-                            style={{ display: 'none' }}
-                            onChange={e => { if (e.target.files[0]) handleUploadRecording(m.id, e.target.files[0]) }}
-                          />
-                          <button
-                            onClick={() => fileInputRefs.current[m.id]?.click()}
-                            disabled={uploadLoading[m.id] || uploadDone[m.id]}
-                            title="Загрузить запись созвона для AI-анализа"
-                            style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0 }}
-                          >
-                            {uploadLoading[m.id] ? '...' : uploadDone[m.id] ? '✓' : 'Запись'}
-                          </button>
-                        </>
+                        <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
                       )}
-                      {isPast && m.ai_summary && (
-                        <span title={m.ai_summary} style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}>✨ AI</span>
-                      )}
+                      {isPast && m.ai_summary && <AiBadge summary={m.ai_summary} />}
                     </div>
                     {isExpanded && (
-                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                        <textarea
-                          value={draft}
-                          onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
-                          placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
-                          className="input"
-                          style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
-                        />
-                        <button
-                          onClick={() => handleSaveMeetingNote(m.id)}
-                          disabled={savingMeetingNote[m.id]}
-                          className="btn btn-accent btn-sm"
-                          style={{ marginTop: 6 }}
-                        >
-                          {savingMeetingNote[m.id] ? 'Сохранение...' : 'Сохранить'}
-                        </button>
-                      </div>
+                      <MeetingNoteEditor
+                        value={draft}
+                        onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                        onSave={() => handleSaveMeetingNote(m.id)}
+                        saving={savingMeetingNote[m.id]}
+                      />
                     )}
-                    {m.ai_summary && (
-                      <div style={{ marginTop: 10, padding: '10px 14px', background: 'var(--blue-50)', borderRadius: 8, border: '1px solid var(--blue-200)', borderLeft: '3px solid var(--color-accent)' }}>
-                        <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', marginBottom: 5, letterSpacing: '0.06em', textTransform: 'uppercase' }}>✨ AI Резюме</p>
-                        <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.7, margin: 0 }}>{m.ai_summary}</p>
-                      </div>
-                    )}
-                    {!isExpanded && hasNote && (() => {
-                      const noteContent = notes.find(n => n.meeting_id === m.id)?.content || ''
-                      const lines = noteContent.split('\n').filter(l => l.trim())
-                      return lines.length > 0 ? (
-                        <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {lines.map((line, i) => (
-                            <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
-                          ))}
-                        </ul>
-                      ) : null
-                    })()}
+                    <AiSummary summary={m.ai_summary} />
+                    {!isExpanded && <NotesPreview text={notes.find(n => n.meeting_id === m.id)?.content} />}
                   </div>
                 )
               }}
             />
             {meetings.length === 0 && (
-              <div className="empty-state" style={{ marginTop: 16 }}>
-                <div className="empty-icon">○</div>
-                <p className="empty-title">Нет встреч</p>
-                <p className="empty-desc">Запросите первую встречу с тимлидом</p>
-              </div>
+              <EmptyState title="Нет встреч" desc="Запросите первую встречу с тимлидом" style={{ marginTop: 16 }} />
             )}
           </div>
         )}
@@ -773,11 +718,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             )}
 
             {tasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">○</div>
-                <p className="empty-title">Нет задач</p>
-                <p className="empty-desc">Создайте задачу или дождитесь задач от тимлида</p>
-              </div>
+              <EmptyState title="Нет задач" desc="Создайте задачу или дождитесь задач от тимлида" />
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -831,7 +772,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           </div>
                           <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать">✎</button>
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           {isSelf && (
                             <button onClick={() => handleDeleteTask(task.id)}
                               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
@@ -913,6 +854,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
                   <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  {/* Empty state should invite the first action, not read as a blank/bug */}
+                  <p className="empty-desc">Запишите мысль или вопрос к встрече — заметки видите только вы.</p>
                 </div>
               )}
             </div>
@@ -1021,7 +964,7 @@ function Modal({ title, onClose, children }) {
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close">×</button>
+          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
         </div>
         {children}
       </div>

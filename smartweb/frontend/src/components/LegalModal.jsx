@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { LEGAL_DOCS } from '../lib/legalDocs'
+import useEscapeKey from '../lib/useEscapeKey'
 
 // Modal showing the legal documents inside the web app.
 // Used from the user menu ("Документы") and from the auth page consent link.
 export default function LegalModal({ open, initialKey, onClose }) {
   const [active, setActive] = useState(initialKey || LEGAL_DOCS[0].key)
   useEffect(() => { if (open && initialKey) setActive(initialKey) }, [open, initialKey])
+  useEscapeKey(onClose, open)  // keyboard escape hatch
   if (!open) return null
   const doc = LEGAL_DOCS.find(d => d.key === active) || LEGAL_DOCS[0]
 
@@ -14,7 +16,7 @@ export default function LegalModal({ open, initialKey, onClose }) {
       <div onClick={e => e.stopPropagation()} className="card" style={{ width: '100%', maxWidth: 760, marginTop: 24, padding: 0, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
           <strong style={{ fontSize: 16 }}>Документы</strong>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+          <button aria-label="Закрыть" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
         </div>
         <div style={{ display: 'flex', gap: 8, padding: '12px 16px', overflowX: 'auto', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
           {LEGAL_DOCS.map(d => (

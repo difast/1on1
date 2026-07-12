@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { submitMood } from '../api/client'
+import useEscapeKey from '../lib/useEscapeKey'
 
 const QUESTIONS = [
   { id: 'overall', label: 'Как прошёл день?', placeholder: 'Расскажите в нескольких словах...', required: true },
@@ -13,6 +14,7 @@ const todayKey = () => `mood_submitted_${new Date().toDateString()}`
 export default function MoodPrompt({ teamId }) {
   const [visible, setVisible] = useState(false)
   const [open, setOpen] = useState(false)
+  useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
   const [answers, setAnswers] = useState({ overall: '', energy: '', blocker: '', team: '' })
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
@@ -63,7 +65,7 @@ export default function MoodPrompt({ teamId }) {
             display: 'flex', alignItems: 'center', gap: 12,
             background: 'var(--color-surface)',
             border: '1px solid var(--color-border)',
-            borderLeft: '4px solid #8b5cf6',
+            borderLeft: '4px solid #3B6EF0',
             borderRadius: 14,
             boxShadow: '0 8px 32px rgba(0,0,0,0.2)',
             padding: '14px 18px',
@@ -73,7 +75,7 @@ export default function MoodPrompt({ teamId }) {
           }}
         >
           <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
-              <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#8b5cf6" opacity="0.9"/>
+              <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#3B6EF0" opacity="0.9"/>
             </svg>
           <div style={{ flex: 1 }}>
             <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>
@@ -130,7 +132,7 @@ export default function MoodPrompt({ teamId }) {
                       Анонимно · ответы анализирует ИИ
                     </p>
                   </div>
-                  <button className="modal-close" onClick={() => setOpen(false)}>✕</button>
+                  <button className="modal-close" aria-label="Закрыть" onClick={() => setOpen(false)}>✕</button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0 8px' }}>
@@ -153,7 +155,7 @@ export default function MoodPrompt({ teamId }) {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8 }}>
                   <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flex: 1 }}>
-                    🔒 Имя не сохраняется
+                    Имя не сохраняется
                   </span>
                   <button
                     onClick={handleSubmit}

@@ -12,8 +12,8 @@ const STYLES = `
   0%,100%{transform:scaleX(1);opacity:0.3}50%{transform:scaleX(0.65);opacity:0.1}
 }
 @keyframes obGlow {
-  0%,100%{box-shadow:0 12px 40px rgba(99,102,241,0.5)}
-  50%{box-shadow:0 16px 50px rgba(99,102,241,0.7),0 0 24px 6px rgba(99,102,241,0.25)}
+  0%,100%{box-shadow:0 12px 40px rgba(37,84,212,0.5)}
+  50%{box-shadow:0 16px 50px rgba(37,84,212,0.7),0 0 24px 6px rgba(37,84,212,0.25)}
 }
 @keyframes obAntenna {
   0%,100%{box-shadow:0 0 6px 2px rgba(165,180,252,0.7)}
@@ -32,7 +32,7 @@ const STYLES = `
   from{opacity:0;transform:translateY(28px)scale(0.96)}to{opacity:1;transform:translateY(0)scale(1)}
 }
 @keyframes obPulse {
-  0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0.5)}50%{box-shadow:0 0 0 6px rgba(99,102,241,0)}
+  0%,100%{box-shadow:0 0 0 0 rgba(37,84,212,0.5)}50%{box-shadow:0 0 0 6px rgba(37,84,212,0)}
 }
 @keyframes obSpin {
   from{transform:rotate(0deg)}to{transform:rotate(360deg)}
@@ -47,11 +47,11 @@ function PitBig() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
       <div style={{
         width: 90, height: 90, borderRadius: '50%', position: 'relative',
-        background: 'radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#6366f1 38%,#3730a3 68%,#1e1b4b 100%)',
+        background: 'radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#2554D4 38%,#3730a3 68%,#1e1b4b 100%)',
         animation: 'obFloat 3.2s ease-in-out infinite,obGlow 3.2s ease-in-out infinite',
       }}>
         {/* Antenna */}
-        <div style={{ position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',width:4,height:16,background:'linear-gradient(to top,#6366f1,#a5b4fc)',borderRadius:4 }}>
+        <div style={{ position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',width:4,height:16,background:'linear-gradient(to top,#2554D4,#a5b4fc)',borderRadius:4 }}>
           <div style={{ position:'absolute',top:-7,left:'50%',transform:'translateX(-50%)',width:11,height:11,borderRadius:'50%',background:'#c7d2fe',animation:'obAntenna 2s ease-in-out infinite' }} />
         </div>
         {/* Highlight */}
@@ -67,7 +67,7 @@ function PitBig() {
         <div style={{ position:'absolute',bottom:'22%',left:'50%',transform:'translateX(-50%)',width:28,height:12,borderBottom:'3px solid rgba(255,255,255,0.75)',borderRadius:'0 0 28px 28px' }} />
       </div>
       <div style={{ width:72,height:12,borderRadius:'50%',margin:'4px auto 0',background:'rgba(79,70,229,0.4)',animation:'obShadow 3s ease-in-out infinite' }} />
-      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#a5b4fc',background:'rgba(99,102,241,0.15)',border:'1px solid rgba(165,180,252,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>Пит</div>
+      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#a5b4fc',background:'rgba(37,84,212,0.15)',border:'1px solid rgba(165,180,252,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>Пит</div>
     </div>
   )
 }
@@ -78,7 +78,7 @@ function Dots({ step, total }) {
       {Array.from({ length: total }).map((_, i) => (
         <div key={i} style={{
           width: i + 1 === step ? 28 : 8, height: 8, borderRadius: 4,
-          background: i + 1 === step ? '#6366f1' : 'rgba(255,255,255,0.18)',
+          background: i + 1 === step ? '#2554D4' : 'rgba(255,255,255,0.18)',
           transition: 'all 0.4s cubic-bezier(0.34,1.56,0.64,1)',
           animation: i + 1 === step ? 'obPulse 2s ease-in-out infinite' : 'none',
         }} />
@@ -195,7 +195,7 @@ export default function Onboarding({ email, onComplete }) {
     finally { setPhotoLoading(false) }
   }
 
-  const fOpts = e => { e.target.style.borderColor = 'rgba(99,102,241,0.7)' }
+  const fOpts = e => { e.target.style.borderColor = 'rgba(37,84,212,0.7)' }
   const fOut  = e => { e.target.style.borderColor = 'rgba(255,255,255,0.15)' }
 
   return (
@@ -207,8 +207,8 @@ export default function Onboarding({ email, onComplete }) {
         display:'flex', padding:'56px 20px', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
       }}>
         {/* Orbs */}
-        <div style={{ position:'absolute',top:'8%',left:'5%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(99,102,241,0.22) 0%,transparent 70%)',animation:'obOrb1 9s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
-        <div style={{ position:'absolute',bottom:'10%',right:'4%',width:280,height:280,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(139,92,246,0.18) 0%,transparent 70%)',animation:'obOrb2 11s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
+        <div style={{ position:'absolute',top:'8%',left:'5%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(37,84,212,0.22) 0%,transparent 70%)',animation:'obOrb1 9s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
+        <div style={{ position:'absolute',bottom:'10%',right:'4%',width:280,height:280,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,110,240,0.18) 0%,transparent 70%)',animation:'obOrb2 11s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
         <div style={{ position:'absolute',top:'50%',left:'68%',width:190,height:190,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,130,246,0.14) 0%,transparent 70%)',animation:'obOrb3 7s ease-in-out infinite',pointerEvents:'none' }} />
         <div style={{ position:'absolute',top:'72%',left:'12%',width:150,height:150,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(167,139,250,0.16) 0%,transparent 70%)',animation:'obOrb1 13s ease-in-out infinite reverse',pointerEvents:'none' }} />
 
@@ -231,18 +231,22 @@ export default function Onboarding({ email, onComplete }) {
                 Пит поможет настроить рабочее пространство. Кто вы?
               </p>
               <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
+                {/* Role icons are purposeful line-icons, not emoji — keeps the
+                    first screen clean and professional (no decorative clutter). */}
                 {[
-                  { role:'team_lead', emoji:'👔', title:'Тимлид', desc:'Провожу 1-on-1 встречи, управляю командой и задачами' },
-                  { role:'member',    emoji:'🧑‍💻', title:'Участник команды', desc:'Участвую во встречах, работаю над задачами' },
+                  { role:'team_lead', title:'Тимлид', desc:'Провожу 1-on-1 встречи, управляю командой и задачами',
+                    icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>) },
+                  { role:'member', title:'Участник команды', desc:'Участвую во встречах, работаю над задачами',
+                    icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
                 ].map(opt => (
                   <button key={opt.role} onClick={() => handleRoleSelect(opt.role)} style={{
                     textAlign:'left',width:'100%',cursor:'pointer',padding:'18px 20px',
                     background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.1)',
                     borderRadius:14,transition:'all 0.2s',color:'inherit',
                   }}
-                  onMouseEnter={e=>{e.currentTarget.style.background='rgba(99,102,241,0.15)';e.currentTarget.style.borderColor='rgba(99,102,241,0.5)';e.currentTarget.style.transform='translateY(-2px)'}}
+                  onMouseEnter={e=>{e.currentTarget.style.background='rgba(37,84,212,0.15)';e.currentTarget.style.borderColor='rgba(37,84,212,0.5)';e.currentTarget.style.transform='translateY(-2px)'}}
                   onMouseLeave={e=>{e.currentTarget.style.background='rgba(255,255,255,0.05)';e.currentTarget.style.borderColor='rgba(255,255,255,0.1)';e.currentTarget.style.transform='translateY(0)'}}>
-                    <div style={{ fontSize:28,marginBottom:8 }}>{opt.emoji}</div>
+                    <div style={{ marginBottom:8 }}>{opt.icon}</div>
                     <p style={{ fontWeight:700,fontSize:16,color:'#fff',marginBottom:4 }}>{opt.title}</p>
                     <p style={{ fontSize:13,color:'rgba(255,255,255,0.5)' }}>{opt.desc}</p>
                   </button>
@@ -256,7 +260,7 @@ export default function Onboarding({ email, onComplete }) {
             <div style={glass}>
               <button onClick={() => setStep(1)} style={{ background:'none',border:'none',color:'rgba(255,255,255,0.45)',cursor:'pointer',fontSize:13,marginBottom:16,padding:0,display:'flex',alignItems:'center',gap:4 }}>← Назад</button>
               <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:4 }}>
-                {role === 'team_lead' ? '👔 Тимлид' : '🧑‍💻 Участник'}
+                {role === 'team_lead' ? 'Тимлид' : 'Участник'}
               </h2>
               <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:22 }}>Расскажите немного о себе</p>
               <form onSubmit={handleProfileSubmit}>
@@ -291,9 +295,9 @@ export default function Onboarding({ email, onComplete }) {
                 )}
                 <button type="submit" disabled={loading} style={{
                   width:'100%',padding:'13px 24px',fontSize:15,fontWeight:700,
-                  background:loading?'rgba(99,102,241,0.4)':'linear-gradient(135deg,#6366f1,#4f46e5)',
+                  background:loading?'rgba(37,84,212,0.4)':'linear-gradient(135deg,#2554D4,#4f46e5)',
                   color:'#fff',border:'none',borderRadius:12,cursor:loading?'default':'pointer',
-                  boxShadow:'0 4px 16px rgba(99,102,241,0.35)',transition:'all 0.2s',
+                  boxShadow:'0 4px 16px rgba(37,84,212,0.35)',transition:'all 0.2s',
                 }}>
                   {loading ? 'Сохранение...' : 'Далее →'}
                 </button>
@@ -314,11 +318,11 @@ export default function Onboarding({ email, onComplete }) {
                     onClick={() => fileRef.current?.click()}
                     style={{
                       width:100,height:100,borderRadius:'50%',margin:'0 auto 16px',cursor:'pointer',
-                      background:avatarPreview?'transparent':'linear-gradient(135deg,#6366f1,#4f46e5)',
-                      border:'3px solid rgba(99,102,241,0.5)',
+                      background:avatarPreview?'transparent':'linear-gradient(135deg,#2554D4,#4f46e5)',
+                      border:'3px solid rgba(37,84,212,0.5)',
                       display:'flex',alignItems:'center',justifyContent:'center',
                       fontSize:36,color:'#fff',fontWeight:700,overflow:'hidden',
-                      boxShadow:'0 8px 24px rgba(99,102,241,0.3)',transition:'transform 0.2s',
+                      boxShadow:'0 8px 24px rgba(37,84,212,0.3)',transition:'transform 0.2s',
                     }}
                     onMouseEnter={e=>e.currentTarget.style.transform='scale(1.05)'}
                     onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
@@ -342,9 +346,9 @@ export default function Onboarding({ email, onComplete }) {
                     }}>Пропустить</button>
                     {avatarPreview && (
                       <button onClick={handlePhotoSave} disabled={photoLoading} style={{
-                        flex:1,padding:'12px',background:'linear-gradient(135deg,#6366f1,#4f46e5)',
+                        flex:1,padding:'12px',background:'linear-gradient(135deg,#2554D4,#4f46e5)',
                         border:'none',color:'#fff',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,
-                        boxShadow:'0 4px 16px rgba(99,102,241,0.35)',
+                        boxShadow:'0 4px 16px rgba(37,84,212,0.35)',
                       }}>{photoLoading ? 'Сохранение...' : 'Сохранить →'}</button>
                     )}
                   </div>
@@ -355,7 +359,7 @@ export default function Onboarding({ email, onComplete }) {
                   <h2 style={{ fontSize:22,fontWeight:700,color:'#fff',marginBottom:8 }}>Всё готово!</h2>
                   <p style={{ fontSize:14,color:'rgba(255,255,255,0.55)' }}>Открываем рабочее пространство...</p>
                   <div style={{ marginTop:20,display:'flex',justifyContent:'center' }}>
-                    <div style={{ width:28,height:28,borderRadius:'50%',border:'3px solid rgba(99,102,241,0.3)',borderTopColor:'#6366f1',animation:'obSpin 0.8s linear infinite' }} />
+                    <div style={{ width:28,height:28,borderRadius:'50%',border:'3px solid rgba(37,84,212,0.3)',borderTopColor:'#2554D4',animation:'obSpin 0.8s linear infinite' }} />
                   </div>
                 </div>
               )}
