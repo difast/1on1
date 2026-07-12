@@ -1,4 +1,5 @@
 import { confirmDialog } from '../lib/ui'
+import EmptyState from './EmptyState'
 import { useState, useEffect } from 'react'
 import { getKnowledgeArticles, createKnowledgeArticle, updateKnowledgeArticle, deleteKnowledgeArticle } from '../api/client'
 
@@ -186,11 +187,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
           <div className="spinner" />
         </div>
       ) : !teamId ? (
-        <div className="empty-state">
-          <div className="empty-icon">◎</div>
-          <p className="empty-title">Команда не выбрана</p>
-          <p className="empty-desc">Выберите команду, чтобы открыть базу знаний</p>
-        </div>
+        <EmptyState title="Команда не выбрана" desc="Выберите команду, чтобы открыть базу знаний" />
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon">◎</div>

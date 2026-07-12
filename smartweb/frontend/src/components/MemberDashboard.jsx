@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import EmptyState from './EmptyState'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
@@ -736,11 +737,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               }}
             />
             {meetings.length === 0 && (
-              <div className="empty-state" style={{ marginTop: 16 }}>
-                <div className="empty-icon">◎</div>
-                <p className="empty-title">Нет встреч</p>
-                <p className="empty-desc">Запросите первую встречу с тимлидом</p>
-              </div>
+              <EmptyState title="Нет встреч" desc="Запросите первую встречу с тимлидом" style={{ marginTop: 16 }} />
             )}
           </div>
         )}
@@ -780,11 +777,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             )}
 
             {tasks.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-icon">◎</div>
-                <p className="empty-title">Нет задач</p>
-                <p className="empty-desc">Создайте задачу или дождитесь задач от тимлида</p>
-              </div>
+              <EmptyState title="Нет задач" desc="Создайте задачу или дождитесь задач от тимлида" />
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>

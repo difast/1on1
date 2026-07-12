@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import EmptyState from './EmptyState'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
 import Layout from './Layout'
 
@@ -923,11 +924,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               )}
               {myTasks.length === 0 ? (
-                <div className="empty-state">
-                  <div className="empty-icon">◎</div>
-                  <p className="empty-title">Нет задач</p>
-                  <p className="empty-desc">Добавьте личные задачи, которые видите только вы</p>
-                </div>
+                <EmptyState title="Нет задач" desc="Добавьте личные задачи, которые видите только вы" />
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -1019,11 +1016,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {tasksSubTab === 'members' && (
               <div>
                 {teams.length === 0 ? (
-                  <div className="empty-state">
-                    <div className="empty-icon">◎</div>
-                    <p className="empty-title">Нет команд</p>
-                    <p className="empty-desc">Создайте команду, чтобы видеть задачи участников</p>
-                  </div>
+                  <EmptyState title="Нет команд" desc="Создайте команду, чтобы видеть задачи участников" />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'flex', gap: 6 }}>
@@ -1161,11 +1154,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       )
                     })}
                     {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                      <div className="empty-state">
-                        <div className="empty-icon">◎</div>
-                        <p className="empty-title">Нет участников</p>
-                        <p className="empty-desc">Добавьте участников в команду</p>
-                      </div>
+                      <EmptyState title="Нет участников" desc="Добавьте участников в команду" />
                     )}
                   </div>
                 )}
