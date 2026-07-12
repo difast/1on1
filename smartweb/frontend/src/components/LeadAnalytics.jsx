@@ -352,6 +352,8 @@ export default function LeadAnalytics({ user }) {
     const LIGHT  = 'EFF6FF'
     const SILVER = 'F1F5F9'
     const WHITE  = 'FFFFFF'
+    // Единая гарнитура на весь файл — задаём явно, без смешения шрифтов.
+    const FONT   = 'Calibri'
 
     const brd = (color = 'CBD5E1') => ({
       top:    { style: 'thin', color: { rgb: color } },
@@ -386,37 +388,56 @@ export default function LeadAnalytics({ user }) {
       }),
       // Normal data cell
       data: (align = 'center', bold = false, color = '1E293B') => ({
-        font: { sz: 10, bold, color: { rgb: color } },
+        font: { name: FONT, sz: 10, bold, color: { rgb: color } },
         alignment: { horizontal: align, vertical: 'center' },
         border: brdB(),
       }),
       // Alternate row tint
       dataAlt: (align = 'center', bold = false) => ({
-        font: { sz: 10, bold, color: { rgb: '1E293B' } },
+        font: { name: FONT, sz: 10, bold, color: { rgb: '1E293B' } },
         fill: { fgColor: { rgb: 'F8FAFC' } },
         alignment: { horizontal: align, vertical: 'center' },
         border: brdB(),
       }),
       // Status badges
-      ok:     { font: { bold: true, sz: 10, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('BBF7D0') },
-      warn:   { font: { bold: true, sz: 10, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FDE68A') },
-      danger: { font: { bold: true, sz: 10, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FECACA') },
-      urgent: { font: { bold: true, sz: 10, color: { rgb: WHITE }  }, fill: { fgColor: { rgb: RED }    }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd(RED) },
+      ok:     { font: { name: FONT, bold: true, sz: 10, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('BBF7D0') },
+      warn:   { font: { name: FONT, bold: true, sz: 10, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FDE68A') },
+      danger: { font: { name: FONT, bold: true, sz: 10, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd('FECACA') },
+      urgent: { font: { name: FONT, bold: true, sz: 10, color: { rgb: WHITE }  }, fill: { fgColor: { rgb: RED }    }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd(RED) },
       // Member card title
-      cardName: { font: { bold: true, sz: 12, color: { rgb: WHITE } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
-      cardRole: { font: { italic: true, sz: 10, color: { rgb: 'BFD4F2' } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
-      cardLbl:  { font: { sz: 9, color: { rgb: '64748B' } }, fill: { fgColor: { rgb: SILVER } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
-      cardVal:  { font: { bold: true, sz: 12, color: { rgb: NAVY }  }, fill: { fgColor: { rgb: WHITE } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
-      cardValG: { font: { bold: true, sz: 12, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
-      cardValR: { font: { bold: true, sz: 12, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
-      cardValA: { font: { bold: true, sz: 12, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
-      moodEmoji:{ font: { sz: 14 }, alignment: { horizontal: 'center', vertical: 'center' } },
+      cardName: { font: { name: FONT, bold: true, sz: 12, color: { rgb: WHITE } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
+      cardRole: { font: { name: FONT, italic: true, sz: 10, color: { rgb: 'BFD4F2' } }, fill: { fgColor: { rgb: BLUE } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brd(BLUE) },
+      cardLbl:  { font: { name: FONT, sz: 9, color: { rgb: '64748B' } }, fill: { fgColor: { rgb: SILVER } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardVal:  { font: { name: FONT, bold: true, sz: 12, color: { rgb: NAVY }  }, fill: { fgColor: { rgb: WHITE } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValG: { font: { name: FONT, bold: true, sz: 12, color: { rgb: GREEN }  }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValR: { font: { name: FONT, bold: true, sz: 12, color: { rgb: RED }    }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      cardValA: { font: { name: FONT, bold: true, sz: 12, color: { rgb: AMBER }  }, fill: { fgColor: { rgb: 'FEF9C3' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brd() },
+      moodCell: { font: { name: FONT, sz: 10, color: { rgb: '1E293B' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: brdB() },
     }
 
-    // Helper: set cell
+    // Helper: set cell (text/number)
     const sc = (ws, r, c, v, s) => {
       const addr = XLSX.utils.encode_cell({ r, c })
       ws[addr] = { v: v ?? '', s }
+    }
+    // Helper: numeric cell with explicit number format (e.g. z='0.0%' → проценты
+    // хранятся как настоящие числа 0..1, а не как текст "70%", поэтому Excel
+    // умеет их сортировать, усреднять и пересчитывать.
+    const scN = (ws, r, c, num, s, z) => {
+      const addr = XLSX.utils.encode_cell({ r, c })
+      ws[addr] = { v: num, t: 'n', z, s }
+    }
+    // Helper: formula cell. Итоги/средние считаются формулой ВНУТРИ файла
+    // (SUM/AVERAGE), чтобы при правке данных пользователем всё пересчитывалось,
+    // а не оставалось статичным числом с бэкенда.
+    const scF = (ws, r, c, formula, s, z) => {
+      const addr = XLSX.utils.encode_cell({ r, c })
+      ws[addr] = { t: 'n', f: formula, s, ...(z ? { z } : {}) }
+    }
+    // Helper: включить автофильтр на диапазон таблицы (шапка + строки данных),
+    // чтобы пользователь сразу мог сортировать и фильтровать без ручной настройки.
+    const setAutoFilter = (ws, r1, c1, r2, c2) => {
+      ws['!autofilter'] = { ref: `${XLSX.utils.encode_cell({ r: r1, c: c1 })}:${XLSX.utils.encode_cell({ r: r2, c: c2 })}` }
     }
     // Helper: merge
     const addMerge = (ws, rs, re, cs, ce) => {
@@ -501,7 +522,7 @@ export default function LeadAnalytics({ user }) {
 
     ws0['!rows'].push({ hpt: 20 })
     const noteRow = 12
-    sc(ws0, noteRow, 1, 'Отчёт содержит 5 листов: Сводка • Участники • Карточки • Риски & Сигналы • Настроение & Активность', {
+    sc(ws0, noteRow, 1, 'Листы отчёта: Обложка, Сводка, Карточки, Риски, Активность', {
       font: { italic: true, sz: 9, color: { rgb: '94A3B8' } },
       alignment: { horizontal: 'left', vertical: 'center' },
     })
@@ -530,6 +551,8 @@ export default function LeadAnalytics({ user }) {
     HDR1.forEach((h, ci) => sc(ws1, 2, ci, h, S.secHdr()))
     ws1['!rows'] = [{ hpt: 28 }, { hpt: 18 }, { hpt: 28 }]
 
+    // Данные пишем по колонкам, чтобы числа оставались числами (сортируются
+    // и усредняются), а процент задач хранился как доля 0..1 с форматом 0.0%.
     ms.forEach((s, i) => {
       const isRisk = s.warning_flags && s.warning_flags.length > 0
       const flags = s.warning_flags || []
@@ -537,33 +560,41 @@ export default function LeadAnalytics({ user }) {
       const st = isUrgent ? S.urgent : isRisk ? S.danger : S.ok
       const a = i % 2 === 1 ? 'dataAlt' : 'data'
       const row = i + 3
-      const vals = [
-        s.name, s.meetings_last_30 ?? 0, s.meetings_last_90 ?? 0, s.total_meetings ?? 0,
-        s.days_since_last ?? '—', s.avg_interval_days ?? '—',
-        s.task_completion_pct != null ? s.task_completion_pct + '%' : '—',
-        s.open_tasks ?? 0, s.completed_tasks ?? 0, s.total_tasks ?? 0,
-        isUrgent ? 'Срочно' : isRisk ? 'Риск' : 'ОК',
-      ]
-      const styles = [S[a]('left', true), ...Array(9).fill(S[a]('center')), st]
-      vals.forEach((v, ci) => sc(ws1, row, ci, v, styles[ci]))
+      sc(ws1, row, 0, s.name, S[a]('left', true))
+      sc(ws1, row, 1, s.meetings_last_30 ?? 0, S[a]('center'))
+      sc(ws1, row, 2, s.meetings_last_90 ?? 0, S[a]('center'))
+      sc(ws1, row, 3, s.total_meetings ?? 0, S[a]('center'))
+      sc(ws1, row, 4, s.days_since_last ?? '—', S[a]('center'))
+      sc(ws1, row, 5, s.avg_interval_days ?? '—', S[a]('center'))
+      if (s.task_completion_pct != null) scN(ws1, row, 6, s.task_completion_pct / 100, S[a]('center'), '0.0%')
+      else sc(ws1, row, 6, '—', S[a]('center'))
+      sc(ws1, row, 7, s.open_tasks ?? 0, S[a]('center'))
+      sc(ws1, row, 8, s.completed_tasks ?? 0, S[a]('center'))
+      sc(ws1, row, 9, s.total_tasks ?? 0, S[a]('center'))
+      sc(ws1, row, 10, isUrgent ? 'Срочно' : isRisk ? 'Риск' : 'ОК', st)
       ws1['!rows'].push({ hpt: 22 })
     })
 
-    // Team totals footer
+    // Строка ИТОГО/СРЕДНЕЕ — формулами внутри файла (SUM/AVERAGE), чтобы при
+    // правке данных пользователем пересчёт происходил в Excel, а не оставался
+    // статичным числом. AVERAGE обёрнут в IFERROR на случай пустого столбца.
     const footRow = ms.length + 3
+    const rng = (c) => `${XLSX.utils.encode_cell({ r: 3, c })}:${XLSX.utils.encode_cell({ r: footRow - 1, c })}`
     sc(ws1, footRow, 0, 'ИТОГО / СРЕДНЕЕ', S.subHdr(TEAL))
-    sc(ws1, footRow, 1, teamMtg30, S.subHdr(TEAL))
-    sc(ws1, footRow, 2, ms.reduce((a, s) => a + (s.meetings_last_90 || 0), 0), S.subHdr(TEAL))
-    sc(ws1, footRow, 3, team.total_meetings ?? 0, S.subHdr(TEAL))
-    sc(ws1, footRow, 4, teamAvgInt != null ? teamAvgInt + ' ср.' : '—', S.subHdr(TEAL))
-    sc(ws1, footRow, 5, teamAvgInt ?? '—', S.subHdr(TEAL))
-    sc(ws1, footRow, 6, teamTaskP != null ? teamTaskP + '%' : '—', S.subHdr(TEAL))
-    sc(ws1, footRow, 7, ms.reduce((a, s) => a + (s.open_tasks || 0), 0), S.subHdr(TEAL))
-    sc(ws1, footRow, 8, ms.reduce((a, s) => a + (s.completed_tasks || 0), 0), S.subHdr(TEAL))
-    sc(ws1, footRow, 9, ms.reduce((a, s) => a + (s.total_tasks || 0), 0), S.subHdr(TEAL))
+    scF(ws1, footRow, 1, `SUM(${rng(1)})`, S.subHdr(TEAL))
+    scF(ws1, footRow, 2, `SUM(${rng(2)})`, S.subHdr(TEAL))
+    scF(ws1, footRow, 3, `SUM(${rng(3)})`, S.subHdr(TEAL))
+    scF(ws1, footRow, 4, `IFERROR(AVERAGE(${rng(4)}),"—")`, S.subHdr(TEAL), '0.0')
+    scF(ws1, footRow, 5, `IFERROR(AVERAGE(${rng(5)}),"—")`, S.subHdr(TEAL), '0.0')
+    scF(ws1, footRow, 6, `IFERROR(AVERAGE(${rng(6)}),"—")`, S.subHdr(TEAL), '0.0%')
+    scF(ws1, footRow, 7, `SUM(${rng(7)})`, S.subHdr(TEAL))
+    scF(ws1, footRow, 8, `SUM(${rng(8)})`, S.subHdr(TEAL))
+    scF(ws1, footRow, 9, `SUM(${rng(9)})`, S.subHdr(TEAL))
     sc(ws1, footRow, 10, `${atRiskCnt} риск`, S.subHdr(TEAL))
     ws1['!rows'].push({ hpt: 24 })
 
+    // Автофильтр на шапку + строки данных (строку ИТОГО не включаем).
+    if (ms.length > 0) setAutoFilter(ws1, 2, 0, footRow - 1, HDR1.length - 1)
     setRef(ws1, footRow, HDR1.length - 1)
     XLSX.utils.book_append_sheet(wb, ws1, 'Сводка')
 
@@ -647,7 +678,7 @@ export default function LeadAnalytics({ user }) {
       if (s.mood_trend && s.mood_trend.length > 0) {
         sc(ws2, curRow, 0, 'Настроение (последние)', S.cardLbl)
         s.mood_trend.slice(0, 7).forEach((m, ci) => {
-          sc(ws2, curRow, ci + 1, m.label || m.mood || '', S.moodEmoji)
+          sc(ws2, curRow, ci + 1, m.label || m.mood || '', S.moodCell)
         })
         ws2['!rows'].push({ hpt: 22 })
         curRow++
@@ -656,7 +687,7 @@ export default function LeadAnalytics({ user }) {
       // ── Warning flags row
       if (flags.length > 0) {
         sc(ws2, curRow, 0, 'Флаги риска', { ...S.cardLbl, fill: { fgColor: { rgb: 'FEE2E2' } } })
-        const flagStr = flags.map(f => FLAG_RU[f]?.(s) || f).join(' • ')
+        const flagStr = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
         sc(ws2, curRow, 1, flagStr, { font: { sz: 10, bold: true, color: { rgb: RED } }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brdB('FECACA') })
         addMerge(ws2, curRow, curRow, 1, 7)
         ws2['!rows'].push({ hpt: 18 })
@@ -688,6 +719,7 @@ export default function LeadAnalytics({ user }) {
     r3++
 
     const rHdrs = ['Участник', 'Дней без встречи', 'Открытых задач', '% задач', 'Срочность', 'Причины']
+    const riskHdrRow = r3
     rHdrs.forEach((h, ci) => sc(ws3, r3, ci, h, S.subHdr(RED)))
     ws3['!rows'].push({ hpt: 22 })
     r3++
@@ -702,7 +734,7 @@ export default function LeadAnalytics({ user }) {
       atRisk.forEach((s, i) => {
         const flags = s.warning_flags || []
         const isUrgent = s.days_since_last >= 21 || flags.length >= 2
-        const reasons = flags.map(f => FLAG_RU[f]?.(s) || f).join(' • ')
+        const reasons = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
         const a = i % 2 ? S.dataAlt : S.data
         sc(ws3, r3, 0, s.name, { ...a('left', true), ...(isUrgent ? { fill: { fgColor: { rgb: 'FFF1F2' } } } : {}) })
         sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + ' дн.' : '—', isUrgent ? S.urgent : S.danger)
@@ -714,6 +746,9 @@ export default function LeadAnalytics({ user }) {
         r3++
       })
     }
+
+    // Автофильтр на таблицу зон риска (шапка + строки участников).
+    if (atRisk.length > 0) setAutoFilter(ws3, riskHdrRow, 0, riskHdrRow + atRisk.length, 5)
 
     // ── Warning signals
     r3++
@@ -923,7 +958,10 @@ export default function LeadAnalytics({ user }) {
     const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `${team.team_name}_аналитика_${new Date().toLocaleDateString('ru-RU').replace(/\./g, '-')}.xlsx`
+    // Осмысленное имя: продукт + команда + ISO-дата выгрузки.
+    const isoDate = new Date().toISOString().slice(0, 10)
+    const safeTeam = (team.team_name || 'team').trim().replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '-')
+    a.download = `OneOnOne_${safeTeam}_${isoDate}.xlsx`
     a.click()
   }
 
