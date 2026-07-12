@@ -595,7 +595,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
           )}
           {isPast && !isRequest && m.ai_summary && <AiBadge summary={m.ai_summary} />}
-          {!isPast && !isRequest && (
+          {/* Call must stay available for any active meeting, even if its
+              scheduled time has passed (a late/in-progress 1-on-1). */}
+          {!['completed', 'cancelled', 'declined'].includes(m.status) && !isRequest && (
             <>
               <button
                 onClick={() => handleOpenReschedule(m)}
