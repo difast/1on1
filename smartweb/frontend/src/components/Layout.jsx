@@ -7,6 +7,7 @@ import SupportPage from './SupportPage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
+import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { toast } from '../lib/ui'
 
 const TOAST_META = {
@@ -80,6 +81,18 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+
+  // Переключатель встроенного AI-коучинга. Живёт в меню настроек рядом с темой —
+  // не в отдельном разделе, — потому что это тумблер поведения продукта, а не
+  // самостоятельная функция. Выключенный коучинг оставляет чистый органайзер встреч.
+  const [coachOn, setCoachOn] = useState(() => coachingEnabled(currentUser?.id))
+  useEffect(() => { setCoachOn(coachingEnabled(currentUser?.id)) }, [currentUser?.id])
+  const toggleCoaching = () => {
+    const next = !coachOn
+    setCoachOn(next)
+    setCoaching(currentUser?.id, next)
+    setShowUserMenu(false)
+  }
 
   // ── Deadline banner (inline, replaces DeadlineBanner component) ──────────────
   const [deadlineBanner, setDeadlineBanner] = useState(null)
@@ -564,6 +577,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </MenuItemBtn>
                 <MenuItemBtn onClick={toggleDark}>
                   {isDark ? 'Светлая тема' : 'Тёмная тема'}
+                </MenuItemBtn>
+                <MenuItemBtn onClick={toggleCoaching}>
+                  {coachOn ? 'Подсказки Пита: вкл' : 'Подсказки Пита: выкл'}
                 </MenuItemBtn>
                 <MenuItemBtn onClick={handleSwitchRole}>
                   {switchingRole ? 'Переключение...' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}

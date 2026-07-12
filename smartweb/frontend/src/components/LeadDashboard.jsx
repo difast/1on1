@@ -4,6 +4,7 @@ import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
+import { coachingEnabled, buildAgendaSuggestions } from '../lib/coaching'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
 import Layout from './Layout'
 
@@ -83,6 +84,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [scheduleDate, setScheduleDate] = useState('')
   const [scheduleAgenda, setScheduleAgenda] = useState('')
   const [formLoading, setFormLoading] = useState(false)
+  // Коучинг-подсказки к повестке: скрываются на время текущей встречи и
+  // перерисовываются, когда пользователь переключает функцию в настройках.
+  const [coachHidden, setCoachHidden] = useState(false)
+  const [coachTick, setCoachTick] = useState(0)
+  useEffect(() => { if (showSchedule) setCoachHidden(false) }, [showSchedule, scheduleMember])
+  useEffect(() => {
+    const h = () => setCoachTick(t => t + 1)
+    window.addEventListener('pit-coaching-changed', h)
+    return () => window.removeEventListener('pit-coaching-changed', h)
+  }, [])
   const [copied, setCopied] = useState(false)
   const [regenerating, setRegenerating] = useState(false)
 
@@ -1732,6 +1743,48 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="input"
                 style={{ resize: 'none', minHeight: 80 }}
               />
+              {/*
+                Коучинг "до встречи": подсказки стоят прямо у поля повестки, а не
+                отдельным советом дня, потому что именно здесь руководитель решает,
+                о чём говорить. Рождаются из данных участника (каденция, просрочки).
+                Полностью опциональны — прячутся кнопкой и глобально выключаются в
+                меню (coachingEnabled). coachTick заставляет пересчитать при
+                переключении настройки. Читаем задачи участника из memberTasks.
+              */}
+              {!coachHidden && coachingEnabled(user.id) && (() => {
+                const sugg = buildAgendaSuggestions({
+                  member: scheduleMember,
+                  tasks: memberTasks[scheduleMember.user_id] || [],
+                })
+                void coachTick
+                if (sugg.length === 0) return null
+                const add = (line) => setScheduleAgenda(prev => prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`)
+                return (
+                  <div style={{ marginTop: 10, padding: '12px 14px', background: 'var(--blue-50)', border: '1px solid var(--blue-200)', borderRadius: 10 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.02em' }}>Пит подсказывает темы</span>
+                      <button type="button" onClick={() => setCoachHidden(true)}
+                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>
+                        Скрыть
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      {sugg.map(s => (
+                        <div key={s.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.4 }}>{s.line}</p>
+                            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{s.reason}</p>
+                          </div>
+                          <button type="button" onClick={() => add(s.line)}
+                            style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}>
+                            Добавить
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )
+              })()}
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
