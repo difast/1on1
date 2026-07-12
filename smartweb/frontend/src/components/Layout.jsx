@@ -91,7 +91,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     const next = !coachOn
     setCoachOn(next)
     setCoaching(currentUser?.id, next)
-    setShowUserMenu(false)
+    // Как и тема — тумблер на месте, меню остаётся открытым.
   }
 
   // ── Deadline banner (inline, replaces DeadlineBanner component) ──────────────
@@ -284,7 +284,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     const next = !isDark
     setIsDark(next)
     if (currentUser?.id) localStorage.setItem(themeKey(currentUser.id), next ? 'dark' : 'light')
-    setShowUserMenu(false)
+    // Меню НЕ закрываем: тумблер меняет состояние прямо на месте, пользователь
+    // должен увидеть, как переключатель встал в новое положение.
   }
 
   const handleChangePassword = async (e) => {
@@ -566,32 +567,75 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             </button>
 
             {showUserMenu && (
+              /*
+               * Меню профиля сгруппировано по ТИПУ действия, а не свалено в
+               * плоский список. Порядок групп — сверху вниз по частоте и «весу»:
+               *  1. Шапка-идентификация (кто я) — контекст, особенно рядом со
+               *     сменой роли ниже.
+               *  2. Настройки: смена пароля + быстрые тумблеры (тема, подсказки).
+               *     Тумблеры оставлены прямо в меню, т.к. это действия «в один
+               *     клик» — выносить их в отдельный экран было бы лишним шагом.
+               *  3. Режим: смена представления (тимлид/участник) отделена — это
+               *     не настройка, а переключение рабочего контекста.
+               *  4. Помощь: поддержка и документы.
+               *  5. Выход — всегда внизу, деструктивный акцент.
+               * Отдельная страница «Настройки» НЕ заводится намеренно: после
+               * группировки в меню всего 6 пунктов, вынос 1-2 из них в отдельный
+               * экран только добавил бы навигационный хоп и оголил меню.
+               */
               <div style={{
-                position: 'absolute', right: 0, top: 'calc(100% + 6px)', minWidth: 210,
+                position: 'absolute', right: 0, top: 'calc(100% + 6px)', width: 268,
                 background: 'var(--color-surface)', border: '1px solid var(--color-border)',
                 borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-lg)',
                 overflow: 'hidden', animation: 'popIn 0.18s var(--ease-spring)', zIndex: 200,
+                padding: 6,
               }}>
-                <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
+                {/* 1. Идентификация */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px 10px' }}>
+                  <div className={`avatar avatar-sm ${user?.avatar ? '' : 'avatar-accent'}`} style={{ width: 34, height: 34, borderRadius: '50%', flexShrink: 0 }}>
+                    {user?.avatar
+                      ? <img src={user.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      : initial}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || '—'}</p>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {user?.email || (user?.role === 'team_lead' ? 'Тимлид' : 'Участник')}
+                    </p>
+                  </div>
+                </div>
+                <MenuDivider />
+
+                {/* 2. Настройки: действие + быстрые тумблеры */}
+                <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
                   Сменить пароль
                 </MenuItemBtn>
-                <MenuItemBtn onClick={toggleDark}>
-                  {isDark ? 'Светлая тема' : 'Тёмная тема'}
+                {/* Тумблер = «тёмная тема вкл»: привычная модель dark mode switch. */}
+                <MenuItemBtn icon={isDark ? <IconMoon /> : <IconSun />} onClick={toggleDark} right={<Toggle on={isDark} />}>
+                  Тема оформления
                 </MenuItemBtn>
-                <MenuItemBtn onClick={toggleCoaching}>
-                  {coachOn ? 'Подсказки Пита: вкл' : 'Подсказки Пита: выкл'}
+                <MenuItemBtn icon={<IconHelpHint />} onClick={toggleCoaching} right={<Toggle on={coachOn} />}>
+                  Подсказки Пита
                 </MenuItemBtn>
-                <MenuItemBtn onClick={handleSwitchRole}>
-                  {switchingRole ? 'Переключение...' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
+                <MenuDivider />
+
+                {/* 3. Режим работы — смена представления, а не настройка */}
+                <MenuItemBtn icon={<IconSwitch />} subtext="Переключить представление" onClick={handleSwitchRole}>
+                  {switchingRole ? 'Переключение…' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
                 </MenuItemBtn>
-                <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>
+                <MenuDivider />
+
+                {/* 4. Помощь и информация */}
+                <MenuItemBtn icon={<IconLifebuoy />} onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>
                   Поддержка
                 </MenuItemBtn>
-                <MenuItemBtn onClick={() => { setShowUserMenu(false); setShowDocs(true) }}>
+                <MenuItemBtn icon={<IconDoc />} onClick={() => { setShowUserMenu(false); setShowDocs(true) }}>
                   Документы
                 </MenuItemBtn>
-                <div style={{ height: 1, background: 'var(--color-border)', margin: '3px 0' }} />
-                <MenuItemBtn danger onClick={() => { setShowUserMenu(false); onLogout?.() }}>
+                <MenuDivider />
+
+                {/* 5. Выход */}
+                <MenuItemBtn danger icon={<IconLogout />} onClick={() => { setShowUserMenu(false); onLogout?.() }}>
                   Выйти
                 </MenuItemBtn>
               </div>
@@ -970,25 +1014,74 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   )
 }
 
-function MenuItemBtn({ children, onClick, danger }) {
+/*
+ * Пункт меню профиля. Слева — смысловая иконка (не декоративная), затем текст
+ * с опциональным пояснением (subtext), справа — опциональный контрол (тумблер).
+ * Клик по всей строке вызывает onClick, поэтому тумблер переключается одним
+ * нажатием по пункту, без отдельного клика по самому переключателю.
+ */
+function MenuItemBtn({ children, onClick, danger, icon, subtext, right }) {
+  const color = danger ? 'var(--color-danger)' : 'var(--color-text-primary)'
   return (
     <button
       onClick={onClick}
       style={{
-        width: '100%', textAlign: 'left', padding: '10px 16px',
-        fontSize: 14, fontWeight: 500,
-        color: danger ? 'var(--color-danger)' : 'var(--color-text-primary)',
+        width: '100%', textAlign: 'left', padding: '9px 10px',
+        fontSize: 14, fontWeight: 500, color,
         background: 'none', border: 'none', cursor: 'pointer',
         display: 'flex', alignItems: 'center', gap: 10,
-        transition: 'background 120ms',
+        borderRadius: 'var(--radius-sm)', transition: 'background 120ms',
       }}
       onMouseEnter={e => e.currentTarget.style.background = danger ? 'var(--color-danger-bg)' : 'var(--gray-100)'}
       onMouseLeave={e => e.currentTarget.style.background = 'none'}
     >
-      {children}
+      {icon && (
+        <span style={{ flexShrink: 0, width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', color: danger ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
+          {icon}
+        </span>
+      )}
+      <span style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 1 }}>
+        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{children}</span>
+        {subtext && <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--color-text-muted)' }}>{subtext}</span>}
+      </span>
+      {right && <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>{right}</span>}
     </button>
   )
 }
+
+function MenuDivider() {
+  return <div style={{ height: 1, background: 'var(--color-border)', margin: '5px 8px' }} />
+}
+
+// Тумблер состояния: визуально читается как switch, а не как текст «вкл/выкл».
+function Toggle({ on }) {
+  return (
+    <span style={{
+      width: 34, height: 20, borderRadius: 999, flexShrink: 0,
+      background: on ? 'var(--color-accent)' : 'var(--gray-300)',
+      position: 'relative', transition: 'background 160ms',
+    }}>
+      <span style={{
+        position: 'absolute', top: 2, left: on ? 16 : 2,
+        width: 16, height: 16, borderRadius: '50%', background: '#fff',
+        boxShadow: '0 1px 2px rgba(0,0,0,0.3)', transition: 'left 160ms var(--ease-spring, ease)',
+      }} />
+    </span>
+  )
+}
+
+// ── Иконки меню (stroke, currentColor) — только по смыслу пункта ──────────────
+const svg = (paths) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths}</svg>
+)
+const IconLock = () => svg(<><rect x="5" y="11" width="14" height="9" rx="2" /><path d="M8 11V8a4 4 0 0 1 8 0v3" /></>)
+const IconSun = () => svg(<><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></>)
+const IconMoon = () => svg(<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />)
+const IconHelpHint = () => svg(<><circle cx="12" cy="12" r="9" /><path d="M9.5 9.5a2.5 2.5 0 0 1 4.5 1.5c0 1.5-2 2-2 3" /><path d="M12 17h.01" /></>)
+const IconSwitch = () => svg(<><path d="M7 4v13" /><path d="M4 7l3-3 3 3" /><path d="M17 20V7" /><path d="M20 17l-3 3-3-3" /></>)
+const IconLifebuoy = () => svg(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="M4.9 4.9l4.6 4.6M14.5 14.5l4.6 4.6M19.1 4.9l-4.6 4.6M9.5 14.5l-4.6 4.6" /></>)
+const IconDoc = () => svg(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" /></>)
+const IconLogout = () => svg(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>)
 
 function SocialLink({ icon, label, value, href, display, placeholder }) {
   return (
