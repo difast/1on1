@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, pitChat } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat } from '../api/client'
 import XLSXStyle from 'xlsx-js-style'
 
 // ─── Animated number counter ──────────────────────────────────────────────────
@@ -288,6 +288,32 @@ export default function LeadAnalytics({ user }) {
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
   const [moodByTeam, setMoodByTeam] = useState({})
   const [checkinsByTeam, setCheckinsByTeam] = useState({})
+  // Повестка в аналитике: агрегируем данные, введённые при планировании встреч,
+  // чтобы поле повестки работало дальше (а не жило только в карточке встречи).
+  // Считаем на фронте из списка встреч руководителя — без изменения бэкенда.
+  const [agendaByTeam, setAgendaByTeam] = useState({})
+
+  useEffect(() => {
+    getMeetings({ team_lead_id: user.id })
+      .then(r => {
+        const now = new Date()
+        const map = {}
+        for (const m of r.data || []) {
+          if (new Date(m.scheduled_date) > now) continue
+          if (['cancelled', 'declined', 'requested'].includes(m.status)) continue
+          const e = map[m.team_id] || (map[m.team_id] = { total: 0, withAgenda: 0, topics: [] })
+          e.total += 1
+          const agenda = (m.agenda || '').trim()
+          if (agenda) {
+            e.withAgenda += 1
+            const first = agenda.split('\n')[0].replace(/^[-*•\s]+/, '').trim()
+            if (first && !e.topics.includes(first)) e.topics.push(first)
+          }
+        }
+        setAgendaByTeam(map)
+      })
+      .catch(() => {})
+  }, [user.id])
 
   useEffect(() => {
     setLoading(true)
@@ -926,6 +952,14 @@ export default function LeadAnalytics({ user }) {
   const teamTaskPct = taskPcts.length ? Math.round(taskPcts.reduce((a, b) => a + b, 0) / taskPcts.length) : null
   const atRiskCount = team.at_risk_members.length
 
+  // Покрытие повестками: доля прошедших встреч, к которым руководитель составил
+  // повестку, и последние темы — данные из поля повестки, а не повторный ввод.
+  const agendaInfo = agendaByTeam[team.team_id]
+  const agendaPct = agendaInfo && agendaInfo.total
+    ? Math.round(agendaInfo.withAgenda / agendaInfo.total * 100)
+    : null
+  const agendaTopics = (agendaInfo?.topics || []).slice(-5).reverse()
+
   // Mood line chart points (weekly)
   const moodLinePoints = mood?.weeks?.map(w => ({ label: w.week, y: w.avg })) ?? []
 
@@ -949,11 +983,28 @@ export default function LeadAnalytics({ user }) {
         <StatCard value={teamMeetings30} label="Встреч за 30 дней" accent delay={100} />
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
+        <StatCard value={agendaPct} suffix="%" label="Встреч с повесткой" accent={agendaPct !== null && agendaPct >= 70} warning={agendaPct !== null && agendaPct < 40} delay={350} />
         <button
           onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
           style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
         >↓ Экспорт Excel</button>
       </div>
+
+      {/* Последние темы повесток — повестка встреч, собранная в аналитике */}
+      {agendaTopics.length > 0 && (
+        <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '16px 18px' }}>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+            Последние темы повесток
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {agendaTopics.map((t, i) => (
+              <span key={i} style={{ fontSize: 13, color: 'var(--color-text-secondary)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 999, padding: '4px 12px', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Heatmap + Mood line */}
       <div className="grid-2-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
