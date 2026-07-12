@@ -33,6 +33,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
+  const [showRoleConfirm, setShowRoleConfirm] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showBilling, setShowBilling] = useState(false)
@@ -265,7 +266,16 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     return () => clearInterval(t)
   }, [currentUser?.id])
 
-  const handleSwitchRole = async () => {
+  // Смена роли меняет саму роль аккаунта в БД (а не только представление),
+  // поэтому спрашиваем подтверждение — чтобы пункт меню не переключал контекст
+  // случайным кликом. Само действие вынесено в confirmSwitchRole.
+  const requestSwitchRole = () => {
+    if (!currentUser?.id || switchingRole) return
+    setShowUserMenu(false)
+    setShowRoleConfirm(true)
+  }
+
+  const confirmSwitchRole = async () => {
     if (!currentUser?.id || switchingRole) return
     const newRole = currentUser.role === 'team_lead' ? 'member' : 'team_lead'
     setSwitchingRole(true)
@@ -276,7 +286,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       if (onUserUpdate) onUserUpdate(updated)
     } catch { } finally {
       setSwitchingRole(false)
-      setShowUserMenu(false)
+      setShowRoleConfirm(false)
     }
   }
 
@@ -620,7 +630,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuDivider />
 
                 {/* 3. Режим работы — смена представления, а не настройка */}
-                <MenuItemBtn icon={<IconSwitch />} subtext="Переключить представление" onClick={handleSwitchRole}>
+                <MenuItemBtn icon={<IconSwitch />} subtext="Переключить представление" onClick={requestSwitchRole}>
                   {switchingRole ? 'Переключение…' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
                 </MenuItemBtn>
                 <MenuDivider />
@@ -681,6 +691,31 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           >
             Завершить
           </button>
+        </div>
+      )}
+
+      {/* Role switch confirmation — смена роли меняет доступ, подтверждаем осознанно */}
+      {showRoleConfirm && (
+        <div className="overlay-center" onClick={() => !switchingRole && setShowRoleConfirm(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <span className="modal-title">
+                {currentUser?.role === 'team_lead' ? 'Перейти в режим участника?' : 'Перейти в режим тимлида?'}
+              </span>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>✕</button>
+            </div>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
+              {currentUser?.role === 'team_lead'
+                ? 'Вы переключитесь на представление участника. Управление командой и аналитика станут недоступны, пока не вернётесь обратно.'
+                : 'Вы переключитесь на представление тимлида — с командами, встречами и аналитикой. Вернуться можно так же через это меню.'}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>Отмена</button>
+              <button className="btn btn-accent" style={{ flex: 1 }} onClick={confirmSwitchRole} disabled={switchingRole}>
+                {switchingRole ? 'Переключение…' : 'Переключить'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
