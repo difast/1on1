@@ -234,6 +234,10 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .footer-socials{display:flex;gap:14px;align-items:center}
 .footer-socials a{color:rgba(255,255,255,.5);text-decoration:none;font-size:18px;transition:color .15s}
 .footer-socials a:hover{color:#fff}
+/* Неактивные соцсети (VK/YouTube) — приглушены и некликабельны. Правило
+   продублировано здесь, т.к. index.html не подключает общий styles.css. */
+.footer-socials .soc-soon{display:inline-flex;color:rgba(255,255,255,.22);cursor:default}
+.footer-socials .soc-soon:hover{color:rgba(255,255,255,.22)}
 .footer-copy{font-size:12px;color:rgba(255,255,255,.3);margin-top:20px;text-align:center}
 @media(max-width:768px){
   .site-footer{padding:40px 20px 24px}
