@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MeetingDateBadge, MeetingNoteEditor, NotesPreview } from './MeetingCardParts'
+import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
@@ -657,27 +657,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         </button>
                       )}
                       {isPast && !m.ai_summary && (
-                        <>
-                          <input
-                            ref={el => fileInputRefs.current[m.id] = el}
-                            type="file"
-                            accept="audio/*,video/*"
-                            style={{ display: 'none' }}
-                            onChange={e => { if (e.target.files[0]) handleUploadRecording(m.id, e.target.files[0]) }}
-                          />
-                          <button
-                            onClick={() => fileInputRefs.current[m.id]?.click()}
-                            disabled={uploadLoading[m.id] || uploadDone[m.id]}
-                            title="Загрузить запись созвона для AI-анализа"
-                            style={{ fontSize: 12, fontWeight: 600, background: uploadDone[m.id] ? '#f0fdf4' : 'var(--color-surface)', color: uploadDone[m.id] ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: uploadDone[m.id] ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0 }}
-                          >
-                            {uploadLoading[m.id] ? '...' : uploadDone[m.id] ? '✓' : 'Запись'}
-                          </button>
-                        </>
+                        <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
                       )}
-                      {isPast && m.ai_summary && (
-                        <span title={m.ai_summary} style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}>AI</span>
-                      )}
+                      {isPast && m.ai_summary && <AiBadge summary={m.ai_summary} />}
                     </div>
                     {isExpanded && (
                       <MeetingNoteEditor
