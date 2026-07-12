@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { MeetingDateBadge, MeetingNoteEditor } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
@@ -618,18 +619,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 return (
                   <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                      <div style={{
-                        width: 46, height: 46, borderRadius: 'var(--radius-md)',
-                        background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-                        alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-                      }}>
-                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-                          {fmtDate(m.scheduled_date)}
-                        </span>
-                        <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-                          {fmtTime(m.scheduled_date)}
-                        </span>
-                      </div>
+                      <MeetingDateBadge date={m.scheduled_date} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>
                           {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { weekday: 'long' })}
@@ -690,23 +680,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       )}
                     </div>
                     {isExpanded && (
-                      <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-                        <textarea
-                          value={draft}
-                          onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
-                          placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
-                          className="input"
-                          style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
-                        />
-                        <button
-                          onClick={() => handleSaveMeetingNote(m.id)}
-                          disabled={savingMeetingNote[m.id]}
-                          className="btn btn-accent btn-sm"
-                          style={{ marginTop: 6 }}
-                        >
-                          {savingMeetingNote[m.id] ? 'Сохранение...' : 'Сохранить'}
-                        </button>
-                      </div>
+                      <MeetingNoteEditor
+                        value={draft}
+                        onChange={e => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: e.target.value }))}
+                        onSave={() => handleSaveMeetingNote(m.id)}
+                        saving={savingMeetingNote[m.id]}
+                      />
                     )}
                     <AiSummary summary={m.ai_summary} />
                     {!isExpanded && hasNote && (() => {
