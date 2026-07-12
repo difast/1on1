@@ -215,7 +215,7 @@ export default function PitAssistant() {
       )}
 
       {/* ── 3D Character ── */}
-      <div style={{
+      <div data-tour="pit" style={{
         position: 'fixed', bottom: 90,
         right: shifted ? 320 : 24,
         zIndex: 9350, userSelect: 'none',

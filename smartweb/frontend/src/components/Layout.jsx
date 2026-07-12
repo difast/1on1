@@ -403,7 +403,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </nav>
 
         <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <div ref={notifRef} style={{ position: 'relative' }}>
+          <div ref={notifRef} data-tour="notifications" style={{ position: 'relative' }}>
             <NotificationBell count={unreadCount} onClick={toggleNotifications} />
 
             {/* Notification dropdown — inside notifRef so outside-click logic works correctly */}
@@ -548,7 +548,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             </button>
           )}
 
-          <div ref={userMenuRef} style={{ position: 'relative' }}>
+          <div ref={userMenuRef} data-tour="menu" style={{ position: 'relative' }}>
             <button
               onClick={() => setShowUserMenu(v => !v)}
               style={{
