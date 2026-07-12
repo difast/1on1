@@ -157,11 +157,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   const handleStartSpontaneousCall = async (memberIds, isGroup = false) => {
-    if (!selectedTeamId || memberIds.length === 0) return
+    // Fall back to the first team so a spontaneous call still works if no team
+    // is explicitly selected yet.
+    const teamId = selectedTeamId || teams[0]?.id
+    if (!teamId || memberIds.length === 0) return
     setCallModalLoading(true)
     try {
       const { data } = await startSpontaneousCall({
-        lead_id: user.id, team_id: selectedTeamId, member_ids: memberIds, is_group: isGroup,
+        lead_id: user.id, team_id: teamId, member_ids: memberIds, is_group: isGroup,
       })
       setCallResult(data)
       setCallStep('done')
@@ -679,7 +682,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
-            {selectedTeamId && (
+            {/* Spontaneous call — shown whenever the lead has any team, next to
+                'Создать команду' (was gated on selectedTeamId, which could lag). */}
+            {teams.length > 0 && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
                 Созвон
               </button>
