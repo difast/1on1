@@ -113,3 +113,54 @@ export function buildAgendaSuggestions({ member, tasks = [] } = {}) {
 
   return out.slice(0, 3)
 }
+
+const STOP = new Set([
+  'который','которая','нужно','надо','быть','этом','этой','этот','обсудить',
+  'встреча','встречи','повестка','вопрос','вопросы','задача','задачи','участник',
+  'через','после','перед','также','чтобы','когда','если','можно','сделать',
+])
+
+// Значимые слова строки повестки: длиннее 4 символов и не служебные.
+function keywords(line) {
+  return (line.toLowerCase().match(/[a-zа-яё0-9]{5,}/gi) || [])
+    .filter(w => !STOP.has(w))
+}
+
+/*
+ * Коучинг "после встречи": короткая обратная связь менеджеру, привязанная к
+ * конкретной встрече. ЗАЧЕМ здесь, а не в отдельном "отчёте об обучении" — чтобы
+ * рефлексия происходила рядом с самой встречей в истории.
+ *
+ * Единственный автоматический сигнал, которому можно доверять без разметки ролей
+ * в транскрипте, — покрытие повестки: сверяем темы, которые руководитель
+ * запланировал, с тем, что реально прозвучало (транскрипт + AI-резюме). Так
+ * повестка перестаёт быть "мёртвым" полем и работает дальше. Формулировки
+ * мягкие ("возможно, не затронули") — это подсказка, а не приговор.
+ *
+ * Возвращает null, если сверять нечего (нет повестки или нет расшифровки).
+ */
+export function buildMeetingFeedback({ agenda, transcript, summary } = {}) {
+  if (!agenda || !agenda.trim()) return null
+  const haystack = `${transcript || ''} ${summary || ''}`.toLowerCase()
+  if (!haystack.trim()) return null
+
+  const lines = agenda.split('\n').map(l => l.replace(/^[-*•\s]+/, '').trim()).filter(Boolean)
+  if (lines.length === 0) return null
+
+  const missed = []
+  for (const line of lines) {
+    const kw = keywords(line)
+    if (kw.length === 0) continue // строка без значимых слов — не оцениваем
+    const covered = kw.some(w => haystack.includes(w))
+    if (!covered) missed.push(line)
+  }
+
+  if (missed.length === 0) {
+    return { covered: true, missed: [], note: 'Похоже, вся запланированная повестка была затронута.' }
+  }
+  return {
+    covered: false,
+    missed: missed.slice(0, 3),
+    note: 'Судя по расшифровке, эти темы из повестки, возможно, не обсудили. Стоит перенести их на следующую встречу.',
+  }
+}

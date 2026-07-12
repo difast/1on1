@@ -4,7 +4,7 @@ import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
-import { coachingEnabled, buildAgendaSuggestions } from '../lib/coaching'
+import { coachingEnabled, buildAgendaSuggestions, buildMeetingFeedback } from '../lib/coaching'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
 import Layout from './Layout'
 
@@ -88,6 +88,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   // перерисовываются, когда пользователь переключает функцию в настройках.
   const [coachHidden, setCoachHidden] = useState(false)
   const [coachTick, setCoachTick] = useState(0)
+  // Пост-встречные подсказки, скрытые пользователем по конкретным встречам.
+  const [coachDismissed, setCoachDismissed] = useState(() => new Set())
   useEffect(() => { if (showSchedule) setCoachHidden(false) }, [showSchedule, scheduleMember])
   useEffect(() => {
     const h = () => setCoachTick(t => t + 1)
@@ -639,6 +641,33 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         )}
         {!noteState?.expanded && <NotesPreview text={m.notes} />}
         <AiSummary summary={m.ai_summary} />
+        {/*
+          Коучинг "после встречи": сверка повестки с расшифровкой. Появляется
+          только на прошедшей встрече, где есть и повестка, и транскрипт/резюме,
+          и только если подсказки включены. Привязан к самой встрече, скрывается
+          пер-встречно. Так повестка работает дальше, а не остаётся мёртвым полем.
+        */}
+        {isPast && !isRequest && coachingEnabled(user.id) && !coachDismissed.has(m.id) && (() => {
+          const fb = buildMeetingFeedback({ agenda: m.agenda, transcript: m.call_transcript, summary: m.ai_summary })
+          if (!fb) return null
+          const dismiss = () => setCoachDismissed(prev => new Set(prev).add(m.id))
+          return (
+            <div style={{ marginTop: 10, padding: '10px 14px', background: fb.covered ? 'var(--color-bg)' : '#fff8ed', border: `1px solid ${fb.covered ? 'var(--color-border)' : '#fcd9a5'}`, borderLeft: `3px solid ${fb.covered ? 'var(--color-success)' : '#f59e0b'}`, borderRadius: 8 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: fb.covered ? 0 : 6 }}>
+                <p style={{ fontSize: 11, fontWeight: 700, color: fb.covered ? 'var(--color-success)' : '#b45309', letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>Пит: итог встречи</p>
+                <button type="button" onClick={dismiss} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>Скрыть</button>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.6, margin: 0 }}>{fb.note}</p>
+              {fb.missed.length > 0 && (
+                <ul style={{ margin: '6px 0 0', paddingLeft: 18 }}>
+                  {fb.missed.map((t, i) => (
+                    <li key={i} style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{t}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )
+        })()}
       </div>
     )
   }
