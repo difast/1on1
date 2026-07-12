@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
 import Layout from './Layout'
@@ -299,16 +300,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const freeNotes = notes.filter(n => !n.meeting_id)
 
-  const statusBadge = {
-    scheduled: 'badge badge-blue', completed: 'badge badge-green',
-    in_progress: 'badge badge-green', cancelled: 'badge badge-red',
-    requested: 'badge badge-amber', confirmed: 'badge badge-green',
-  }
-  const statusLabel = {
-    scheduled: 'Запланирована', completed: 'Завершена',
-    in_progress: 'Идёт созвон', cancelled: 'Отменена',
-    requested: 'Запрошена', confirmed: 'Подтверждена',
-  }
 
   if (loadingTeam) {
     return (
@@ -490,8 +481,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             </p>
                           )}
                         </div>
-                        <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                          {statusLabel[m.status] || m.status}
+                        <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                          {meetingStatusLabel(m.status)}
                         </span>
                         <button
                           onClick={() => handleStartCall(m.id)}
@@ -532,8 +523,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         </p>
                         {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
                       </div>
-                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                        {statusLabel[m.status] || m.status}
+                      <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                        {meetingStatusLabel(m.status)}
                       </span>
                     </div>
                   )
@@ -647,8 +638,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           </p>
                         )}
                       </div>
-                      <span className={`badge ${statusBadge[m.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-                        {statusLabel[m.status] || m.status}
+                      <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
+                        {meetingStatusLabel(m.status)}
                       </span>
                       {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0 }}>
