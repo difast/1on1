@@ -11,6 +11,13 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 
+// Цвет индикатора настроения (без эмодзи): зелёный — хорошо, красный — плохо.
+function moodDotColor(mood: string) {
+  if (mood === 'great' || mood === 'good') return '#1D9E75';
+  if (mood === 'bad') return '#E24B4A';
+  return '#D0CEC7';
+}
+
 export default function MemberAnalyticsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -111,7 +118,8 @@ export default function MemberAnalyticsScreen() {
                 <View style={styles.moodRow}>
                   {data.mood_trend.map((m: any, i: number) => (
                     <View key={i} style={styles.moodItem}>
-                      <Text style={styles.moodEmoji}>{m.emoji}</Text>
+                      {/* Цветовой индикатор настроения вместо эмодзи */}
+                      <View style={[styles.moodDot, { backgroundColor: moodDotColor(m.mood) }]} />
                       <Text style={styles.moodDate}>{m.date}</Text>
                     </View>
                   ))}
@@ -211,8 +219,8 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     backgroundColor: c.surface, borderRadius: 12,
     borderWidth: 1, borderColor: c.border, padding: 14,
   },
-  moodItem: { alignItems: 'center', gap: 2, minWidth: 36 },
-  moodEmoji: { fontSize: 22 },
+  moodItem: { alignItems: 'center', gap: 4, minWidth: 36 },
+  moodDot: { width: 10, height: 10, borderRadius: 5 },
   moodDate: { fontSize: 9, color: c.textMuted },
   chart: {
     flexDirection: 'row', alignItems: 'flex-end', gap: 4, height: 100,
