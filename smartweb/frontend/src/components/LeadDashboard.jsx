@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
@@ -542,10 +543,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
           }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+              {fmtDate(m.scheduled_date)}
             </span>
             <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-              {new Date(m.scheduled_date).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+              {fmtTime(m.scheduled_date)}
             </span>
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
@@ -844,7 +845,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)' }}>{memberName}</span>
                             <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 8 }}>
-                              {new Date(m.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })}
+                              {fmtDate(m.scheduled_date)}
                             </span>
                           </div>
                           <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{noteLines.length} стр.</span>
