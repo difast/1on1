@@ -27,12 +27,15 @@
 .plan-badge{font-size:10px;font-weight:700;color:#5AA0FF;letter-spacing:.12em;text-transform:uppercase;margin-bottom:10px;display:block;min-height:16px}
 .plan-name{font-size:13px;font-weight:600;color:rgba(255,255,255,.4);letter-spacing:.1em;text-transform:uppercase;margin-bottom:20px}
 .plan-name.acc{color:#5AA0FF}
-.plan-price{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05;color:#fff}
+/* min-height на цену и описание фиксирует высоту верхнего блока карточки,
+   чтобы кнопка "Выбрать" и список функций были на одной горизонтали во всех
+   карточках, даже если описание/цена разной длины. */
+.plan-price{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;letter-spacing:-.03em;line-height:1.05;color:#fff;min-height:40px}
 .plan-price small{font-family:'Inter',sans-serif;font-size:12px;font-weight:400;color:rgba(255,255,255,.35)}
 .plan-price .annual{display:none}
 .show-annual .plan-price .monthly{display:none}
 .show-annual .plan-price .annual{display:inline}
-.plan-desc{font-size:13px;color:rgba(255,255,255,.4);margin:10px 0 28px;line-height:1.5}
+.plan-desc{font-size:13px;color:rgba(255,255,255,.4);margin:10px 0 28px;line-height:1.5;min-height:39px}
 .plan-btn{display:block;width:100%;padding:11px 16px;border-radius:8px;text-align:center;font-weight:600;font-size:13px;border:1px solid rgba(255,255,255,.12);background:transparent;color:rgba(255,255,255,.65);text-decoration:none;transition:all .15s;font-family:'Inter',sans-serif;cursor:pointer;margin-bottom:28px}
 .plan-btn:hover{background:rgba(255,255,255,.06);color:#fff}
 .plan-btn.prim{background:#0A6CFF;border-color:transparent;color:#fff}
@@ -43,7 +46,10 @@
 .plan-section-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
 .plan-features li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
-.plan-features li::before{content:'✓';color:#0A6CFF;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px}
+/* Фиксированная ширина иконки строки: галочка и тире занимают одинаковое
+   место, поэтому текст функции начинается с единого отступа независимо от
+   символа. */
+.plan-features li::before{content:'✓';color:#0A6CFF;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px;display:inline-block;width:14px;text-align:center}
 .plan-features li.no{color:rgba(255,255,255,.2)}
 .plan-features li.no::before{content:'—';color:rgba(255,255,255,.15)}
 .plan-features li strong{color:#fff;font-weight:600}
@@ -233,7 +239,7 @@
 
       <!-- КОМАНДА (popular) -->
       <div class="plan popular">
-        <span class="plan-badge">⭐ Популярный</span>
+        <span class="plan-badge">Популярный</span>
         <div class="plan-name acc">Команда</div>
         <div class="plan-price">
           <span class="monthly">490₽</span>
@@ -295,7 +301,7 @@
       <div class="plan">
         <span class="plan-badge">&nbsp;</span>
         <div class="plan-name" style="color:rgba(90,160,255,.6)">Enterprise</div>
-        <div class="plan-price" style="font-size:26px;margin-top:8px">
+        <div class="plan-price" style="font-size:26px">
           <span class="monthly">По согласованию</span>
           <span class="annual">По согласованию</span>
         </div>
