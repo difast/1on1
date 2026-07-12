@@ -638,7 +638,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
                         </div>
                       )}
-                      {!isPast && (
+                      {/* Call must stay available for any active meeting, even
+                          if its scheduled time has passed (a late/in-progress
+                          1-on-1) — only hide it once it's finished/cancelled. */}
+                      {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <button
                           onClick={() => handleStartCall(m.id)}
                           disabled={callLoading[m.id]}
