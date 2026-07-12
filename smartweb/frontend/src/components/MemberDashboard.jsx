@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
@@ -57,7 +57,6 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [callLoading, setCallLoading] = useState({})
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
-  const fileInputRefs = useRef({})
   const [activeCall, setActiveCall] = useState(null)
 
   useEffect(() => {
