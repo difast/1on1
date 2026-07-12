@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
+import { MeetingDateBadge, MeetingNoteEditor } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
@@ -537,18 +538,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     return (
       <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column', borderLeft: m.is_rescheduled && !['cancelled','declined','completed'].includes(m.status) ? '3px solid #5B8EF8' : undefined }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <div style={{
-            width: 46, height: 46, borderRadius: 'var(--radius-md)',
-            background: 'var(--blue-50)', display: 'flex', flexDirection: 'column',
-            alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: '1px solid var(--blue-200)',
-          }}>
-            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>
-              {fmtDate(m.scheduled_date)}
-            </span>
-            <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>
-              {fmtTime(m.scheduled_date)}
-            </span>
-          </div>
+          <MeetingDateBadge date={m.scheduled_date} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ fontWeight: 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{memberName}</p>
             {m.agenda && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.agenda}</p>}
@@ -648,18 +638,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           )}
         </div>
         {noteState?.expanded && (
-          <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
-            <textarea
-              value={noteState.draft}
-              onChange={e => setMeetingNotes(prev => ({ ...prev, [m.id]: { ...prev[m.id], draft: e.target.value } }))}
-              placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
-              className="input"
-              style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
-            />
-            <button onClick={() => handleSaveMeetingNote(m.id)} disabled={noteState.saving} className="btn btn-accent btn-sm" style={{ marginTop: 6 }}>
-              {noteState.saving ? 'Сохранение...' : 'Сохранить'}
-            </button>
-          </div>
+          <MeetingNoteEditor
+            value={noteState.draft}
+            onChange={e => setMeetingNotes(prev => ({ ...prev, [m.id]: { ...prev[m.id], draft: e.target.value } }))}
+            onSave={() => handleSaveMeetingNote(m.id)}
+            saving={noteState.saving}
+          />
         )}
         {!noteState?.expanded && m.notes && (() => {
           const lines = m.notes.split('\n').filter(l => l.trim())
