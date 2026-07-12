@@ -190,7 +190,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
         <EmptyState title="Команда не выбрана" desc="Выберите команду, чтобы открыть базу знаний" />
       ) : filtered.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">◎</div>
+          <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
           <p className="empty-title">{search ? 'Ничего не найдено' : 'База знаний пуста'}</p>
           <p className="empty-desc">{search ? 'Попробуйте другой запрос' : canEdit ? 'Добавьте первую статью — инструкции, процессы, полезные ссылки' : 'Тимлид ещё не добавил статьи'}</p>
         </div>
