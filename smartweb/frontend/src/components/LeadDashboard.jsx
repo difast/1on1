@@ -710,7 +710,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div className="tabs" data-tour="views" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
             { key: 'teams', label: 'Команды' },
-            { key: 'meetings', label: 'Мои встречи' },
+            // Параллельные существительные в строке вкладок: только эта вкладка
+            // несла "Мои", ломая ряд Команды/Встречи/Задачи/Заметки/Аналитика.
+            { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
