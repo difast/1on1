@@ -21,6 +21,21 @@ export function MeetingDateBadge({ date }) {
   )
 }
 
+// Collapsed note preview — bullet list of the meeting's saved note lines.
+// Both dashboards render this identically from different sources (m.notes vs a
+// lookup), so it takes the raw text and handles empty/blank internally.
+export function NotesPreview({ text }) {
+  const lines = (text || '').split('\n').filter(l => l.trim())
+  if (lines.length === 0) return null
+  return (
+    <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {lines.map((line, i) => (
+        <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
+      ))}
+    </ul>
+  )
+}
+
 export function MeetingNoteEditor({ value, onChange, onSave, saving }) {
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>

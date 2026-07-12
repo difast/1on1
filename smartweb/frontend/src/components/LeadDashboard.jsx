@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MeetingDateBadge, MeetingNoteEditor } from './MeetingCardParts'
+import { MeetingDateBadge, MeetingNoteEditor, NotesPreview } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
@@ -645,16 +645,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             saving={noteState.saving}
           />
         )}
-        {!noteState?.expanded && m.notes && (() => {
-          const lines = m.notes.split('\n').filter(l => l.trim())
-          return lines.length > 0 ? (
-            <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
-              {lines.map((line, i) => (
-                <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
-              ))}
-            </ul>
-          ) : null
-        })()}
+        {!noteState?.expanded && <NotesPreview text={m.notes} />}
         <AiSummary summary={m.ai_summary} />
       </div>
     )

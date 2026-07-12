@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { MeetingDateBadge, MeetingNoteEditor } from './MeetingCardParts'
+import { MeetingDateBadge, MeetingNoteEditor, NotesPreview } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
@@ -688,17 +688,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       />
                     )}
                     <AiSummary summary={m.ai_summary} />
-                    {!isExpanded && hasNote && (() => {
-                      const noteContent = notes.find(n => n.meeting_id === m.id)?.content || ''
-                      const lines = noteContent.split('\n').filter(l => l.trim())
-                      return lines.length > 0 ? (
-                        <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
-                          {lines.map((line, i) => (
-                            <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
-                          ))}
-                        </ul>
-                      ) : null
-                    })()}
+                    {!isExpanded && <NotesPreview text={notes.find(n => n.meeting_id === m.id)?.content} />}
                   </div>
                 )
               }}
