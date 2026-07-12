@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { fmtDate, fmtTime } from '../lib/datetime'
 
 /*
@@ -18,6 +19,50 @@ export function MeetingDateBadge({ date }) {
       <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-accent)', lineHeight: 1.2 }}>{fmtDate(date)}</span>
       <span style={{ fontSize: 10, color: 'var(--blue-400)' }}>{fmtTime(date)}</span>
     </div>
+  )
+}
+
+// Collapsed note preview — bullet list of the meeting's saved note lines.
+// Both dashboards render this identically from different sources (m.notes vs a
+// lookup), so it takes the raw text and handles empty/blank internally.
+export function NotesPreview({ text }) {
+  const lines = (text || '').split('\n').filter(l => l.trim())
+  if (lines.length === 0) return null
+  return (
+    <ul style={{ marginTop: 8, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 3 }}>
+      {lines.map((line, i) => (
+        <li key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>{line}</li>
+      ))}
+    </ul>
+  )
+}
+
+// Upload a call recording for AI analysis. Manages its own hidden file input,
+// so callers only pass state + an onFile handler (was duplicated with a shared
+// ref map in each dashboard).
+export function UploadRecordingButton({ uploading, done, onFile }) {
+  const ref = useRef(null)
+  return (
+    <>
+      <input
+        ref={ref} type="file" accept="audio/*,video/*" style={{ display: 'none' }}
+        onChange={e => { if (e.target.files[0]) onFile(e.target.files[0]) }}
+      />
+      <button
+        onClick={() => ref.current?.click()}
+        disabled={uploading || done}
+        title="Загрузить запись созвона для AI-анализа"
+        style={{ fontSize: 12, fontWeight: 600, background: done ? '#f0fdf4' : 'var(--color-surface)', color: done ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: done ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
+      >
+        {uploading ? 'Загрузка...' : done ? 'Анализирую...' : 'Запись'}
+      </button>
+    </>
+  )
+}
+
+export function AiBadge({ summary }) {
+  return (
+    <span title={summary} style={{ fontSize: 11, fontWeight: 600, background: 'var(--blue-50)', color: 'var(--color-accent)', border: '1px solid var(--blue-200)', borderRadius: 'var(--radius-md)', padding: '3px 8px', flexShrink: 0, cursor: 'default' }}>AI</span>
   )
 }
 
