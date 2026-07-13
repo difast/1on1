@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   getTeams, getMemberTeam, getMeetings, getTasks,
   updateUser, deleteUser, blockUser, unblockUser,
-  getUserBilling, assignManager,
+  getUserBilling, assignManager, getManagers,
 } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 import { confirmDialog, toast } from '../lib/ui'
@@ -21,7 +21,8 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
   const [blocked, setBlocked] = useState(!!user?.is_blocked)
   const [busy, setBusy] = useState(false)
   const [billing, setBilling] = useState(null)
-  const [mgr, setMgr] = useState(null)   // {name, contact, saving} — редактирование менеджера
+  const [managers, setManagers] = useState([])
+  const [mgr, setMgr] = useState(null)   // {managerId, saving} — назначение менеджера
 
   const loadBilling = () => getUserBilling(user.id).then(r => setBilling(r.data)).catch(() => setBilling(null))
 
@@ -52,6 +53,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
       } catch { setMeetings([]) }
       try { const { data } = await getTasks({ assigned_to: user.id }); setTasks(data || []) } catch { setTasks([]) }
       loadBilling()
+      getManagers().then(r => setManagers(r.data)).catch(() => {})
       setLoading(false)
     })()
   }, [user?.id])
@@ -141,20 +143,26 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                     {billing.subscription?.manager_name
                       ? <span style={{ fontSize: 13 }}>{billing.subscription.manager_name}{billing.subscription.manager_contact ? ` · ${billing.subscription.manager_contact}` : ''}</span>
                       : <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>не назначен</span>}
-                    <button onClick={() => setMgr({ name: billing.subscription?.manager_name || '', contact: billing.subscription?.manager_contact || '', saving: false })}
+                    <button onClick={() => setMgr({ managerId: billing.subscription?.manager_id || '', saving: false })}
                       style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)' }}>Изменить</button>
                   </span>
                 </div>
                 {mgr && (
                   <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <input className="input input-sm" placeholder="Имя менеджера" value={mgr.name} onChange={e => setMgr(m => ({ ...m, name: e.target.value }))} />
-                    <input className="input input-sm" placeholder="Связь (Telegram / email / телефон)" value={mgr.contact} onChange={e => setMgr(m => ({ ...m, contact: e.target.value }))} />
+                    {managers.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Список менеджеров пуст. Добавьте их на вкладке «Биллинг».</p>
+                    ) : (
+                      <select className="input input-sm" value={mgr.managerId} onChange={e => setMgr(m => ({ ...m, managerId: e.target.value }))}>
+                        <option value="">— не назначен —</option>
+                        {managers.map(m => <option key={m.id} value={m.id}>{m.name}{m.contact ? ` · ${m.contact}` : ''}</option>)}
+                      </select>
+                    )}
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} disabled={mgr.saving} onClick={() => setMgr(null)}>Отмена</button>
                       <button className="btn btn-sm btn-accent" style={{ flex: 1 }} disabled={mgr.saving}
                         onClick={async () => {
                           setMgr(m => ({ ...m, saving: true }))
-                          try { await assignManager(user.id, { name: mgr.name, contact: mgr.contact }); await loadBilling(); toast('Менеджер обновлён', 'success'); setMgr(null) }
+                          try { await assignManager(user.id, mgr.managerId ? Number(mgr.managerId) : null); await loadBilling(); toast('Менеджер обновлён', 'success'); setMgr(null) }
                           catch { toast('Не удалось сохранить', 'error'); setMgr(m => ({ ...m, saving: false })) }
                         }}>{mgr.saving ? 'Сохранение…' : 'Сохранить'}</button>
                     </div>

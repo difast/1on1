@@ -6,7 +6,7 @@ import {
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
-  getAdminMetrics, assignManager,
+  getAdminMetrics, assignManager, getManagers, createManager, deleteManager,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import { toast, confirmDialog } from '../lib/ui'
@@ -73,7 +73,10 @@ export default function AdminDashboard({ onLogout }) {
   const [subs, setSubs]             = useState([])
   const [paymentsList, setPaymentsList] = useState([])
   const [billingLoading, setBillingLoading] = useState(false)
-  const [mgrEdit, setMgrEdit] = useState(null)  // назначение менеджера: {userId, name, contact, saving}
+  const [mgrEdit, setMgrEdit] = useState(null)  // назначение менеджера: {userId, managerId, saving}
+  const [managers, setManagers] = useState([])
+  const [newMgr, setNewMgr] = useState({ name: '', contact: '' })
+  const loadManagers = () => getManagers().then(r => setManagers(r.data)).catch(() => {})
 
   // Investor metrics
   const [metrics, setMetrics]       = useState(null)
@@ -135,6 +138,7 @@ export default function AdminDashboard({ onLogout }) {
     }
     if (tab === 'billing') {
       setBillingLoading(true)
+      loadManagers()
       Promise.all([
         getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}),
         getAdminPayments().then(r => setPaymentsList(r.data)).catch(() => {}),
@@ -750,7 +754,7 @@ export default function AdminDashboard({ onLogout }) {
                               </Td>
                               <Td>
                                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                                  <button onClick={() => setMgrEdit({ userId: s.subject_id, name: s.manager_name || '', contact: s.manager_contact || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Менеджер</button>
+                                  <button onClick={() => setMgrEdit({ userId: s.subject_id, managerId: s.manager_id || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Менеджер</button>
                                   <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Продлить</button>
                                   <button onClick={async () => { if (!await confirmDialog({ title: 'Отменить подписку?', confirmText: 'Отменить', danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
                                 </div>
@@ -794,6 +798,38 @@ export default function AdminDashboard({ onLogout }) {
                         </tbody>
                       </table>
                     </div>
+                    {/* Реестр менеджеров: заводятся вручную, назначаются из списка */}
+                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Менеджеры</p>
+                    <div className="card" style={{ padding: 16 }}>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: managers.length ? 14 : 0 }}>
+                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder="Имя менеджера" value={newMgr.name}
+                          onChange={e => setNewMgr(m => ({ ...m, name: e.target.value }))} />
+                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder="Связь (Telegram / email / телефон)" value={newMgr.contact}
+                          onChange={e => setNewMgr(m => ({ ...m, contact: e.target.value }))} />
+                        <button className="btn btn-sm btn-accent" disabled={!newMgr.name.trim()}
+                          onClick={async () => {
+                            try { await createManager({ name: newMgr.name.trim(), contact: newMgr.contact.trim() || null }); setNewMgr({ name: '', contact: '' }); loadManagers(); toast('Менеджер добавлен', 'success') }
+                            catch { toast('Не удалось добавить', 'error') }
+                          }}>Добавить</button>
+                      </div>
+                      {managers.length === 0 ? (
+                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '10px 0 0' }}>Менеджеров пока нет.</p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {managers.map(m => (
+                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--color-bg)' }}>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontWeight: 600, fontSize: 13 }}>{m.name}</div>
+                                {m.contact && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.contact}</div>}
+                              </div>
+                              <button onClick={async () => { if (!await confirmDialog({ title: 'Удалить менеджера?', message: 'Он будет снят со всех назначений.', confirmText: 'Удалить', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
+                                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Удалить</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
                       Полный доступ без подписки выдаётся во вкладке «Пользователи» (кнопка «Выдать полный доступ»).
                     </p>
@@ -915,7 +951,7 @@ export default function AdminDashboard({ onLogout }) {
         />
       )}
 
-      {/* Назначение выделенного менеджера пользователю (имя + связь) */}
+      {/* Назначение менеджера пользователю — выбор из реестра */}
       {mgrEdit && (
         <div className="overlay-center" onClick={() => !mgrEdit.saving && setMgrEdit(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
@@ -924,23 +960,26 @@ export default function AdminDashboard({ onLogout }) {
               <button className="modal-close" aria-label="Закрыть" onClick={() => setMgrEdit(null)} disabled={mgrEdit.saving}>✕</button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
-              Пользователь увидит имя менеджера и способ связи в разделе «Мой тариф». Пустые поля снимают назначение.
+              Выберите менеджера из списка. Пользователь увидит его имя и способ связи в разделе «Мой тариф».
             </p>
-            <div className="form-group">
-              <label className="form-label">Имя менеджера</label>
-              <input className="input" value={mgrEdit.name} placeholder="Например: Анна Смирнова"
-                onChange={e => setMgrEdit(m => ({ ...m, name: e.target.value }))} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">Связь</label>
-              <input className="input" value={mgrEdit.contact} placeholder="Telegram, email или телефон"
-                onChange={e => setMgrEdit(m => ({ ...m, contact: e.target.value }))} />
-            </div>
+            {managers.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
+                Список менеджеров пуст. Добавьте менеджера в разделе «Менеджеры» на вкладке «Биллинг».
+              </p>
+            ) : (
+              <div className="form-group">
+                <label className="form-label">Менеджер</label>
+                <select className="input" value={mgrEdit.managerId} onChange={e => setMgrEdit(m => ({ ...m, managerId: e.target.value }))}>
+                  <option value="">— не назначен —</option>
+                  {managers.map(m => <option key={m.id} value={m.id}>{m.name}{m.contact ? ` · ${m.contact}` : ''}</option>)}
+                </select>
+              </div>
+            )}
             <button className="btn btn-accent" style={{ width: '100%' }} disabled={mgrEdit.saving}
               onClick={async () => {
                 setMgrEdit(m => ({ ...m, saving: true }))
                 try {
-                  await assignManager(mgrEdit.userId, { name: mgrEdit.name, contact: mgrEdit.contact })
+                  await assignManager(mgrEdit.userId, mgrEdit.managerId ? Number(mgrEdit.managerId) : null)
                   const r = await getAdminSubscriptions(); setSubs(r.data)
                   toast('Менеджер обновлён', 'success')
                   setMgrEdit(null)

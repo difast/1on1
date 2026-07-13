@@ -140,7 +140,11 @@ export const cancelSubscription = (id) => api.post(`/admin/billing/subscriptions
 export const setUserOverride = (id, data) => api.patch(`/admin/billing/users/${id}/override`, data)
 export const getAdminMetrics = () => api.get('/admin/billing/metrics')
 export const getUserBilling = (userId) => api.get(`/admin/billing/user/${userId}`)
-export const assignManager = (userId, data) => api.post(`/admin/billing/users/${userId}/manager`, data)
+// Реестр менеджеров + назначение из списка (manager_id, null = снять).
+export const getManagers = () => api.get('/admin/billing/managers')
+export const createManager = (data) => api.post('/admin/billing/managers', data)
+export const deleteManager = (id) => api.delete(`/admin/billing/managers/${id}`)
+export const assignManager = (userId, managerId) => api.post(`/admin/billing/users/${userId}/manager`, { manager_id: managerId })
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })

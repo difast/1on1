@@ -18,7 +18,9 @@ class Subscription(Base):
     trial_end = Column(DateTime, nullable=True)
     current_period_end = Column(DateTime, nullable=True)
     cancel_at_period_end = Column(Boolean, nullable=False, default=False)
-    # Выделенный менеджер (Enterprise/по назначению): имя и способ связи.
+    # Выделенный менеджер: ссылка на реестр managers + снимок имени/контакта
+    # (снимок — чтобы отдавать пользователю без join и он не менялся при удалении).
+    manager_id = Column(Integer, nullable=True)
     manager_name = Column(String(255), nullable=True)
     manager_contact = Column(String(255), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

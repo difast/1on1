@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.models.subscription import Subscription, Payment, Invoice
+from app.models.manager import Manager
 from app.utils.auth import require_admin
 from app.services import subscriptions as subs
 from app.services import metrics as metrics_service
@@ -49,7 +50,7 @@ def _sub_dict(s: Subscription, db: Session = None):
         "trial_end": s.trial_end.isoformat() if s.trial_end else None,
         "current_period_end": s.current_period_end.isoformat() if s.current_period_end else None,
         "cancel_at_period_end": s.cancel_at_period_end,
-        "manager_name": s.manager_name, "manager_contact": s.manager_contact,
+        "manager_id": s.manager_id, "manager_name": s.manager_name, "manager_contact": s.manager_contact,
     }
     # Имя/почта владельца — чтобы админ видел, чья это подписка (Task 2).
     if db is not None and s.subject_type == "user":
@@ -110,24 +111,68 @@ def user_billing(user_id: int, db: Session = Depends(get_db), _admin=Depends(req
     }
 
 
-class ManagerReq(BaseModel):
-    name: str | None = None
+# ── Реестр менеджеров (заводятся вручную, назначаются из списка) ──────────────
+
+def _mgr_dict(m: Manager):
+    return {"id": m.id, "name": m.name, "contact": m.contact}
+
+
+@router.get("/managers")
+def list_managers(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    return [_mgr_dict(m) for m in db.query(Manager).order_by(Manager.name).all()]
+
+
+class ManagerCreate(BaseModel):
+    name: str
     contact: str | None = None
 
 
+@router.post("/managers")
+def create_manager(data: ManagerCreate, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    name = (data.name or "").strip()
+    if not name:
+        raise HTTPException(400, "Name required")
+    m = Manager(name=name, contact=(data.contact or "").strip() or None)
+    db.add(m); db.commit(); db.refresh(m)
+    return _mgr_dict(m)
+
+
+@router.delete("/managers/{manager_id}")
+def delete_manager(manager_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    m = db.query(Manager).filter(Manager.id == manager_id).first()
+    if not m:
+        raise HTTPException(404, "Manager not found")
+    # Снимаем менеджера со всех подписок, где он был назначен.
+    for s in db.query(Subscription).filter(Subscription.manager_id == manager_id).all():
+        s.manager_id = None; s.manager_name = None; s.manager_contact = None
+    db.delete(m); db.commit()
+    return {"ok": True}
+
+
+class AssignManagerReq(BaseModel):
+    manager_id: int | None = None   # None → снять назначение
+
+
 @router.post("/users/{user_id}/manager")
-def assign_manager(user_id: int, data: ManagerReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
-    """Назначить/снять выделенного менеджера пользователю (имя + связь).
-    Хранится на подписке; если подписки нет — заводим Free-запись, чтобы было
-    куда прикрепить менеджера."""
+def assign_manager(user_id: int, data: AssignManagerReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Назначить пользователю менеджера ИЗ РЕЕСТРА (по id) или снять (manager_id=None).
+    На подписке хранится ссылка + снимок имени/контакта. Если подписки нет —
+    заводим запись, чтобы было куда прикрепить."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(404, "User not found")
     sub = subs.get_subscription(db, "user", user_id)
     if not sub:
         sub = subs.start_free_window(db, "user", user_id, days=14)
-    sub.manager_name = (data.name or "").strip() or None
-    sub.manager_contact = (data.contact or "").strip() or None
+    if data.manager_id is None:
+        sub.manager_id = None; sub.manager_name = None; sub.manager_contact = None
+    else:
+        m = db.query(Manager).filter(Manager.id == data.manager_id).first()
+        if not m:
+            raise HTTPException(404, "Manager not found")
+        sub.manager_id = m.id
+        sub.manager_name = m.name
+        sub.manager_contact = m.contact
     db.commit(); db.refresh(sub)
     return _sub_dict(sub, db)
 
