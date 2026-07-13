@@ -17,6 +17,7 @@ from app.services.entitlements import (
 )
 from app.services.payments_base import get_provider
 from app.services import subscriptions as subs
+from app.services import plan_change
 
 router = APIRouter()
 
@@ -51,17 +52,33 @@ def billing_me(
     limits = effective_limits(db, user)
 
     usage = {}
+    subscription = None
     if user is not None:
         usage = {
             "meetings_this_month": get_usage(db, "user", user.id, "meetings"),
             "ai_requests_this_month": get_usage(db, "user", user.id, "ai_requests"),
         }
+        # Состояние подписки нужно фронту, чтобы рисовать правильные сценарии
+        # (grace-period, отмена в конце периода, триал) — Этап 5.
+        sub = subs.get_subscription(db, "user", user.id)
+        if sub:
+            subscription = {
+                "status": sub.status,            # free/trialing/active/past_due/canceled
+                "plan_code": sub.plan_code,
+                "billing_period": sub.billing_period,
+                "seats": sub.seats,
+                "trial_end": sub.trial_end.isoformat() if sub.trial_end else None,
+                "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
+                "cancel_at_period_end": bool(sub.cancel_at_period_end),
+                "in_grace": sub.status == "past_due",
+            }
 
     return {
         "plan_code": code if code != "__unlimited__" else "unlimited",
         "full_access_override": bool(user and getattr(user, "billing_override", False)),
         "limits": limits,
         "usage": usage,
+        "subscription": subscription,
     }
 
 
@@ -109,6 +126,42 @@ def checkout(data: CheckoutReq, db: Session = Depends(get_db), current=Depends(g
     return {"payment_id": pay.id, "checkout": cfg}
 
 
+class ChangeReq(BaseModel):
+    plan_code: str
+    period: str = "month"
+    seats: int = 1
+    user_id: int | None = None
+
+
+@router.post("/change/preview")
+def change_preview(data: ChangeReq, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    """Единая точка решения для лендинга и ЛК: что произойдёт при смене тарифа
+    (Этап 5.12). Ничего не меняет — только возвращает сценарий и текст для UI."""
+    user = current or (db.query(User).filter(User.id == data.user_id).first() if data.user_id else None)
+    return plan_change.decide(db, user, data.plan_code, data.period, data.seats)
+
+
+class CancelReq(BaseModel):
+    user_id: int | None = None
+
+
+@router.post("/cancel")
+def cancel_subscription(data: CancelReq, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    """Отмена подписки / переход на Free (5.5, 6.6): доступ сохраняется до конца
+    оплаченного периода, затем аккаунт переходит на Free. Мутирует только запись
+    подписки самого пользователя, без списаний. С живыми ключами здесь же
+    дёргается Subscriptions/Cancel провайдера (см. plan_change / provider)."""
+    user = current or (db.query(User).filter(User.id == data.user_id).first() if data.user_id else None)
+    if user is None:
+        raise HTTPException(401, "User required")
+    sub = subs.get_subscription(db, "user", user.id)
+    if not sub or sub.status not in ("active", "trialing", "past_due"):
+        return {"ok": True, "status": sub.status if sub else "free", "note": "Активной подписки нет."}
+    subs.cancel(db, sub, at_period_end=True)
+    return {"ok": True, "status": sub.status, "cancel_at_period_end": True,
+            "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None}
+
+
 @router.post("/webhooks/cloudpayments")
 async def cloudpayments_webhook(
     request: Request,
@@ -128,7 +181,33 @@ async def cloudpayments_webhook(
     form = dict((await request.form()))
     data = provider.parse_webhook(form)
 
-    # Idempotency: ignore duplicates by external transaction id.
+    # ── Подписочное уведомление (Recurrent/Cancel): меняем статус подписки ──
+    # Fail НЕ понижает мгновенно — переводим в grace (past_due); Cancelled —
+    # отмена с конца периода; Expired — переход на Free (Этап 6.3, 5.8).
+    if data.get("kind") == "subscription":
+        acc = data.get("account_id")
+        if not acc:
+            return {"code": 0}
+        try:
+            uid = int(acc)
+        except (TypeError, ValueError):
+            return {"code": 0}
+        sub = subs.get_subscription(db, "user", uid)
+        if not sub:
+            return {"code": 0}
+        st = (data.get("sub_status") or "").lower()
+        if st == "active":
+            subs.extend(db, sub, period=sub.billing_period)     # успешное продление
+        elif st in ("pastdue", "rejected"):
+            subs.set_status(db, sub, "past_due")                 # grace-период
+        elif st == "cancelled":
+            subs.cancel(db, sub, at_period_end=True)             # доступ до конца периода
+        elif st == "expired":
+            subs.downgrade_to_free(db, sub)                      # период истёк
+        return {"code": 0}
+
+    # ── Платёжное уведомление (Pay/Fail) ──
+    # Idempotency: дубликаты по внешнему id транзакции игнорируем.
     ext = str(data.get("external_id") or "")
     if ext and db.query(Payment).filter(Payment.external_id == ext).first():
         return {"code": 0}
@@ -139,7 +218,12 @@ async def cloudpayments_webhook(
         return {"code": 0}  # acknowledge; nothing to do
 
     if not data.get("success"):
+        # Неудачный платёж: платёж — failed; если это списание по уже активной
+        # подписке — переводим её в grace (past_due), НЕ понижаем сразу (5.8/6.3).
         pay.status = "failed"; pay.external_id = ext or pay.external_id
+        sub = subs.get_subscription(db, "user", pay.subject_id)
+        if sub and sub.status in ("active", "trialing"):
+            subs.set_status(db, sub, "past_due")
         db.commit()
         return {"code": 0}
 
@@ -148,7 +232,7 @@ async def cloudpayments_webhook(
     info = pay.payload or {}
     db.commit()
 
-    # Activate / renew the subscription.
+    # Успешный платёж — активируем/продлеваем подписку (в т.ч. выход из grace).
     subs.activate(
         db, "user", pay.subject_id, info.get("plan_code", "start"),
         period=info.get("period", "month"), seats=info.get("seats", 1),
