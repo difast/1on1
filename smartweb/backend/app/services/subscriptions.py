@@ -46,6 +46,36 @@ def _upsert(db: Session, subject_type: str, subject_id: int) -> Subscription:
     return sub
 
 
+def start_free_window(db: Session, subject_type: str, subject_id: int, days: int = 14) -> Subscription:
+    """Тариф Free ограничен по времени: даём новому аккаунту 14-дневное окно
+    бесплатного доступа. Не трогаем уже существующую подписку (напр. если аккаунт
+    заведён админом с триалом/платным тарифом)."""
+    existing = get_subscription(db, subject_type, subject_id)
+    if existing:
+        return existing
+    sub = Subscription(
+        subject_type=subject_type, subject_id=subject_id,
+        plan_code="free", status="free",
+        current_period_end=datetime.utcnow() + timedelta(days=days),
+    )
+    db.add(sub); db.commit(); db.refresh(sub)
+    return sub
+
+
+def free_window(db: Session, user) -> dict:
+    """Состояние 14-дневного окна Free для пользователя.
+    free_until=None означает «без ограничения» (старые аккаунты без записи)."""
+    if user is None:
+        return {"free_until": None, "free_expired": False}
+    sub = get_subscription(db, "user", user.id)
+    if not sub or sub.status != "free" or not sub.current_period_end:
+        return {"free_until": None, "free_expired": False}
+    return {
+        "free_until": sub.current_period_end.isoformat(),
+        "free_expired": sub.current_period_end < datetime.utcnow(),
+    }
+
+
 def start_trial(db: Session, subject_type: str, subject_id: int, plan_code: str, days: int = 14) -> Subscription:
     sub = _upsert(db, subject_type, subject_id)
     sub.plan_code = plan_code

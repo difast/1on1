@@ -73,12 +73,16 @@ def billing_me(
                 "in_grace": sub.status == "past_due",
             }
 
+    free = subs.free_window(db, user) if user is not None else {"free_until": None, "free_expired": False}
+
     return {
         "plan_code": code if code != "__unlimited__" else "unlimited",
         "full_access_override": bool(user and getattr(user, "billing_override", False)),
         "limits": limits,
         "usage": usage,
         "subscription": subscription,
+        "free_until": free.get("free_until"),      # конец 14-дневного окна Free
+        "free_expired": free.get("free_expired"),  # окно Free истекло
     }
 
 

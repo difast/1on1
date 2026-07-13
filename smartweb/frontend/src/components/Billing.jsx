@@ -7,7 +7,7 @@ import useEscapeKey from '../lib/useEscapeKey'
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
 
 const DESC = {
-  free: 'Для знакомства с продуктом. Без карты.',
+  free: 'Знакомство с продуктом: 14 дней. Без карты.',
   start: 'Одна команда с AI-ассистентом Пит.',
   team: 'Растущим командам: аналитика и AI целиком.',
   company: 'Крупным командам: видео, транскрипты, учёт времени.',
@@ -185,6 +185,20 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                 Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
               </div>
             )}
+            {/* 14-дневное окно Free: отсчёт или сообщение об окончании */}
+            {currentCode === 'free' && me?.free_until && (() => {
+              const end = new Date(me.free_until)
+              const daysLeft = Math.ceil((end - new Date()) / 86400000)
+              return me.free_expired ? (
+                <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
+                  Бесплатный период (14 дней) истёк. Выберите тариф, чтобы продолжить работу.
+                </div>
+              ) : (
+                <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
+                  Бесплатный период до {end.toLocaleDateString('ru-RU')} — осталось {Math.max(daysLeft, 0)} дн.
+                </div>
+              )
+            })()}
           </div>
 
           {/* Period toggle */}
