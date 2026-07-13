@@ -10,6 +10,16 @@ Feature flags (bool): pit, ai_slots, ru_queries, ai_decomposition, mood,
   analytics, risk_alerts, csv_export, video_calls, transcripts, time_tracking,
   sso, on_premise, dedicated_manager
 support: "email" | "priority" | "24/7"
+
+Notes on wording (must match /pricing and the in-app plan screen):
+  - "csv_export" is the internal flag name kept for DB compatibility, but the
+    user-facing label is "Экспорт данных (Excel)" — экспорт реализован в .xlsx,
+    CSV не поддерживается. Ключ не переименовываем, чтобы не расходиться с уже
+    засеянными строками plans в проде (seed их не перезаписывает).
+  - "transcripts" — транскрипт формируется по загруженной записи встречи;
+    label: "Транскрипты встреч (по записи)".
+  - Мобильное приложение и База знаний доступны на всех тарифах (общие функции
+    платформы), поэтому отдельными флагами тарифа не гейтятся.
 """
 from sqlalchemy.orm import Session
 from app.models.plan import Plan

@@ -18,8 +18,8 @@ const FEATURE_LABELS = [
   ['analytics', 'Аналитика команды'],
   ['risk_alerts', 'Зоны риска и алерты'],
   ['video_calls', 'Встроенные видеозвонки'],
-  ['transcripts', 'Автотранскрипты встреч'],
-  ['csv_export', 'Экспорт CSV'],
+  ['transcripts', 'Транскрипты встреч (по записи)'],
+  ['csv_export', 'Экспорт данных (Excel)'],
 ]
 
 function loadCpWidget() {
