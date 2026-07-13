@@ -127,6 +127,9 @@ export const getAdminAnalytics = () => api.get('/users/admin/analytics')
 export const getBillingPlans = () => api.get('/billing/plans')
 export const getBillingMe = (userId) => api.get('/billing/me', { params: userId ? { user_id: userId } : {} })
 export const checkoutPlan = (data) => api.post('/billing/checkout', data)
+// Единая точка решения о смене тарифа (лендинг и ЛК) и отмена подписки.
+export const changePlanPreview = (data) => api.post('/billing/change/preview', data)
+export const cancelMySubscription = (userId) => api.post('/billing/cancel', { user_id: userId })
 // Admin billing
 export const getAdminSubscriptions = () => api.get('/admin/billing/subscriptions')
 export const getAdminPayments = () => api.get('/admin/billing/payments')

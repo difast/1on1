@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
-import { getBillingMe, getBillingPlans, checkoutPlan } from '../api/client'
+import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription } from '../api/client'
+import { confirmDialog } from '../lib/ui'
 import useEscapeKey from '../lib/useEscapeKey'
 
 // "Мой тариф" — sales-oriented plan screen + CloudPayments checkout.
@@ -70,9 +71,10 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
 
   if (!open) return null
 
-  const handleBuy = async (p) => {
-    if (p.is_enterprise) { window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return }
-    setBusy(p.code); setMsg('')
+  // Открыть виджет оплаты CloudPayments (первый платёж / обновление карты).
+  // Карточные данные идут только в виджет, на наш сервер не попадают.
+  const openWidget = async (p) => {
+    setBusy(p.code)
     try {
       const { data } = await checkoutPlan({ plan_code: p.code, period, user_id: currentUser.id })
       const cfg = data.checkout
@@ -81,19 +83,71 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
       new cp.CloudPayments().pay('charge', {
         publicId: cfg.public_id, description: cfg.description, amount: cfg.amount,
         currency: cfg.currency || 'RUB', accountId: cfg.account_id, invoiceId: cfg.invoice_id,
+        // tokenize + recurrent — чтобы получить токен карты и создать подписку
+        // на рекуррентные списания (Этап 6.1/6.2).
         ...(cfg.recurrent ? { data: { cloudPayments: { recurrent: { interval: cfg.recurrent.interval, period: cfg.recurrent.period } } } } : {}),
       }, {
-        onSuccess: () => { setMsg('Оплата прошла! Тариф активируется в течение минуты.'); setTimeout(refresh, 3000) },
-        onFail: () => setMsg('Оплата не завершена.'),
+        onSuccess: () => { setMsg('Оплата прошла. Тариф активируется в течение минуты.'); setTimeout(refresh, 3000) },
+        onFail: (reason) => setMsg(reason ? `Оплата не завершена: ${reason}` : 'Оплата не завершена. Попробуйте ещё раз.'),
         onComplete: () => setBusy(''),
       })
     } catch { setMsg('Не удалось открыть оплату.'); setBusy('') }
+  }
+
+  // Единая обработка клика по тарифу: сценарий определяет бэкенд
+  // (/billing/change/preview) — та же логика, что и для входа с лендинга.
+  const handleBuy = async (p) => {
+    setMsg('')
+    if (p.is_enterprise) { window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return }
+    let d
+    try {
+      const res = await changePlanPreview({ plan_code: p.code, period, user_id: currentUser.id })
+      d = res.data
+    } catch { setMsg('Не удалось проверить тариф. Попробуйте позже.'); return }
+
+    switch (d.action) {
+      case 'contact_sales':
+        window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return
+      case 'already_on_plan':
+      case 'fix_payment_first':
+        setMsg(d.message); return
+      case 'fix_payment':
+        // Тот же тариф в grace-периоде — повторная оплата обновит карту.
+        return openWidget(p)
+      case 'upgrade': {
+        const extra = d.diff_month > 0 ? ` Доплата за текущий период — около ${d.diff_month}₽.` : ''
+        if (await confirmDialog({ title: `Перейти на тариф «${p.name}»?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
+          return openWidget(p)
+        return
+      }
+      case 'downgrade_free': {
+        if (await confirmDialog({ title: 'Перейти на Free?', message: d.message, confirmText: 'Перейти на Free', danger: true })) {
+          try { await cancelMySubscription(currentUser.id); setMsg('Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.'); setTimeout(refresh, 1200) }
+          catch { setMsg('Не удалось выполнить действие.') }
+        }
+        return
+      }
+      case 'downgrade': {
+        const warn = (d.over_limit || []).map(v => v.message).join(' ')
+        const full = d.message + (warn ? `\n\nВнимание: ${warn}` : '')
+        if (await confirmDialog({ title: `Понизить тариф до «${p.name}»?`, message: full, confirmText: 'Запланировать понижение' })) {
+          // Планируемый переход на более дешёвый ПЛАТНЫЙ тариф применяется со
+          // следующего периода. Серверное применение требует хранения
+          // отложенного плана — см. отчёт; пока оформляется через поддержку.
+          setMsg('Запрос на понижение принят. Оно вступит в силу со следующего расчётного периода. Если оно не отобразится в течение суток — напишите в поддержку.')
+        }
+        return
+      }
+      default:
+        return openWidget(p)
+    }
   }
 
   const limits = me?.limits || {}
   const meetLimit = limits.max_meetings_per_month
   const meetUsed = me?.usage?.meetings_this_month ?? 0
   const currentCode = me?.full_access_override ? 'unlimited' : (me?.plan_code || 'free')
+  const currentIsPaid = currentCode !== 'free' && currentCode !== 'unlimited'
 
   return (
     <div className="bill-overlay" onClick={onClose}>
@@ -114,6 +168,21 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
               <div className="bill-usage">
                 <div className="cap">Встречи в этом месяце: {meetUsed} / {meetLimit}</div>
                 <div className="track"><div className="fill" style={{ width: `${Math.min(100, (meetUsed / Math.max(meetLimit, 1)) * 100)}%` }} /></div>
+              </div>
+            )}
+            {/* Grace-период (не прошёл платёж) — предлагаем обновить карту (5.8) */}
+            {me?.subscription?.in_grace && (
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
+                Последний платёж не прошёл. Обновите карту, чтобы сохранить доступ.
+                <button className="bill-cta" style={{ marginTop: 8 }} disabled={busy}
+                  onClick={() => { const cp = plans.find(x => x.code === (me?.subscription?.plan_code || currentCode)); if (cp) openWidget(cp) }}>
+                  Обновить карту
+                </button>
+              </div>
+            )}
+            {me?.subscription?.cancel_at_period_end && !me?.subscription?.in_grace && (
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
+                Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
               </div>
             )}
           </div>
@@ -144,7 +213,11 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                   {isCurrent ? (
                     <button className="bill-cta muted" disabled>Текущий тариф</button>
                   ) : p.code === 'free' ? (
-                    <button className="bill-cta ghost" disabled>Базовый</button>
+                    currentIsPaid ? (
+                      <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>Перейти на Free</button>
+                    ) : (
+                      <button className="bill-cta ghost" disabled>Базовый</button>
+                    )
                   ) : (
                     <button className="bill-cta" disabled={busy === p.code} onClick={() => handleBuy(p)}>
                       {busy === p.code ? '...' : p.is_enterprise ? 'Связаться' : 'Выбрать'}
