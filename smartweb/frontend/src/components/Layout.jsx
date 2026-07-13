@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
+import KnowledgeBasePage from './KnowledgeBasePage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
@@ -34,6 +35,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   // User menu dropdown
   const [showUserMenu, setShowUserMenu] = useState(false)
   const [showRoleConfirm, setShowRoleConfirm] = useState(false)
+  const [showKnowledge, setShowKnowledge] = useState(false)
   const [showSupport, setShowSupport] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showBilling, setShowBilling] = useState(false)
@@ -636,6 +638,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuDivider />
 
                 {/* 4. Помощь и информация */}
+                <MenuItemBtn icon={<IconBook />} onClick={() => { setShowUserMenu(false); setShowKnowledge(true) }}>
+                  База знаний
+                </MenuItemBtn>
                 <MenuItemBtn icon={<IconLifebuoy />} onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>
                   Поддержка
                 </MenuItemBtn>
@@ -1040,6 +1045,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         </main>
       </div>
       <PitAssistant />
+      {showKnowledge && <KnowledgeBasePage onClose={() => setShowKnowledge(false)} />}
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
       <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
@@ -1116,6 +1122,7 @@ const IconHelpHint = () => svg(<><circle cx="12" cy="12" r="9" /><path d="M9.5 9
 const IconSwitch = () => svg(<><path d="M7 4v13" /><path d="M4 7l3-3 3 3" /><path d="M17 20V7" /><path d="M20 17l-3 3-3-3" /></>)
 const IconLifebuoy = () => svg(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="M4.9 4.9l4.6 4.6M14.5 14.5l4.6 4.6M19.1 4.9l-4.6 4.6M9.5 14.5l-4.6 4.6" /></>)
 const IconDoc = () => svg(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" /></>)
+const IconBook = () => svg(<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>)
 const IconLogout = () => svg(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>)
 
 function SocialLink({ icon, label, value, href, display, placeholder }) {
