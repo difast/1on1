@@ -71,6 +71,8 @@ def billing_me(
                 "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None,
                 "cancel_at_period_end": bool(sub.cancel_at_period_end),
                 "in_grace": sub.status == "past_due",
+                "manager_name": sub.manager_name,
+                "manager_contact": sub.manager_contact,
             }
 
     free = subs.free_window(db, user) if user is not None else {"free_until": None, "free_expired": False}

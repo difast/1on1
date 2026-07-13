@@ -201,6 +201,17 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
             })()}
           </div>
 
+          {/* Персональный менеджер (если назначен админом) */}
+          {me?.subscription?.manager_name && (
+            <div style={{ margin: '0 0 14px', padding: '12px 14px', borderRadius: 12, background: 'var(--blue-50)', border: '1px solid var(--blue-200)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)', marginBottom: 4 }}>Персональный менеджер</div>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{me.subscription.manager_name}</div>
+              {me.subscription.manager_contact && (
+                <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>Связь: {me.subscription.manager_contact}</div>
+              )}
+            </div>
+          )}
+
           {/* Period toggle */}
           <div className="bill-toggle">
             <button className={period === 'month' ? 'on' : ''} onClick={() => setPeriod('month')}>Ежемесячно</button>

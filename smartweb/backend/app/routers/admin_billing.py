@@ -41,36 +41,95 @@ def investor_metrics(db: Session = Depends(get_db), _admin=Depends(require_admin
     return {"current": current, "history": history}
 
 
-def _sub_dict(s: Subscription):
-    return {
+def _sub_dict(s: Subscription, db: Session = None):
+    d = {
         "id": s.id, "subject_type": s.subject_type, "subject_id": s.subject_id,
         "plan_code": s.plan_code, "status": s.status, "seats": s.seats,
         "billing_period": s.billing_period, "provider": s.provider,
         "trial_end": s.trial_end.isoformat() if s.trial_end else None,
         "current_period_end": s.current_period_end.isoformat() if s.current_period_end else None,
         "cancel_at_period_end": s.cancel_at_period_end,
+        "manager_name": s.manager_name, "manager_contact": s.manager_contact,
     }
+    # Имя/почта владельца — чтобы админ видел, чья это подписка (Task 2).
+    if db is not None and s.subject_type == "user":
+        u = db.query(User).filter(User.id == s.subject_id).first()
+        d["user_name"] = u.name if u else None
+        d["user_email"] = u.email if u else None
+    return d
 
 
 @router.get("/subscriptions")
 def list_subscriptions(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     rows = db.query(Subscription).order_by(Subscription.id.desc()).all()
-    return [_sub_dict(s) for s in rows]
+    return [_sub_dict(s, db) for s in rows]
 
 
 @router.get("/payments")
 def list_payments(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     rows = db.query(Payment).order_by(Payment.id.desc()).limit(500).all()
-    return [
-        {
+    users = {u.id: u for u in db.query(User).all()}
+    out = []
+    for p in rows:
+        u = users.get(p.subject_id) if p.subject_type == "user" else None
+        out.append({
             "id": p.id, "subscription_id": p.subscription_id,
             "subject_type": p.subject_type, "subject_id": p.subject_id,
+            "user_name": u.name if u else None, "user_email": u.email if u else None,
             "amount": p.amount, "currency": p.currency, "status": p.status,
             "provider": p.provider, "external_id": p.external_id,
+            "payload": p.payload,
             "created_at": p.created_at.isoformat() if p.created_at else None,
-        }
-        for p in rows
-    ]
+        })
+    return out
+
+
+@router.get("/user/{user_id}")
+def user_billing(user_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Всё о биллинге одного пользователя для админ-панели (Task 2):
+    подписка (план/статус/период/менеджер) и его платежи."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    sub = subs.get_subscription(db, "user", user_id)
+    pays = db.query(Payment).filter(
+        Payment.subject_type == "user", Payment.subject_id == user_id
+    ).order_by(Payment.id.desc()).limit(50).all()
+    return {
+        "user": {"id": user.id, "name": user.name, "email": user.email,
+                 "billing_override": bool(user.billing_override)},
+        "free_window": subs.free_window(db, user),
+        "subscription": _sub_dict(sub, db) if sub else None,
+        "payments": [
+            {"id": p.id, "amount": p.amount, "currency": p.currency, "status": p.status,
+             "provider": p.provider, "external_id": p.external_id,
+             "created_at": p.created_at.isoformat() if p.created_at else None,
+             "payload": p.payload}
+            for p in pays
+        ],
+    }
+
+
+class ManagerReq(BaseModel):
+    name: str | None = None
+    contact: str | None = None
+
+
+@router.post("/users/{user_id}/manager")
+def assign_manager(user_id: int, data: ManagerReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Назначить/снять выделенного менеджера пользователю (имя + связь).
+    Хранится на подписке; если подписки нет — заводим Free-запись, чтобы было
+    куда прикрепить менеджера."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    sub = subs.get_subscription(db, "user", user_id)
+    if not sub:
+        sub = subs.start_free_window(db, "user", user_id, days=14)
+    sub.manager_name = (data.name or "").strip() or None
+    sub.manager_contact = (data.contact or "").strip() or None
+    db.commit(); db.refresh(sub)
+    return _sub_dict(sub, db)
 
 
 class ActivateReq(BaseModel):
