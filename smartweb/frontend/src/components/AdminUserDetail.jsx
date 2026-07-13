@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import {
   getTeams, getMemberTeam, getMeetings, getTasks,
   updateUser, deleteUser, blockUser, unblockUser,
+  getUserBilling, assignManager,
 } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
-import { confirmDialog } from '../lib/ui'
+import { confirmDialog, toast } from '../lib/ui'
 
 const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 
@@ -19,6 +20,10 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
   const [role, setRole] = useState(user?.role || 'member')
   const [blocked, setBlocked] = useState(!!user?.is_blocked)
   const [busy, setBusy] = useState(false)
+  const [billing, setBilling] = useState(null)
+  const [mgr, setMgr] = useState(null)   // {name, contact, saving} — редактирование менеджера
+
+  const loadBilling = () => getUserBilling(user.id).then(r => setBilling(r.data)).catch(() => setBilling(null))
 
   useEffect(() => {
     if (!user) return
@@ -46,6 +51,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
         setMeetings(Object.values(map))
       } catch { setMeetings([]) }
       try { const { data } = await getTasks({ assigned_to: user.id }); setTasks(data || []) } catch { setTasks([]) }
+      loadBilling()
       setLoading(false)
     })()
   }, [user?.id])
@@ -110,6 +116,63 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title || t.description}</span>
                 <span style={meta}>task_id:{t.id} · {statusOf(t)}</span>
               </div>)}
+
+            {/* Биллинг пользователя (Task 2): тариф, Free-окно, менеджер, платежи */}
+            <p style={sect}>Биллинг</p>
+            {!billing ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Загрузка…</p>
+            ) : (
+              <>
+                <div style={row}>
+                  <span>Тариф</span>
+                  <span style={meta}>
+                    {billing.user?.billing_override ? 'полный доступ' : (billing.subscription ? `${billing.subscription.plan_code} · ${billing.subscription.status}` : 'нет подписки')}
+                  </span>
+                </div>
+                {billing.free_window?.free_until && (
+                  <div style={row}>
+                    <span>Free-окно (14 дней)</span>
+                    <span style={meta}>{billing.free_window.free_expired ? 'истекло' : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
+                  </div>
+                )}
+                <div style={{ ...row, alignItems: 'flex-start' }}>
+                  <span>Менеджер</span>
+                  <span style={{ textAlign: 'right' }}>
+                    {billing.subscription?.manager_name
+                      ? <span style={{ fontSize: 13 }}>{billing.subscription.manager_name}{billing.subscription.manager_contact ? ` · ${billing.subscription.manager_contact}` : ''}</span>
+                      : <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>не назначен</span>}
+                    <button onClick={() => setMgr({ name: billing.subscription?.manager_name || '', contact: billing.subscription?.manager_contact || '', saving: false })}
+                      style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)' }}>Изменить</button>
+                  </span>
+                </div>
+                {mgr && (
+                  <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <input className="input input-sm" placeholder="Имя менеджера" value={mgr.name} onChange={e => setMgr(m => ({ ...m, name: e.target.value }))} />
+                    <input className="input input-sm" placeholder="Связь (Telegram / email / телефон)" value={mgr.contact} onChange={e => setMgr(m => ({ ...m, contact: e.target.value }))} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} disabled={mgr.saving} onClick={() => setMgr(null)}>Отмена</button>
+                      <button className="btn btn-sm btn-accent" style={{ flex: 1 }} disabled={mgr.saving}
+                        onClick={async () => {
+                          setMgr(m => ({ ...m, saving: true }))
+                          try { await assignManager(user.id, { name: mgr.name, contact: mgr.contact }); await loadBilling(); toast('Менеджер обновлён', 'success'); setMgr(null) }
+                          catch { toast('Не удалось сохранить', 'error'); setMgr(m => ({ ...m, saving: false })) }
+                        }}>{mgr.saving ? 'Сохранение…' : 'Сохранить'}</button>
+                    </div>
+                  </div>
+                )}
+                {(billing.payments || []).length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '10px 0 4px' }}>Платежи ({billing.payments.length})</div>
+                    {billing.payments.slice(0, 5).map(p => (
+                      <div key={p.id} style={row}>
+                        <span>{(p.amount / 100).toLocaleString('ru-RU')} {p.currency} · {p.status}</span>
+                        <span style={meta}>{p.created_at ? new Date(p.created_at).toLocaleDateString('ru-RU') : '—'}</span>
+                      </div>
+                    ))}
+                  </>
+                )}
+              </>
+            )}
 
             <p style={sect}>Сменить роль</p>
             <div style={{ display: 'flex', gap: 8 }}>
