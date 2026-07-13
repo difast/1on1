@@ -48,12 +48,12 @@ def effective_limits(db: Session, user) -> dict:
     code = resolve_plan_code(db, user)
     if code == "__unlimited__":
         return dict(UNLIMITED_LIMITS)
-    # Free ограничен 14 днями: если окно истекло и enforcement включён —
-    # доступ заблокирован до выбора тарифа. Без enforcement лимиты обычные.
+    # Пробный период (14 дней полного доступа) истёк и enforcement включён —
+    # доступ заблокирован до выбора тарифа. Без enforcement лимиты обычные (Free).
     if code == "free" and entitlements_enforced():
         try:
-            from app.services.subscriptions import free_window
-            if free_window(db, user).get("free_expired"):
+            from app.services.subscriptions import trial_window
+            if trial_window(db, user).get("trial_expired"):
                 return dict(LOCKED_LIMITS)
         except Exception:
             pass

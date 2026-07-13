@@ -20,9 +20,11 @@ Notes on wording (must match /pricing and the in-app plan screen):
     label: "Транскрипты встреч (по записи)".
   - Мобильное приложение и База знаний доступны на всех тарифах (общие функции
     платформы), поэтому отдельными флагами тарифа не гейтятся.
-  - Тариф Free ограничен по времени: при регистрации создаётся 14-дневное окно
-    (subscriptions.start_free_window). После истечения, при включённом
-    ENTITLEMENTS_ENFORCE, доступ закрывается до выбора тарифа (LOCKED_LIMITS).
+  - Бесплатный старт = 14-дневный ТРИАЛ платного тарифа «Команда» с ПОЛНЫМИ
+    функциями (subscriptions.start_signup_trial), а не урезанный Free. По
+    истечении триала пользователь переходит на Free (базовые функции); при
+    включённом ENTITLEMENTS_ENFORCE доступ закрывается до выбора тарифа
+    (LOCKED_LIMITS). Сам тариф Free остаётся базовым бесплатным уровнем.
 """
 from sqlalchemy.orm import Session
 from app.models.plan import Plan

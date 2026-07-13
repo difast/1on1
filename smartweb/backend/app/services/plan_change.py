@@ -101,6 +101,19 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
 
     sub = subs.get_subscription(db, "user", user.id)
     in_grace = bool(sub and sub.status in GRACE_STATES)
+
+    # Пробный период: пользователь уже пользуется платными функциями бесплатно.
+    # Любой платный тариф → оформить подписку сейчас (триал прерывается в пользу
+    # реальной оплаты); Free → прекратить триал; Enterprise обработан выше (5.9).
+    in_trial = bool(sub and sub.status == "trialing" and sub.trial_end
+                    and sub.trial_end > datetime.utcnow())
+    if in_trial:
+        if target.code == "free":
+            return {"action": "downgrade_free", "plan": "free", "effective": "now",
+                    "message": "Прекратить пробный период и перейти на Free? Платные функции станут недоступны сразу."}
+        return {"action": "subscribe", "plan": target.code, "period": period, "seats": seats,
+                "message": "Оформить платную подписку сейчас. Пробный период завершится, спишется оплата за выбранный тариф."}
+
     # В grace-периоде resolve_plan_code уже вернул бы Free, но фактически
     # пользователь ещё «на своём» платном тарифе (доступ сохраняется до решения
     # проблемы с оплатой), поэтому для сравнения берём план из подписки.
