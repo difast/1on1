@@ -20,6 +20,9 @@ Notes on wording (must match /pricing and the in-app plan screen):
     label: "Транскрипты встреч (по записи)".
   - Мобильное приложение и База знаний доступны на всех тарифах (общие функции
     платформы), поэтому отдельными флагами тарифа не гейтятся.
+  - Тариф Free ограничен по времени: при регистрации создаётся 14-дневное окно
+    (subscriptions.start_free_window). После истечения, при включённом
+    ENTITLEMENTS_ENFORCE, доступ закрывается до выбора тарифа (LOCKED_LIMITS).
 """
 from sqlalchemy.orm import Session
 from app.models.plan import Plan
@@ -112,6 +115,22 @@ PLAN_SEED = [
         },
     },
 ]
+
+_ALL_FEATURES = [
+    "pit", "ai_slots", "ru_queries", "ai_decomposition", "mood", "analytics",
+    "risk_alerts", "csv_export", "video_calls", "transcripts", "time_tracking",
+    "sso", "on_premise", "dedicated_manager",
+]
+
+# Лимиты, когда 14-дневное окно Free истекло, а enforcement включён: доступ к
+# платным функциям закрыт, нужно выбрать тариф. (Пока ENTITLEMENTS_ENFORCE=off —
+# не применяется.)
+LOCKED_LIMITS = {
+    "max_teams": 0, "max_members_per_team": 0, "min_seats": 1,
+    "max_meetings_per_month": 0, "history_days": 0,
+    "features": {k: False for k in _ALL_FEATURES},
+    "support": "email",
+}
 
 # Limits granted when an account is flagged with full access (no subscription).
 UNLIMITED_LIMITS = {

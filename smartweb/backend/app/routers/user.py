@@ -46,6 +46,13 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
+    # Тариф Free ограничен 14 днями: заводим окно бесплатного доступа сразу при
+    # регистрации. Ошибка здесь не должна ломать саму регистрацию.
+    try:
+        from app.services import subscriptions as subs
+        subs.start_free_window(db, "user", user.id, days=14)
+    except Exception:
+        db.rollback()
     return user
 
 @router.get("/admin/stats")

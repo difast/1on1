@@ -17,7 +17,7 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.plan import Plan, UsageCounter
-from app.services.plans import UNLIMITED_LIMITS, get_plan
+from app.services.plans import UNLIMITED_LIMITS, LOCKED_LIMITS, get_plan
 
 
 def entitlements_enforced() -> bool:
@@ -48,6 +48,15 @@ def effective_limits(db: Session, user) -> dict:
     code = resolve_plan_code(db, user)
     if code == "__unlimited__":
         return dict(UNLIMITED_LIMITS)
+    # Free ограничен 14 днями: если окно истекло и enforcement включён —
+    # доступ заблокирован до выбора тарифа. Без enforcement лимиты обычные.
+    if code == "free" and entitlements_enforced():
+        try:
+            from app.services.subscriptions import free_window
+            if free_window(db, user).get("free_expired"):
+                return dict(LOCKED_LIMITS)
+        except Exception:
+            pass
     p = get_plan(db, code) or get_plan(db, "free")
     return dict(p.limits) if p else {}
 
