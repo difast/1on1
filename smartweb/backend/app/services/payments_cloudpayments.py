@@ -56,14 +56,30 @@ class CloudPaymentsProvider(PaymentProvider):
             return False
 
     def parse_webhook(self, form: dict) -> dict:
-        status = (form.get("Status") or "").lower()
+        """Нормализуем уведомление CloudPayments.
+
+        Различаем два вида по составу полей:
+          - платёж (Pay/Fail): есть TransactionId (и обычно InvoiceId);
+          - подписка (Recurrent/Cancel): есть Id подписки и Status из набора
+            Active/PastDue/Cancelled/Rejected/Expired.
+        """
+        status = (form.get("Status") or "")
+        status_l = status.lower()
+        tx_id = form.get("TransactionId")
+        is_payment = bool(tx_id) or bool(form.get("InvoiceId"))
+        # Статусы подписки CloudPayments (Recurrent-уведомление).
+        SUB_STATES = {"active", "pastdue", "cancelled", "rejected", "expired"}
+        kind = "payment" if is_payment else ("subscription" if status_l in SUB_STATES else "payment")
         return {
-            "event": form.get("Event") or "Pay",
-            "external_id": form.get("TransactionId") or form.get("Id"),
+            "kind": kind,
+            "event": form.get("Event") or ("Recurrent" if kind == "subscription" else "Pay"),
+            "external_id": tx_id or form.get("Id"),
+            "subscription_id": form.get("Id") if kind == "subscription" else None,
+            "sub_status": status if kind == "subscription" else None,
             "amount": int(round(float(form.get("Amount", 0)) * 100)),
             "currency": form.get("Currency", "RUB"),
             "account_id": form.get("AccountId"),
             "invoice_id": form.get("InvoiceId"),
-            # CloudPayments Pay webhook fires only on success; Completed status too.
-            "success": status in ("completed", "authorized", "") or form.get("Event") in (None, "Pay"),
+            # Pay-уведомление приходит только при успехе; Completed/Authorized тоже успех.
+            "success": kind == "payment" and (status_l in ("completed", "authorized", "") or form.get("Event") in (None, "Pay")),
         }
