@@ -7,7 +7,7 @@ import useEscapeKey from '../lib/useEscapeKey'
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
 
 const DESC = {
-  free: 'Знакомство с продуктом: 14 дней. Без карты.',
+  free: 'Базовый бесплатный доступ. Без карты.',
   start: 'Одна команда с AI-ассистентом Пит.',
   team: 'Растущим командам: аналитика и AI целиком.',
   company: 'Крупным командам: видео, транскрипты, учёт времени.',
@@ -114,6 +114,9 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
       case 'fix_payment':
         // Тот же тариф в grace-периоде — повторная оплата обновит карту.
         return openWidget(p)
+      case 'subscribe':
+        // Оформление платной подписки во время пробного периода.
+        return openWidget(p)
       case 'upgrade': {
         const extra = d.diff_month > 0 ? ` Доплата за текущий период — около ${d.diff_month}₽.` : ''
         if (await confirmDialog({ title: `Перейти на тариф «${p.name}»?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
@@ -163,7 +166,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
           {/* Current plan + usage */}
           <div className="bill-current">
             <span className="lbl">Текущий тариф</span>
-            <span className="bill-chip">{me?.full_access_override ? 'Полный доступ' : (me?.plan_code || 'free')}</span>
+            <span className="bill-chip">{me?.full_access_override ? 'Полный доступ' : (me?.plan_code || 'free')}{me?.subscription?.status === 'trialing' ? ' · пробный' : ''}</span>
             {meetLimit != null && meetLimit >= 0 && (
               <div className="bill-usage">
                 <div className="cap">Встречи в этом месяце: {meetUsed} / {meetLimit}</div>
@@ -185,20 +188,22 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                 Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
               </div>
             )}
-            {/* 14-дневное окно Free: отсчёт или сообщение об окончании */}
-            {currentCode === 'free' && me?.free_until && (() => {
-              const end = new Date(me.free_until)
-              const daysLeft = Math.ceil((end - new Date()) / 86400000)
-              return me.free_expired ? (
-                <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
-                  Бесплатный период (14 дней) истёк. Выберите тариф, чтобы продолжить работу.
-                </div>
-              ) : (
+            {/* 14-дневный пробный период (полный доступ), затем Free */}
+            {me?.trial?.trial_active && me?.trial?.trial_until && (() => {
+              const end = new Date(me.trial.trial_until)
+              const daysLeft = Math.max(Math.ceil((end - new Date()) / 86400000), 0)
+              const planName = plans.find(x => x.code === me.trial.trial_plan)?.name || me.trial.trial_plan
+              return (
                 <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Бесплатный период до {end.toLocaleDateString('ru-RU')} — осталось {Math.max(daysLeft, 0)} дн.
+                  Пробный период тарифа «{planName}» (полный доступ) до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
                 </div>
               )
             })()}
+            {me?.trial?.trial_expired && (
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
+                Пробный период (14 дней) истёк. Выберите тариф, чтобы вернуть полный доступ.
+              </div>
+            )}
           </div>
 
           {/* Персональный менеджер (если назначен админом) */}

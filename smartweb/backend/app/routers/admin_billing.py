@@ -98,7 +98,7 @@ def user_billing(user_id: int, db: Session = Depends(get_db), _admin=Depends(req
     return {
         "user": {"id": user.id, "name": user.name, "email": user.email,
                  "billing_override": bool(user.billing_override)},
-        "free_window": subs.free_window(db, user),
+        "trial": subs.trial_window(db, user),
         "subscription": _sub_dict(sub, db) if sub else None,
         "payments": [
             {"id": p.id, "amount": p.amount, "currency": p.currency, "status": p.status,

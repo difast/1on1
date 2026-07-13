@@ -129,10 +129,10 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                     {billing.user?.billing_override ? 'полный доступ' : (billing.subscription ? `${billing.subscription.plan_code} · ${billing.subscription.status}` : 'нет подписки')}
                   </span>
                 </div>
-                {billing.free_window?.free_until && (
+                {billing.trial?.trial_until && (
                   <div style={row}>
-                    <span>Free-окно (14 дней)</span>
-                    <span style={meta}>{billing.free_window.free_expired ? 'истекло' : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
+                    <span>Пробный период (14 дней)</span>
+                    <span style={meta}>{billing.trial.trial_expired ? 'истёк' : `${billing.trial.trial_plan} · до ${new Date(billing.trial.trial_until).toLocaleDateString('ru-RU')}`}</span>
                   </div>
                 )}
                 <div style={{ ...row, alignItems: 'flex-start' }}>

@@ -75,7 +75,8 @@ def billing_me(
                 "manager_contact": sub.manager_contact,
             }
 
-    free = subs.free_window(db, user) if user is not None else {"free_until": None, "free_expired": False}
+    trial = subs.trial_window(db, user) if user is not None else {
+        "trial_plan": None, "trial_until": None, "trial_expired": False, "trial_active": False}
 
     return {
         "plan_code": code if code != "__unlimited__" else "unlimited",
@@ -83,8 +84,8 @@ def billing_me(
         "limits": limits,
         "usage": usage,
         "subscription": subscription,
-        "free_until": free.get("free_until"),      # конец 14-дневного окна Free
-        "free_expired": free.get("free_expired"),  # окно Free истекло
+        # 14-дневный пробный период (триал платного тарифа): активен/истёк.
+        "trial": trial,
     }
 
 
