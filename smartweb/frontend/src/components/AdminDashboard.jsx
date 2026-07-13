@@ -6,7 +6,7 @@ import {
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
-  getAdminMetrics,
+  getAdminMetrics, assignManager,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import { toast, confirmDialog } from '../lib/ui'
@@ -73,6 +73,7 @@ export default function AdminDashboard({ onLogout }) {
   const [subs, setSubs]             = useState([])
   const [paymentsList, setPaymentsList] = useState([])
   const [billingLoading, setBillingLoading] = useState(false)
+  const [mgrEdit, setMgrEdit] = useState(null)  // назначение менеджера: {userId, name, contact, saving}
 
   // Investor metrics
   const [metrics, setMetrics]       = useState(null)
@@ -725,7 +726,7 @@ export default function AdminDashboard({ onLogout }) {
                       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                            {['Subject', 'Тариф', 'Статус', 'Мест', 'Период', 'Действует до', 'Действия'].map(h => (
+                            {['Пользователь', 'Тариф', 'Статус', 'Мест', 'Период', 'Действует до', 'Менеджер', 'Действия'].map(h => (
                               <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                             ))}
                           </tr>
@@ -733,14 +734,23 @@ export default function AdminDashboard({ onLogout }) {
                         <tbody>
                           {subs.map(s => (
                             <tr key={s.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
-                              <Td mono>{s.subject_type}#{s.subject_id}</Td>
+                              <Td>
+                                <div style={{ fontWeight: 600 }}>{s.user_name || `${s.subject_type}#${s.subject_id}`}</div>
+                                {s.user_email && <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{s.user_email}</div>}
+                              </Td>
                               <Td>{s.plan_code}</Td>
                               <Td><span className={`badge ${s.status === 'active' ? 'badge-green' : s.status === 'trialing' ? 'badge-blue' : s.status === 'past_due' ? 'badge-amber' : 'badge-gray'}`} style={{ fontSize: 11 }}>{s.status}</span></Td>
                               <Td center>{s.seats}</Td>
                               <Td muted>{s.billing_period}</Td>
                               <Td muted>{s.current_period_end ? new Date(s.current_period_end).toLocaleDateString('ru-RU') : '—'}</Td>
                               <Td>
-                                <div style={{ display: 'flex', gap: 4 }}>
+                                {s.manager_name
+                                  ? <div><div style={{ fontWeight: 600, fontSize: 12 }}>{s.manager_name}</div>{s.manager_contact && <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{s.manager_contact}</div>}</div>
+                                  : <span style={{ color: 'var(--color-text-muted)' }}>—</span>}
+                              </Td>
+                              <Td>
+                                <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                  <button onClick={() => setMgrEdit({ userId: s.subject_id, name: s.manager_name || '', contact: s.manager_contact || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Менеджер</button>
                                   <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Продлить</button>
                                   <button onClick={async () => { if (!await confirmDialog({ title: 'Отменить подписку?', confirmText: 'Отменить', danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
                                 </div>
@@ -748,7 +758,7 @@ export default function AdminDashboard({ onLogout }) {
                             </tr>
                           ))}
                           {subs.length === 0 && (
-                            <tr><td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Подписок пока нет</td></tr>
+                            <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Подписок пока нет</td></tr>
                           )}
                         </tbody>
                       </table>
@@ -759,7 +769,7 @@ export default function AdminDashboard({ onLogout }) {
                       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                         <thead>
                           <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                            {['ID', 'Subject', 'Сумма', 'Статус', 'Провайдер', 'Дата'].map(h => (
+                            {['ID', 'Пользователь', 'Сумма', 'Статус', 'Провайдер', 'Дата'].map(h => (
                               <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                             ))}
                           </tr>
@@ -768,7 +778,10 @@ export default function AdminDashboard({ onLogout }) {
                           {paymentsList.map(p => (
                             <tr key={p.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
                               <Td mono>{p.id}</Td>
-                              <Td mono>{p.subject_type}#{p.subject_id}</Td>
+                              <Td>
+                                <div style={{ fontWeight: 600, fontSize: 12 }}>{p.user_name || `${p.subject_type}#${p.subject_id}`}</div>
+                                {p.user_email && <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{p.user_email}</div>}
+                              </Td>
                               <Td>{(p.amount / 100).toLocaleString('ru-RU')} {p.currency}</Td>
                               <Td><span className={`badge ${p.status === 'succeeded' ? 'badge-green' : p.status === 'failed' ? 'badge-red' : 'badge-gray'}`} style={{ fontSize: 11 }}>{p.status}</span></Td>
                               <Td muted>{p.provider || '—'}</Td>
@@ -900,6 +913,43 @@ export default function AdminDashboard({ onLogout }) {
           onClose={() => setDetailUser(null)}
           onChanged={() => getAdminStats().then(r => setData(r.data)).catch(() => {})}
         />
+      )}
+
+      {/* Назначение выделенного менеджера пользователю (имя + связь) */}
+      {mgrEdit && (
+        <div className="overlay-center" onClick={() => !mgrEdit.saving && setMgrEdit(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
+            <div className="modal-header">
+              <span className="modal-title">Выделенный менеджер</span>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setMgrEdit(null)} disabled={mgrEdit.saving}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
+              Пользователь увидит имя менеджера и способ связи в разделе «Мой тариф». Пустые поля снимают назначение.
+            </p>
+            <div className="form-group">
+              <label className="form-label">Имя менеджера</label>
+              <input className="input" value={mgrEdit.name} placeholder="Например: Анна Смирнова"
+                onChange={e => setMgrEdit(m => ({ ...m, name: e.target.value }))} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Связь</label>
+              <input className="input" value={mgrEdit.contact} placeholder="Telegram, email или телефон"
+                onChange={e => setMgrEdit(m => ({ ...m, contact: e.target.value }))} />
+            </div>
+            <button className="btn btn-accent" style={{ width: '100%' }} disabled={mgrEdit.saving}
+              onClick={async () => {
+                setMgrEdit(m => ({ ...m, saving: true }))
+                try {
+                  await assignManager(mgrEdit.userId, { name: mgrEdit.name, contact: mgrEdit.contact })
+                  const r = await getAdminSubscriptions(); setSubs(r.data)
+                  toast('Менеджер обновлён', 'success')
+                  setMgrEdit(null)
+                } catch { toast('Не удалось сохранить', 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
+              }}>
+              {mgrEdit.saving ? 'Сохранение…' : 'Сохранить'}
+            </button>
+          </div>
+        </div>
       )}
     </div>
   )
