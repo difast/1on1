@@ -5,7 +5,8 @@ import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
 import AdminDashboard from './components/AdminDashboard'
-import { getUserByEmail } from './api/client'
+import { getUserByEmail, detectRegion } from './api/client'
+import i18n from './i18n'
 
 function App() {
   const [authUser, setAuthUser] = useState(null)
@@ -89,6 +90,18 @@ function App() {
       clearTimeout(inactivityTimer.current)
     }
   }, [authUser, resetInactivityTimer])
+
+  // Когда пользователь известен: (1) применяем сохранённый язык (если выбирал
+  // раньше) — иначе остаётся язык браузера; (2) один раз определяем регион по IP
+  // и сохраняем как предполагаемый (Этап 5) — на UI это ничего не меняет.
+  useEffect(() => {
+    if (!appUser?.id) return
+    if (appUser.preferred_language &&
+        appUser.preferred_language !== (i18n.resolvedLanguage || i18n.language)) {
+      i18n.changeLanguage(appUser.preferred_language)
+    }
+    detectRegion(appUser.id).catch(() => {})
+  }, [appUser?.id])
 
   const handleOnboardingComplete = (user) => {
     setAppUser(user)

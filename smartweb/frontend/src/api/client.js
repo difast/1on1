@@ -147,6 +147,13 @@ export const getManagers = () => api.get('/admin/billing/managers')
 export const createManager = (data) => api.post('/admin/billing/managers', data)
 export const deleteManager = (id) => api.delete(`/admin/billing/managers/${id}`)
 export const assignManager = (userId, managerId) => api.post(`/admin/billing/users/${userId}/manager`, { manager_id: managerId })
+// Компания рабочего пространства (Этапы 2-4) + регион по IP (Этап 5)
+export const suggestCompany = (query, country = 'ru') => api.get('/companies/suggest', { params: { query, country } })
+export const getTeamCompany = (teamId) => api.get(`/companies/by-team/${teamId}`)
+export const saveTeamCompany = (teamId, data) => api.put(`/companies/by-team/${teamId}`, data)
+export const deleteTeamCompany = (teamId) => api.delete(`/companies/by-team/${teamId}`)
+export const detectRegion = (userId) => api.post(`/users/${userId}/detect-region`)
+
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })
