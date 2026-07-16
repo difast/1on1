@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     # список, а UI предлагает ручной ввод (запасной вариант).
     dadata_api_key: str = ""
 
+    # Telegram-бот: регистрация/вход через бота и Telegram Login Widget.
+    # ВСЕ значения — только из окружения, в коде секретов нет.
+    telegram_bot_token: str = ""       # секрет, только env
+    telegram_bot_username: str = ""    # напр. oneononehq_bot (без @) — публично
+    telegram_webhook_secret: str = ""  # секрет для проверки заголовка вебхука
+    app_web_url: str = ""              # базовый URL веба для ссылок из бота
+
     class Config:
         env_file = ".env"
         extra = "ignore"

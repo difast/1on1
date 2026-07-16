@@ -154,6 +154,11 @@ export const saveTeamCompany = (teamId, data) => api.put(`/companies/by-team/${t
 export const deleteTeamCompany = (teamId) => api.delete(`/companies/by-team/${teamId}`)
 export const detectRegion = (userId) => api.post(`/users/${userId}/detect-region`)
 
+// Telegram-авторизация (Этапы 2-5)
+export const getTelegramConfig = () => api.get('/telegram/config')
+export const telegramCallback = (data) => api.post('/telegram/callback', data)
+export const telegramLink = (userId, code) => api.post('/telegram/link', { user_id: userId, code })
+
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })

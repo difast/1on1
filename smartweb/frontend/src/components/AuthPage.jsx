@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import LegalModal from './LegalModal'
+import TelegramLoginButton from './TelegramLoginButton'
+import { getTelegramConfig, telegramCallback } from '../api/client'
 
 const ADMIN_PASSWORD = '1on12026'
 
@@ -15,7 +17,7 @@ const Logo = () => (
   </div>
 )
 
-export default function AuthPage({ onAdminLogin }) {
+export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
   const [mode, setMode] = useState('login') // 'login' | 'register' | 'check_email' | 'admin'
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -24,6 +26,24 @@ export default function AuthPage({ onAdminLogin }) {
   const [showConsent, setShowConsent] = useState(false)
   const [error, setError] = useState('')
   const [adminPwd, setAdminPwd] = useState('')
+  const [tgConfig, setTgConfig] = useState(null)  // { bot_username, enabled }
+  const [tgLoading, setTgLoading] = useState(false)
+
+  useEffect(() => {
+    getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
+  }, [])
+
+  // Колбэк официального виджета: отправляем подписанные данные на бэкенд для
+  // проверки hash и входа/регистрации по telegram_id (Этапы 3-5).
+  const handleTelegramWidget = async (tgUser) => {
+    setError(''); setTgLoading(true)
+    try {
+      const { data } = await telegramCallback(tgUser)
+      onTelegramAuth?.(data)  // { status, user }
+    } catch (err) {
+      setError(err?.response?.data?.detail || 'Не удалось войти через Telegram')
+    } finally { setTgLoading(false) }
+  }
 
   const handleLogin = async (e) => {
     e.preventDefault()
@@ -227,6 +247,23 @@ export default function AuthPage({ onAdminLogin }) {
                 </button>.
               </p>
             </form>
+
+            {/* Вход через Telegram — дополняет email/пароль, не заменяет (Этап 3) */}
+            {tgConfig?.enabled && tgConfig.bot_username && (
+              <div style={{ marginTop: 20 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
+                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>или</span>
+                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
+                </div>
+                <TelegramLoginButton botUsername={tgConfig.bot_username} onAuth={handleTelegramWidget} />
+                {tgLoading && (
+                  <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)', marginTop: 10 }}>
+                    Входим через Telegram...
+                  </p>
+                )}
+              </div>
+            )}
 
             {/* Admin link */}
             <div style={{ textAlign: 'center', marginTop: 18 }}>

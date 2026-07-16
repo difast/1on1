@@ -126,12 +126,12 @@ function resizeImage(file, maxPx = 256) {
   })
 }
 
-export default function Onboarding({ email, onComplete }) {
+export default function Onboarding({ email, existingUser, onComplete }) {
   const initialCode = new URLSearchParams(window.location.search).get('join') || ''
   const [step, setStep] = useState(1)
   const [role, setRole] = useState('')
-  const [createdUser, setCreatedUser] = useState(null)
-  const [name, setName] = useState('')
+  const [createdUser, setCreatedUser] = useState(existingUser || null)
+  const [name, setName] = useState(existingUser?.name || '')
   const [title, setTitle] = useState('')
   const [telegram, setTelegram] = useState('')
   const [linkedin, setLinkedin] = useState('')
@@ -139,7 +139,7 @@ export default function Onboarding({ email, onComplete }) {
   const [inviteCode, setInviteCode] = useState(initialCode)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [avatarPreview, setAvatarPreview] = useState(null)
+  const [avatarPreview, setAvatarPreview] = useState(existingUser?.avatar || null)
   const [avatarBase64, setAvatarBase64] = useState(null)
   const [photoLoading, setPhotoLoading] = useState(false)
   const [done, setDone] = useState(false)
@@ -154,17 +154,25 @@ export default function Onboarding({ email, onComplete }) {
     setLoading(true)
     try {
       const payload = {
-        name: name.trim(), email, role,
+        name: name.trim(), role,
         title: title.trim() || undefined,
         telegram: telegram.trim() || undefined,
         linkedin: linkedin.trim() || undefined,
         github: github.trim() || undefined,
       }
-      const { data: newUser } = await createUser(payload)
-      if (role === 'member' && inviteCode.trim()) {
-        try { await joinTeam({ invite_code: inviteCode.trim(), user_id: newUser.id }) } catch {}
+      let resultUser
+      if (existingUser) {
+        // Telegram-аккаунт уже создан — не плодим второй, только дополняем.
+        const { data } = await updateUser(existingUser.id, payload)
+        resultUser = data
+      } else {
+        const { data } = await createUser({ ...payload, email })
+        resultUser = data
       }
-      setCreatedUser(newUser)
+      if (role === 'member' && inviteCode.trim()) {
+        try { await joinTeam({ invite_code: inviteCode.trim(), user_id: resultUser.id }) } catch {}
+      }
+      setCreatedUser(resultUser)
       setStep(3)
     } catch (err) {
       setError(err?.response?.data?.detail || err?.message || 'Ошибка сервера')
@@ -277,10 +285,12 @@ export default function Onboarding({ email, onComplete }) {
                       placeholder={f.ph} required={f.req} style={inp} onFocus={fOpts} onBlur={fOut} />
                   </div>
                 ))}
-                <div style={{ marginBottom:14 }}>
-                  <label style={lbl}>Email</label>
-                  <input type="email" value={email} disabled style={{ ...inp,opacity:0.45,cursor:'not-allowed' }} />
-                </div>
+                {email && (
+                  <div style={{ marginBottom:14 }}>
+                    <label style={lbl}>Email</label>
+                    <input type="email" value={email} disabled style={{ ...inp,opacity:0.45,cursor:'not-allowed' }} />
+                  </div>
+                )}
                 {role === 'member' && (
                   <div style={{ marginBottom:14 }}>
                     <label style={lbl}>Код приглашения</label>
