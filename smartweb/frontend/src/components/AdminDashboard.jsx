@@ -153,6 +153,10 @@ export default function AdminDashboard({ onLogout }) {
     }
   }, [tab])
 
+  // Реестр менеджеров нужен и во вкладке «Пользователи» (кнопка «Менеджер»),
+  // поэтому грузим один раз при монтировании.
+  useEffect(() => { loadManagers() }, [])
+
   useEffect(() => { threadEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeTicket?.messages?.length])
 
   const openTicket = (ticket) => {
@@ -369,6 +373,12 @@ export default function AdminDashboard({ onLogout }) {
                                     borderColor: u.billing_override ? '#c7d2fe' : '#e2e8f0',
                                   }}>
                                   {u.billing_override ? 'Полный доступ' : 'Выдать полный доступ'}
+                                </button>
+                                <button
+                                  onClick={() => setMgrEdit({ userId: u.id, managerId: '', saving: false })}
+                                  title="Назначить выделенного менеджера"
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', background: 'var(--color-bg)', color: 'var(--color-text-secondary)' }}>
+                                  Менеджер
                                 </button>
                                 <button
                                   onClick={() => handleDelete(u.id)}
