@@ -7,7 +7,7 @@ import useEscapeKey from '../lib/useEscapeKey'
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
 
 const DESC = {
-  free: 'Базовый бесплатный доступ. Без карты.',
+  free: 'Базовый бесплатный доступ, 14 дней. Без карты.',
   start: 'Одна команда с AI-ассистентом Пит.',
   team: 'Растущим командам: аналитика и AI целиком.',
   company: 'Крупным командам: видео, транскрипты, учёт времени.',
@@ -188,20 +188,19 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                 Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
               </div>
             )}
-            {/* 14-дневный пробный период (полный доступ), затем Free */}
-            {me?.trial?.trial_active && me?.trial?.trial_until && (() => {
-              const end = new Date(me.trial.trial_until)
+            {/* 14-дневное окно Free */}
+            {currentCode === 'free' && me?.free_until && !me?.free_expired && (() => {
+              const end = new Date(me.free_until)
               const daysLeft = Math.max(Math.ceil((end - new Date()) / 86400000), 0)
-              const planName = plans.find(x => x.code === me.trial.trial_plan)?.name || me.trial.trial_plan
               return (
                 <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Пробный период тарифа «{planName}» (полный доступ) до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
+                  Бесплатный период до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
                 </div>
               )
             })()}
-            {me?.trial?.trial_expired && (
+            {currentCode === 'free' && me?.free_expired && (
               <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
-                Пробный период (14 дней) истёк. Выберите тариф, чтобы вернуть полный доступ.
+                Бесплатный период (14 дней) истёк. Выберите тариф, чтобы продолжить.
               </div>
             )}
           </div>

@@ -52,8 +52,8 @@ def effective_limits(db: Session, user) -> dict:
     # доступ заблокирован до выбора тарифа. Без enforcement лимиты обычные (Free).
     if code == "free" and entitlements_enforced():
         try:
-            from app.services.subscriptions import trial_window
-            if trial_window(db, user).get("trial_expired"):
+            from app.services.subscriptions import free_window
+            if free_window(db, user).get("free_expired"):
                 return dict(LOCKED_LIMITS)
         except Exception:
             pass
