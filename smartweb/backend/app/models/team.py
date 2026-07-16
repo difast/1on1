@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, UniqueConstraint, func
+from sqlalchemy import Column, Integer, String, DateTime, Boolean, ForeignKey, UniqueConstraint, func
 from sqlalchemy.orm import relationship
 from app.database import Base
 
@@ -9,10 +9,14 @@ class Team(Base):
     name = Column(String(255), nullable=False)
     invite_code = Column(String(20), unique=True, nullable=False)
     team_lead_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # Есть ли у пространства заполненные реквизиты компании (Этап 3). Отсутствие
+    # ничего не блокирует — реквизиты нужны позже, на этапе оплаты.
+    has_company = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())
 
     team_lead = relationship("User", foreign_keys=[team_lead_id])
     members = relationship("TeamMember", back_populates="team", cascade="all, delete-orphan")
+    company = relationship("CompanyProfile", back_populates="team", uselist=False, cascade="all, delete-orphan")
 
 
 class TeamMember(Base):
