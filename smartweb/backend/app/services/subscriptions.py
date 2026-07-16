@@ -46,52 +46,43 @@ def _upsert(db: Session, subject_type: str, subject_id: int) -> Subscription:
     return sub
 
 
-# Бесплатный старт = 14-дневный триал ПЛАТНОГО тарифа (полные функции), чтобы
-# пользователь оценил продукт целиком, а не урезанный Free. По истечении —
-# переход на Free (базовые функции).
-SIGNUP_TRIAL_PLAN = "team"   # «Команда»
-SIGNUP_TRIAL_DAYS = 14
+# Бесплатный старт = тариф Free (только заявленные для Free функции), с
+# 14-дневным окном. Полного набора функций Free НЕ даёт.
+SIGNUP_FREE_DAYS = 14
 
 
-def start_signup_trial(db: Session, subject_type: str, subject_id: int,
-                       plan_code: str = SIGNUP_TRIAL_PLAN, days: int = SIGNUP_TRIAL_DAYS) -> Subscription:
-    """При регистрации выдаём триал платного тарифа на 14 дней без карты.
+def start_signup_free(db: Session, subject_type: str, subject_id: int, days: int = SIGNUP_FREE_DAYS) -> Subscription:
+    """При регистрации — тариф Free с 14-дневным окном (без карты).
     Не трогаем уже существующую подписку (напр. заведён админом)."""
-    existing = get_subscription(db, subject_type, subject_id)
-    if existing:
-        return existing
-    return start_trial(db, subject_type, subject_id, plan_code, days=days)
+    return start_free_window(db, subject_type, subject_id, days=days)
 
 
-def start_free_window(db: Session, subject_type: str, subject_id: int, days: int = 14) -> Subscription:
-    """Пустая Free-запись (используется как точка привязки, напр. для менеджера,
-    когда у пользователя ещё нет подписки)."""
+def start_free_window(db: Session, subject_type: str, subject_id: int, days: int | None = None) -> Subscription:
+    """Free-запись (точка привязки, в т.ч. для менеджера). При days задаёт
+    14-дневное окно (current_period_end); без days — бессрочная запись."""
     existing = get_subscription(db, subject_type, subject_id)
     if existing:
         return existing
     sub = Subscription(
         subject_type=subject_type, subject_id=subject_id,
         plan_code="free", status="free",
+        current_period_end=(datetime.utcnow() + timedelta(days=days)) if days else None,
     )
     db.add(sub); db.commit(); db.refresh(sub)
     return sub
 
 
-def trial_window(db: Session, user) -> dict:
-    """Состояние 14-дневного пробного периода (триала) пользователя.
-    trial_until=None означает «нет активного/истёкшего триала»."""
-    empty = {"trial_plan": None, "trial_until": None, "trial_expired": False, "trial_active": False}
+def free_window(db: Session, user) -> dict:
+    """Состояние 14-дневного окна Free. free_until=None — без ограничения."""
+    empty = {"free_until": None, "free_expired": False}
     if user is None:
         return empty
     sub = get_subscription(db, "user", user.id)
-    if not sub or sub.status != "trialing" or not sub.trial_end:
+    if not sub or sub.status != "free" or not sub.current_period_end:
         return empty
-    now = datetime.utcnow()
     return {
-        "trial_plan": sub.plan_code,
-        "trial_until": sub.trial_end.isoformat(),
-        "trial_expired": sub.trial_end <= now,
-        "trial_active": sub.trial_end > now,
+        "free_until": sub.current_period_end.isoformat(),
+        "free_expired": sub.current_period_end < datetime.utcnow(),
     }
 
 
