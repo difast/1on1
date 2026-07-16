@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall, telegramLink, getTelegramConfig } from '../api/client'
 import { supabase } from '../lib/supabase'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
@@ -25,6 +25,26 @@ const TOAST_META = {
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
   const { t, i18n } = useTranslation()
   const [showLangMenu, setShowLangMenu] = useState(false)
+  // Привязка Telegram по коду из бота (Этап 4).
+  const [showTgModal, setShowTgModal] = useState(false)
+  const [tgCode, setTgCode] = useState('')
+  const [tgBusy, setTgBusy] = useState(false)
+  const [tgErr, setTgErr] = useState('')
+  const [tgEnabled, setTgEnabled] = useState(false)
+  useEffect(() => { getTelegramConfig().then(r => setTgEnabled(!!r.data?.enabled)).catch(() => {}) }, [])
+
+  const handleTelegramLink = async (e) => {
+    e.preventDefault()
+    setTgErr(''); setTgBusy(true)
+    try {
+      const { data } = await telegramLink(currentUser.id, tgCode.trim())
+      onUserUpdate?.(data.user)
+      setShowTgModal(false); setTgCode('')
+      toast('Telegram привязан к аккаунту', 'success')
+    } catch (err) {
+      setTgErr(err?.response?.data?.detail || 'Не удалось привязать')
+    } finally { setTgBusy(false) }
+  }
   // Смена языка: применяем сразу + сохраняем в профиль, чтобы не определять
   // заново при следующем визите (Этап 6). i18next сам кладёт выбор в localStorage.
   const changeLanguage = (code) => {
@@ -635,6 +655,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
                   Сменить пароль
                 </MenuItemBtn>
+                {/* Привязка Telegram — только если бот включён и ещё не привязан */}
+                {tgEnabled && !currentUser?.telegram_id && (
+                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowTgModal(true); setTgErr(''); setTgCode('') }}>
+                    Привязать Telegram
+                  </MenuItemBtn>
+                )}
                 {/* Тумблер = «тёмная тема вкл»: привычная модель dark mode switch. */}
                 <MenuItemBtn icon={isDark ? <IconMoon /> : <IconSun />} onClick={toggleDark} right={<Toggle on={isDark} />}>
                   Тема оформления
@@ -802,6 +828,36 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {showTgModal && (
+        <div className="overlay-center" onClick={() => setShowTgModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <span className="modal-title">Привязать Telegram</span>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowTgModal(false)}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
+              Откройте бота в Telegram, отправьте команду /link и введите полученный код. Ваш
+              Telegram привяжется к текущему аккаунту — второй профиль не создастся.
+            </p>
+            <form onSubmit={handleTelegramLink}>
+              <div className="form-group">
+                <label className="form-label">Код из бота</label>
+                <input
+                  type="text" className="input" value={tgCode}
+                  onChange={e => setTgCode(e.target.value.toUpperCase())}
+                  placeholder="Например: K7M2QP" autoFocus
+                  style={{ fontFamily: 'monospace', letterSpacing: '0.08em' }}
+                />
+              </div>
+              {tgErr && <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{tgErr}</p>}
+              <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={tgBusy || !tgCode.trim()}>
+                {tgBusy ? 'Привязка...' : 'Привязать'}
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -1164,6 +1220,7 @@ const IconLifebuoy = () => svg(<><circle cx="12" cy="12" r="9" /><circle cx="12"
 const IconDoc = () => svg(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" /></>)
 const IconBook = () => svg(<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>)
 const IconGlobe = () => svg(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z" /></>)
+const IconSend = () => svg(<><path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4 20-7z" /></>)
 const IconLogout = () => svg(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>)
 
 function SocialLink({ icon, label, value, href, display, placeholder }) {

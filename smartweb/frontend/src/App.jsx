@@ -5,14 +5,19 @@ import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
 import AdminDashboard from './components/AdminDashboard'
-import { getUserByEmail, detectRegion } from './api/client'
+import { getUserByEmail, getUser, detectRegion } from './api/client'
 import i18n from './i18n'
+
+const TG_SESSION_KEY = 'tg_session'
 
 function App() {
   const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
+  // Вход через Telegram живёт параллельно с Supabase-сессией (email/пароль) и
+  // ведёт в тот же users-аккаунт по telegram_id. Здесь — признак такой сессии.
+  const [tgAuthed, setTgAuthed] = useState(false)
   const inactivityTimer = useRef(null)
 
   // Apply dark theme on first render (before user loads); Layout will
@@ -32,6 +37,31 @@ function App() {
       setAppUser(null)
       return null
     }
+  }
+
+  // Восстановить Telegram-сессию из localStorage (когда нет Supabase-сессии).
+  const restoreTelegramSession = async () => {
+    const raw = localStorage.getItem(TG_SESSION_KEY)
+    if (!raw) return false
+    try {
+      const { id } = JSON.parse(raw)
+      const { data } = await getUser(id)
+      setAppUser(data); setTgAuthed(true)
+      localStorage.setItem('smart_user', JSON.stringify(data))
+      return true
+    } catch {
+      localStorage.removeItem(TG_SESSION_KEY)
+      return false
+    }
+  }
+
+  // Успешный вход через Telegram (виджет): { status, user }. Ставим ту же
+  // сессию, что и для email-входа, и запоминаем её как Telegram-сессию.
+  const handleTelegramAuth = async ({ user }) => {
+    if (!user) return
+    setAppUser(user); setTgAuthed(true); setAuthUser(null)
+    localStorage.setItem(TG_SESSION_KEY, JSON.stringify({ id: user.id }))
+    localStorage.setItem('smart_user', JSON.stringify(user))
   }
 
   useEffect(() => {
@@ -60,9 +90,14 @@ function App() {
           setAuthUser(session.user)
         }
       } else {
-        setAuthUser(null)
-        setAppUser(null)
-        localStorage.removeItem('smart_user')
+        // Нет Supabase-сессии — возможно, активна Telegram-сессия.
+        const restored = await restoreTelegramSession()
+        if (!restored) {
+          setAuthUser(null)
+          setAppUser(null)
+          setTgAuthed(false)
+          localStorage.removeItem('smart_user')
+        }
       }
       setLoading(false)
     })
@@ -72,7 +107,11 @@ function App() {
 
   const handleLogout = useCallback(async () => {
     clearTimeout(inactivityTimer.current)
-    await supabase.auth.signOut()
+    localStorage.removeItem(TG_SESSION_KEY)
+    localStorage.removeItem('smart_user')
+    setTgAuthed(false)
+    setAppUser(null)
+    await supabase.auth.signOut()  // no-op при Telegram-только сессии
   }, [])
 
   const resetInactivityTimer = useCallback(() => {
@@ -81,7 +120,7 @@ function App() {
   }, [handleLogout, INACTIVITY_LIMIT])
 
   useEffect(() => {
-    if (!authUser) return
+    if (!authUser && !tgAuthed) return
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
     events.forEach(e => window.addEventListener(e, resetInactivityTimer, { passive: true }))
     resetInactivityTimer()
@@ -124,12 +163,17 @@ function App() {
 
   if (isAdmin) return <AdminDashboard onLogout={() => setIsAdmin(false)} />
 
-  if (!authUser) return <AuthPage onAdminLogin={() => setIsAdmin(true)} />
+  if (!authUser && !tgAuthed) {
+    return <AuthPage onAdminLogin={() => setIsAdmin(true)} onTelegramAuth={handleTelegramAuth} />
+  }
 
   if (!appUser || !appUser.role) {
+    // Telegram-пользователь уже создан на бэкенде (с пустой ролью) — онбординг
+    // только выбирает роль/профиль поверх существующего аккаунта (existingUser).
     return (
       <Onboarding
-        email={authUser.email}
+        email={appUser?.email || authUser?.email || ''}
+        existingUser={tgAuthed ? appUser : null}
         onComplete={handleOnboardingComplete}
       />
     )
