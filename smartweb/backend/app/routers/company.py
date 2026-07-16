@@ -70,21 +70,8 @@ def _norm_kz(s: dict) -> dict:
     }
 
 
-@router.get("/suggest")
-def suggest_company(
-    query: str = Query(..., min_length=2),
-    country: str = Query("ru"),
-):
-    """Прокси к DaData. Возвращает нормализованные подсказки. Без ключа или при
-    ошибке — пустой список + configured=false (UI покажет ручной ввод)."""
-    country = (country or "ru").lower()
-    if country not in _DADATA_METHOD:
-        country = "ru"
-    key = settings.dadata_api_key
-    if not key:
-        return {"configured": False, "suggestions": []}
-
-    method = _DADATA_METHOD[country]
+def _fetch(method: str, key: str, query: str, count: int) -> list:
+    """Один запрос к конкретному методу DaData. Ошибка -> пустой список."""
     try:
         r = httpx.post(
             f"{_DADATA_BASE}/{method}",
@@ -93,21 +80,39 @@ def suggest_company(
                 "Accept": "application/json",
                 "Authorization": f"Token {key}",
             },
-            json={"query": query, "count": 10},
+            json={"query": query, "count": count},
             timeout=8,
         )
         r.raise_for_status()
-        raw = r.json().get("suggestions", []) or []
+        return r.json().get("suggestions", []) or []
     except Exception:
-        # Не роняем UI — просто «не нашли», ручной ввод остаётся доступен.
-        return {"configured": True, "suggestions": [], "error": True}
+        return []
 
-    norm = _norm_kz if country == "kz" else _norm_ru
+
+@router.get("/suggest")
+def suggest_company(
+    query: str = Query(..., min_length=2),
+    country: str = Query("all"),
+):
+    """Прокси к DaData. Без параметра country ищет и по РФ, и по КЗ и объединяет
+    результаты — страна берётся из выбранной подсказки. Без ключа -> пустой
+    список + configured=false (UI покажет ручной ввод)."""
+    country = (country or "all").lower()
+    key = settings.dadata_api_key
+    if not key:
+        return {"configured": False, "suggestions": []}
+
     out = []
-    for s in raw:
-        item = norm(s)
-        item["raw"] = s  # полный ответ — сохраним при выборе
-        out.append(item)
+    # РФ (party) — основной справочник. Ошибка одного метода не мешает другому.
+    if country in ("all", "ru"):
+        for s in _fetch("party", key, query, 8):
+            item = _norm_ru(s); item["raw"] = s
+            out.append(item)
+    # КЗ (party_kz) — если доступен на тарифе DaData; иначе просто пусто.
+    if country in ("all", "kz"):
+        for s in _fetch("party_kz", key, query, 8):
+            item = _norm_kz(s); item["raw"] = s
+            out.append(item)
     return {"configured": True, "suggestions": out}
 
 
