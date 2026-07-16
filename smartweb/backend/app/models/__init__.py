@@ -13,3 +13,4 @@ from app.models.ticket_message import TicketMessage
 from app.models.plan import Plan, UsageCounter
 from app.models.subscription import Subscription, Payment, Invoice
 from app.models.manager import Manager
+from app.models.company import CompanyProfile

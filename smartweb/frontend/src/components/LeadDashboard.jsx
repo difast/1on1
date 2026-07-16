@@ -5,7 +5,9 @@ import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
 import { coachingEnabled, buildAgendaSuggestions, buildMeetingFeedback } from '../lib/coaching'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots, getTeamCompany, saveTeamCompany, deleteTeamCompany } from '../api/client'
+import { useTranslation } from 'react-i18next'
+import CompanySearch from './CompanySearch'
 import Layout from './Layout'
 
 const STATUS_CYCLE = { in_progress: 'review', review: 'done', done: 'in_progress', blocked: 'in_progress' }
@@ -22,6 +24,7 @@ import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
+  const { t } = useTranslation()
   const [activeView, setActiveView] = useState('teams')
   const [teams, setTeams] = useState([])
   const [selectedTeamId, setSelectedTeamId] = useState(null)
@@ -74,6 +77,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   const [showCreateTeam, setShowCreateTeam] = useState(false)
+  // Опциональный шаг «компания» сразу после создания пространства (Этап 2).
+  const [companyStep, setCompanyStep] = useState(null)   // { teamId, showSearch } | null
+  const [companySaving, setCompanySaving] = useState(false)
+  // Раздел «Организация» в настройках пространства (Этап 4).
+  const [showOrg, setShowOrg] = useState(false)
+  const [orgData, setOrgData] = useState(null)           // { has_company, company }
+  const [orgEditing, setOrgEditing] = useState(false)
   const [showAddMember, setShowAddMember] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [scheduleMember, setScheduleMember] = useState(null)
@@ -469,7 +479,43 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setShowCreateTeam(false)
       await loadTeams()
       setSelectedTeamId(data.id)
+      // Этап 2: сразу предлагаем добавить компанию (необязательно, не блокирует).
+      setCompanyStep({ teamId: data.id, showSearch: false })
     } catch {} finally { setFormLoading(false) }
+  }
+
+  // Сохранить реквизиты компании (используется и в шаге создания, и в настройках).
+  const handleSaveCompany = async (teamId, payload, { fromStep } = {}) => {
+    setCompanySaving(true)
+    try {
+      await saveTeamCompany(teamId, payload)
+      toast(t('company.saved'), 'success')
+      await loadTeams()
+      if (fromStep) setCompanyStep(null)
+      else { setOrgEditing(false); await loadOrg(teamId) }
+    } catch {
+      toast(t('company.saveError'), 'error')
+    } finally { setCompanySaving(false) }
+  }
+
+  const loadOrg = async (teamId) => {
+    try { const { data } = await getTeamCompany(teamId); setOrgData(data) }
+    catch { setOrgData({ has_company: false, company: null }) }
+  }
+
+  const openOrg = async (teamId) => {
+    setShowOrg(true); setOrgEditing(false); setOrgData(null)
+    await loadOrg(teamId)
+  }
+
+  const handleRemoveCompany = async (teamId) => {
+    setCompanySaving(true)
+    try {
+      await deleteTeamCompany(teamId)
+      toast(t('company.removed'), 'success')
+      await loadTeams(); await loadOrg(teamId); setOrgEditing(false)
+    } catch { toast(t('company.saveError'), 'error') }
+    finally { setCompanySaving(false) }
   }
 
   const handleAddMember = async (e) => {
@@ -1325,6 +1371,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       >
                         + Участника
                       </button>
+                      {/* Этап 4: доступ к реквизитам компании пространства. */}
+                      <button
+                        onClick={e => { e.stopPropagation(); openOrg(selectedTeamId) }}
+                        className="btn btn-secondary btn-sm"
+                        title={t('company.sectionTitle')}
+                      >
+                        {t('company.sectionTitle')}
+                      </button>
                     </div>
                   </div>
 
@@ -1732,6 +1786,98 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Создание...' : 'Создать'}</button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Этап 2: опциональный шаг «компания» после создания пространства. Два
+          равнозначных по визуальному весу варианта; ни один не блокирует продукт. */}
+      {companyStep && (
+        <Modal title={t('company.stepTitle')} onClose={() => setCompanyStep(null)}>
+          {!companyStep.showSearch ? (
+            <>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
+                {t('company.stepSubtitle')}
+              </p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {[
+                  { key: 'company', title: t('company.optionCompanyTitle'), desc: t('company.optionCompanyDesc'),
+                    onClick: () => setCompanyStep(s => ({ ...s, showSearch: true })) },
+                  { key: 'skip', title: t('company.optionSkipTitle'), desc: t('company.optionSkipDesc'),
+                    onClick: () => setCompanyStep(null) },
+                ].map(opt => (
+                  <button key={opt.key} type="button" onClick={opt.onClick} style={{
+                    textAlign: 'left', padding: '18px 16px', borderRadius: 12, cursor: 'pointer',
+                    background: 'var(--color-bg)', border: '1px solid var(--color-border)', color: 'inherit',
+                    display: 'flex', flexDirection: 'column', gap: 6, minHeight: 116,
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--color-accent)' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--color-border)' }}>
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{opt.title}</span>
+                    <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{opt.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </>
+          ) : (
+            <CompanySearch
+              submitting={companySaving}
+              onCancel={() => setCompanyStep(s => ({ ...s, showSearch: false }))}
+              onSubmit={(payload) => handleSaveCompany(companyStep.teamId, payload, { fromStep: true })}
+            />
+          )}
+        </Modal>
+      )}
+
+      {/* Этап 4: раздел «Организация» в настройках пространства. */}
+      {showOrg && (
+        <Modal title={t('company.sectionTitle')} onClose={() => { setShowOrg(false); setOrgEditing(false) }}>
+          {!orgData ? (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('common.loading')}</p>
+          ) : orgEditing || !orgData.has_company ? (
+            !orgEditing && !orgData.has_company ? (
+              <div>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
+                  {t('company.sectionEmpty')}
+                </p>
+                <button className="btn btn-accent" onClick={() => setOrgEditing(true)}>
+                  {t('company.addCompany')}
+                </button>
+              </div>
+            ) : (
+              <CompanySearch
+                initial={orgData.company || undefined}
+                submitting={companySaving}
+                onCancel={orgData.has_company ? () => setOrgEditing(false) : undefined}
+                onSubmit={(payload) => handleSaveCompany(selectedTeamId, payload)}
+              />
+            )
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {[
+                ['company.fieldName', orgData.company.name],
+                [orgData.company.country === 'KZ' ? 'company.fieldInnKz' : 'company.fieldInnRu', orgData.company.inn],
+                ['company.fieldKpp', orgData.company.kpp],
+                ['company.fieldOgrn', orgData.company.ogrn],
+                ['company.fieldAddress', orgData.company.legal_address],
+                ['company.fieldIndustry', orgData.company.industry],
+                ['company.fieldManagement', orgData.company.management],
+                ['company.fieldStatus', orgData.company.status],
+              ].filter(([, v]) => v).map(([k, v]) => (
+                <div key={k} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, fontSize: 13 }}>
+                  <span style={{ color: 'var(--color-text-muted)' }}>{t(k)}</span>
+                  <span style={{ fontWeight: 600, textAlign: 'right' }}>{v}</span>
+                </div>
+              ))}
+              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleRemoveCompany(selectedTeamId)} disabled={companySaving}>
+                  {t('common.delete')}
+                </button>
+                <button className="btn btn-accent" style={{ flex: 1 }} onClick={() => setOrgEditing(true)}>
+                  {t('common.edit')}
+                </button>
+              </div>
+            </div>
+          )}
         </Modal>
       )}
 

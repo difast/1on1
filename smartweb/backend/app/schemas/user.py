@@ -22,6 +22,8 @@ class UserOut(BaseModel):
     github: Optional[str]
     avatar: Optional[str]
     is_blocked: bool = False
+    detected_region: Optional[str] = None
+    preferred_language: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -36,3 +38,6 @@ class UserUpdate(BaseModel):
     github: Optional[str] = None
     avatar: Optional[str] = None
     push_token: Optional[str] = None
+    # Язык интерфейса — сохраняется после ручного выбора, чтобы не определять
+    # заново при каждом визите (Этап 6).
+    preferred_language: Optional[str] = None

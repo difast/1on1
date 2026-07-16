@@ -10,6 +10,8 @@ import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
 import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { toast } from '../lib/ui'
+import { useTranslation } from 'react-i18next'
+import { SUPPORTED_LANGS } from '../i18n'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -21,6 +23,17 @@ const TOAST_META = {
 }
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
+  const { t, i18n } = useTranslation()
+  const [showLangMenu, setShowLangMenu] = useState(false)
+  // Смена языка: применяем сразу + сохраняем в профиль, чтобы не определять
+  // заново при следующем визите (Этап 6). i18next сам кладёт выбор в localStorage.
+  const changeLanguage = (code) => {
+    i18n.changeLanguage(code)
+    setShowLangMenu(false)
+    if (currentUser?.id) {
+      updateUser(currentUser.id, { preferred_language: code }).catch(() => {})
+    }
+  }
   const [unreadCount, setUnreadCount] = useState(0)
   const [showNotifications, setShowNotifications] = useState(false)
   const [notifications, setNotifications] = useState([])
@@ -629,6 +642,33 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuItemBtn icon={<IconHelpHint />} onClick={toggleCoaching} right={<Toggle on={coachOn} />}>
                   Подсказки Пита
                 </MenuItemBtn>
+                {/* Переключатель языка (Этап 6). Раскрывается на месте — три локали. */}
+                <MenuItemBtn
+                  icon={<IconGlobe />}
+                  onClick={() => setShowLangMenu(v => !v)}
+                  right={<span style={{ fontSize: 12, color: 'var(--color-text-muted)', textTransform: 'uppercase' }}>{(i18n.resolvedLanguage || i18n.language || 'ru').slice(0, 2)}</span>}
+                >
+                  {t('menu.language')}
+                </MenuItemBtn>
+                {showLangMenu && (
+                  <div style={{ padding: '2px 0 4px 28px', display: 'flex', flexDirection: 'column' }}>
+                    {SUPPORTED_LANGS.map(l => {
+                      const active = (i18n.resolvedLanguage || i18n.language || 'ru').slice(0, 2) === l.code
+                      return (
+                        <button key={l.code} onClick={() => changeLanguage(l.code)} style={{
+                          textAlign: 'left', padding: '7px 10px', fontSize: 13,
+                          fontWeight: active ? 700 : 500,
+                          color: active ? 'var(--color-accent)' : 'var(--color-text-primary)',
+                          background: 'none', border: 'none', cursor: 'pointer', borderRadius: 'var(--radius-sm)',
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--gray-100)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'none'}>
+                          {l.label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
                 <MenuDivider />
 
                 {/* 3. Режим работы — смена представления, а не настройка */}
@@ -1123,6 +1163,7 @@ const IconSwitch = () => svg(<><path d="M7 4v13" /><path d="M4 7l3-3 3 3" /><pat
 const IconLifebuoy = () => svg(<><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="3.5" /><path d="M4.9 4.9l4.6 4.6M14.5 14.5l4.6 4.6M19.1 4.9l-4.6 4.6M9.5 14.5l-4.6 4.6" /></>)
 const IconDoc = () => svg(<><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z" /><path d="M14 3v5h5" /><path d="M9 13h6M9 17h6" /></>)
 const IconBook = () => svg(<><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></>)
+const IconGlobe = () => svg(<><circle cx="12" cy="12" r="9" /><path d="M3 12h18" /><path d="M12 3a15 15 0 0 1 0 18a15 15 0 0 1 0-18z" /></>)
 const IconLogout = () => svg(<><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><path d="M16 17l5-5-5-5" /><path d="M21 12H9" /></>)
 
 function SocialLink({ icon, label, value, href, display, placeholder }) {

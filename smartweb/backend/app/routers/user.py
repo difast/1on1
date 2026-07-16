@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
@@ -291,6 +291,27 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(user)
     return user
+
+@router.post("/{user_id}/detect-region")
+def detect_region(user_id: int, request: Request, db: Session = Depends(get_db)):
+    """Определить регион по IP и сохранить как ПРЕДПОЛАГАЕМЫЙ (Этап 5). Не меняет
+    ничего в интерфейсе — значение используется позже в биллинге. Резолвим IP
+    только если регион ещё не сохранён (кэш), чтобы не дёргать гео на каждый вход."""
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    if user.detected_region:
+        return {"detected_region": user.detected_region, "cached": True}
+    try:
+        from app.services.geo import detect_region as _detect
+        region = _detect(request)
+    except Exception:
+        region = None
+    if region:
+        user.detected_region = region
+        db.commit()
+    return {"detected_region": region, "cached": False}
+
 
 @router.patch("/{user_id}/block")
 def block_user(user_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):

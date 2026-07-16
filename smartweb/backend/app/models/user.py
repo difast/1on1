@@ -22,4 +22,8 @@ class User(Base):
     billing_override_by = Column(Integer, nullable=True)
     billing_override_at = Column(DateTime, nullable=True)
     last_active_at = Column(DateTime, nullable=True)
+    # Регион по IP (предполагаемый; не источник истины для платёжного провайдера)
+    # и язык интерфейса (по браузеру, сохраняется после ручного выбора).
+    detected_region = Column(String(2), nullable=True)
+    preferred_language = Column(String(5), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
