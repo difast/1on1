@@ -15,6 +15,12 @@ router = APIRouter()
 
 @router.post("/", response_model=MeetingOut)
 def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
+    from app.services import entitlements
+    _lead = db.query(User).filter(User.id == data.team_lead_id).first()
+    err = entitlements.meeting_limit_error(db, _lead)
+    if err:
+        raise HTTPException(status_code=402, detail=err)
+
     last_meeting = (
         db.query(Meeting)
         .filter(

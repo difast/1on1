@@ -7,6 +7,7 @@ import {
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
   getAdminMetrics, assignManager, getManagers, createManager, deleteManager,
+  getEnforcementAudit,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import { toast, confirmDialog } from '../lib/ui'
@@ -76,6 +77,7 @@ export default function AdminDashboard({ onLogout }) {
   const [mgrEdit, setMgrEdit] = useState(null)  // назначение менеджера: {userId, managerId, saving}
   const [managers, setManagers] = useState([])
   const [newMgr, setNewMgr] = useState({ name: '', contact: '' })
+  const [audit, setAudit] = useState(null)  // аудит превышений лимитов (Этап 1)
   const loadManagers = () => getManagers().then(r => setManagers(r.data)).catch(() => {})
 
   // Investor metrics
@@ -139,6 +141,7 @@ export default function AdminDashboard({ onLogout }) {
     if (tab === 'billing') {
       setBillingLoading(true)
       loadManagers()
+      getEnforcementAudit().then(r => setAudit(r.data)).catch(() => {})
       Promise.all([
         getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}),
         getAdminPayments().then(r => setPaymentsList(r.data)).catch(() => {}),
@@ -834,6 +837,49 @@ export default function AdminDashboard({ onLogout }) {
                               </div>
                               <button onClick={async () => { if (!await confirmDialog({ title: 'Удалить менеджера?', message: 'Он будет снят со всех назначений.', confirmText: 'Удалить', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
                                 style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Удалить</button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Аудит лимитов перед включением жёсткого enforcement (Этап 1) */}
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+                      <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Аудит лимитов</p>
+                      {audit && (
+                        <span className={`badge ${audit.enforce_enabled ? 'badge-green' : 'badge-gray'}`} style={{ fontSize: 11 }}>
+                          Enforcement: {audit.enforce_enabled ? 'включён' : 'выключен'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="card" style={{ padding: 16 }}>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+                        Аккаунты, чьё фактическое использование превышает лимиты их тарифа. Проверьте
+                        этот список перед включением ENTITLEMENTS_ENFORCE, чтобы не заблокировать
+                        действующих клиентов (при необходимости выдайте им полный доступ или тариф).
+                      </p>
+                      {!audit ? (
+                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>Загрузка…</p>
+                      ) : audit.count === 0 ? (
+                        <p style={{ fontSize: 13, color: 'var(--color-success, #15803d)', margin: 0, fontWeight: 600 }}>
+                          Превышений не найдено — включать enforcement безопасно.
+                        </p>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          {audit.accounts.map(a => (
+                            <div key={a.user_id} style={{ padding: '10px 12px', borderRadius: 8, background: 'var(--color-bg)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                                <div style={{ fontWeight: 600, fontSize: 13 }}>{a.name || 'Без имени'}</div>
+                                {a.email && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{a.email}</div>}
+                                <span className="badge badge-gray" style={{ fontSize: 11 }}>{a.plan}</span>
+                              </div>
+                              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+                                {a.violations.map((v, i) => (
+                                  <span key={i} className="badge badge-red" style={{ fontSize: 11 }}>
+                                    {v.kind === 'teams' ? 'Команды' : v.kind === 'members' ? 'Участники' : 'Встречи/мес'}: {v.actual} / лимит {v.limit}
+                                  </span>
+                                ))}
+                              </div>
                             </div>
                           ))}
                         </div>
