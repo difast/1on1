@@ -139,6 +139,8 @@ export const extendSubscription = (id) => api.post(`/admin/billing/subscriptions
 export const cancelSubscription = (id) => api.post(`/admin/billing/subscriptions/${id}/cancel`)
 export const setUserOverride = (id, data) => api.patch(`/admin/billing/users/${id}/override`, data)
 export const getAdminMetrics = () => api.get('/admin/billing/metrics')
+// Аудит превышений лимитов перед включением ENTITLEMENTS_ENFORCE (Этап 1).
+export const getEnforcementAudit = () => api.get('/admin/billing/enforcement-audit')
 export const getUserBilling = (userId) => api.get(`/admin/billing/user/${userId}`)
 // Реестр менеджеров + назначение из списка (manager_id, null = снять).
 export const getManagers = () => api.get('/admin/billing/managers')

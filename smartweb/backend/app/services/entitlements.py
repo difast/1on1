@@ -65,6 +65,62 @@ def feature_enabled(limits: dict, feature: str) -> bool:
     return bool((limits.get("features") or {}).get(feature, False))
 
 
+# ---- enforcement: проверки лимитов при создании сущностей ------------------
+# Все функции — no-op, пока ENTITLEMENTS_ENFORCE выключен (возвращают None).
+# Возвращают текст ошибки (для HTTP 402) либо None, если создавать можно.
+
+UPGRADE_HINT = " Повысьте тариф в разделе «Мой тариф»."
+
+
+def team_limit_error(db: Session, user) -> str | None:
+    if user is None or not entitlements_enforced():
+        return None
+    maxt = limit_value(effective_limits(db, user), "max_teams")
+    if maxt is None:
+        return None
+    from app.models.team import Team
+    count = db.query(Team).filter(Team.team_lead_id == user.id).count()
+    if count >= maxt:
+        return f"Достигнут лимит команд для вашего тарифа ({maxt}). Сейчас у вас {count}." + UPGRADE_HINT
+    return None
+
+
+def member_limit_error(db: Session, team) -> str | None:
+    """team — объект Team; тариф берём у тимлида команды. Считаем участников
+    без самого тимлида (роль != 'lead')."""
+    if team is None or not entitlements_enforced():
+        return None
+    from app.models.user import User
+    from app.models.team import TeamMember
+    lead = db.query(User).filter(User.id == team.team_lead_id).first()
+    maxm = limit_value(effective_limits(db, lead), "max_members_per_team")
+    if maxm is None:
+        return None
+    count = db.query(TeamMember).filter(
+        TeamMember.team_id == team.id, TeamMember.role != "lead"
+    ).count()
+    if count >= maxm:
+        return f"Достигнут лимит участников команды для тарифа ({maxm})." + UPGRADE_HINT
+    return None
+
+
+def meeting_limit_error(db: Session, user) -> str | None:
+    """Лимит встреч в календарном месяце (по дате создания записи)."""
+    if user is None or not entitlements_enforced():
+        return None
+    maxmeet = limit_value(effective_limits(db, user), "max_meetings_per_month")
+    if maxmeet is None:
+        return None
+    from app.models.meeting import Meeting
+    start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    count = db.query(Meeting).filter(
+        Meeting.team_lead_id == user.id, Meeting.created_at >= start
+    ).count()
+    if count >= maxmeet:
+        return f"Достигнут лимит встреч в этом месяце для вашего тарифа ({maxmeet})." + UPGRADE_HINT
+    return None
+
+
 def limit_value(limits: dict, key: str):
     """None means unlimited."""
     return limits.get(key)

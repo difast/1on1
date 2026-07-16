@@ -6,6 +6,7 @@ from typing import List
 from datetime import datetime
 from app.database import get_db
 from app.models.team import Team, TeamMember
+from app.services import entitlements
 from app.models.user import User
 from app.models.meeting import Meeting
 from app import online as online_cache
@@ -90,6 +91,10 @@ def create_team(data: TeamCreate, db: Session = Depends(get_db)):
     if not team_lead:
         raise HTTPException(status_code=404, detail="Team lead not found")
 
+    err = entitlements.team_limit_error(db, team_lead)
+    if err:
+        raise HTTPException(status_code=402, detail=err)
+
     team = Team(
         name=data.name,
         invite_code=generate_invite_code(),
@@ -159,6 +164,10 @@ def join_team(data: JoinByCode, db: Session = Depends(get_db)):
     if existing:
         raise HTTPException(status_code=400, detail="Already a member")
 
+    err = entitlements.member_limit_error(db, team)
+    if err:
+        raise HTTPException(status_code=402, detail=err)
+
     member = TeamMember(
         team_id=team.id,
         user_id=data.user_id,
@@ -212,6 +221,10 @@ def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Se
     ).first()
     if existing:
         raise HTTPException(status_code=400, detail="Already a member")
+
+    err = entitlements.member_limit_error(db, team)
+    if err:
+        raise HTTPException(status_code=402, detail=err)
 
     cadence = 7 if role in ("junior", "member") else 14
     member = TeamMember(

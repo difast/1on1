@@ -42,6 +42,48 @@ def investor_metrics(db: Session = Depends(get_db), _admin=Depends(require_admin
     return {"current": current, "history": history}
 
 
+@router.get("/enforcement-audit")
+def enforcement_audit(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Аудит перед включением ENTITLEMENTS_ENFORCE (Этап 1): аккаунты, чьё
+    фактическое использование превышает лимиты их тарифа. Считает по лимитам
+    тарифа (не по enforcement-состоянию), чтобы решить про grandfathering."""
+    from datetime import datetime
+    from app.services.entitlements import resolve_plan_code, entitlements_enforced
+    from app.services.plans import get_plan
+    from app.models.team import Team, TeamMember
+    from app.models.meeting import Meeting
+
+    start = datetime.utcnow().replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    out = []
+    for u in db.query(User).all():
+        code = resolve_plan_code(db, u)
+        if code == "__unlimited__":
+            continue
+        plan = get_plan(db, code)
+        lim = (plan.limits if plan else {}) or {}
+        teams = db.query(Team).filter(Team.team_lead_id == u.id).all()
+        viol = []
+        maxt = lim.get("max_teams")
+        if maxt is not None and len(teams) > maxt:
+            viol.append({"kind": "teams", "limit": maxt, "actual": len(teams)})
+        maxm = lim.get("max_members_per_team")
+        if maxm is not None and teams:
+            worst = max(
+                db.query(TeamMember).filter(TeamMember.team_id == t.id, TeamMember.role != "lead").count()
+                for t in teams
+            )
+            if worst > maxm:
+                viol.append({"kind": "members", "limit": maxm, "actual": worst})
+        maxmeet = lim.get("max_meetings_per_month")
+        if maxmeet is not None:
+            cnt = db.query(Meeting).filter(Meeting.team_lead_id == u.id, Meeting.created_at >= start).count()
+            if cnt > maxmeet:
+                viol.append({"kind": "meetings", "limit": maxmeet, "actual": cnt})
+        if viol:
+            out.append({"user_id": u.id, "name": u.name, "email": u.email, "plan": code, "violations": viol})
+    return {"enforce_enabled": entitlements_enforced(), "count": len(out), "accounts": out}
+
+
 def _sub_dict(s: Subscription, db: Session = None):
     d = {
         "id": s.id, "subject_type": s.subject_type, "subject_id": s.subject_id,
