@@ -14,10 +14,11 @@ class UserCreate(BaseModel):
 class UserOut(BaseModel):
     id: int
     name: str
-    email: str
+    email: Optional[str] = None
     role: str
     title: Optional[str]
     telegram: Optional[str]
+    telegram_id: Optional[int] = None
     linkedin: Optional[str]
     github: Optional[str]
     avatar: Optional[str]

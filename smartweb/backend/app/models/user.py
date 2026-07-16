@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, func
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Text, Boolean, func
 from app.database import Base
 
 class User(Base):
@@ -6,10 +6,13 @@ class User(Base):
 
     id = Column(Integer, primary_key=True)
     name = Column(String(255), nullable=False)
-    email = Column(String(255), unique=True, nullable=False)
+    email = Column(String(255), unique=True, nullable=True)
     role = Column(String(50), default="member")
     title = Column(String(255), nullable=True)
-    telegram = Column(String(100), nullable=True)
+    telegram = Column(String(100), nullable=True)  # @handle из профиля (ручной ввод)
+    # Telegram ID — отдельный идентификатор для входа через бота/виджет.
+    # Уникальный, nullable: привязка есть не у всех пользователей.
+    telegram_id = Column(BigInteger, unique=True, nullable=True)
     linkedin = Column(String(255), nullable=True)
     github = Column(String(255), nullable=True)
     calendar_token = Column(Text, nullable=True)
