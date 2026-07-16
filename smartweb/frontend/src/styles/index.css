@@ -385,6 +385,9 @@ button:active:not(:disabled) { transform: scale(0.96); }
 .modal {
   background: var(--color-surface); border-radius: var(--radius-xl);
   width: 100%; max-width: 480px; padding: 28px;
+  /* Не даём высоким формам (например, ручной ввод реквизитов) вылезать за экран:
+     ограничиваем высоту вьюпортом и включаем прокрутку внутри окна. */
+  max-height: calc(100vh - 40px); overflow-y: auto;
   animation: popIn 0.32s var(--ease-spring);
   box-shadow: var(--shadow-xl); border: 1px solid var(--color-border-light);
 }
