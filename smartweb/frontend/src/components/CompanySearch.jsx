@@ -1,9 +1,10 @@
 // Переиспользуемый модуль поиска компании по ИНН/БИН (Этапы 2, 4 и будущий
-// экран оплаты). Поиск идёт через наш бэкенд-прокси к DaData (ключ на сервере).
-// Если DaData не настроена/ничего не нашла — доступен ручной ввод (запасной
-// вариант). Компонент не решает, КУДА сохранять — отдаёт готовые реквизиты через
-// onSubmit(payload); сохранение делает вызывающая сторона (создание пространства,
-// настройки, оплата).
+// экран оплаты). Поиск идёт через наш бэкенд-прокси к DaData (ключ на сервере)
+// сразу по справочникам РФ и КЗ — страну выбирать не нужно, она проставляется
+// автоматически из выбранной подсказки. Если DaData не настроена/ничего не
+// нашла — доступен ручной ввод (запасной вариант). Компонент не решает, КУДА
+// сохранять — отдаёт готовые реквизиты через onSubmit(payload); сохранение
+// делает вызывающая сторона (создание пространства, настройки, оплата).
 import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { suggestCompany } from '../api/client'
@@ -15,7 +16,6 @@ const EMPTY = {
 
 export default function CompanySearch({ initial, onSubmit, onCancel, submitting }) {
   const { t } = useTranslation()
-  const [country, setCountry] = useState((initial?.country || 'RU').toUpperCase())
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState([])
   const [searching, setSearching] = useState(false)
@@ -25,10 +25,6 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
   const [form, setForm] = useState({ ...EMPTY, ...(initial || {}), country: (initial?.country || 'RU').toUpperCase() })
   const debounceRef = useRef(null)
 
-  const countryParam = country === 'KZ' ? 'kz' : 'ru'
-
-  useEffect(() => { setForm(f => ({ ...f, country })) }, [country])
-
   // Дебаунс-поиск по вводу (когда пользователь ищет, а не в ручном режиме).
   useEffect(() => {
     if (manual) return
@@ -37,7 +33,7 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const { data } = await suggestCompany(query.trim(), countryParam)
+        const { data } = await suggestCompany(query.trim())
         setNotConfigured(data.configured === false)
         setSuggestions(data.suggestions || [])
         setSearched(true)
@@ -46,11 +42,11 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
       } finally { setSearching(false) }
     }, 350)
     return () => clearTimeout(debounceRef.current)
-  }, [query, countryParam, manual])
+  }, [query, manual])
 
   const pick = (s) => {
     setForm({
-      country: s.country || country, source: 'dadata',
+      country: (s.country || 'RU').toUpperCase(), source: 'dadata',
       name: s.name || '', inn: s.inn || '', kpp: s.kpp || '', ogrn: s.ogrn || '',
       legal_address: s.legal_address || '', industry: s.industry || '',
       management: s.management || '', status: s.status || '', data: s.raw || null,
@@ -60,13 +56,15 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
 
   const setField = (k, v) => setForm(f => ({ ...f, [k]: v, source: f.source === 'dadata' ? 'dadata' : 'manual' }))
 
-  const isKz = country === 'KZ'
   const canSubmit = form.name.trim().length > 0
 
+  // Единый набор полей (без деления по стране). ИНН/БИН в одном поле; КПП/ОГРН
+  // необязательны и просто остаются пустыми для КЗ.
   const fields = [
     { k: 'name', label: t('company.fieldName') },
-    { k: 'inn', label: isKz ? t('company.fieldInnKz') : t('company.fieldInnRu') },
-    ...(isKz ? [] : [{ k: 'kpp', label: t('company.fieldKpp') }, { k: 'ogrn', label: t('company.fieldOgrn') }]),
+    { k: 'inn', label: t('company.fieldInn') },
+    { k: 'kpp', label: t('company.fieldKpp') },
+    { k: 'ogrn', label: t('company.fieldOgrn') },
     { k: 'legal_address', label: t('company.fieldAddress') },
     { k: 'industry', label: t('company.fieldIndustry') },
     { k: 'management', label: t('company.fieldManagement') },
@@ -75,28 +73,14 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Страна: определяет источник поиска (РФ - ИНН, КЗ - БИН) */}
-      <div>
-        <label className="form-label">{t('company.country')}</label>
-        <div style={{ display: 'flex', gap: 8 }}>
-          {[['RU', t('company.countryRu')], ['KZ', t('company.countryKz')]].map(([c, lbl]) => (
-            <button key={c} type="button" onClick={() => setCountry(c)}
-              className={country === c ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
-              style={{ flex: 1 }}>{lbl}</button>
-          ))}
-        </div>
-      </div>
-
       {!manual && (
         <div>
-          <label className="form-label">
-            {isKz ? t('company.searchPlaceholderKz') : t('company.searchPlaceholderRu')}
-          </label>
+          <label className="form-label">{t('company.searchPlaceholder')}</label>
           <input className="input" value={query} autoFocus
             onChange={e => setQuery(e.target.value)}
-            placeholder={isKz ? t('company.searchPlaceholderKz') : t('company.searchPlaceholderRu')} />
+            placeholder={t('company.searchPlaceholder')} />
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '6px 0 0' }}>
-            {isKz ? t('company.searchHintKz') : t('company.searchHintRu')}
+            {t('company.searchHint')}
           </p>
 
           {searching && (
@@ -112,8 +96,7 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 600 }}>{s.name}</div>
                   <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
-                    {[s.inn && `${isKz ? t('company.fieldInnKz') : t('company.fieldInnRu')} ${s.inn}`, s.legal_address]
-                      .filter(Boolean).join(' · ')}
+                    {[s.inn && `${t('company.fieldInn')} ${s.inn}`, s.legal_address].filter(Boolean).join(' · ')}
                   </div>
                 </button>
               ))}
@@ -141,7 +124,7 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
             </div>
           ))}
           {!initial?.name && (
-            <button type="button" onClick={() => { setManual(false); setForm({ ...EMPTY, country }) }}
+            <button type="button" onClick={() => { setManual(false); setForm({ ...EMPTY }) }}
               className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start' }}>
               ← {t('common.search')}
             </button>

@@ -1855,7 +1855,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {[
                 ['company.fieldName', orgData.company.name],
-                [orgData.company.country === 'KZ' ? 'company.fieldInnKz' : 'company.fieldInnRu', orgData.company.inn],
+                ['company.fieldInn', orgData.company.inn],
                 ['company.fieldKpp', orgData.company.kpp],
                 ['company.fieldOgrn', orgData.company.ogrn],
                 ['company.fieldAddress', orgData.company.legal_address],
