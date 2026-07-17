@@ -54,6 +54,7 @@
     "fieldStatus": "Status",
     "saved": "Details saved",
     "removed": "Details removed",
-    "saveError": "Could not save"
+    "saveError": "Could not save",
+    "fieldSize": "Size (employees)"
   }
 }

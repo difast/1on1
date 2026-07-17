@@ -25,6 +25,7 @@ class CompanyProfile(Base):
     legal_address = Column(String(1000), nullable=True)
     industry = Column(String(500), nullable=True)    # отрасль / ОКВЭД
     management = Column(String(500), nullable=True)  # руководитель
+    size = Column(Integer, nullable=True)            # размер (сотрудников) — для рекомендации тарифа
     status = Column(String(50), nullable=True)       # ACTIVE / LIQUIDATED ...
     data = Column(JSON, nullable=True)               # полный ответ DaData
 

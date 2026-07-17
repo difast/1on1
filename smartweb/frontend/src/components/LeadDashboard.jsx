@@ -5,7 +5,7 @@ import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
 import { coachingEnabled, buildAgendaSuggestions, buildMeetingFeedback } from '../lib/coaching'
-import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots, getTeamCompany, saveTeamCompany, deleteTeamCompany } from '../api/client'
+import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots, getTeamCompany, saveTeamCompany, deleteTeamCompany, updateUser } from '../api/client'
 import { useTranslation } from 'react-i18next'
 import CompanySearch from './CompanySearch'
 import Layout from './Layout'
@@ -84,6 +84,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [showOrg, setShowOrg] = useState(false)
   const [orgData, setOrgData] = useState(null)           // { has_company, company }
   const [orgEditing, setOrgEditing] = useState(false)
+  const [pricingHint, setPricingHint] = useState(null)   // { plan, label } | null (Этап 5)
   const [showAddMember, setShowAddMember] = useState(false)
   const [showSchedule, setShowSchedule] = useState(false)
   const [scheduleMember, setScheduleMember] = useState(null)
@@ -493,9 +494,27 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       await loadTeams()
       if (fromStep) setCompanyStep(null)
       else { setOrgEditing(false); await loadOrg(teamId) }
+      maybeShowPricingHint(payload.size)
     } catch {
       toast(t('company.saveError'), 'error')
     } finally { setCompanySaving(false) }
+  }
+
+  // Этап 5: мягкая рекомендация тарифа один раз, по размеру компании.
+  // 11-24 -> Команда, 25+ -> Компания. Меньше 11 или уже показано — ничего.
+  const maybeShowPricingHint = (size) => {
+    const n = Number(size)
+    if (!n || user?.pricing_hint_shown) return
+    if (n >= 25) setPricingHint({ plan: 'company', label: 'Компания' })
+    else if (n >= 11) setPricingHint({ plan: 'team', label: 'Команда' })
+  }
+
+  const dismissPricingHint = async () => {
+    setPricingHint(null)
+    try {
+      const { data } = await updateUser(user.id, { pricing_hint_shown: true })
+      onUserUpdate?.(data)
+    } catch {}
   }
 
   const loadOrg = async (teamId) => {
@@ -1878,6 +1897,26 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               </div>
             </div>
           )}
+        </Modal>
+      )}
+
+      {/* Этап 5: мягкая, полностью закрываемая рекомендация тарифа (только веб).
+          Информационная ссылка на тарифы, без автоматических действий. */}
+      {pricingHint && (
+        <Modal title="Рекомендация тарифа" onClose={dismissPricingHint}>
+          <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 16px', lineHeight: 1.5 }}>
+            Судя по размеру вашей компании, вам может подойти тариф «{pricingHint.label}». Это лишь
+            подсказка — посмотрите условия и решите сами.
+          </p>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={dismissPricingHint}>
+              Позже
+            </button>
+            <button className="btn btn-accent" style={{ flex: 1 }}
+              onClick={() => { dismissPricingHint(); window.location.href = `/?upgrade=1&plan=${pricingHint.plan}` }}>
+              Посмотреть тарифы
+            </button>
+          </div>
         </Modal>
       )}
 

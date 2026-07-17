@@ -54,6 +54,7 @@
     "fieldStatus": "Мәртебесі",
     "saved": "",
     "removed": "",
-    "saveError": ""
+    "saveError": "",
+    "fieldSize": "Мөлшері (қызметкерлер)"
   }
 }

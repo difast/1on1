@@ -25,6 +25,7 @@ class UserOut(BaseModel):
     is_blocked: bool = False
     detected_region: Optional[str] = None
     preferred_language: Optional[str] = None
+    pricing_hint_shown: bool = False
     created_at: datetime
 
     class Config:
@@ -42,3 +43,4 @@ class UserUpdate(BaseModel):
     # Язык интерфейса — сохраняется после ручного выбора, чтобы не определять
     # заново при каждом визите (Этап 6).
     preferred_language: Optional[str] = None
+    pricing_hint_shown: Optional[bool] = None  # флаг показанной рекомендации тарифа
