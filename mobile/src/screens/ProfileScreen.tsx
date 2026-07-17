@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert, Image,
@@ -8,7 +8,8 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
-import { updateUser, deleteUser, createSupportTicket } from '../lib/api';
+import { updateUser, deleteUser, createSupportTicket, telegramLink } from '../lib/api';
+import { getCoaching, setCoaching } from '../lib/coaching';
 import { useTheme } from '../context/theme';
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
@@ -45,6 +46,30 @@ export default function ProfileScreen() {
   const [pwdLoading, setPwdLoading] = useState(false);
   const [pwdError, setPwdError] = useState('');
   const [pwdSuccess, setPwdSuccess] = useState('');
+
+  // Подсказки Пита (коучинг) — тумблер, как на вебе
+  const [coachOn, setCoachOn] = useState(true);
+  useEffect(() => { getCoaching().then(setCoachOn); }, []);
+  const toggleCoach = () => { const next = !coachOn; setCoachOn(next); setCoaching(next); };
+
+  // Привязка Telegram по коду из бота
+  const [showTgLink, setShowTgLink] = useState(false);
+  const [tgCode, setTgCode] = useState('');
+  const [tgBusy, setTgBusy] = useState(false);
+  const [tgError, setTgError] = useState('');
+  const handleTgLink = async () => {
+    if (!user) return;
+    if (!tgCode.trim()) { setTgError('Введите код'); return; }
+    setTgBusy(true); setTgError('');
+    try {
+      const res = await telegramLink(user.id, tgCode.trim());
+      setUser({ ...user, ...(res.user || {}) } as any);
+      setShowTgLink(false); setTgCode('');
+      Alert.alert('Готово', 'Telegram привязан к аккаунту');
+    } catch (err: any) {
+      setTgError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось привязать');
+    } finally { setTgBusy(false); }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -298,15 +323,6 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              {/* Theme toggle */}
-              <View style={styles.themeRow}>
-                <Text style={styles.fieldLabel}>Тема приложения</Text>
-                <TouchableOpacity style={styles.themeToggle} onPress={toggleTheme}>
-                  <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={15} color={colors.textSecondary} />
-                  <Text style={styles.themeToggleText}>{isDark ? 'Светлая' : 'Тёмная'}</Text>
-                </TouchableOpacity>
-              </View>
-
               {[
                 { key: 'title', label: 'Должность', placeholder: 'Senior Engineer' },
                 { key: 'telegram', label: 'Telegram', placeholder: '@username' },
@@ -343,23 +359,10 @@ export default function ProfileScreen() {
             </>
           )}
         </View>
-        {/* Appearance */}
-        <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Оформление</Text>
-          <TouchableOpacity style={styles.menuRow} onPress={toggleTheme} activeOpacity={0.7}>
-            <View style={styles.menuIconWrap}>
-              <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
-            </View>
-            <Text style={styles.menuRowTitle}>{isDark ? 'Светлая тема' : 'Тёмная тема'}</Text>
-            <View style={[styles.toggle, isDark && styles.toggleOn]}>
-              <View style={[styles.toggleThumb, isDark && styles.toggleThumbOn]} />
-            </View>
-          </TouchableOpacity>
-        </View>
 
-        {/* Account */}
+        {/* Настройки: пароль + быстрые тумблеры + привязка Telegram (как в веб-меню) */}
         <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Аккаунт</Text>
+          <Text style={styles.menuSectionLabel}>Настройки</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => { setShowPassword(v => !v); setPwdError(''); setPwdSuccess(''); }}
@@ -374,7 +377,7 @@ export default function ProfileScreen() {
           {showPassword && (
             <View style={styles.expandedBlock}>
               {pwdSuccess ? (
-                <Text style={styles.successText}>✓ {pwdSuccess}</Text>
+                <Text style={styles.successText}>{pwdSuccess}</Text>
               ) : (
                 <>
                   <TextInput
@@ -406,6 +409,68 @@ export default function ProfileScreen() {
                 </>
               )}
             </View>
+          )}
+
+          {/* Тёмная тема */}
+          <TouchableOpacity style={styles.menuRow} onPress={toggleTheme} activeOpacity={0.7}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Тёмная тема</Text>
+            <View style={[styles.toggle, isDark && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, isDark && styles.toggleThumbOn]} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Подсказки Пита (коучинг) */}
+          <TouchableOpacity style={styles.menuRow} onPress={toggleCoach} activeOpacity={0.7}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="help-circle-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Подсказки Пита</Text>
+            <View style={[styles.toggle, coachOn && styles.toggleOn]}>
+              <View style={[styles.toggleThumb, coachOn && styles.toggleThumbOn]} />
+            </View>
+          </TouchableOpacity>
+
+          {/* Привязать Telegram — только если ещё не привязан */}
+          {!(user as any).telegram_id && (
+            <>
+              <TouchableOpacity
+                style={styles.menuRow}
+                onPress={() => { setShowTgLink(v => !v); setTgError(''); }}
+                activeOpacity={0.7}
+              >
+                <View style={styles.menuIconWrap}>
+                  <Ionicons name="paper-plane-outline" size={18} color={colors.textSecondary} />
+                </View>
+                <Text style={styles.menuRowTitle}>Привязать Telegram</Text>
+                <Ionicons name={showTgLink ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+              {showTgLink && (
+                <View style={styles.expandedBlock}>
+                  <Text style={[styles.infoLabel, { textTransform: 'none', marginBottom: 8 }]}>
+                    Откройте бота в Telegram, отправьте /link и введите полученный код.
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Код из бота"
+                    placeholderTextColor={colors.textMuted}
+                    autoCapitalize="characters"
+                    value={tgCode}
+                    onChangeText={v => { setTgCode(v.toUpperCase()); setTgError(''); }}
+                  />
+                  {tgError ? <Text style={[styles.errorText, { marginBottom: 4 }]}>{tgError}</Text> : null}
+                  <TouchableOpacity
+                    style={[styles.saveBtn, tgBusy && styles.btnDisabled]}
+                    onPress={handleTgLink}
+                    disabled={tgBusy}
+                  >
+                    <Text style={styles.saveBtnText}>{tgBusy ? 'Привязка...' : 'Привязать'}</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+            </>
           )}
         </View>
 
@@ -469,15 +534,8 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Documents + Logout + Delete */}
+        {/* Logout + Delete */}
         <View style={[styles.menuSection, { marginBottom: 0 }]}>
-          <TouchableOpacity style={[styles.menuRow, styles.menuRowDanger, { opacity: 0.5 }]} activeOpacity={1}>
-            <View style={styles.menuIconWrap}>
-              <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
-            </View>
-            <Text style={styles.menuRowTitle}>Документы</Text>
-            <Text style={{ fontSize: 11, color: colors.textMuted }}>скоро</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.menuRow} onPress={handleLogout} activeOpacity={0.7}>
             <View style={styles.menuIconWrap}>
               <Ionicons name="log-out-outline" size={18} color={colors.danger} />
