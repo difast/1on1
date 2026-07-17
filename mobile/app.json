@@ -18,7 +18,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#F8F9FC"
+      "backgroundColor": "#13389E"
     },
     "ios": {
       "supportsTablet": false,
@@ -27,7 +27,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F8F9FC"
+        "backgroundColor": "#13389E"
       },
       "package": "com.oneonone.app",
       "googleServicesFile": "./google-services.json",
