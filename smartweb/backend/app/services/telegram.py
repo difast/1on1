@@ -212,6 +212,19 @@ def resolve_web_login(db: Session, tg: dict, link_user_id: int | None = None):
 
 # ---- Bot API ----------------------------------------------------------------
 
+def notify_user(db: Session, user_id: int, title: str, body: str | None = None) -> None:
+    """Продублировать пользовательское уведомление в Telegram, если у аккаунта
+    привязан telegram_id. Безопасно для всех — у кого нет привязки, пропускаем."""
+    try:
+        u = db.query(User).filter(User.id == user_id).first()
+        if not u or not u.telegram_id:
+            return
+        text = title if not body else f"{title}\n{body}"
+        send_message(u.telegram_id, text)
+    except Exception:
+        pass
+
+
 def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
     """Отправить текст пользователю. Ошибки глушим — не роняем вебхук."""
     token = bot_token()
