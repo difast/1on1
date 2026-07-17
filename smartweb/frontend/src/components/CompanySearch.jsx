@@ -11,7 +11,7 @@ import { suggestCompany } from '../api/client'
 
 const EMPTY = {
   country: 'RU', source: 'manual', name: '', inn: '', kpp: '', ogrn: '',
-  legal_address: '', industry: '', management: '', status: '', data: null,
+  legal_address: '', industry: '', management: '', status: '', size: '', data: null,
 }
 
 export default function CompanySearch({ initial, onSubmit, onCancel, submitting }) {
@@ -69,6 +69,7 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
     { k: 'industry', label: t('company.fieldIndustry') },
     { k: 'management', label: t('company.fieldManagement') },
     { k: 'status', label: t('company.fieldStatus') },
+    { k: 'size', label: t('company.fieldSize'), type: 'number' },
   ]
 
   return (
@@ -120,7 +121,8 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
           {fields.map(f => (
             <div key={f.k}>
               <label className="form-label">{f.label}{f.k === 'name' ? ' *' : ''}</label>
-              <input className="input" value={form[f.k] || ''} onChange={e => setField(f.k, e.target.value)} />
+              <input className="input" type={f.type || 'text'} min={f.type === 'number' ? 1 : undefined}
+                value={form[f.k] || ''} onChange={e => setField(f.k, e.target.value)} />
             </div>
           ))}
           {!initial?.name && (
@@ -140,7 +142,7 @@ export default function CompanySearch({ initial, onSubmit, onCancel, submitting 
         )}
         {manual && (
           <button type="button" disabled={!canSubmit || submitting}
-            onClick={() => onSubmit(form)} className="btn btn-accent" style={{ flex: 1 }}>
+            onClick={() => onSubmit({ ...form, size: form.size ? Number(form.size) : null })} className="btn btn-accent" style={{ flex: 1 }}>
             {submitting ? t('common.loading') : t('common.save')}
           </button>
         )}

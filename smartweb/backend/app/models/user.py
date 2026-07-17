@@ -29,4 +29,6 @@ class User(Base):
     # и язык интерфейса (по браузеру, сохраняется после ручного выбора).
     detected_region = Column(String(2), nullable=True)
     preferred_language = Column(String(5), nullable=True)
+    # Мягкая рекомендация тарифа (Этап 5) показывается один раз.
+    pricing_hint_shown = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())

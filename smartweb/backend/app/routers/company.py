@@ -121,7 +121,7 @@ def _company_dict(c: CompanyProfile) -> dict:
         "id": c.id, "team_id": c.team_id, "country": c.country, "source": c.source,
         "name": c.name, "inn": c.inn, "kpp": c.kpp, "ogrn": c.ogrn,
         "legal_address": c.legal_address, "industry": c.industry,
-        "management": c.management, "status": c.status,
+        "management": c.management, "status": c.status, "size": c.size,
     }
 
 
@@ -145,6 +145,7 @@ class CompanyIn(BaseModel):
     industry: Optional[str] = None
     management: Optional[str] = None
     status: Optional[str] = None
+    size: Optional[int] = None      # размер компании (сотрудников)
     data: Optional[dict] = None    # сырой ответ DaData
 
 
@@ -172,6 +173,7 @@ def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_d
     c.industry = (payload.industry or "").strip() or None
     c.management = (payload.management or "").strip() or None
     c.status = (payload.status or "").strip() or None
+    c.size = payload.size if (payload.size and payload.size > 0) else None
     c.data = payload.data
     team.has_company = True
     db.commit(); db.refresh(c)
