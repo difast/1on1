@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { updateUser, deleteUser, createSupportTicket, telegramLink } from '../lib/api';
 import { getCoaching, setCoaching } from '../lib/coaching';
+import { useI18n, LANGS, type Lang } from '../lib/i18n';
 import { useTheme } from '../context/theme';
 import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
@@ -20,6 +21,7 @@ export default function ProfileScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, setUser, signOut, activeRole, hasBothRoles, setActiveRole, addSecondaryRole, addTeamLeadRole } = useAuth();
+  const { t, lang, setLang } = useI18n();
   const [showDocs, setShowDocs] = useState(false);
   const router = useRouter();
 
@@ -51,6 +53,21 @@ export default function ProfileScreen() {
   const [coachOn, setCoachOn] = useState(true);
   useEffect(() => { getCoaching().then(setCoachOn); }, []);
   const toggleCoach = () => { const next = !coachOn; setCoachOn(next); setCoaching(next); };
+
+  // Язык интерфейса: применяем сохранённый выбор пользователя один раз;
+  // переключение циклом ru -> en -> kz с сохранением в профиль.
+  useEffect(() => {
+    const pl = (user as any)?.preferred_language;
+    if (pl === 'ru' || pl === 'en' || pl === 'kz') setLang(pl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const cycleLang = () => {
+    const order: Lang[] = ['ru', 'en', 'kz'];
+    const next = order[(order.indexOf(lang) + 1) % order.length];
+    setLang(next);
+    if (user) updateUser(user.id, { preferred_language: next }).catch(() => {});
+  };
+  const langLabel = LANGS.find((l) => l.code === lang)?.label ?? 'Русский';
 
   // Привязка Telegram по коду из бота
   const [showTgLink, setShowTgLink] = useState(false);
@@ -192,13 +209,13 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const currentRole = activeRole ?? user.role;
-  const roleLabel = currentRole === 'team_lead' ? 'Тимлид' : 'Участник команды';
-  const otherRoleLabel = currentRole === 'team_lead' ? 'Участник команды' : 'Тимлид';
+  const roleLabel = currentRole === 'team_lead' ? t('role.lead') : t('role.member');
+  const otherRoleLabel = currentRole === 'team_lead' ? t('role.member') : t('role.lead');
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Профиль</Text>
+        <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
@@ -223,7 +240,7 @@ export default function ProfileScreen() {
 
         {/* Role management */}
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>Роль</Text>
+          <Text style={styles.sectionLabel}>{t('role.title')}</Text>
           <View style={styles.roleRow}>
             <Text style={styles.roleValue}>{roleLabel}</Text>
             {hasBothRoles ? (
@@ -362,7 +379,7 @@ export default function ProfileScreen() {
 
         {/* Настройки: пароль + быстрые тумблеры + привязка Telegram (как в веб-меню) */}
         <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Настройки</Text>
+          <Text style={styles.menuSectionLabel}>{t('settings.title')}</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => { setShowPassword(v => !v); setPwdError(''); setPwdSuccess(''); }}
@@ -371,7 +388,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="key-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Сменить пароль</Text>
+            <Text style={styles.menuRowTitle}>{t('settings.changePassword')}</Text>
             <Ionicons name={showPassword ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
           {showPassword && (
@@ -416,7 +433,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Тёмная тема</Text>
+            <Text style={styles.menuRowTitle}>{t('settings.darkTheme')}</Text>
             <View style={[styles.toggle, isDark && styles.toggleOn]}>
               <View style={[styles.toggleThumb, isDark && styles.toggleThumbOn]} />
             </View>
@@ -427,10 +444,19 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="help-circle-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Подсказки Пита</Text>
+            <Text style={styles.menuRowTitle}>{t('settings.hints')}</Text>
             <View style={[styles.toggle, coachOn && styles.toggleOn]}>
               <View style={[styles.toggleThumb, coachOn && styles.toggleThumbOn]} />
             </View>
+          </TouchableOpacity>
+
+          {/* Язык интерфейса — переключение циклом */}
+          <TouchableOpacity style={styles.menuRow} onPress={cycleLang} activeOpacity={0.7}>
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="language-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>{t('settings.language')}</Text>
+            <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary }}>{langLabel}</Text>
           </TouchableOpacity>
 
           {/* Привязать Telegram — только если ещё не привязан */}
@@ -444,7 +470,7 @@ export default function ProfileScreen() {
                 <View style={styles.menuIconWrap}>
                   <Ionicons name="paper-plane-outline" size={18} color={colors.textSecondary} />
                 </View>
-                <Text style={styles.menuRowTitle}>Привязать Telegram</Text>
+                <Text style={styles.menuRowTitle}>{t('settings.linkTelegram')}</Text>
                 <Ionicons name={showTgLink ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
               </TouchableOpacity>
               {showTgLink && (
@@ -476,7 +502,7 @@ export default function ProfileScreen() {
 
         {/* Help */}
         <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>Помощь</Text>
+          <Text style={styles.menuSectionLabel}>{t('help.title')}</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push({ pathname: '/(tabs)/analytics', params: { from: 'profile' } } as any)}
@@ -485,7 +511,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="bar-chart-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Аналитика</Text>
+            <Text style={styles.menuRowTitle}>{t('help.analytics')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -496,7 +522,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Уведомления</Text>
+            <Text style={styles.menuRowTitle}>{t('help.notifications')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -507,7 +533,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="sparkles-outline" size={18} color={colors.accent} />
             </View>
-            <Text style={styles.menuRowTitle}>Пит</Text>
+            <Text style={styles.menuRowTitle}>{t('help.assistant')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -518,7 +544,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Поддержка</Text>
+            <Text style={styles.menuRowTitle}>{t('help.support')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -529,7 +555,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Документы</Text>
+            <Text style={styles.menuRowTitle}>{t('help.documents')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -540,7 +566,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="log-out-outline" size={18} color={colors.danger} />
             </View>
-            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>Выйти</Text>
+            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>{t('account.logout')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.menuRow, deletingAccount && styles.btnDisabled]}
@@ -552,7 +578,7 @@ export default function ProfileScreen() {
               <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </View>
             <Text style={[styles.menuRowTitle, { color: colors.danger }]}>
-              {deletingAccount ? 'Удаление...' : 'Удалить аккаунт'}
+              {deletingAccount ? t('account.deleting') : t('account.delete')}
             </Text>
           </TouchableOpacity>
         </View>
