@@ -7,6 +7,7 @@ import EmptyState from './EmptyState'
 import { coachingEnabled, buildAgendaSuggestions, buildMeetingFeedback } from '../lib/coaching'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots, getTeamCompany, saveTeamCompany, deleteTeamCompany, updateUser } from '../api/client'
 import { useTranslation } from 'react-i18next'
+import { useIsTelegram } from '../lib/surface'
 import CompanySearch from './CompanySearch'
 import Layout from './Layout'
 
@@ -25,6 +26,9 @@ import SubtaskList from './SubtaskList'
 
 export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const { t } = useTranslation()
+  // Mini App (Telegram): скрываем запрещённые таблицей функции (видео, транскрипты,
+  // экспорт, графики, редактирование компании) через условный рендеринг.
+  const isTg = useIsTelegram()
   const [activeView, setActiveView] = useState('teams')
   const [teams, setTeams] = useState([])
   const [selectedTeamId, setSelectedTeamId] = useState(null)
@@ -672,10 +676,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {noteState?.expanded ? '↓ Заметки' : '→ Заметки'}{m.notes ? ' ·' : ''}
             </button>
           )}
-          {isPast && !isRequest && !m.ai_summary && (
+          {isPast && !isRequest && !m.ai_summary && !isTg && (
             <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
           )}
-          {isPast && !isRequest && m.ai_summary && <AiBadge summary={m.ai_summary} />}
+          {isPast && !isRequest && m.ai_summary && !isTg && <AiBadge summary={m.ai_summary} />}
           {/* Call must stay available for any active meeting, even if its
               scheduled time has passed (a late/in-progress 1-on-1). */}
           {!['completed', 'cancelled', 'declined'].includes(m.status) && !isRequest && (
@@ -686,13 +690,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               >
                 Перенести
               </button>
-              <button
-                onClick={() => handleStartCall(m.id)}
-                disabled={callLoading[m.id]}
-                style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
-              >
-                {callLoading[m.id] ? '...' : 'Созвон'}
-              </button>
+              {/* Видеозвонки недоступны в Mini App (таблица) */}
+              {!isTg && (
+                <button
+                  onClick={() => handleStartCall(m.id)}
+                  disabled={callLoading[m.id]}
+                  style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
+                >
+                  {callLoading[m.id] ? '...' : 'Созвон'}
+                </button>
+              )}
             </>
           )}
         </div>
@@ -789,7 +796,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
             {/* Spontaneous call — shown whenever the lead has any team, next to
                 'Создать команду' (was gated on selectedTeamId, which could lag). */}
-            {teams.length > 0 && (
+            {teams.length > 0 && !isTg && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
                 Созвон
               </button>
@@ -1858,9 +1865,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
                   {t('company.sectionEmpty')}
                 </p>
-                <button className="btn btn-accent" onClick={() => setOrgEditing(true)}>
-                  {t('company.addCompany')}
-                </button>
+                {/* В Mini App данные о компании — только просмотр (таблица) */}
+                {!isTg && (
+                  <button className="btn btn-accent" onClick={() => setOrgEditing(true)}>
+                    {t('company.addCompany')}
+                  </button>
+                )}
               </div>
             ) : (
               <CompanySearch
@@ -1887,14 +1897,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <span style={{ fontWeight: 600, textAlign: 'right' }}>{v}</span>
                 </div>
               ))}
-              <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleRemoveCompany(selectedTeamId)} disabled={companySaving}>
-                  {t('common.delete')}
-                </button>
-                <button className="btn btn-accent" style={{ flex: 1 }} onClick={() => setOrgEditing(true)}>
-                  {t('common.edit')}
-                </button>
-              </div>
+              {/* Редактирование/удаление компании — только в полной версии */}
+              {!isTg && (
+                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                  <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => handleRemoveCompany(selectedTeamId)} disabled={companySaving}>
+                    {t('common.delete')}
+                  </button>
+                  <button className="btn btn-accent" style={{ flex: 1 }} onClick={() => setOrgEditing(true)}>
+                    {t('common.edit')}
+                  </button>
+                </div>
+              )}
             </div>
           )}
         </Modal>

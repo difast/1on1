@@ -16,8 +16,11 @@ import MoodPrompt from './MoodPrompt'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
 import UserCard from './UserCard'
+import { useIsTelegram } from '../lib/surface'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
+  // Mini App: скрываем видеозвонки и транскрипты (недоступны по таблице).
+  const isTg = useIsTelegram()
   const [team, setTeam] = useState(null)
   const [teamId, setTeamId] = useState(() => {
     try { const s = localStorage.getItem('smart_user'); return s ? JSON.parse(s).teamId || null : null }
@@ -486,13 +489,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
                           {meetingStatusLabel(m.status)}
                         </span>
-                        <button
-                          onClick={() => handleStartCall(m.id)}
-                          disabled={callLoading[m.id]}
-                          style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
-                        >
-                          {callLoading[m.id] ? '...' : 'Созвон'}
-                        </button>
+                        {!isTg && (
+                          <button
+                            onClick={() => handleStartCall(m.id)}
+                            disabled={callLoading[m.id]}
+                            style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
+                          >
+                            {callLoading[m.id] ? '...' : 'Созвон'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -641,7 +646,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       {/* Call must stay available for any active meeting, even
                           if its scheduled time has passed (a late/in-progress
                           1-on-1) — only hide it once it's finished/cancelled. */}
-                      {!['completed', 'cancelled', 'declined'].includes(m.status) && (
+                      {!isTg && !['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <button
                           onClick={() => handleStartCall(m.id)}
                           disabled={callLoading[m.id]}
@@ -658,10 +663,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           {isExpanded ? '↓ Заметки' : '→ Заметки'}{hasNote ? ' ·' : ''}
                         </button>
                       )}
-                      {isPast && !m.ai_summary && (
+                      {isPast && !m.ai_summary && !isTg && (
                         <UploadRecordingButton uploading={uploadLoading[m.id]} done={uploadDone[m.id]} onFile={file => handleUploadRecording(m.id, file)} />
                       )}
-                      {isPast && m.ai_summary && <AiBadge summary={m.ai_summary} />}
+                      {isPast && m.ai_summary && !isTg && <AiBadge summary={m.ai_summary} />}
                     </div>
                     {isExpanded && (
                       <MeetingNoteEditor

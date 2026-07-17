@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getMemberAnalytics } from '../api/client'
+import { useIsTelegram } from '../lib/surface'
 
 function AnimNum({ value, suffix = '', duration = 900 }) {
   const [disp, setDisp] = useState(0)
@@ -105,6 +106,7 @@ function MoodLineChart({ trend }) {
 }
 
 export default function MemberAnalytics({ user }) {
+  const isTg = useIsTelegram()  // Mini App: только сводка, без графиков
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
 
@@ -143,6 +145,9 @@ export default function MemberAnalytics({ user }) {
         <StatCard value={data.open_tasks} label="Открытых задач" warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
         <StatCard value={data.closed_last_30} label="Закрыто за 30 дн." delay={400} />
       </div>
+
+      {/* Графики ниже скрыты в Mini App — показываем только сводку выше */}
+      {!isTg && (<>
 
       {/* Mood line chart */}
       {data.mood_trend.length >= 2 ? (
@@ -240,6 +245,7 @@ export default function MemberAnalytics({ user }) {
           )
         })()}
       </div>
+      </>)}
     </div>
   )
 }
