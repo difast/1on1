@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat } from '../api/client'
+import { useIsTelegram } from '../lib/surface'
 import XLSXStyle from 'xlsx-js-style'
 
 // ─── Animated number counter ──────────────────────────────────────────────────
@@ -283,6 +284,8 @@ function RiskCard({ s, delay }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LeadAnalytics({ user }) {
+  // Mini App: только сводка (StatCards), без графиков и экспорта (таблица).
+  const isTg = useIsTelegram()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
@@ -1022,11 +1025,18 @@ export default function LeadAnalytics({ user }) {
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
         <StatCard value={agendaPct} suffix="%" label="Встреч с повесткой" accent={agendaPct !== null && agendaPct >= 70} warning={agendaPct !== null && agendaPct < 40} delay={350} />
-        <button
-          onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
-          style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
-        >↓ Экспорт Excel</button>
+        {/* Экспорт Excel недоступен в Mini App (таблица) */}
+        {!isTg && (
+          <button
+            onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
+            style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >↓ Экспорт Excel</button>
+        )}
       </div>
+
+      {/* Ниже — графики и подробные таблицы: в Mini App показываем только сводку
+          из StatCards выше, всё остальное скрыто (таблица разделения). */}
+      {!isTg && (<>
 
       {/* Последние темы повесток — повестка встреч, собранная в аналитике */}
       {agendaTopics.length > 0 && (
@@ -1198,6 +1208,7 @@ export default function LeadAnalytics({ user }) {
           </div>
         )
       })()}
+      </>)}
     </div>
   )
 }

@@ -231,13 +231,8 @@ function TeamStats({ team }: { team: any }) {
         </View>
       )}
 
-      {/* Weekly chart */}
-      {chart.length > 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Встречи по неделям</Text>
-          <BarChart data={chart} />
-        </View>
-      )}
+      {/* По таблице разделения функционала приложение показывает только сводку
+          (цифры), без графиков. Полные графики — в веб-версии. */}
     </>
   );
 }

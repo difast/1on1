@@ -111,29 +111,9 @@ export default function MemberAnalyticsScreen() {
               </View>
             </View>
 
-            {/* Mood trend */}
-            {data.mood_trend && data.mood_trend.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Настроение на встречах</Text>
-                <View style={styles.moodRow}>
-                  {data.mood_trend.map((m: any, i: number) => (
-                    <View key={i} style={styles.moodItem}>
-                      {/* Цветовой индикатор настроения вместо эмодзи */}
-                      <View style={[styles.moodDot, { backgroundColor: moodDotColor(m.mood) }]} />
-                      <Text style={styles.moodDate}>{m.date}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-
-            {/* Weekly chart */}
-            {data.meetings_per_week && data.meetings_per_week.length > 0 && (
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Встречи по неделям</Text>
-                <BarChart data={data.meetings_per_week} />
-              </View>
-            )}
+            {/* По таблице разделения функционала приложение показывает только
+                сводку (цифры), без графиков (тренд настроения и недельный
+                график). Полные графики доступны в веб-версии. */}
           </>
         )}
       </ScrollView>
