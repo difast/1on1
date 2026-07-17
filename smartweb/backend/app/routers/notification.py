@@ -97,13 +97,23 @@ def broadcast(data: BroadcastBody, db: Session = Depends(get_db)):
     except Exception:
         pass
 
-    # Рассылка в Telegram-бот всем, у кого привязан аккаунт.
+    # Рассылка в Telegram-бот всем, у кого привязан аккаунт. Оформляем как
+    # объявление: жирный заголовок-плашка, жирный заголовок рассылки и выделенный
+    # текст. Пользовательский текст экранируем (parse_mode=HTML).
     try:
+        import html
         from app.services.telegram import send_message as tg_send
-        text = data.title if not data.body else f"{data.title}\n{data.body}"
+        title = html.escape((data.title or "").strip())
+        body = html.escape((data.body or "").strip())
+        parts = ["<b>Важное объявление</b>"]
+        if title:
+            parts.append(f"<b>{title}</b>")
+        if body:
+            parts.append(f"<i>{body}</i>")
+        text = "\n\n".join(parts)
         for u in users:
             if u.telegram_id:
-                tg_send(u.telegram_id, text)
+                tg_send(u.telegram_id, text, parse_mode="HTML")
     except Exception:
         pass
 
