@@ -4,8 +4,19 @@
 его в настройках профиля на вебе (будучи залогиненным в свой email-аккаунт),
 и мы связываем telegram_id с этим аккаунтом — без создания дубля.
 """
-from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Boolean, func
+from sqlalchemy import Column, Integer, BigInteger, String, DateTime, Boolean, JSON, func
 from app.database import Base
+
+
+class TelegramBotState(Base):
+    """Состояние пошагового диалога бота (например, /newmeeting)."""
+    __tablename__ = "telegram_bot_state"
+
+    telegram_id = Column(BigInteger, primary_key=True)
+    flow = Column(String(30), nullable=True)   # newmeeting | ...
+    step = Column(String(30), nullable=True)
+    data = Column(JSON, nullable=True)
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
 class TelegramLinkRequest(Base):

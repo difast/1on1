@@ -226,6 +226,33 @@ def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> N
         pass
 
 
+def answer_callback(callback_query_id: str, text: str | None = None) -> None:
+    """Подтвердить нажатие inline-кнопки (убирает «часики» у кнопки)."""
+    token = bot_token()
+    if not token:
+        return
+    payload = {"callback_query_id": callback_query_id}
+    if text:
+        payload["text"] = text
+    try:
+        httpx.post(f"{API_BASE}/bot{token}/answerCallbackQuery", json=payload, timeout=8)
+    except Exception:
+        pass
+
+
+def edit_message_text(chat_id: int, message_id: int, text: str, reply_markup: dict | None = None) -> None:
+    """Обновить текст сообщения (например, после смены статуса задачи)."""
+    token = bot_token()
+    if not token:
+        return
+    payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "disable_web_page_preview": True}
+    payload["reply_markup"] = reply_markup or {"inline_keyboard": []}
+    try:
+        httpx.post(f"{API_BASE}/bot{token}/editMessageText", json=payload, timeout=8)
+    except Exception:
+        pass
+
+
 def set_webhook(url: str) -> dict:
     """Зарегистрировать вебхук в Telegram (одноразовая настройка)."""
     token = bot_token()
