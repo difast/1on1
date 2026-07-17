@@ -170,6 +170,10 @@ export const getTeamMoodSummary = (teamId: number) =>
 export const assistantChat = (messages: { role: string; content: string }[], context = '') =>
   req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context }) });
 
+// Telegram: привязка аккаунта по коду из бота
+export const telegramLink = (user_id: number, code: string) =>
+  req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });
+
 // Admin
 export const getAdminStats = () => req<any>('/users/admin/stats');
 export const getAdminAnalytics = () => req<any>('/users/admin/analytics');
