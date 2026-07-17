@@ -174,9 +174,13 @@ export const assistantChat = (messages: { role: string; content: string }[], con
 export const telegramLink = (user_id: number, code: string) =>
   req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });
 
-// Компания рабочего пространства (на мобиле — только просмотр)
+// Компания рабочего пространства (просмотр + поиск DaData + сохранение)
 export const getTeamCompany = (teamId: number) =>
   req<{ has_company: boolean; company: any }>(`/companies/by-team/${teamId}`);
+export const suggestCompany = (query: string) =>
+  req<{ configured: boolean; suggestions: any[] }>(`/companies/suggest?query=${encodeURIComponent(query)}`);
+export const saveTeamCompany = (teamId: number, data: any) =>
+  req<{ has_company: boolean; company: any }>(`/companies/by-team/${teamId}`, { method: 'PUT', body: JSON.stringify(data) });
 
 // Тариф пользователя (просмотр)
 export const getBillingMe = (userId: number) =>
