@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useIsTelegram } from '../lib/surface'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
   const [open, setOpen] = useState(false)
+  const isTg = useIsTelegram()  // Mini App: поднимаем виджет выше иконки Пита
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('quickwidget-toggle', { detail: { open } }))
@@ -21,8 +23,8 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
 
       <div className="quick-widget-wrap" style={{
         position: 'fixed',
-        right: 24,
-        bottom: 32,
+        right: isTg ? 12 : 24,
+        bottom: isTg ? 128 : 32,
         zIndex: 1200,
         display: 'flex',
         flexDirection: 'column',

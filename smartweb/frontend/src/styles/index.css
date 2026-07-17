@@ -516,6 +516,20 @@ button:active:not(:disabled) { transform: scale(0.96); }
 }
 
 /* ── Mobile (≤ 768px): sidebar becomes a slide-out drawer ──── */
+/* ── Telegram Mini App (роут /telegram) — узкий вьюпорт ──────────────────────
+   Только визуальная адаптация; веб-версия не затрагивается (класс задаётся
+   лишь обёрткой TelegramApp). */
+.tg-miniapp { overflow-x: hidden; }
+.tg-miniapp .app-main {
+  /* Нижний отступ с учётом системной зоны Telegram, чтобы контент и плавающие
+     кнопки не прятались под нижней панелью. */
+  padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px)) !important;
+}
+/* Панели действий переносятся на новую строку, а не обрезаются по краю. */
+.tg-miniapp .page-toolbar { flex-wrap: wrap; }
+/* Никакой горизонтальной прокрутки таблиц/широких блоков — сжимаем по ширине. */
+.tg-miniapp table { width: 100%; }
+
 @media (max-width: 768px) {
   .mobile-menu-btn { display: inline-flex; }
 

@@ -1,5 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
 import useEscapeKey from '../lib/useEscapeKey'
+import { updateUser } from '../api/client'
+import { useIsTelegram } from '../lib/surface'
 
 /*
  * Первый запуск: контекстный тур в формате spotlight / coachmark (как в
@@ -35,8 +37,39 @@ const TIP_W = 300        // ширина подсказки
 
 // Позиционируем подсказку у элемента, а не по центру экрана. Выбираем сторону
 // по доступному месту и прижимаем к границам вьюпорта.
-function placeTip(rect, prefer) {
+//
+// На узком вьюпорте (Mini App, isTg) считаем координаты численно с реальной
+// шириной контейнера и клампим по обеим осям, чтобы окошко и кнопки «Далее»/
+// «Пропустить» не обрезались краем экрана. На вебе поведение прежнее.
+function placeTip(rect, prefer, isTg) {
   const vw = window.innerWidth, vh = window.innerHeight
+
+  if (isTg) {
+    const width = Math.min(TIP_W, vw - 24)
+    const estH = 210  // оценка высоты подсказки для вертикального клампа
+    const below = vh - rect.bottom, above = rect.top
+    let place = prefer
+    if (place === 'bottom' && below < estH && above > below) place = 'top'
+    if (place === 'top' && above < estH && below > above) place = 'bottom'
+    if (place === 'left' && rect.left < width + 24) place = 'bottom'
+
+    let top, left
+    if (place === 'left') {
+      top = rect.top + rect.height / 2 - estH / 2
+      left = rect.left - width - 16
+    } else if (place === 'top') {
+      top = rect.top - estH - 12
+      left = rect.left + rect.width / 2 - width / 2
+    } else {
+      top = rect.bottom + 12
+      left = rect.left + rect.width / 2 - width / 2
+    }
+    left = Math.max(12, Math.min(left, vw - width - 12))
+    top = Math.max(12, Math.min(top, vh - estH - 12))
+    return { place, top, left, width, transform: 'none' }
+  }
+
+  // Веб — прежнее поведение (с transform), не меняем.
   const below = vh - rect.bottom, above = rect.top
   let place = prefer
   if (place === 'bottom' && below < 150 && above > below) place = 'top'
@@ -55,10 +88,12 @@ function placeTip(rect, prefer) {
     left = rect.left + rect.width / 2 - TIP_W / 2
   }
   left = Math.max(12, Math.min(left, vw - TIP_W - 12))
-  return { place, top, left }
+  const transform = place === 'left' ? 'translateY(-50%)' : place === 'top' ? 'translateY(-100%)' : 'none'
+  return { place, top, left, width: TIP_W, transform }
 }
 
 export default function WelcomeTour({ currentUser }) {
+  const isTg = useIsTelegram()
   const role = currentUser?.role === 'team_lead' ? 'team_lead' : 'member'
   const key = currentUser?.id ? `tour_done_${currentUser.id}` : null
 
@@ -71,15 +106,21 @@ export default function WelcomeTour({ currentUser }) {
 
   const finish = useCallback(() => {
     try { if (key) localStorage.setItem(key, '1') } catch {}
+    // Флаг общий для аккаунта: сохраняем в профиль, чтобы гид не повторялся на
+    // другой платформе (веб <-> Telegram Mini App).
+    if (currentUser?.id && !currentUser.onboarding_tour_done) {
+      updateUser(currentUser.id, { onboarding_tour_done: true }).catch(() => {})
+    }
     setOpen(false)
-  }, [key])
+  }, [key, currentUser?.id, currentUser?.onboarding_tour_done])
 
-  // Старт: только если тур ещё не пройден. Небольшая задержка — ждём, пока
+  // Старт: только если тур ещё не пройден. Проверяем и профиль (общий флаг), и
+  // localStorage (быстрый кэш этого браузера). Небольшая задержка — ждём, пока
   // дашборд смонтирует свои якоря (вкладки разделов и т.п.).
   useEffect(() => {
     if (!key) return
-    let done = true
-    try { done = localStorage.getItem(key) === '1' } catch {}
+    let done = currentUser?.onboarding_tour_done === true
+    try { if (!done) done = localStorage.getItem(key) === '1' } catch {}
     if (done) return
     const t = setTimeout(() => {
       const steps = (STEPS[role] || []).filter(s => document.querySelector(s.sel))
@@ -113,7 +154,7 @@ export default function WelcomeTour({ currentUser }) {
   const total = resolved.length
   const last = i === total - 1
   const step = resolved[i]
-  const tip = placeTip(rect, step.place || 'bottom')
+  const tip = placeTip(rect, step.place || 'bottom', isTg)
 
   return (
     <div role="dialog" aria-modal="true" aria-label="Знакомство с продуктом"
@@ -135,8 +176,12 @@ export default function WelcomeTour({ currentUser }) {
 
       {/* Подсказка рядом с элементом */}
       <div style={{
-        position: 'fixed', top: tip.top, left: tip.left, width: TIP_W,
-        transform: tip.place === 'left' ? 'translateY(-50%)' : tip.place === 'top' ? 'translateY(-100%)' : 'none',
+        position: 'fixed', top: tip.top, left: tip.left, width: tip.width,
+        transform: tip.transform,
+        // В Mini App гарантируем, что окошко с кнопками влезает по вертикали.
+        maxHeight: isTg ? 'calc(100vh - 24px)' : undefined,
+        overflowY: isTg ? 'auto' : undefined,
+        boxSizing: isTg ? 'border-box' : undefined,
         background: 'var(--color-surface)', color: 'var(--color-text-primary)',
         border: '1px solid var(--color-border)', borderRadius: 14,
         boxShadow: '0 12px 40px rgba(0,0,0,0.35)', padding: '16px 18px',

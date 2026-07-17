@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
+import { useIsTelegram } from '../lib/surface'
 
 const PIT_STYLES = `
 @keyframes pitFloat {
@@ -42,6 +43,9 @@ function readCurrentUser() {
 
 export default function PitAssistant() {
   const currentUser = readCurrentUser()
+  // Mini App: та же функция Пита, но иконка-триггер заметно компактнее, а окно
+  // чата вписывается в узкий вьюпорт (только визуальные правки, surface).
+  const isTg = useIsTelegram()
   const [open, setOpen] = useState(false)
   const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
   const [input, setInput] = useState('')
@@ -106,8 +110,9 @@ export default function PitAssistant() {
       {/* ── Chat window ── */}
       {open && (
         <div style={{
-          position: 'fixed', bottom: 195, right: 24, zIndex: 9400,
-          width: 340, maxHeight: 500, display: 'flex', flexDirection: 'column',
+          position: 'fixed', bottom: isTg ? 84 : 195, right: isTg ? 12 : 24, zIndex: 9400,
+          width: isTg ? 'calc(100vw - 24px)' : 340, maxWidth: 340,
+          maxHeight: isTg ? '68vh' : 500, display: 'flex', flexDirection: 'column',
           background: '#ffffff',
           border: '1px solid #e2e8f0',
           borderRadius: 20,
@@ -216,9 +221,13 @@ export default function PitAssistant() {
 
       {/* ── 3D Character ── */}
       <div data-tour="pit" style={{
-        position: 'fixed', bottom: 90,
-        right: shifted ? 320 : 24,
+        position: 'fixed', bottom: isTg ? 74 : 90,
+        right: shifted ? 320 : (isTg ? 12 : 24),
         zIndex: 9350, userSelect: 'none',
+        // В Mini App масштабируем всю фигуру целиком (иконка, антенна, тень),
+        // чтобы не доминировала на маленьком экране. Якорь — нижний правый угол.
+        transform: isTg ? 'scale(0.58)' : 'none',
+        transformOrigin: 'bottom right',
         transition: 'right 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
       }}>
         {/* Shadow */}
