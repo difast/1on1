@@ -26,6 +26,7 @@ class UserOut(BaseModel):
     detected_region: Optional[str] = None
     preferred_language: Optional[str] = None
     pricing_hint_shown: bool = False
+    onboarding_tour_done: bool = False
     created_at: datetime
 
     class Config:
@@ -44,3 +45,4 @@ class UserUpdate(BaseModel):
     # заново при каждом визите (Этап 6).
     preferred_language: Optional[str] = None
     pricing_hint_shown: Optional[bool] = None  # флаг показанной рекомендации тарифа
+    onboarding_tour_done: Optional[bool] = None  # флаг прохождения онбординг-гида

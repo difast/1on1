@@ -22,6 +22,8 @@ from app.models.telegram import TelegramBotState
 from app.services import telegram as tg
 
 STATUS_LABELS = {"in_progress": "В работе", "review": "На ревью", "blocked": "Блокер", "done": "Готово"}
+# Подписи на кнопках смены статуса: основное действие сформулировано явно.
+STATUS_BTN = {"in_progress": "Вернуть в работу", "review": "На ревью", "blocked": "Отметить блокером", "done": "Отметить выполненной"}
 
 
 def _web_url() -> str:
@@ -33,6 +35,24 @@ def _miniapp_button() -> dict | None:
     if not web:
         return None
     return {"inline_keyboard": [[{"text": "Открыть приложение", "web_app": {"url": f"{web}/telegram"}}]]}
+
+
+def _menu_kb() -> dict:
+    """Единое меню команд для /menu и /start. Кнопки сгруппированы по смыслу:
+    работа со встречами, задачи/настроение, риски/знания, ассистент, приложение."""
+    rows = [
+        [{"text": "Повестка", "callback_data": "cmd:agenda"},
+         {"text": "Создать встречу", "callback_data": "cmd:newmeeting"}],
+        [{"text": "Задачи", "callback_data": "cmd:tasks"},
+         {"text": "Настроение", "callback_data": "cmd:mood"}],
+        [{"text": "Риски", "callback_data": "cmd:risks"},
+         {"text": "База знаний", "callback_data": "cmd:knowledge"}],
+        [{"text": "Спросить Пита", "callback_data": "cmd:ask"}],
+    ]
+    web = _web_url()
+    if web:
+        rows.append([{"text": "Открыть приложение", "web_app": {"url": f"{web}/telegram"}}])
+    return {"inline_keyboard": rows}
 
 
 def _kb(rows) -> dict:
@@ -121,18 +141,16 @@ def _cmd_start(db, chat_id, tg_data):
         greeting = f"С возвращением, {user.name}."
     tg.send_message(
         chat_id,
-        greeting + "\n\nКоманды: /agenda — повестка, /newmeeting — встреча, /tasks — задачи, "
-        "/mood — настроение, /risks — риски, /ask — вопрос Питу, /knowledge — база знаний, /menu — меню.",
-        reply_markup=_miniapp_button(),
+        greeting + "\n\nВыберите действие ниже или откройте приложение.",
+        reply_markup=_menu_kb(),
     )
 
 
 def _cmd_menu(db, chat_id, user):
     tg.send_message(
         chat_id,
-        "Меню OneOnOne. Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge. "
-        "Полная версия — в приложении.",
-        reply_markup=_miniapp_button(),
+        "Меню OneOnOne. Выберите действие:",
+        reply_markup=_menu_kb(),
     )
 
 
@@ -211,11 +229,16 @@ def _cmd_tasks(db, chat_id, user):
 
 def _send_task_card(db, chat_id, tk, message_id=None):
     label = STATUS_LABELS.get(tk.status, tk.status)
-    text = f"Задача: {tk.title}\nСтатус: {label}"
-    # Кнопки — на другие статусы, кроме текущего.
-    order = ["in_progress", "review", "blocked", "done"]
-    btns = [{"text": STATUS_LABELS[s], "callback_data": f"task:{tk.id}:{s}"} for s in order if s != tk.status]
-    rows = [btns[i:i + 2] for i in range(0, len(btns), 2)]
+    text = f"Задача: {tk.title}\nТекущий статус: {label}\nВыберите новый статус:"
+    # Основное действие («Отметить выполненной») — отдельным первым рядом;
+    # второстепенные статусы — рядом ниже, по двое. Порядок везде одинаковый.
+    rows = []
+    if tk.status != "done":
+        rows.append([{"text": STATUS_BTN["done"], "callback_data": f"task:{tk.id}:done"}])
+    secondary = [s for s in ("in_progress", "review", "blocked") if s != tk.status]
+    sec = [{"text": STATUS_BTN[s], "callback_data": f"task:{tk.id}:{s}"} for s in secondary]
+    for j in range(0, len(sec), 2):
+        rows.append(sec[j:j + 2])
     if message_id:
         tg.edit_message_text(chat_id, message_id, text, reply_markup=_kb(rows))
     else:
@@ -250,9 +273,10 @@ def _cmd_risks(db, chat_id, user):
         for m in risky:
             any_risk = True
             level = "высокий" if m.status_color == "red" else "средний"
+            # Основное действие слева, второстепенное справа; оба — в полряда.
             rows = [[
                 {"text": "Назначить встречу", "callback_data": f"risk_meet:{team.id}:{m.user_id}"},
-                {"text": "Контакт", "callback_data": f"risk_msg:{m.user_id}"},
+                {"text": "Показать контакт", "callback_data": f"risk_msg:{m.user_id}"},
             ]]
             tg.send_message(chat_id, f"Риск ({level}): {m.user_name} — давно не было встречи.", reply_markup=_kb(rows))
     if not any_risk:
@@ -368,6 +392,25 @@ def _handle_callback(db, cq):
             contact = (m.telegram or m.email or "не указан") if m else "не найден"
             tg.answer_callback(cq_id)
             tg.send_message(chat_id, f"Контакт {m.name if m else ''}: {contact}")
+
+        elif data.startswith("cmd:"):
+            # Кнопки меню запускают те же команды.
+            cmd = data.split(":", 1)[1]
+            tg.answer_callback(cq_id)
+            if cmd == "agenda":
+                _cmd_agenda(db, chat_id, user, "")
+            elif cmd == "newmeeting":
+                _nm_start(db, chat_id, user)
+            elif cmd == "tasks":
+                _cmd_tasks(db, chat_id, user)
+            elif cmd == "mood":
+                _cmd_mood(db, chat_id, user)
+            elif cmd == "risks":
+                _cmd_risks(db, chat_id, user)
+            elif cmd == "knowledge":
+                tg.send_message(chat_id, "Поиск по базе знаний: отправьте сообщение /knowledge и запрос, например: /knowledge онбординг.")
+            elif cmd == "ask":
+                tg.send_message(chat_id, "Вопрос ассистенту: отправьте сообщение /ask и текст, например: /ask как подготовиться к встрече.")
         else:
             tg.answer_callback(cq_id)
     except Exception:

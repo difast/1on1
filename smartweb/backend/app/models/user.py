@@ -31,4 +31,6 @@ class User(Base):
     preferred_language = Column(String(5), nullable=True)
     # Мягкая рекомендация тарифа (Этап 5) показывается один раз.
     pricing_hint_shown = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Онбординг-гид пройден — общий флаг аккаунта (веб и Telegram Mini App).
+    onboarding_tour_done = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())
