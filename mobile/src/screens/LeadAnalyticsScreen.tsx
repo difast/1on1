@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getLeadAnalytics, assistantChat } from '../lib/api';
+import { getLeadAnalytics, assistantChat, getMeetings } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
@@ -64,6 +64,7 @@ export default function LeadAnalyticsScreen() {
   const { user } = useAuth();
   const router = useRouter();
   const [data, setData] = useState<any>(null);
+  const [meetings, setMeetings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(0);
@@ -74,14 +75,37 @@ export default function LeadAnalyticsScreen() {
       setData(d);
     } catch { setData(null); }
     finally { setLoading(false); }
+    // Повестки для блока «последние темы» — на бэкенде в аналитике их нет,
+    // поэтому собираем из встреч тимлида (Задача 10, повестка -> аналитика).
+    try {
+      const ms = await getMeetings({ team_lead_id: user!.id }) as any;
+      setMeetings(Array.isArray(ms) ? ms : []);
+    } catch { /* no-op */ }
   };
 
   useEffect(() => { load(); }, [user?.id]);
   const onRefresh = async () => { setRefreshing(true); await load(); setRefreshing(false); };
 
+  const teamsAll: any[] = data?.teams ?? [];
+  const currentTeamId = teamsAll[selectedTeam]?.team_id;
+  const topics = useMemo(() => {
+    if (!currentTeamId) return [] as string[];
+    const list = (meetings || [])
+      .filter((m) => m.team_id === currentTeamId && m.agenda && String(m.agenda).trim())
+      .sort((a, b) => new Date(b.scheduled_date).getTime() - new Date(a.scheduled_date).getTime());
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const m of list) {
+      const first = String(m.agenda).split('\n').map((s: string) => s.trim()).filter(Boolean)[0];
+      if (first && !seen.has(first.toLowerCase())) { seen.add(first.toLowerCase()); out.push(first); }
+      if (out.length >= 6) break;
+    }
+    return out;
+  }, [meetings, currentTeamId]);
+
   if (loading) return <Spinner />;
 
-  const teams: any[] = data?.teams ?? [];
+  const teams: any[] = teamsAll;
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
@@ -125,7 +149,7 @@ export default function LeadAnalyticsScreen() {
               </ScrollView>
             )}
 
-            {teams[selectedTeam] && <TeamStats team={teams[selectedTeam]} />}
+            {teams[selectedTeam] && <TeamStats team={teams[selectedTeam]} topics={topics} />}
           </>
         )}
       </ScrollView>
@@ -133,7 +157,7 @@ export default function LeadAnalyticsScreen() {
   );
 }
 
-function TeamStats({ team }: { team: any }) {
+function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const members: any[] = team.member_stats ?? [];
@@ -156,6 +180,20 @@ function TeamStats({ team }: { team: any }) {
         <View style={styles.infoCard}>
           <Text style={styles.infoLabel}>Средний интервал между встречами</Text>
           <Text style={styles.infoValue}>{team.avg_interval_days} дн.</Text>
+        </View>
+      )}
+
+      {/* Последние темы повесток (Задача 10) */}
+      {topics.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Последние темы повесток</Text>
+          <View style={styles.topicsWrap}>
+            {topics.map((tp, i) => (
+              <View key={i} style={styles.topicChip}>
+                <Text style={styles.topicText} numberOfLines={1}>{tp}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       )}
 
@@ -325,6 +363,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 
   section: { gap: 10 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
+  topicsWrap: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
+  topicChip: {
+    backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, borderRadius: 999,
+    paddingHorizontal: 12, paddingVertical: 6, maxWidth: '100%',
+  },
+  topicText: { fontSize: 13, color: c.textSecondary },
 
   signalRow: {
     backgroundColor: c.dangerBg, borderRadius: 12,
