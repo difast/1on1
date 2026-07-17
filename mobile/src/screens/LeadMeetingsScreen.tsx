@@ -10,6 +10,7 @@ import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, create
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
+import { getCoaching, buildAgendaSuggestions } from '../lib/coaching';
 import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
@@ -39,6 +40,11 @@ export default function LeadMeetingsScreen() {
   const [createTopic, setCreateTopic] = useState('');
   const [creating, setCreating] = useState(false);
 
+  // Коучинг «до встречи»: подсказки тем повестки у поля темы. Опционально.
+  const [coachOn, setCoachOn] = useState(false);
+  const [coachHidden, setCoachHidden] = useState(false);
+  useEffect(() => { getCoaching().then(setCoachOn); }, []);
+
   const openCreate = async () => {
     setShowCreate(true);
     if (teamMembers.length === 0) {
@@ -56,6 +62,22 @@ export default function LeadMeetingsScreen() {
       } catch {}
     }
   };
+
+  // Подсказки повестки для выбранного участника. Данные берём из уже
+  // загруженных встреч: дату последней завершённой встречи с этим участником.
+  const agendaSuggestions = useMemo(() => {
+    if (!coachOn || coachHidden || !createMemberId) return [];
+    const mine = (meetings || []).filter((m: any) => m.member_id === createMemberId);
+    const past = mine
+      .filter((m: any) => m.status === 'completed' && (m.scheduled_date || m.scheduled_at))
+      .map((m: any) => new Date(m.scheduled_date || m.scheduled_at).getTime())
+      .filter((t: number) => !isNaN(t));
+    const lastMeetingDate = past.length ? new Date(Math.max(...past)).toISOString() : null;
+    return buildAgendaSuggestions({ last_meeting_date: lastMeetingDate }, []);
+  }, [coachOn, coachHidden, createMemberId, meetings]);
+
+  const addAgendaLine = (line: string) =>
+    setCreateTopic(prev => (prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`));
 
   const handleCreateMeeting = async () => {
     const member = teamMembers.find(m => m.user_id === createMemberId);
@@ -261,6 +283,28 @@ export default function LeadMeetingsScreen() {
               placeholderTextColor={colors.textMuted}
             />
 
+            {agendaSuggestions.length > 0 && (
+              <View style={styles.coachBox}>
+                <View style={styles.coachBoxHead}>
+                  <Text style={styles.coachBoxTitle}>Пит подсказывает темы</Text>
+                  <TouchableOpacity onPress={() => setCoachHidden(true)} hitSlop={8}>
+                    <Text style={styles.coachBoxHide}>Скрыть</Text>
+                  </TouchableOpacity>
+                </View>
+                {agendaSuggestions.map(s => (
+                  <View key={s.id} style={styles.coachRow}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.coachLine}>{s.line}</Text>
+                      <Text style={styles.coachReason}>{s.reason}</Text>
+                    </View>
+                    <TouchableOpacity style={styles.coachAdd} onPress={() => addAgendaLine(s.line)}>
+                      <Text style={styles.coachAddText}>Добавить</Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setShowCreate(false)}>
                 <Text style={styles.modalCancelText}>Отмена</Text>
@@ -456,6 +500,15 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   memberPickAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: c.accentLight, alignItems: 'center', justifyContent: 'center' },
   memberPickAvatarText: { fontSize: 14, fontWeight: '700', color: c.accent },
   memberPickName: { flex: 1, fontSize: 14, fontWeight: '500', color: c.textPrimary },
+  coachBox: { marginTop: 12, padding: 12, backgroundColor: c.accentLight, borderWidth: 1, borderColor: c.accent, borderRadius: 10, gap: 8 },
+  coachBoxHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  coachBoxTitle: { fontSize: 12, fontWeight: '700', color: c.accent, letterSpacing: 0.2 },
+  coachBoxHide: { fontSize: 12, color: c.textMuted },
+  coachRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 10 },
+  coachLine: { fontSize: 13, color: c.textPrimary, lineHeight: 18 },
+  coachReason: { fontSize: 11, color: c.textMuted, marginTop: 2, lineHeight: 15 },
+  coachAdd: { flexShrink: 0, backgroundColor: c.surface, borderWidth: 1, borderColor: c.accent, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 },
+  coachAddText: { fontSize: 12, fontWeight: '600', color: c.accent },
   modalInput: { borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: c.textPrimary, backgroundColor: c.bg },
   modalActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   modalCancel: { flex: 1, borderWidth: 1, borderColor: c.border, borderRadius: 10, paddingVertical: 12, alignItems: 'center' },

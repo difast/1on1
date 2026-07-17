@@ -12,6 +12,7 @@ import {
   getMeeting, getNotes, createNote, updateNote, startCall,
   getUsers, confirmMeeting, declineMeeting, updateMeeting,
 } from '../src/lib/api';
+import { getCoaching, buildMeetingFeedback } from '../src/lib/coaching';
 import type { AppColors } from '../src/constants/colors';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -56,6 +57,11 @@ export default function MeetingDetailScreen() {
   const [noteText, setNoteText] = useState('');
   const [noteLoading, setNoteLoading] = useState(false);
   const [editingNote, setEditingNote] = useState<any>(null);
+
+  // Коучинг «после встречи»: сверка повестки с расшифровкой/резюме. Опционально.
+  const [coachOn, setCoachOn] = useState(false);
+  const [coachHidden, setCoachHidden] = useState(false);
+  useEffect(() => { getCoaching().then(setCoachOn); }, []);
 
   const load = useCallback(async () => {
     if (!params.id) return;
@@ -192,6 +198,10 @@ export default function MeetingDetailScreen() {
     ?? (otherId ? `Участник #${otherId}` : 'Участник');
 
   const isFinal = ['declined', 'cancelled', 'completed'].includes(meeting.status);
+  const isPast = meeting.status === 'completed' || (scheduledAt ? scheduledAt < new Date() : false);
+  const feedback = (coachOn && !coachHidden && isPast)
+    ? buildMeetingFeedback(meeting.agenda, meeting.call_transcript, meeting.ai_summary)
+    : null;
   // The lead can accept/decline incoming requests; both sides can reschedule a live meeting.
   const canAct = !isFinal;
   const canConfirm = canAct && ['requested', 'pending', 'scheduled'].includes(meeting.status);
@@ -256,6 +266,28 @@ export default function MeetingDetailScreen() {
             </View>
           )}
         </View>
+
+        {/* Коучинг «после встречи»: какие темы повестки, возможно, не обсудили */}
+        {feedback && (
+          <View style={[styles.coachCard, !feedback.covered && styles.coachCardWarn]}>
+            <View style={styles.coachHead}>
+              <Text style={[styles.coachTag, { color: feedback.covered ? colors.success : '#b45309' }]}>
+                Пит: итог встречи
+              </Text>
+              <TouchableOpacity onPress={() => setCoachHidden(true)} hitSlop={8}>
+                <Text style={styles.coachHide}>Скрыть</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.coachNote}>{feedback.note}</Text>
+            {feedback.missed.length > 0 && (
+              <View style={{ marginTop: 6, gap: 4 }}>
+                {feedback.missed.map((t, i) => (
+                  <Text key={i} style={styles.coachMissed}>• {t}</Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* Actions: confirm / decline / reschedule */}
         {canAct && (
@@ -455,4 +487,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   noteSaveText: { fontSize: 13, fontWeight: '600', color: '#fff' },
   btnDisabled: { opacity: 0.45 },
   warning: { color: '#F59E0B' },
+  coachCard: {
+    backgroundColor: c.surface, borderRadius: 12, borderWidth: 1, borderColor: c.border,
+    borderLeftWidth: 3, borderLeftColor: c.success, padding: 14, gap: 2,
+  },
+  coachCardWarn: { backgroundColor: '#fff8ed', borderColor: '#fcd9a5', borderLeftColor: '#f59e0b' },
+  coachHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+  coachTag: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5, textTransform: 'uppercase' },
+  coachHide: { fontSize: 12, color: c.textMuted },
+  coachNote: { fontSize: 13, color: c.textPrimary, lineHeight: 20 },
+  coachMissed: { fontSize: 13, color: c.textSecondary, lineHeight: 19 },
 });
