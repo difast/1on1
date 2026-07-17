@@ -158,6 +158,7 @@ export const detectRegion = (userId) => api.post(`/users/${userId}/detect-region
 export const getTelegramConfig = () => api.get('/telegram/config')
 export const telegramCallback = (data) => api.post('/telegram/callback', data)
 export const telegramLink = (userId, code) => api.post('/telegram/link', { user_id: userId, code })
+export const telegramMiniAppAuth = (initData) => api.post('/telegram/miniapp-auth', { init_data: initData })
 
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')

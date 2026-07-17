@@ -12,6 +12,7 @@ import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGS } from '../i18n'
+import { useSurface } from '../lib/surface'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -24,6 +25,8 @@ const TOAST_META = {
 
 export default function Layout({ children, currentUser, onLogout, onUserUpdate, onJoinCall, onNavigate, bannerTasks, bannerTeamId }) {
   const { t, i18n } = useTranslation()
+  const surface = useSurface()
+  const isTg = surface === 'telegram'  // Mini App: скрываем запрещённые таблицей разделы
   const [showLangMenu, setShowLangMenu] = useState(false)
   // Привязка Telegram по коду из бота (Этап 4).
   const [showTgModal, setShowTgModal] = useState(false)
@@ -571,8 +574,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* My plan — team lead only */}
-          {user?.role === 'team_lead' && (
+          {/* My plan — team lead only. В Mini App биллинг недоступен (таблица). */}
+          {user?.role === 'team_lead' && !isTg && (
             <button
               onClick={() => setShowBilling(true)}
               style={{

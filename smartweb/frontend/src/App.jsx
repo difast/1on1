@@ -5,12 +5,17 @@ import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
 import AdminDashboard from './components/AdminDashboard'
+import TelegramApp from './components/TelegramApp'
 import { getUserByEmail, getUser, detectRegion } from './api/client'
 import i18n from './i18n'
 
 const TG_SESSION_KEY = 'tg_session'
 
 function App() {
+  // Роут Mini App: полностью отдельная ветка авторизации (initData), не зависит
+  // от Supabase-сессии. Проверяем ДО любых хуков сессии.
+  const isTelegramRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/telegram')
+
   const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -151,6 +156,9 @@ function App() {
     setAppUser(updatedUser)
     localStorage.setItem('smart_user', JSON.stringify(updatedUser))
   }
+
+  // Mini App — отдельная ветка, не ждём Supabase-сессию.
+  if (isTelegramRoute) return <TelegramApp />
 
   if (loading) return (
     <div style={{

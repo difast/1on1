@@ -9,10 +9,12 @@ SHA256(bot_token); вебхук — по секретному заголовку
 """
 import hashlib
 import hmac
+import json
 import secrets
 import string
 import time
 from datetime import datetime, timedelta
+from urllib.parse import parse_qsl
 
 import httpx
 from sqlalchemy.orm import Session
@@ -55,6 +57,44 @@ def verify_login_widget(data: dict) -> bool:
     except (TypeError, ValueError):
         return False
     return True
+
+
+def verify_init_data(init_data: str) -> dict | None:
+    """Проверка Telegram Mini App initData (Этап 1). Отличается от Login Widget
+    только формулой ключа: secret = HMAC_SHA256("WebAppData", bot_token).
+    Возвращает данные пользователя {id, first_name, username, photo_url} или None.
+    """
+    token = bot_token()
+    if not token or not init_data:
+        return None
+    try:
+        pairs = dict(parse_qsl(init_data, keep_blank_values=True))
+    except Exception:
+        return None
+    received_hash = pairs.pop("hash", None)
+    if not received_hash:
+        return None
+    data_check_string = "\n".join(f"{k}={pairs[k]}" for k in sorted(pairs))
+    secret_key = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    calc = hmac.new(secret_key, data_check_string.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(calc, str(received_hash)):
+        return None
+    try:
+        auth_date = int(pairs.get("auth_date", 0))
+        if auth_date and (time.time() - auth_date) > _WIDGET_MAX_AGE_SEC:
+            return None
+    except (TypeError, ValueError):
+        return None
+    try:
+        u = json.loads(pairs.get("user", "{}"))
+    except Exception:
+        return None
+    if not u.get("id"):
+        return None
+    return {
+        "id": u.get("id"), "first_name": u.get("first_name"),
+        "username": u.get("username"), "photo_url": u.get("photo_url"),
+    }
 
 
 def verify_webhook_secret(header_value: str | None) -> bool:
@@ -172,17 +212,16 @@ def resolve_web_login(db: Session, tg: dict, link_user_id: int | None = None):
 
 # ---- Bot API ----------------------------------------------------------------
 
-def send_message(chat_id: int, text: str) -> None:
+def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
     """Отправить текст пользователю. Ошибки глушим — не роняем вебхук."""
     token = bot_token()
     if not token:
         return
+    payload = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     try:
-        httpx.post(
-            f"{API_BASE}/bot{token}/sendMessage",
-            json={"chat_id": chat_id, "text": text, "disable_web_page_preview": True},
-            timeout=8,
-        )
+        httpx.post(f"{API_BASE}/bot{token}/sendMessage", json=payload, timeout=8)
     except Exception:
         pass
 

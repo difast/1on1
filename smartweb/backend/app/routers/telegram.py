@@ -48,48 +48,30 @@ async def webhook(
         raise HTTPException(status_code=403, detail="Forbidden")
 
     update = await request.json()
-    message = update.get("message") or {}
-    text = (message.get("text") or "").strip()
-    frm = message.get("from") or {}
-    chat = message.get("chat") or {}
-    chat_id = chat.get("id")
-    if not frm or not chat_id:
-        return {"ok": True}
-
-    tg_data = {
-        "id": frm.get("id"),
-        "first_name": frm.get("first_name"),
-        "username": frm.get("username"),
-        "photo_url": None,  # у бота нет прямого public URL фото; виджет его даёт
-    }
-    web = _web_url() or "сайте"
-
-    if text.startswith("/start"):
-        user = tg.find_by_telegram_id(db, tg_data["id"])
-        if user:
-            tg.send_message(chat_id, f"С возвращением, {user.name}. Откройте OneOnOne: {web}")
-        else:
-            tg.create_from_telegram(db, tg_data)
-            tg.send_message(
-                chat_id,
-                f"Добро пожаловать в OneOnOne, {tg_data.get('first_name') or ''}. "
-                f"Аккаунт создан. Откройте {web} и войдите через Telegram.\n\n"
-                f"Если у вас уже есть аккаунт со входом по email, не создавайте второй: "
-                f"отправьте команду /link, чтобы объединить их."
-            )
-    elif text.startswith("/link"):
-        # Выдаём код для привязки текущего Telegram к существующему email-аккаунту.
-        code = tg.issue_link_code(db, tg_data)
-        tg.send_message(
-            chat_id,
-            "Чтобы связать Telegram с вашим аккаунтом OneOnOne, войдите на сайте по email, "
-            "откройте меню профиля, пункт «Привязать Telegram», и введите код:\n\n"
-            f"{code}\n\nКод действует 30 минут."
-        )
-    else:
-        tg.send_message(chat_id, "Команды: /start — вход, /link — привязать к аккаунту по email.")
-
+    try:
+        from app.services import telegram_bot
+        telegram_bot.handle_update(db, update)
+    except Exception:
+        # Никогда не роняем вебхук — иначе Telegram будет ретраить и копить очередь.
+        pass
     return {"ok": True}
+
+
+# ---- Вход в Mini App через initData (Этап 1) --------------------------------
+
+class MiniAppAuth(BaseModel):
+    init_data: str
+
+
+@router.post("/miniapp-auth")
+def miniapp_auth(data: MiniAppAuth, db: Session = Depends(get_db)):
+    """Авторизация Mini App: проверяем initData (та же идея, что и Login Widget,
+    другая формула ключа) и входим/создаём аккаунт тем же resolve_web_login."""
+    tg_data = tg.verify_init_data(data.init_data)
+    if not tg_data:
+        raise HTTPException(status_code=401, detail="Не удалось проверить Telegram initData")
+    user, status = tg.resolve_web_login(db, tg_data)
+    return {"status": status, "user": UserOut.model_validate(user).model_dump()}
 
 
 # ---- Вход через Login Widget ------------------------------------------------
