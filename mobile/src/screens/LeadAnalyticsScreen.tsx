@@ -138,7 +138,6 @@ function TeamStats({ team }: { team: any }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const members: any[] = team.member_stats ?? [];
   const signals: any[] = team.warning_signals ?? [];
-  const chart: any[] = team.meetings_per_week ?? [];
 
   return (
     <>
@@ -263,30 +262,6 @@ function MoodSparkline({ trend }: { trend: string[] }) {
     <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 32 }}>
       {last12.map((m, i) => (
         <View key={i} style={{ flex: 1, height: moodH(m), backgroundColor: moodColor(m), borderRadius: 3, maxWidth: 18 }} />
-      ))}
-    </View>
-  );
-}
-
-function BarChart({ data }: { data: any[] }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const max = Math.max(...data.map((d: any) => d.count ?? 0), 1);
-  return (
-    <View style={styles.chart}>
-      {data.map((d: any, i: number) => (
-        <View key={i} style={styles.chartBar}>
-          <Text style={styles.chartCount}>{d.count > 0 ? d.count : ''}</Text>
-          <View style={[
-            styles.bar,
-            {
-              height: Math.max((d.count / max) * 60, d.count > 0 ? 4 : 0),
-              backgroundColor: d.count > 0 ? colors.accent : colors.gray200,
-              opacity: d.count > 0 ? 1 : 0.4,
-            },
-          ]} />
-          <Text style={styles.chartLabel} numberOfLines={1}>{d.week}</Text>
-        </View>
       ))}
     </View>
   );

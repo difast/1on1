@@ -11,13 +11,6 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 
-// Цвет индикатора настроения (без эмодзи): зелёный — хорошо, красный — плохо.
-function moodDotColor(mood: string) {
-  if (mood === 'great' || mood === 'good') return '#1D9E75';
-  if (mood === 'bad') return '#E24B4A';
-  return '#D0CEC7';
-}
-
 export default function MemberAnalyticsScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -128,30 +121,6 @@ function StatCard({ label, value, accent }: any) {
     <View style={styles.statCard}>
       <Text style={[styles.statValue, accent && { color: colors.accent }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
-function BarChart({ data }: { data: any[] }) {
-  const { colors } = useTheme();
-  const styles = useMemo(() => makeStyles(colors), [colors]);
-  const max = Math.max(...data.map((d: any) => d.count ?? 0), 1);
-  return (
-    <View style={styles.chart}>
-      {data.map((d: any, i: number) => (
-        <View key={i} style={styles.chartBar}>
-          <Text style={styles.chartCount}>{d.count > 0 ? d.count : ''}</Text>
-          <View style={[
-            styles.bar,
-            {
-              height: Math.max((d.count / max) * 60, d.count > 0 ? 4 : 0),
-              backgroundColor: d.count > 0 ? colors.accent : colors.gray200,
-              opacity: d.count > 0 ? 1 : 0.4,
-            },
-          ]} />
-          <Text style={styles.chartLabel} numberOfLines={1}>{d.week}</Text>
-        </View>
-      ))}
     </View>
   );
 }
