@@ -225,14 +225,18 @@ def notify_user(db: Session, user_id: int, title: str, body: str | None = None) 
         pass
 
 
-def send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
-    """Отправить текст пользователю. Ошибки глушим — не роняем вебхук."""
+def send_message(chat_id: int, text: str, reply_markup: dict | None = None,
+                 parse_mode: str | None = None) -> None:
+    """Отправить текст пользователю. Ошибки глушим — не роняем вебхук.
+    parse_mode='HTML' включает разметку (жирный <b>, курсив <i> и т.п.)."""
     token = bot_token()
     if not token:
         return
     payload = {"chat_id": chat_id, "text": text, "disable_web_page_preview": True}
     if reply_markup:
         payload["reply_markup"] = reply_markup
+    if parse_mode:
+        payload["parse_mode"] = parse_mode
     try:
         httpx.post(f"{API_BASE}/bot{token}/sendMessage", json=payload, timeout=8)
     except Exception:
