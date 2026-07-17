@@ -3,11 +3,14 @@ import { useIsTelegram } from '../lib/surface'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
   const [open, setOpen] = useState(false)
-  const isTg = useIsTelegram()  // Mini App: поднимаем виджет выше иконки Пита
+  const isTg = useIsTelegram()
 
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('quickwidget-toggle', { detail: { open } }))
   }, [open])
+
+  // В Telegram Mini App нижний виджет «следующая встреча/задача» не показываем.
+  if (isTg) return null
 
   const fmtDate = (d) =>
     new Date(d).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
@@ -23,8 +26,8 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
 
       <div className="quick-widget-wrap" style={{
         position: 'fixed',
-        right: isTg ? 12 : 24,
-        bottom: isTg ? 128 : 32,
+        right: 24,
+        bottom: 32,
         zIndex: 1200,
         display: 'flex',
         flexDirection: 'column',

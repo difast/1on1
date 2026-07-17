@@ -12,7 +12,7 @@ export default function LegalModal({ open, initialKey, onClose }) {
   const doc = LEGAL_DOCS.find(d => d.key === active) || LEGAL_DOCS[0]
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 9600, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '24px 16px', overflowY: 'auto' }}>
+    <div data-pit-hide onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.5)', zIndex: 9600, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: '24px 16px', overflowY: 'auto' }}>
       <div onClick={e => e.stopPropagation()} className="card" style={{ width: '100%', maxWidth: 760, marginTop: 24, padding: 0, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
           <strong style={{ fontSize: 16 }}>Документы</strong>
