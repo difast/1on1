@@ -197,7 +197,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
   const progress = Math.min(elapsed / MIN_ANALYTICS_SECONDS, 1)
 
   return (
-    <div style={{
+    <div data-pit-hide style={{
       position: 'fixed', inset: 0, zIndex: 9999,
       background: '#111827', display: 'flex', flexDirection: 'column',
     }}>

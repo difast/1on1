@@ -64,7 +64,7 @@ export default function KnowledgeBasePage({ onClose }) {
   }, [articles, search])
 
   return (
-    <div style={{
+    <div data-pit-hide style={{
       position: 'fixed', inset: 0, zIndex: 500,
       background: 'var(--color-bg)', display: 'flex', flexDirection: 'column',
       animation: 'fadeIn 0.18s ease',

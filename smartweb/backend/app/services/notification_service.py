@@ -47,6 +47,13 @@ class NotificationService:
         token = self._get_push_token(user_id)
         if token:
             _send_expo_push(token, title, body or "", data)
+        # Дублируем в Telegram-бот всем, у кого привязан аккаунт (единый канал
+        # уведомлений). Ошибка отправки не влияет на создание уведомления.
+        try:
+            from app.services.telegram import notify_user
+            notify_user(self.db, user_id, title, body)
+        except Exception:
+            pass
         return notif
 
     def meeting_scheduled(self, member_id: int, meeting_id: int, lead_name: str, when: str):

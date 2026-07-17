@@ -153,7 +153,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
   const currentIsPaid = currentCode !== 'free' && currentCode !== 'unlimited'
 
   return (
-    <div className="bill-overlay" onClick={onClose}>
+    <div className="bill-overlay" data-pit-hide onClick={onClose}>
       <div className="bill-modal" onClick={e => e.stopPropagation()}>
         <div className="bill-head">
           <h2>Мой тариф</h2>

@@ -47,6 +47,17 @@ export default function PitAssistant() {
   // чата вписывается в узкий вьюпорт (только визуальные правки, surface).
   const isTg = useIsTelegram()
   const [open, setOpen] = useState(false)
+  // Прячем иконку Пита, когда поверх появляется любое окно: модалка
+  // (.overlay-center) или полноэкранная страница/панель (data-pit-hide).
+  // Тур не в счёт — он сам подсвечивает Пита.
+  const [covered, setCovered] = useState(false)
+  useEffect(() => {
+    const check = () => setCovered(!!document.querySelector('.overlay-center, [data-pit-hide]'))
+    check()
+    const obs = new MutationObserver(check)
+    obs.observe(document.body, { childList: true, subtree: true })
+    return () => obs.disconnect()
+  }, [])
   const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
@@ -108,7 +119,7 @@ export default function PitAssistant() {
       <style>{PIT_STYLES}</style>
 
       {/* ── Chat window ── */}
-      {open && (
+      {open && !covered && (
         <div style={{
           position: 'fixed', bottom: isTg ? 84 : 195, right: isTg ? 12 : 24, zIndex: 9400,
           width: isTg ? 'calc(100vw - 24px)' : 340, maxWidth: 340,
@@ -223,6 +234,8 @@ export default function PitAssistant() {
       <div data-tour="pit" style={{
         position: 'fixed', bottom: isTg ? 74 : 90,
         right: shifted ? 320 : (isTg ? 12 : 24),
+        // Убираем иконку, когда её перекрывает окно/модалка.
+        display: covered ? 'none' : undefined,
         zIndex: 9350, userSelect: 'none',
         // В Mini App масштабируем всю фигуру целиком (иконка, антенна, тень),
         // чтобы не доминировала на маленьком экране. Якорь — нижний правый угол.

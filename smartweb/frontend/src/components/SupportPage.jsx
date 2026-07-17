@@ -142,7 +142,7 @@ export default function SupportPage({ currentUser, onClose }) {
   const unreadCount = tickets.filter(t => t.has_unread_reply).length
 
   return (
-    <div style={{
+    <div data-pit-hide style={{
       position: 'fixed', inset: 0, zIndex: 500,
       background: 'var(--color-bg)',
       display: 'flex', flexDirection: 'column',

@@ -47,7 +47,8 @@ def _menu_kb() -> dict:
          {"text": "Настроение", "callback_data": "cmd:mood"}],
         [{"text": "Риски", "callback_data": "cmd:risks"},
          {"text": "База знаний", "callback_data": "cmd:knowledge"}],
-        [{"text": "Спросить Пита", "callback_data": "cmd:ask"}],
+        [{"text": "Спросить Пита", "callback_data": "cmd:ask"},
+         {"text": "Поддержка", "callback_data": "cmd:support"}],
     ]
     web = _web_url()
     if web:
@@ -260,27 +261,51 @@ def _send_mood_question(chat_id, team_id):
 
 def _cmd_risks(db, chat_id, user):
     """Участники в зоне риска (просроченные встречи) — из существующей логики
-    build_team_detail (status_color). Кнопки: назначить встречу / контакт."""
-    teams = _teams_led(db, user)
-    if not teams:
-        tg.send_message(chat_id, "Риск-алерты доступны тимлиду команды.")
-        return
-    from app.routers.team import build_team_detail
-    any_risk = False
-    for team in teams:
-        detail = build_team_detail(team, team.id, db)
-        risky = [m for m in detail.members if m.status_color in ("red", "yellow") and m.role != "lead"]
-        for m in risky:
-            any_risk = True
-            level = "высокий" if m.status_color == "red" else "средний"
-            # Основное действие слева, второстепенное справа; оба — в полряда.
-            rows = [[
-                {"text": "Назначить встречу", "callback_data": f"risk_meet:{team.id}:{m.user_id}"},
-                {"text": "Показать контакт", "callback_data": f"risk_msg:{m.user_id}"},
-            ]]
-            tg.send_message(chat_id, f"Риск ({level}): {m.user_name} — давно не было встречи.", reply_markup=_kb(rows))
-    if not any_risk:
-        tg.send_message(chat_id, "Рисков не обнаружено: встречи проходят вовремя.")
+    build_team_detail (status_color). Всегда отвечает, даже если данных нет."""
+    try:
+        teams = _teams_led(db, user)
+        if not teams:
+            tg.send_message(
+                chat_id,
+                "У вас пока нет команд как у тимлида. Риски появятся, когда вы "
+                "создадите команду и начнёте проводить встречи."
+            )
+            return
+        from app.routers.team import build_team_detail
+        any_member = False
+        any_risk = False
+        for team in teams:
+            detail = build_team_detail(team, team.id, db)
+            members = [m for m in detail.members if m.role != "lead"]
+            if members:
+                any_member = True
+            for m in members:
+                if m.status_color not in ("red", "yellow"):
+                    continue
+                any_risk = True
+                level = "высокий" if m.status_color == "red" else "средний"
+                # Основное действие слева, второстепенное справа; оба — в полряда.
+                rows = [[
+                    {"text": "Назначить встречу", "callback_data": f"risk_meet:{team.id}:{m.user_id}"},
+                    {"text": "Показать контакт", "callback_data": f"risk_msg:{m.user_id}"},
+                ]]
+                tg.send_message(chat_id, f"Риск ({level}): {m.user_name} — давно не было встречи.", reply_markup=_kb(rows))
+        if not any_member:
+            tg.send_message(chat_id, "В ваших командах пока нет участников — риски оценивать не по кому. Добавьте участников в приложении.")
+        elif not any_risk:
+            tg.send_message(chat_id, "Рисков не обнаружено: встречи проходят вовремя.")
+    except Exception:
+        tg.send_message(chat_id, "Не удалось получить риски, попробуйте позже.")
+
+
+def _cmd_support(db, chat_id, user):
+    """Связь с поддержкой: следующее сообщение пользователя станет обращением."""
+    _set_state(db, user.telegram_id, "support", "await_text", {})
+    tg.send_message(
+        chat_id,
+        "Опишите ваш вопрос одним сообщением — мы создадим обращение в поддержку. "
+        "Ответ придёт в этот чат и в приложение. Отмена — /cancel."
+    )
 
 
 # ---- /newmeeting (пошаговый диалог) ----------------------------------------
@@ -411,6 +436,8 @@ def _handle_callback(db, cq):
                 tg.send_message(chat_id, "Поиск по базе знаний: отправьте сообщение /knowledge и запрос, например: /knowledge онбординг.")
             elif cmd == "ask":
                 tg.send_message(chat_id, "Вопрос ассистенту: отправьте сообщение /ask и текст, например: /ask как подготовиться к встрече.")
+            elif cmd == "support":
+                _cmd_support(db, chat_id, user)
         else:
             tg.answer_callback(cq_id)
     except Exception:
@@ -466,7 +493,7 @@ def handle_update(db: Session, update: dict) -> None:
         tg.send_message(chat_id, "Отменено.")
         return
 
-    # Ввод даты для /newmeeting имеет приоритет над свободным текстом.
+    # Ввод в активном диалоге имеет приоритет над свободным текстом.
     st = _get_state(db, user.telegram_id)
     if st and st.flow == "newmeeting" and st.step == "await_datetime" and not text.startswith("/"):
         dt = _parse_dt(text)
@@ -474,6 +501,15 @@ def handle_update(db: Session, update: dict) -> None:
             tg.send_message(chat_id, "Не понял дату. Формат: ДД.ММ ЧЧ:ММ (например 05.08 14:30).")
             return
         _nm_create(db, chat_id, user, dt)
+        return
+    if st and st.flow == "support" and st.step == "await_text" and not text.startswith("/"):
+        _clear_state(db, user.telegram_id)
+        try:
+            from app.routers.support import create_ticket, TicketCreate
+            create_ticket(TicketCreate(user_id=user.id, subject="Обращение из Telegram", body=text), db)
+            tg.send_message(chat_id, "Обращение отправлено в поддержку. Ответ придёт в этот чат и в приложение.")
+        except Exception:
+            tg.send_message(chat_id, "Не удалось отправить обращение, попробуйте позже.")
         return
 
     def arg_after(cmd):
@@ -491,11 +527,13 @@ def handle_update(db: Session, update: dict) -> None:
         _cmd_mood(db, chat_id, user)
     elif text.startswith("/risks"):
         _cmd_risks(db, chat_id, user)
+    elif text.startswith("/support"):
+        _cmd_support(db, chat_id, user)
     elif text.startswith("/knowledge"):
         _cmd_knowledge(db, chat_id, user, arg_after("/knowledge"))
     elif text.startswith("/ask"):
         _cmd_ask(db, chat_id, user, arg_after("/ask"))
     elif text.startswith("/"):
-        tg.send_message(chat_id, "Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /menu.")
+        tg.send_message(chat_id, "Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /menu.")
     else:
         _cmd_ask(db, chat_id, user, text)

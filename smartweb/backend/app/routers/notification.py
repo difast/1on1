@@ -97,4 +97,14 @@ def broadcast(data: BroadcastBody, db: Session = Depends(get_db)):
     except Exception:
         pass
 
+    # Рассылка в Telegram-бот всем, у кого привязан аккаунт.
+    try:
+        from app.services.telegram import send_message as tg_send
+        text = data.title if not data.body else f"{data.title}\n{data.body}"
+        for u in users:
+            if u.telegram_id:
+                tg_send(u.telegram_id, text)
+    except Exception:
+        pass
+
     return {"ok": True, "sent": created}
