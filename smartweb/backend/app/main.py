@@ -67,6 +67,12 @@ def _send_mood_reminders():
         db.commit()
         if msgs:
             send_push_bulk(msgs)
+        # Чек-ин настроения в Telegram — основной канал (Этап 3). Тот же mood-API.
+        try:
+            from app.services.telegram_bot import send_mood_checkins
+            send_mood_checkins(db)
+        except Exception:
+            pass
     except Exception:
         pass
     finally:
