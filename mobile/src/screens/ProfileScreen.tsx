@@ -505,6 +505,17 @@ export default function ProfileScreen() {
           <Text style={styles.menuSectionLabel}>{t('help.title')}</Text>
           <TouchableOpacity
             style={styles.menuRow}
+            onPress={() => router.push('/company' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.menuIconWrap}>
+              <Ionicons name="business-outline" size={18} color={colors.textSecondary} />
+            </View>
+            <Text style={styles.menuRowTitle}>Организация</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuRow}
             onPress={() => router.push({ pathname: '/(tabs)/analytics', params: { from: 'profile' } } as any)}
             activeOpacity={0.7}
           >

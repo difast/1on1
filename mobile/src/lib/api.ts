@@ -174,6 +174,14 @@ export const assistantChat = (messages: { role: string; content: string }[], con
 export const telegramLink = (user_id: number, code: string) =>
   req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });
 
+// Компания рабочего пространства (на мобиле — только просмотр)
+export const getTeamCompany = (teamId: number) =>
+  req<{ has_company: boolean; company: any }>(`/companies/by-team/${teamId}`);
+
+// Тариф пользователя (просмотр)
+export const getBillingMe = (userId: number) =>
+  req<any>(`/billing/me?user_id=${userId}`);
+
 // Admin
 export const getAdminStats = () => req<any>('/users/admin/stats');
 export const getAdminAnalytics = () => req<any>('/users/admin/analytics');
