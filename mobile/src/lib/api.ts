@@ -182,6 +182,9 @@ export const suggestCompany = (query: string) =>
 export const saveTeamCompany = (teamId: number, data: any) =>
   req<{ has_company: boolean; company: any }>(`/companies/by-team/${teamId}`, { method: 'PUT', body: JSON.stringify(data) });
 
+// База знаний (просмотр/чтение) — статьи, которые ведёт администратор
+export const getKnowledgeArticles = () => req<any[]>('/knowledge/admin/all');
+
 // Тариф пользователя (просмотр)
 export const getBillingMe = (userId: number) =>
   req<any>(`/billing/me?user_id=${userId}`);
