@@ -9,7 +9,7 @@ import re
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
@@ -83,17 +83,19 @@ def _consume_token(db: Session, token: str, purpose: str) -> AuthToken | None:
     return row
 
 
-def _send_confirmation(db: Session, user: User) -> None:
+def _send_confirmation(bg: BackgroundTasks, db: Session, user: User) -> None:
+    """Выдать токен подтверждения (быстро, в запросе) и запланировать отправку
+    письма в фоне — SMTP не должен блокировать/ронять ответ."""
     if not user.email:
         return
     tok = _issue_token(db, user.id, "confirm", CONFIRM_TTL)
-    mailer.send_confirmation_email(user.email, user.name or "", tok)
+    bg.add_task(mailer.send_confirmation_email, user.email, user.name or "", tok)
 
 
 # ── регистрация / вход ───────────────────────────────────────────────────────
 
 @router.post("/register", response_model=TokenOut)
-def register(data: RegisterReq, db: Session = Depends(get_db)):
+def register(data: RegisterReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     email = _validate_email(data.email)
     _validate_password(data.password)
     if db.query(User).filter(User.email == email).first():
@@ -118,7 +120,7 @@ def register(data: RegisterReq, db: Session = Depends(get_db)):
     except Exception:
         db.rollback()
 
-    _send_confirmation(db, user)
+    _send_confirmation(background_tasks, db, user)
     # Пользователь сразу авторизован — доступ не блокируется до подтверждения.
     return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
 
@@ -183,7 +185,7 @@ def confirm_email_link(token: str = Query(...), db: Session = Depends(get_db)):
 
 
 @router.post("/resend-confirmation")
-def resend_confirmation(data: ResendReq, db: Session = Depends(get_db)):
+def resend_confirmation(data: ResendReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     q = db.query(User)
     if data.user_id is not None:
         user = q.filter(User.id == data.user_id).first()
@@ -193,19 +195,19 @@ def resend_confirmation(data: ResendReq, db: Session = Depends(get_db)):
         raise HTTPException(422, "Нужен user_id или email")
     # Не раскрываем существование аккаунта и статус — всегда ok.
     if user is not None and user.email and not user.email_confirmed:
-        _send_confirmation(db, user)
+        _send_confirmation(background_tasks, db, user)
     return {"ok": True}
 
 
 # ── сброс пароля (забыл пароль) ──────────────────────────────────────────────
 
 @router.post("/forgot-password")
-def forgot_password(data: ForgotReq, db: Session = Depends(get_db)):
+def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == _norm_email(data.email)).first()
     # Не раскрываем, есть ли аккаунт. Письмо уходит только если есть пароль.
     if user is not None and user.email and user.password_hash:
         tok = _issue_token(db, user.id, "reset", RESET_TTL)
-        mailer.send_reset_email(user.email, user.name or "", tok)
+        background_tasks.add_task(mailer.send_reset_email, user.email, user.name or "", tok)
     return {"ok": True}
 
 
@@ -246,7 +248,7 @@ def change_password(data: ChangePasswordReq, db: Session = Depends(get_db)):
 # ── добавление email пользователем без почты (Telegram-only, Этап 6) ─────────
 
 @router.post("/add-email", response_model=UserOut)
-def add_email(data: AddEmailReq, db: Session = Depends(get_db)):
+def add_email(data: AddEmailReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == data.user_id).first()
     if user is None:
         raise HTTPException(404, "Пользователь не найден")
@@ -258,5 +260,5 @@ def add_email(data: AddEmailReq, db: Session = Depends(get_db)):
     user.email_confirmed = False
     db.commit()
     db.refresh(user)
-    _send_confirmation(db, user)
+    _send_confirmation(background_tasks, db, user)
     return user

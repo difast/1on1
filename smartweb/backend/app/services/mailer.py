@@ -31,12 +31,12 @@ def _send(to_email: str, subject: str, body: str) -> bool:
     try:
         if (settings.smtp_encryption or "SSL").upper() == "SSL":
             ctx = ssl.create_default_context()
-            with smtplib.SMTP_SSL(host, settings.smtp_port, context=ctx, timeout=20) as srv:
+            with smtplib.SMTP_SSL(host, settings.smtp_port, context=ctx, timeout=10) as srv:
                 if settings.smtp_user:
                     srv.login(settings.smtp_user, settings.smtp_password)
                 srv.sendmail(sender, [to_email], msg.as_string())
         else:  # STARTTLS
-            with smtplib.SMTP(host, settings.smtp_port, timeout=20) as srv:
+            with smtplib.SMTP(host, settings.smtp_port, timeout=10) as srv:
                 srv.starttls(context=ssl.create_default_context())
                 if settings.smtp_user:
                     srv.login(settings.smtp_user, settings.smtp_password)
