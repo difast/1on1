@@ -16,12 +16,13 @@ from app.config import settings
 logger = logging.getLogger(__name__)
 
 
-def _send(to_email: str, subject: str, body: str) -> bool:
+def _try_send(to_email: str, subject: str, body: str) -> str | None:
+    """Отправить письмо. Возвращает None при успехе или строку с ошибкой —
+    чтобы диагностический эндпоинт мог показать реальную причину сбоя SMTP."""
     host = settings.smtp_host
     sender = settings.smtp_sender
     if not host or not sender:
-        logger.warning("SMTP не настроен — письмо %s не отправлено", subject)
-        return False
+        return "SMTP не настроен (нет SMTP_HOST/SMTP_USER в окружении)"
 
     msg = MIMEText(body, "plain", "utf-8")
     msg["Subject"] = subject
@@ -42,10 +43,33 @@ def _send(to_email: str, subject: str, body: str) -> bool:
                     srv.login(settings.smtp_user, settings.smtp_password)
                 srv.sendmail(sender, [to_email], msg.as_string())
         logger.info("Письмо отправлено: %s -> %s", subject, to_email)
-        return True
+        return None
     except Exception as e:
-        logger.error("Ошибка отправки письма '%s' на %s: %s", subject, to_email, e)
-        return False
+        err = f"{type(e).__name__}: {e}"
+        logger.error("Ошибка отправки письма '%s' на %s: %s", subject, to_email, err)
+        return err
+
+
+def _send(to_email: str, subject: str, body: str) -> bool:
+    return _try_send(to_email, subject, body) is None
+
+
+def send_test(to_email: str) -> dict:
+    """Диагностика SMTP (для админ-эндпоинта). Возвращает реальную ошибку."""
+    err = _try_send(
+        to_email, "OneOnOne — проверка SMTP",
+        "Это тестовое письмо для проверки настроек SMTP. Если вы его получили — почта работает.",
+    )
+    return {
+        "ok": err is None,
+        "error": err,
+        "host": settings.smtp_host or None,
+        "port": settings.smtp_port,
+        "encryption": settings.smtp_encryption,
+        "user": settings.smtp_user or None,
+        "sender": settings.smtp_sender or None,
+        "password_len": len(settings.smtp_password or ""),
+    }
 
 
 def _web_base() -> str:

@@ -22,7 +22,7 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserOut
 from app.utils.passwords import hash_password, verify_password
-from app.utils.auth import create_access_token, get_current_user
+from app.utils.auth import create_access_token, get_current_user, require_admin
 from app.services import mailer
 
 router = APIRouter()
@@ -141,6 +141,13 @@ def me(user=Depends(get_current_user)):
     if user is None:
         raise HTTPException(401, "Не авторизовано")
     return user
+
+
+@router.post("/smtp-test")
+def smtp_test(email: str = Query(...), _admin=Depends(require_admin)):
+    """Диагностика SMTP: пробует отправить тестовое письмо и возвращает
+    реальную ошибку (или ok). Пароль не раскрывается — только его длина."""
+    return mailer.send_test(email)
 
 
 # ── подтверждение email ──────────────────────────────────────────────────────

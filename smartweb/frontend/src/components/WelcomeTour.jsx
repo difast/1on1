@@ -122,14 +122,24 @@ export default function WelcomeTour({ currentUser }) {
     let done = currentUser?.onboarding_tour_done === true
     try { if (!done) done = localStorage.getItem(key) === '1' } catch {}
     if (done) return
-    const t = setTimeout(() => {
+    // Опрашиваем DOM несколько раз (~до 6 c), а не один раз: сразу после
+    // регистрации дашборд с медленным бэкендом (холодный старт) может ещё не
+    // смонтировать якоря к первой проверке — раньше тур в этом случае молча не
+    // появлялся. Открываем, как только появился хотя бы один якорь шага.
+    let tries = 0
+    let timer
+    const attempt = () => {
       const steps = (STEPS[role] || []).filter(s => document.querySelector(s.sel))
-      if (steps.length === 0) return
-      setResolved(steps)
-      setI(0)
-      setOpen(true)
-    }, 600)
-    return () => clearTimeout(t)
+      if (steps.length > 0) {
+        setResolved(steps)
+        setI(0)
+        setOpen(true)
+        return
+      }
+      if (++tries < 14) timer = setTimeout(attempt, 400)
+    }
+    timer = setTimeout(attempt, 500)
+    return () => clearTimeout(timer)
   }, [key, role])
 
   // Пересчитываем прямоугольник подсветки при смене шага, скролле и ресайзе.
