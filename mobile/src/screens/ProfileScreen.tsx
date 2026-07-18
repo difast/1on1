@@ -8,11 +8,10 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
-import { updateUser, deleteUser, createSupportTicket, telegramLink } from '../lib/api';
+import { updateUser, deleteUser, createSupportTicket, telegramLink, authChangePassword, authResendConfirmation } from '../lib/api';
 import { getCoaching, setCoaching } from '../lib/coaching';
 import { useI18n, LANGS, type Lang } from '../lib/i18n';
 import { useTheme } from '../context/theme';
-import { supabase } from '../lib/supabase';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 import { LegalDocsModal } from '../components/LegalDocsModal';
@@ -43,6 +42,7 @@ export default function ProfileScreen() {
 
   // Password change
   const [showPassword, setShowPassword] = useState(false);
+  const [pwdCurrent, setPwdCurrent] = useState('');
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
@@ -156,17 +156,33 @@ export default function ProfileScreen() {
   };
 
   const handleChangePassword = async () => {
-    if (!pwdNew.trim()) { setPwdError('Введите новый пароль'); return; }
-    if (pwdNew.length < 6) { setPwdError('Минимум 6 символов'); return; }
+    if (!pwdCurrent.trim()) { setPwdError('Введите текущий пароль'); return; }
+    if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
+      setPwdError('Пароль: минимум 8 символов, буквы и цифры'); return;
+    }
     if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return; }
+    if (!user?.id) return;
     setPwdLoading(true); setPwdError('');
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwdNew });
-      if (error) { setPwdError(error.message); return; }
+      await authChangePassword({ user_id: user.id, current_password: pwdCurrent, new_password: pwdNew });
       setPwdSuccess('Пароль изменён');
-      setPwdNew(''); setPwdConfirm('');
+      setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
       setTimeout(() => { setPwdSuccess(''); setShowPassword(false); }, 1500);
-    } catch { setPwdError('Произошла ошибка'); } finally { setPwdLoading(false); }
+    } catch (err: any) {
+      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось изменить пароль');
+    } finally { setPwdLoading(false); }
+  };
+
+  const [resendLoading, setResendLoading] = useState(false);
+  const handleResendConfirmation = async () => {
+    if (!user?.id) return;
+    setResendLoading(true);
+    try {
+      await authResendConfirmation(user.id);
+      Alert.alert('Письмо отправлено', 'Проверьте почту и перейдите по ссылке.');
+    } catch {
+      Alert.alert('Ошибка', 'Не удалось отправить письмо. Попробуйте позже.');
+    } finally { setResendLoading(false); }
   };
 
   const handleLogout = () => {
@@ -377,6 +393,19 @@ export default function ProfileScreen() {
           )}
         </View>
 
+        {/* Подтверждение почты — не блокирует продукт, нужно только для оплаты.
+            Показываем лишь тем, у кого есть email и он не подтверждён. */}
+        {user?.email && user?.email_confirmed === false && (
+          <View style={styles.confirmEmailCard}>
+            <Text style={styles.confirmEmailText}>
+              Подтвердите почту — это нужно для оформления платной подписки. Мы отправили ссылку на {user.email}.
+            </Text>
+            <TouchableOpacity onPress={handleResendConfirmation} disabled={resendLoading} style={styles.confirmEmailBtn}>
+              <Text style={styles.confirmEmailBtnText}>{resendLoading ? 'Отправляем...' : 'Отправить повторно'}</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Настройки: пароль + быстрые тумблеры + привязка Telegram (как в веб-меню) */}
         <View style={styles.menuSection}>
           <Text style={styles.menuSectionLabel}>{t('settings.title')}</Text>
@@ -399,7 +428,16 @@ export default function ProfileScreen() {
                 <>
                   <TextInput
                     style={styles.input}
-                    placeholder="Новый пароль"
+                    placeholder="Текущий пароль"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    value={pwdCurrent}
+                    onChangeText={v => { setPwdCurrent(v); setPwdError(''); }}
+                    autoCapitalize="none"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Новый пароль (минимум 8, буквы и цифры)"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdNew}
@@ -713,6 +751,16 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   saveBtnText: { fontSize: 14, fontWeight: '600', color: '#fff' },
   btnDisabled: { opacity: 0.6 },
 
+  confirmEmailCard: {
+    backgroundColor: '#fff8ed', borderWidth: 1, borderColor: '#fcd9a5',
+    borderRadius: 12, padding: 14, marginHorizontal: 16, marginBottom: 14, gap: 10,
+  },
+  confirmEmailText: { fontSize: 13, color: '#7c4a03', lineHeight: 19 },
+  confirmEmailBtn: {
+    alignSelf: 'flex-start', backgroundColor: c.surface, borderWidth: 1, borderColor: c.blue200,
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 7,
+  },
+  confirmEmailBtnText: { fontSize: 13, fontWeight: '600', color: c.accent },
   menuSection: {
     backgroundColor: c.surface, borderRadius: 16,
     borderWidth: 1, borderColor: c.border, overflow: 'hidden', marginBottom: 0,

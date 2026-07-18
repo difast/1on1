@@ -5,28 +5,29 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../src/lib/supabase';
-import { useAuth, PENDING_ONBOARDING_KEY } from '../../src/context/auth';
+import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 
-type Mode = 'login' | 'register' | 'check_email' | 'admin';
+type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin';
 
 const ADMIN_CODE = '1on12026';
 
-function translateError(msg: string): string {
-  if (msg.includes('Invalid login credentials')) return 'Неверный email или пароль';
-  if (msg.includes('Email not confirmed')) return 'Сначала подтвердите email — проверьте почту';
-  if (msg.includes('already registered')) return 'Этот email уже зарегистрирован';
-  if (msg.includes('rate limit')) return 'Слишком много попыток, подождите немного';
-  return msg;
+// Бэкенд отдаёт понятные русские сообщения в detail — показываем как есть.
+function translateError(msg: any): string {
+  return typeof msg === 'string' ? msg : 'Произошла ошибка';
+}
+
+function passwordProblem(pw: string): string {
+  if ((pw || '').length < 8) return 'Пароль должен быть не короче 8 символов';
+  if (!/[A-Za-zА-Яа-я]/.test(pw) || !/\d/.test(pw)) return 'Пароль должен содержать буквы и цифры';
+  return '';
 }
 
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut } = useAuth();
+  const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut, signIn, signUp, forgotPassword } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -87,15 +88,10 @@ export default function LoginScreen() {
     submittingRef.current = true;
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
-      if (err) {
-        setError(translateError(err.message));
-        submittingRef.current = false;
-        setLoading(false);
-      }
-      // On success: keep loading=true until onAuthStateChange fires and navigates away
-    } catch {
-      setError('Ошибка сети. Проверьте подключение.');
+      await signIn(email, password);
+      // На успехе _layout уводит на нужный экран; спиннер держим до навигации.
+    } catch (err: any) {
+      setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось войти'));
       submittingRef.current = false;
       setLoading(false);
     }
@@ -106,22 +102,29 @@ export default function LoginScreen() {
     setError('');
     if (!email.trim()) { setError('Введите email'); return; }
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
-    if (password.length < 6) { setError('Пароль минимум 6 символов'); return; }
+    const pw = passwordProblem(password);
+    if (pw) { setError(pw); return; }
     submittingRef.current = true;
     setLoading(true);
     try {
-      const { error: err } = await supabase.auth.signUp({ email: email.trim(), password });
-      if (err) { setError(translateError(err.message)); }
-      else {
-        await AsyncStorage.setItem(PENDING_ONBOARDING_KEY, 'true');
-        setMode('check_email');
-      }
-    } catch {
-      setError('Ошибка сети. Проверьте подключение.');
-    } finally {
+      // Регистрация сразу авторизует; роль выбирается в онбординге, куда уведёт
+      // _layout. Письмо с подтверждением уходит, доступ не блокируется.
+      await signUp(email, password);
+    } catch (err: any) {
+      setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось зарегистрироваться'));
       submittingRef.current = false;
       setLoading(false);
     }
+  };
+
+  const handleForgot = async () => {
+    setError('');
+    if (!email.trim()) { setError('Введите email'); return; }
+    setLoading(true);
+    try {
+      await forgotPassword(email);
+    } catch { /* не раскрываем наличие аккаунта */ }
+    finally { setLoading(false); setMode('forgot_sent'); }
   };
 
   const handleAdminLogin = async () => {
@@ -130,21 +133,64 @@ export default function LoginScreen() {
     await enterAdmin();
   };
 
-  if (mode === 'check_email') {
+  if (mode === 'forgot_sent') {
     return (
       <SafeAreaView style={[styles.root, styles.center]}>
         <View style={styles.emailIconWrap}>
           <Ionicons name="mail-outline" size={28} color={colors.accent} />
         </View>
         <Text style={styles.emailTitle}>Проверьте почту</Text>
-        <Text style={styles.emailDesc}>Мы отправили письмо на</Text>
+        <Text style={styles.emailDesc}>Если для этого адреса есть аккаунт с паролем, мы отправили ссылку на</Text>
         <Text style={styles.emailAddress}>{email}</Text>
         <Text style={styles.emailHint}>
-          Перейдите по ссылке в письме, затем войдите в аккаунт.
+          Откройте ссылку из письма и задайте новый пароль. Ссылка действует 1 час.
         </Text>
-        <TouchableOpacity style={styles.btn} onPress={() => setMode('login')}>
-          <Text style={styles.btnText}>Войти</Text>
+        <TouchableOpacity style={styles.btn} onPress={() => { setMode('login'); setError(''); }}>
+          <Text style={styles.btnText}>Вернуться ко входу</Text>
         </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  if (mode === 'forgot') {
+    return (
+      <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
+            <View style={styles.logoWrap}>
+              <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
+              <Text style={styles.logoSub}>Сброс пароля</Text>
+            </View>
+            <View style={styles.card}>
+              <Text style={[styles.label, { marginBottom: 12 }]}>
+                Укажите email — пришлём ссылку для смены пароля.
+              </Text>
+              <View style={styles.field}>
+                <Text style={styles.label}>Email</Text>
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={v => { setEmail(v); setError(''); }}
+                  placeholder="ivan@company.com"
+                  placeholderTextColor={colors.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  textContentType="emailAddress"
+                />
+              </View>
+              {error ? (
+                <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
+              ) : null}
+              <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleForgot} disabled={loading}>
+                {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnText}>Отправить ссылку</Text>}
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.backLink} onPress={() => { setMode('login'); setError(''); }}>
+                <Text style={styles.backLinkText}>Назад ко входу</Text>
+              </TouchableOpacity>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </SafeAreaView>
     );
   }
@@ -265,7 +311,7 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* Supabase/auth error */}
+            {/* Ошибка входа/регистрации */}
             {error ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>{error}</Text>
@@ -290,6 +336,15 @@ export default function LoginScreen() {
                 ? <ActivityIndicator size="small" color="#fff" />
                 : <Text style={styles.btnText}>{mode === 'login' ? 'Войти →' : 'Зарегистрироваться →'}</Text>}
             </TouchableOpacity>
+
+            {mode === 'login' && (
+              <TouchableOpacity
+                style={{ alignItems: 'center', marginTop: 14 }}
+                onPress={() => { setMode('forgot'); setError(''); }}
+              >
+                <Text style={styles.adminLinkText}>Забыли пароль?</Text>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.adminLink}
