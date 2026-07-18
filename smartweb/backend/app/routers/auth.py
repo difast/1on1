@@ -143,10 +143,12 @@ def me(user=Depends(get_current_user)):
     return user
 
 
+@router.get("/smtp-test")
 @router.post("/smtp-test")
 def smtp_test(email: str = Query(...), _admin=Depends(require_admin)):
     """Диагностика SMTP: пробует отправить тестовое письмо и возвращает
-    реальную ошибку (или ok). Пароль не раскрывается — только его длина."""
+    реальную ошибку (или ok). Пароль не раскрывается — только его длина.
+    Доступен по GET и POST, чтобы можно было просто открыть ссылку в браузере."""
     return mailer.send_test(email)
 
 
