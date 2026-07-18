@@ -9,6 +9,16 @@ import {
 
 const ADMIN_PASSWORD = '1on12026'
 
+// Небольшой крутящийся индикатор для кнопок — показываем при долгой загрузке
+// (холодный старт бэкенда). Использует глобальный keyframe spin.
+const BtnSpinner = () => (
+  <span style={{
+    display: 'inline-block', width: 16, height: 16,
+    border: '2px solid rgba(255,255,255,0.45)', borderTopColor: '#fff',
+    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
+  }} />
+)
+
 const Logo = () => (
   <div style={{ textAlign: 'center', marginBottom: 32 }}>
     <span className="logo" style={{ fontSize: 26 }}>
@@ -163,8 +173,8 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
               {error && (
                 <div style={{ background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14 }}>{error}</div>
               )}
-              <button type="submit" disabled={loading} className="btn btn-accent" style={{ width: '100%' }}>
-                {loading ? 'Отправляем...' : 'Отправить ссылку'}
+              <button type="submit" disabled={loading} className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+                {loading ? (<><BtnSpinner /> Отправляем...</>) : 'Отправить ссылку'}
               </button>
             </form>
             <button
@@ -291,10 +301,10 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
               <button
                 type="submit" disabled={loading} className="btn btn-accent"
-                style={{ width: '100%', padding: '13px 24px', fontSize: 15, marginTop: 4 }}
+                style={{ width: '100%', padding: '13px 24px', fontSize: 15, marginTop: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
               >
                 {loading
-                  ? (mode === 'login' ? 'Входим...' : 'Регистрируемся...')
+                  ? (<><BtnSpinner /> {mode === 'login' ? 'Входим...' : 'Регистрируемся...'}</>)
                   : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
               </button>
 
