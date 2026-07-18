@@ -15,7 +15,7 @@ from app.config import settings
 from app.models.user import User
 from app.models.telegram import TelegramLinkRequest
 from app.schemas.user import UserOut
-from app.utils.auth import require_admin
+from app.utils.auth import require_admin, create_access_token
 from app.services import telegram as tg
 
 router = APIRouter()
@@ -71,7 +71,9 @@ def miniapp_auth(data: MiniAppAuth, db: Session = Depends(get_db)):
     if not tg_data:
         raise HTTPException(status_code=401, detail="Не удалось проверить Telegram initData")
     user, status = tg.resolve_web_login(db, tg_data)
-    return {"status": status, "user": UserOut.model_validate(user).model_dump()}
+    # Выдаём наш JWT, чтобы Mini App слал Bearer как и остальные клиенты (Этап 8).
+    return {"status": status, "user": UserOut.model_validate(user).model_dump(),
+            "token": create_access_token(user.id)}
 
 
 # ---- Вход через Login Widget ------------------------------------------------
@@ -107,7 +109,9 @@ def widget_callback(data: WidgetAuth, db: Session = Depends(get_db)):
         if str(e) == "telegram_in_use":
             raise HTTPException(status_code=409, detail="Этот Telegram уже привязан к другому аккаунту с данными.")
         raise HTTPException(status_code=404, detail="Аккаунт не найден")
-    return {"status": status, "user": UserOut.model_validate(user).model_dump()}
+    # Выдаём наш JWT — Telegram-вход на вебе шлёт Bearer как email-вход (Этап 8).
+    return {"status": status, "user": UserOut.model_validate(user).model_dump(),
+            "token": create_access_token(user.id)}
 
 
 # ---- Привязка по коду (из бота) --------------------------------------------
