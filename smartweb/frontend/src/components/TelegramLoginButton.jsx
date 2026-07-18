@@ -8,12 +8,17 @@ let _cbSeq = 0
 
 export default function TelegramLoginButton({ botUsername, onAuth, requestAccess = false }) {
   const ref = useRef(null)
+  // onAuth — новая функция на каждый рендер родителя (набор символов в форме).
+  // Держим её в ref, чтобы НЕ пересоздавать виджет: иначе iframe Telegram
+  // переинжектился на каждое нажатие клавиши и вся форма «дёргалась».
+  const onAuthRef = useRef(onAuth)
+  useEffect(() => { onAuthRef.current = onAuth }, [onAuth])
 
   useEffect(() => {
     if (!botUsername || !ref.current) return
     // Уникальное имя глобального колбэка — виджет вызывает window[callback](user).
     const cbName = `onTelegramAuth_${++_cbSeq}`
-    window[cbName] = (user) => { try { onAuth?.(user) } catch (e) { /* no-op */ } }
+    window[cbName] = (user) => { try { onAuthRef.current?.(user) } catch (e) { /* no-op */ } }
 
     const script = document.createElement('script')
     script.src = 'https://telegram.org/js/telegram-widget.js?22'
@@ -32,7 +37,8 @@ export default function TelegramLoginButton({ botUsername, onAuth, requestAccess
       try { delete window[cbName] } catch { window[cbName] = undefined }
       if (ref.current) ref.current.innerHTML = ''
     }
-  }, [botUsername, onAuth, requestAccess])
+    // Виджет пересоздаётся только при смене бота/параметра доступа, а не onAuth.
+  }, [botUsername, requestAccess])
 
   return <div ref={ref} style={{ display: 'flex', justifyContent: 'center' }} />
 }
