@@ -156,7 +156,7 @@ export default function LoginScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
             <View style={styles.logoWrap}>
               <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
               <Text style={styles.logoSub}>Сброс пароля</Text>
@@ -199,7 +199,7 @@ export default function LoginScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
         <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-          <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
+          <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
             <View style={styles.logoWrap}>
               <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
               <Text style={styles.logoSub}>Панель администратора</Text>
@@ -248,7 +248,7 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.bg }}>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="always">
+        <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
           <View style={styles.logoWrap}>
             <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
             <Text style={styles.logoSub}>Эффективные 1-on-1 встречи с командой</Text>
@@ -363,15 +363,6 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   root: {
     flexGrow: 1, backgroundColor: c.bg, padding: 20,
     alignItems: 'center', justifyContent: 'center',
-  },
-  // Для форм со вводом контент прижат к верху (с отступом), а не центрируется
-  // по вертикали. Центрирование в растущем ScrollView заставляло Android
-  // пересчитывать позицию при каждом нажатии клавиши на фоне resize клавиатуры —
-  // из-за этого экран «трясло». Верхняя привязка делает раскладку стабильной.
-  scrollContent: {
-    flexGrow: 1, backgroundColor: c.bg,
-    paddingHorizontal: 20, paddingTop: 56, paddingBottom: 40,
-    alignItems: 'center',
   },
   center: { flex: 1 },
   logoWrap: { alignItems: 'center', marginBottom: 28 },
