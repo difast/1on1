@@ -1,27 +1,31 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Session } from '@supabase/supabase-js';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../lib/supabase';
-import { getUserByEmail, joinTeam, createTeam } from '../lib/api';
+import { getToken, setToken, clearToken } from '../lib/authToken';
+import { authLogin, authRegister, authMe, authForgotPassword, joinTeam, createTeam } from '../lib/api';
 
 export interface AppUser {
   id: number;
   email: string;
   name: string;
-  role: 'team_lead' | 'member';
+  role: 'team_lead' | 'member' | '';
   title?: string;
   telegram?: string;
   linkedin?: string;
   github?: string;
   avatar?: string;
+  email_confirmed?: boolean;
+  has_password?: boolean;
 }
 
 type Role = 'team_lead' | 'member';
 
+// Сессия собственной авторизации — наличие токена и email пользователя.
+export interface AuthSession { token: string; email: string }
+
 export const PENDING_ONBOARDING_KEY = 'pendingOnboarding';
 
 interface AuthContextType {
-  session: Session | null;
+  session: AuthSession | null;
   user: AppUser | null;
   loading: boolean;
   initializing: boolean;
@@ -36,6 +40,9 @@ interface AuthContextType {
   addTeamLeadRole: (teamName: string) => Promise<void>;
   enterAdmin: () => Promise<void>;
   exitAdmin: () => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
+  forgotPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   retryProfile: () => Promise<void>;
 }
@@ -56,6 +63,9 @@ const AuthContext = createContext<AuthContextType>({
   addTeamLeadRole: async () => {},
   enterAdmin: async () => {},
   exitAdmin: async () => {},
+  signIn: async () => {},
+  signUp: async () => {},
+  forgotPassword: async () => {},
   signOut: async () => {},
   retryProfile: async () => {},
 });
@@ -66,7 +76,7 @@ const ACTIVE_ROLE_KEY = 'activeRole';
 const ADMIN_KEY = 'adminMode';
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [user, setUserState] = useState<AppUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [initializing, setInitializing] = useState(true);
@@ -96,78 +106,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (u) AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(u)).catch(() => {});
   };
 
-  // Returns 'ok' | 'not_found' | 'error'
-  const loadUser = async (email: string): Promise<'ok' | 'not_found' | 'error'> => {
-    const [savedActiveRole, hasBoth, cached, pendingOnboarding] = await Promise.all([
+  // Разложить загруженного пользователя по состоянию (роль/кэш).
+  const applyUser = async (data: AppUser) => {
+    const [savedActiveRole, hasBoth] = await Promise.all([
       AsyncStorage.getItem(ACTIVE_ROLE_KEY),
       AsyncStorage.getItem(BOTH_ROLES_KEY),
-      AsyncStorage.getItem(USER_CACHE_KEY),
-      AsyncStorage.getItem(PENDING_ONBOARDING_KEY),
     ]);
     setHasBothRoles(hasBoth === 'true');
-
-    // Restore from cache immediately
-    if (cached) {
-      try {
-        const u: AppUser = JSON.parse(cached);
-        setUserState(u);
-        if (savedActiveRole) setActiveRoleState(savedActiveRole as Role);
-        else if (hasBoth !== 'true') setActiveRoleState(u.role);
-      } catch {}
-    }
-
-    try {
-      const data = (await getUserByEmail(email)) as AppUser;
-      setUserState(data);
-      setProfileError(null);
-      setNeedsOnboarding(false);
-      AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
-      AsyncStorage.removeItem(PENDING_ONBOARDING_KEY).catch(() => {});
+    setUserState(data);
+    setProfileError(null);
+    setNeedsOnboarding(false);
+    AsyncStorage.setItem(USER_CACHE_KEY, JSON.stringify(data)).catch(() => {});
+    if (data.role) {
       if (savedActiveRole) setActiveRoleState(savedActiveRole as Role);
-      else if (hasBoth !== 'true') setActiveRoleState(data.role);
+      else if (hasBoth !== 'true') setActiveRoleState(data.role as Role);
+    }
+  };
+
+  // Загрузка профиля по токену (/auth/me). 401 -> сессия сброшена.
+  const loadProfile = async (): Promise<'ok' | 'unauth' | 'error'> => {
+    try {
+      const data = (await authMe()) as AppUser;
+      await applyUser(data);
       return 'ok';
     } catch (err: any) {
       const status = err?.response?.status;
-      if (status === 404) {
-        // New user — Supabase account exists but no backend profile yet
-        if (!cached) {
-          setUserState(null);
-          // Only route to onboarding when the registration flag is set;
-          // returning users without a profile should stay at the login screen.
-          setNeedsOnboarding(pendingOnboarding === 'true');
-        }
-        setProfileError(null);
-        return 'not_found';
-      }
-      // Server error (500, timeout, 401, network down)
-      const msg = err?.response?.detail ?? err?.message ?? null;
-      if (!cached) {
+      if (status === 401) {
+        await clearToken();
+        setSession(null);
         setUserState(null);
-        setProfileError(msg ?? 'Сервер временно недоступен. Попробуйте позже.');
+        return 'unauth';
+      }
+      const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
+      if (cached) {
+        try { setUserState(JSON.parse(cached)); } catch {}
+      } else {
+        setProfileError(err?.response?.detail ?? err?.message ?? 'Сервер временно недоступен. Попробуйте позже.');
       }
       return 'error';
     }
   };
 
+  // Восстановление сессии при запуске: есть токен -> грузим профиль.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, sess) => {
-        setSession(sess);
-        setProfileError(null);
-        if (sess?.user?.email) {
-          setLoading(true);
-          try {
-            await loadUser(sess.user.email);
-          } catch {}
+    (async () => {
+      const token = await getToken();
+      if (token) {
+        // Показать кэш сразу (быстрый старт), затем обновить с сервера.
+        const cached = await AsyncStorage.getItem(USER_CACHE_KEY);
+        if (cached) {
+          try { const u = JSON.parse(cached); setSession({ token, email: u.email }); setUserState(u); } catch { setSession({ token, email: '' }); }
         } else {
-          setUserState(null);
+          setSession({ token, email: '' });
         }
-        setLoading(false);
-        setInitializing(false);
-      },
-    );
-    return () => subscription.unsubscribe();
+        await loadProfile();
+      }
+      setLoading(false);
+      setInitializing(false);
+    })();
   }, []);
+
+  const signIn = async (email: string, password: string) => {
+    setProfileError(null);
+    const { token, user: u } = await authLogin({ email: email.trim(), password });
+    await setToken(token);
+    setSession({ token, email: u.email });
+    await applyUser(u);
+  };
+
+  const signUp = async (email: string, password: string) => {
+    setProfileError(null);
+    const clean = email.trim();
+    // Имя по умолчанию — из email; роль выбирается в онбординге.
+    const { token, user: u } = await authRegister({ name: clean.split('@')[0], email: clean, password });
+    await setToken(token);
+    setSession({ token, email: u.email });
+    await AsyncStorage.setItem(PENDING_ONBOARDING_KEY, 'true');
+    setUserState(u);           // role === '' -> _layout уведёт в онбординг
+    setProfileError(null);
+  };
+
+  const forgotPassword = async (email: string) => {
+    await authForgotPassword(email.trim());
+  };
 
   const setActiveRole = async (role: Role) => {
     setActiveRoleState(role);
@@ -192,16 +213,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const retryProfile = async () => {
-    const email = session?.user?.email;
-    if (!email) return;
+    if (!session) return;
     setLoading(true);
     setProfileError(null);
-    try { await loadUser(email); } catch {}
+    try { await loadProfile(); } catch {}
     setLoading(false);
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await clearToken();
     setUserState(null);
     setSession(null);
     setActiveRoleState(null);
@@ -215,7 +235,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={{
       session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
-      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin, signOut, retryProfile,
+      setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin,
+      signIn, signUp, forgotPassword, signOut, retryProfile,
     }}>
       {children}
     </AuthContext.Provider>

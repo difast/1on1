@@ -47,7 +47,7 @@ export default function OnboardingScreen() {
   if (!session) return <Redirect href="/(auth)/login" />;
   if (user?.role) return <Redirect href="/(tabs)" />;
 
-  const email = session.user.email!;
+  const email = session.email || user?.email || '';
 
   const handleProfileSubmit = async () => {
     if (!name.trim()) { setError('Укажите имя'); return; }
@@ -56,14 +56,18 @@ export default function OnboardingScreen() {
     try {
       const payload: any = {
         name: name.trim(),
-        email,
         role,
         title: title.trim() || undefined,
         telegram: telegram.trim() || undefined,
         linkedin: linkedin.trim() || undefined,
         github: github.trim() || undefined,
       };
-      const newUser = await createUser(payload) as any;
+      // Пользователь уже создан при регистрации (собственная авторизация) —
+      // онбординг дозаполняет профиль и выбирает роль (update, без дубля).
+      // createUser оставлен как запасной путь на случай отсутствующего профиля.
+      const newUser = user?.id
+        ? (await updateUser(user.id, payload) as any)
+        : (await createUser({ ...payload, email }) as any);
 
       if (role === 'member' && inviteCode.trim()) {
         try {

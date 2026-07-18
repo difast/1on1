@@ -1,7 +1,7 @@
-// Handles Supabase email confirmation deep links (oneonone://callback?token=...).
-// Without this file Expo Router shows "not found" when the app opens via the
-// confirmation link. The auth state change listener in AuthProvider picks up
-// the confirmed session automatically; we just need a valid route here.
+// Резервный маршрут на случай открытия приложения по deep-link. Подтверждение
+// почты теперь происходит на вебе (ссылка из письма ведёт на /confirm-email),
+// поэтому здесь просто редирект на главный экран, чтобы Expo Router не показывал
+// "not found".
 import { Redirect } from 'expo-router';
 
 export default function AuthCallback() {

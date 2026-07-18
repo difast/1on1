@@ -1,12 +1,12 @@
-import { supabase } from './supabase';
+import { getToken } from './authToken';
 
 const BASE =
   (process.env.EXPO_PUBLIC_API_URL || 'https://1on1-production-749c.up.railway.app') + '/api';
 
 async function req<T>(path: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
-  const { data: { session } } = await supabase.auth.getSession();
-  const authHeader: Record<string, string> = session?.access_token
-    ? { Authorization: `Bearer ${session.access_token}` }
+  const token = await getToken();
+  const authHeader: Record<string, string> = token
+    ? { Authorization: `Bearer ${token}` }
     : {};
 
   const controller = new AbortController();
@@ -169,6 +169,19 @@ export const getTeamMoodSummary = (teamId: number) =>
 // AI Assistant
 export const assistantChat = (messages: { role: string; content: string }[], context = '') =>
   req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context }) });
+
+// Собственная аутентификация (email/пароль + JWT), замена Supabase
+export const authRegister = (data: { name: string; email: string; password: string }) =>
+  req<{ token: string; user: any }>('/auth/register', { method: 'POST', body: JSON.stringify(data) });
+export const authLogin = (data: { email: string; password: string }) =>
+  req<{ token: string; user: any }>('/auth/login', { method: 'POST', body: JSON.stringify(data) });
+export const authMe = () => req<any>('/auth/me');
+export const authForgotPassword = (email: string) =>
+  req<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
+export const authResendConfirmation = (user_id: number) =>
+  req<any>('/auth/resend-confirmation', { method: 'POST', body: JSON.stringify({ user_id }) });
+export const authChangePassword = (data: { user_id: number; current_password: string; new_password: string }) =>
+  req<any>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) });
 
 // Telegram: привязка аккаунта по коду из бота
 export const telegramLink = (user_id: number, code: string) =>

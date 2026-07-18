@@ -7,13 +7,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
-import { supabase } from '../lib/supabase';
+import { authChangePassword } from '../lib/api';
 import type { AppColors } from '../constants/colors';
 
 export default function SettingsScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { signOut, enterAdmin, isAdmin, exitAdmin } = useAuth();
+  const { user, signOut, enterAdmin, isAdmin, exitAdmin } = useAuth();
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
   const [showAdminSection, setShowAdminSection] = useState(false);
@@ -29,6 +29,7 @@ export default function SettingsScreen() {
     setAdminCode('');
     setAdminError('');
   };
+  const [pwdCurrent, setPwdCurrent] = useState('');
   const [pwdNew, setPwdNew] = useState('');
   const [pwdConfirm, setPwdConfirm] = useState('');
   const [pwdLoading, setPwdLoading] = useState(false);
@@ -36,18 +37,22 @@ export default function SettingsScreen() {
   const [pwdSuccess, setPwdSuccess] = useState('');
 
   const handleChangePassword = async () => {
-    if (!pwdNew.trim()) { setPwdError('Введите новый пароль'); return; }
-    if (pwdNew.length < 6) { setPwdError('Пароль должен быть не менее 6 символов'); return; }
+    if (!pwdCurrent.trim()) { setPwdError('Введите текущий пароль'); return; }
+    if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
+      setPwdError('Пароль: минимум 8 символов, буквы и цифры'); return;
+    }
     if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return; }
+    if (!user?.id) return;
     setPwdLoading(true);
     setPwdError('');
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwdNew });
-      if (error) { setPwdError(error.message); return; }
-      setPwdSuccess('Пароль успешно изменён');
-      setPwdNew(''); setPwdConfirm('');
+      await authChangePassword({ user_id: user.id, current_password: pwdCurrent, new_password: pwdNew });
+      setPwdSuccess('Пароль изменён');
+      setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
       setTimeout(() => { setPwdSuccess(''); setShowPasswordSection(false); }, 1500);
-    } catch { setPwdError('Произошла ошибка'); } finally { setPwdLoading(false); }
+    } catch (err: any) {
+      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось изменить пароль');
+    } finally { setPwdLoading(false); }
   };
 
   const handleLogout = () => {
@@ -98,12 +103,21 @@ export default function SettingsScreen() {
           {showPasswordSection && (
             <View style={styles.expandedBlock}>
               {pwdSuccess ? (
-                <Text style={styles.successText}>✓ {pwdSuccess}</Text>
+                <Text style={styles.successText}>{pwdSuccess}</Text>
               ) : (
                 <>
                   <TextInput
                     style={styles.input}
-                    placeholder="Новый пароль"
+                    placeholder="Текущий пароль"
+                    placeholderTextColor={colors.textMuted}
+                    secureTextEntry
+                    value={pwdCurrent}
+                    onChangeText={v => { setPwdCurrent(v); setPwdError(''); }}
+                    autoCapitalize="none"
+                  />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Новый пароль (минимум 8, буквы и цифры)"
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdNew}
