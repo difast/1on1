@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall, telegramLink, getTelegramConfig } from '../api/client'
-import { supabase } from '../lib/supabase'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall, telegramLink, getTelegramConfig, authChangePassword, authResendConfirmation, authAddEmail } from '../api/client'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
@@ -103,11 +102,21 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
   // Password change modal
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [pwdCurrent, setPwdCurrent] = useState('')
   const [pwdNew, setPwdNew] = useState('')
   const [pwdConfirm, setPwdConfirm] = useState('')
   const [pwdError, setPwdError] = useState('')
   const [pwdSuccess, setPwdSuccess] = useState('')
   const [pwdLoading, setPwdLoading] = useState(false)
+
+  // Подтверждение email: баннер (только для тех, у кого есть email и он не
+  // подтверждён) и добавление email (для входа только через Telegram).
+  const [emailBannerHidden, setEmailBannerHidden] = useState(false)
+  const [resendLoading, setResendLoading] = useState(false)
+  const [showAddEmailModal, setShowAddEmailModal] = useState(false)
+  const [addEmailVal, setAddEmailVal] = useState('')
+  const [addEmailErr, setAddEmailErr] = useState('')
+  const [addEmailLoading, setAddEmailLoading] = useState(false)
 
   // Profile sidebar edit state
   const [editing, setEditing] = useState(false)
@@ -339,16 +348,49 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   const handleChangePassword = async (e) => {
     e.preventDefault()
     if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return }
-    if (pwdNew.length < 6) { setPwdError('Пароль должен быть не менее 6 символов'); return }
+    if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
+      setPwdError('Пароль должен быть не короче 8 символов и содержать буквы и цифры'); return
+    }
     setPwdLoading(true)
     setPwdError('')
     try {
-      const { error } = await supabase.auth.updateUser({ password: pwdNew })
-      if (error) { setPwdError(error.message); return }
-      setPwdSuccess('Пароль успешно изменён')
-      setPwdNew(''); setPwdConfirm('')
+      await authChangePassword({
+        user_id: currentUser.id,
+        current_password: pwdCurrent,
+        new_password: pwdNew,
+      })
+      setPwdSuccess('Пароль изменён')
+      setPwdCurrent(''); setPwdNew(''); setPwdConfirm('')
       setTimeout(() => { setShowPasswordModal(false); setPwdSuccess('') }, 1500)
-    } catch { setPwdError('Произошла ошибка') } finally { setPwdLoading(false) }
+    } catch (err) {
+      setPwdError(err?.response?.data?.detail || 'Не удалось изменить пароль')
+    } finally { setPwdLoading(false) }
+  }
+
+  const handleResendConfirmation = async () => {
+    if (!currentUser?.id) return
+    setResendLoading(true)
+    try {
+      await authResendConfirmation({ user_id: currentUser.id })
+      toast('Письмо отправлено. Проверьте почту.')
+    } catch {
+      toast('Не удалось отправить письмо')
+    } finally { setResendLoading(false) }
+  }
+
+  const handleAddEmail = async (e) => {
+    e.preventDefault()
+    setAddEmailErr('')
+    setAddEmailLoading(true)
+    try {
+      const { data } = await authAddEmail(currentUser.id, addEmailVal.trim())
+      onUserUpdate?.(data)
+      setShowAddEmailModal(false)
+      setAddEmailVal('')
+      toast('Email добавлен. Проверьте почту для подтверждения.')
+    } catch (err) {
+      setAddEmailErr(err?.response?.data?.detail || 'Не удалось добавить email')
+    } finally { setAddEmailLoading(false) }
   }
 
   const toggleNotifications = async () => {
@@ -655,9 +697,20 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuDivider />
 
                 {/* 2. Настройки: действие + быстрые тумблеры */}
-                <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdNew(''); setPwdConfirm('') }}>
-                  Сменить пароль
-                </MenuItemBtn>
+                {/* Смена пароля — только если у аккаунта есть пароль. У входа
+                    только через Telegram пароля нет, поэтому пункт скрыт. */}
+                {currentUser?.has_password && (
+                  <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdCurrent(''); setPwdNew(''); setPwdConfirm('') }}>
+                    Сменить пароль
+                  </MenuItemBtn>
+                )}
+                {/* Добавить email — ненавязчивое предложение для тех, кто вошёл
+                    только через Telegram и не указывал почту. */}
+                {!currentUser?.email && (
+                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowAddEmailModal(true); setAddEmailErr(''); setAddEmailVal('') }}>
+                    Добавить email
+                  </MenuItemBtn>
+                )}
                 {/* Привязка Telegram — только если бот включён и ещё не привязан */}
                 {tgEnabled && !currentUser?.telegram_id && (
                   <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowTgModal(true); setTgErr(''); setTgCode('') }}>
@@ -803,16 +856,24 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             </div>
             {pwdSuccess ? (
               <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
-                ✓ {pwdSuccess}
+                {pwdSuccess}
               </p>
             ) : (
               <form onSubmit={handleChangePassword}>
+                <div className="form-group">
+                  <label className="form-label">Текущий пароль</label>
+                  <input
+                    type="password" className="input" value={pwdCurrent}
+                    onChange={e => setPwdCurrent(e.target.value)}
+                    required placeholder="Текущий пароль" autoComplete="current-password"
+                  />
+                </div>
                 <div className="form-group">
                   <label className="form-label">Новый пароль</label>
                   <input
                     type="password" className="input" value={pwdNew}
                     onChange={e => setPwdNew(e.target.value)}
-                    required minLength={6} placeholder="Минимум 6 символов"
+                    required minLength={8} placeholder="Минимум 8 символов, буквы и цифры" autoComplete="new-password"
                   />
                 </div>
                 <div className="form-group">
@@ -820,7 +881,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   <input
                     type="password" className="input" value={pwdConfirm}
                     onChange={e => setPwdConfirm(e.target.value)}
-                    required minLength={6} placeholder="Повторите пароль"
+                    required minLength={8} placeholder="Повторите пароль" autoComplete="new-password"
                   />
                 </div>
                 {pwdError && (
@@ -831,6 +892,36 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </button>
               </form>
             )}
+          </div>
+        </div>
+      )}
+
+      {showAddEmailModal && (
+        <div className="overlay-center" onClick={() => setShowAddEmailModal(false)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
+            <div className="modal-header">
+              <span className="modal-title">Добавить email</span>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowAddEmailModal(false)}>✕</button>
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
+              Email нужен для оформления платной подписки. Мы отправим на него ссылку для подтверждения.
+            </p>
+            <form onSubmit={handleAddEmail}>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input
+                  type="email" className="input" value={addEmailVal}
+                  onChange={e => setAddEmailVal(e.target.value)}
+                  required placeholder="ivan@company.com" autoComplete="email" autoFocus
+                />
+              </div>
+              {addEmailErr && (
+                <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{addEmailErr}</p>
+              )}
+              <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={addEmailLoading}>
+                {addEmailLoading ? 'Сохранение...' : 'Добавить и отправить письмо'}
+              </button>
+            </form>
           </div>
         </div>
       )}
@@ -1140,6 +1231,28 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
         {/* Main content */}
         <main className="app-main" style={{ marginLeft: 240, flex: 1, minWidth: 0, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
+          {/* Баннер подтверждения почты. Не блокирует действия, закрывается.
+              Показывается ТОЛЬКО тем, у кого есть email и он не подтверждён —
+              пользователи без email (только Telegram) его не видят. */}
+          {currentUser?.email && !currentUser?.email_confirmed && !emailBannerHidden && (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+              background: '#fff8ed', border: '1px solid #fcd9a5', borderRadius: 10,
+              padding: '10px 14px', marginBottom: 20,
+            }}>
+              <span style={{ fontSize: 13, color: '#7c4a03', flex: 1, minWidth: 200 }}>
+                Подтвердите почту — это нужно для оформления платной подписки. Мы отправили ссылку на {currentUser.email}.
+              </span>
+              <button onClick={handleResendConfirmation} disabled={resendLoading}
+                style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                {resendLoading ? 'Отправляем...' : 'Отправить повторно'}
+              </button>
+              <button onClick={() => setEmailBannerHidden(true)} aria-label="Скрыть"
+                style={{ background: 'none', border: 'none', color: '#b7791f', cursor: 'pointer', fontSize: 13 }}>
+                Скрыть
+              </button>
+            </div>
+          )}
           {children}
         </main>
       </div>

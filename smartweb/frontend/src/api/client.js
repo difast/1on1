@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getToken } from '../lib/auth'
 
 const baseURL = (import.meta.env.VITE_API_URL || '') + '/api'
 
@@ -7,6 +8,14 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+// Подставляем собственный JWT (если есть) на каждый запрос. Telegram-сессии
+// токена не имеют — тогда заголовок не добавляется, как и раньше.
+api.interceptors.request.use((config) => {
+  const token = getToken()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
 })
 
 // Users
@@ -159,6 +168,17 @@ export const getTelegramConfig = () => api.get('/telegram/config')
 export const telegramCallback = (data) => api.post('/telegram/callback', data)
 export const telegramLink = (userId, code) => api.post('/telegram/link', { user_id: userId, code })
 export const telegramMiniAppAuth = (initData) => api.post('/telegram/miniapp-auth', { init_data: initData })
+
+// Собственная аутентификация (email/пароль + JWT), замена Supabase
+export const authRegister = (data) => api.post('/auth/register', data)
+export const authLogin = (data) => api.post('/auth/login', data)
+export const authMe = () => api.get('/auth/me')
+export const authConfirmEmail = (token) => api.post('/auth/confirm-email', { token })
+export const authResendConfirmation = (data) => api.post('/auth/resend-confirmation', data)
+export const authForgotPassword = (email) => api.post('/auth/forgot-password', { email })
+export const authResetPassword = (token, new_password) => api.post('/auth/reset-password', { token, new_password })
+export const authChangePassword = (data) => api.post('/auth/change-password', data)
+export const authAddEmail = (userId, email) => api.post('/auth/add-email', { user_id: userId, email })
 
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')

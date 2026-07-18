@@ -23,6 +23,12 @@ class UserOut(BaseModel):
     github: Optional[str]
     avatar: Optional[str]
     is_blocked: bool = False
+    # Статус email/пароля — фронт по ним решает, показывать ли баннер
+    # "подтвердите почту" (только если есть email и он не подтверждён),
+    # предложение "добавьте email" (если email нет) и пункт "сменить пароль"
+    # (только если пароль есть).
+    email_confirmed: bool = False
+    has_password: bool = False
     detected_region: Optional[str] = None
     preferred_language: Optional[str] = None
     pricing_hint_shown: bool = False
