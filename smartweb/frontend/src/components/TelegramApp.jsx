@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react'
 import { SurfaceContext } from '../lib/surface'
 import { initData, initViewport, applyTheme, isTelegram } from '../lib/telegram'
 import { telegramMiniAppAuth } from '../api/client'
+import { setToken } from '../lib/auth'
 import i18n from '../i18n'
 import LeadDashboard from './LeadDashboard'
 import MemberDashboard from './MemberDashboard'
@@ -34,6 +35,8 @@ export default function TelegramApp() {
     (async () => {
       try {
         const { data } = await telegramMiniAppAuth(initData())
+        // Сохраняем наш JWT, чтобы api-клиент слал Bearer на все запросы (Этап 8).
+        if (data.token) setToken(data.token)
         setUser(data.user)
         if (data.user?.preferred_language) {
           try { i18n.changeLanguage(data.user.preferred_language) } catch {}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getToken, clearToken } from './lib/auth'
+import { getToken, setToken, clearToken } from './lib/auth'
 import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
@@ -51,10 +51,12 @@ function App() {
     }
   }
 
-  // Успешный вход через Telegram (виджет): { status, user }. Ставим ту же
-  // сессию, что и для email-входа, и запоминаем её как Telegram-сессию.
-  const handleTelegramAuth = async ({ user }) => {
+  // Успешный вход через Telegram (виджет): { status, user, token }. Сохраняем
+  // наш JWT (как при email-входе, чтобы клиент слал Bearer — Этап 8) и запоминаем
+  // сессию как Telegram-сессию для обратной совместимости.
+  const handleTelegramAuth = async ({ user, token }) => {
     if (!user) return
+    if (token) setToken(token)
     setAppUser(user); setTgAuthed(true)
     localStorage.setItem(TG_SESSION_KEY, JSON.stringify({ id: user.id }))
     localStorage.setItem('smart_user', JSON.stringify(user))
