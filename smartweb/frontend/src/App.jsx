@@ -1,27 +1,30 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { supabase } from './lib/supabase'
+import { getToken, clearToken } from './lib/auth'
 import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
 import AdminDashboard from './components/AdminDashboard'
 import TelegramApp from './components/TelegramApp'
-import { getUserByEmail, getUser, detectRegion } from './api/client'
+import ConfirmEmailPage from './components/ConfirmEmailPage'
+import ResetPasswordPage from './components/ResetPasswordPage'
+import { authMe, getUser, detectRegion } from './api/client'
 import i18n from './i18n'
 
 const TG_SESSION_KEY = 'tg_session'
 
 function App() {
-  // Роут Mini App: полностью отдельная ветка авторизации (initData), не зависит
-  // от Supabase-сессии. Проверяем ДО любых хуков сессии.
-  const isTelegramRoute = typeof window !== 'undefined' && window.location.pathname.startsWith('/telegram')
+  // Отдельные маршруты, не требующие сессии. Проверяем ДО любых хуков.
+  const path = typeof window !== 'undefined' ? window.location.pathname : ''
+  const isTelegramRoute = path.startsWith('/telegram')
+  const isConfirmRoute = path.startsWith('/confirm-email')
+  const isResetRoute = path.startsWith('/reset-password')
 
-  const [authUser, setAuthUser] = useState(null)
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
-  // Вход через Telegram живёт параллельно с Supabase-сессией (email/пароль) и
-  // ведёт в тот же users-аккаунт по telegram_id. Здесь — признак такой сессии.
+  // Вход через Telegram живёт параллельно с email/пароль-сессией и ведёт в тот
+  // же users-аккаунт по telegram_id. Здесь — признак такой сессии.
   const [tgAuthed, setTgAuthed] = useState(false)
   const inactivityTimer = useRef(null)
 
@@ -32,19 +35,7 @@ function App() {
   }, [])
   const INACTIVITY_LIMIT = 5 * 60 * 60 * 1000 // 5 hours
 
-  const loadAppUser = async (email) => {
-    try {
-      const { data } = await getUserByEmail(email)
-      setAppUser(data)
-      localStorage.setItem('smart_user', JSON.stringify(data))
-      return data
-    } catch {
-      setAppUser(null)
-      return null
-    }
-  }
-
-  // Восстановить Telegram-сессию из localStorage (когда нет Supabase-сессии).
+  // Восстановить Telegram-сессию из localStorage (когда нет JWT-сессии).
   const restoreTelegramSession = async () => {
     const raw = localStorage.getItem(TG_SESSION_KEY)
     if (!raw) return false
@@ -64,59 +55,47 @@ function App() {
   // сессию, что и для email-входа, и запоминаем её как Telegram-сессию.
   const handleTelegramAuth = async ({ user }) => {
     if (!user) return
-    setAppUser(user); setTgAuthed(true); setAuthUser(null)
+    setAppUser(user); setTgAuthed(true)
     localStorage.setItem(TG_SESSION_KEY, JSON.stringify({ id: user.id }))
     localStorage.setItem('smart_user', JSON.stringify(user))
   }
 
+  // Успешный вход/регистрация по email (свой JWT уже сохранён в AuthPage).
+  const handleAuthSuccess = (user) => {
+    if (!user) return
+    setTgAuthed(false)
+    setAppUser(user)
+    localStorage.setItem('smart_user', JSON.stringify(user))
+  }
+
+  // Восстановление сессии при загрузке: сначала свой JWT (/auth/me), при его
+  // отсутствии/невалидности — Telegram-сессия.
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (session?.user) {
-        if (event === 'INITIAL_SESSION') {
-          // Restored session from storage — check if user still exists in backend.
-          // If the DB was reset (404), sign out so the auth form is shown instead
-          // of the onboarding screen.
-          try {
-            const { data } = await getUserByEmail(session.user.email)
-            setAppUser(data)
-            localStorage.setItem('smart_user', JSON.stringify(data))
-          } catch (err) {
-            setAppUser(null)
-            if (err?.response?.status === 404) {
-              await supabase.auth.signOut()
-              return
-            }
-            // Other errors (network issues etc) — keep session, appUser stays null
-          }
-          setAuthUser(session.user)
-        } else {
-          // Fresh login / email confirmation / token refresh
-          await loadAppUser(session.user.email)
-          setAuthUser(session.user)
-        }
-      } else {
-        // Нет Supabase-сессии — возможно, активна Telegram-сессия.
-        const restored = await restoreTelegramSession()
-        if (!restored) {
-          setAuthUser(null)
-          setAppUser(null)
-          setTgAuthed(false)
-          localStorage.removeItem('smart_user')
+    if (isTelegramRoute || isConfirmRoute || isResetRoute) { setLoading(false); return }
+    ;(async () => {
+      if (getToken()) {
+        try {
+          const { data } = await authMe()
+          setAppUser(data)
+          localStorage.setItem('smart_user', JSON.stringify(data))
+          setLoading(false)
+          return
+        } catch {
+          clearToken()  // токен просрочен/битый
         }
       }
+      await restoreTelegramSession()
       setLoading(false)
-    })
-
-    return () => subscription.unsubscribe()
+    })()
   }, [])
 
   const handleLogout = useCallback(async () => {
     clearTimeout(inactivityTimer.current)
+    clearToken()
     localStorage.removeItem(TG_SESSION_KEY)
     localStorage.removeItem('smart_user')
     setTgAuthed(false)
     setAppUser(null)
-    await supabase.auth.signOut()  // no-op при Telegram-только сессии
   }, [])
 
   const resetInactivityTimer = useCallback(() => {
@@ -125,7 +104,7 @@ function App() {
   }, [handleLogout, INACTIVITY_LIMIT])
 
   useEffect(() => {
-    if (!authUser && !tgAuthed) return
+    if (!appUser && !tgAuthed) return
     const events = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll']
     events.forEach(e => window.addEventListener(e, resetInactivityTimer, { passive: true }))
     resetInactivityTimer()
@@ -133,7 +112,7 @@ function App() {
       events.forEach(e => window.removeEventListener(e, resetInactivityTimer))
       clearTimeout(inactivityTimer.current)
     }
-  }, [authUser, resetInactivityTimer])
+  }, [appUser, tgAuthed, resetInactivityTimer])
 
   // Когда пользователь известен: (1) применяем сохранённый язык (если выбирал
   // раньше) — иначе остаётся язык браузера; (2) один раз определяем регион по IP
@@ -157,8 +136,10 @@ function App() {
     localStorage.setItem('smart_user', JSON.stringify(updatedUser))
   }
 
-  // Mini App — отдельная ветка, не ждём Supabase-сессию.
+  // Mini App и отдельные страницы писем — не ждём сессию.
   if (isTelegramRoute) return <TelegramApp />
+  if (isConfirmRoute) return <ConfirmEmailPage />
+  if (isResetRoute) return <ResetPasswordPage />
 
   if (loading) return (
     <div style={{
@@ -171,17 +152,24 @@ function App() {
 
   if (isAdmin) return <AdminDashboard onLogout={() => setIsAdmin(false)} />
 
-  if (!authUser && !tgAuthed) {
-    return <AuthPage onAdminLogin={() => setIsAdmin(true)} onTelegramAuth={handleTelegramAuth} />
+  if (!appUser && !tgAuthed) {
+    return (
+      <AuthPage
+        onAdminLogin={() => setIsAdmin(true)}
+        onTelegramAuth={handleTelegramAuth}
+        onAuthSuccess={handleAuthSuccess}
+      />
+    )
   }
 
   if (!appUser || !appUser.role) {
-    // Telegram-пользователь уже создан на бэкенде (с пустой ролью) — онбординг
-    // только выбирает роль/профиль поверх существующего аккаунта (existingUser).
+    // Пользователь уже создан на бэкенде (email-регистрация или Telegram) с
+    // пустой ролью — онбординг выбирает роль/профиль поверх существующего
+    // аккаунта (existingUser -> updateUser, без дубля).
     return (
       <Onboarding
-        email={appUser?.email || authUser?.email || ''}
-        existingUser={tgAuthed ? appUser : null}
+        email={appUser?.email || ''}
+        existingUser={appUser && !appUser.role ? appUser : null}
         onComplete={handleOnboardingComplete}
       />
     )

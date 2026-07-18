@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
-import { getTelegramConfig, telegramCallback } from '../api/client'
+import {
+  getTelegramConfig, telegramCallback,
+  authLogin, authRegister, authForgotPassword,
+} from '../api/client'
 
 const ADMIN_PASSWORD = '1on12026'
 
@@ -17,8 +20,8 @@ const Logo = () => (
   </div>
 )
 
-export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
-  const [mode, setMode] = useState('login') // 'login' | 'register' | 'check_email' | 'admin'
+export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }) {
+  const [mode, setMode] = useState('login') // login | register | forgot | forgot_sent | admin
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
@@ -45,25 +48,55 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
     } finally { setTgLoading(false) }
   }
 
+  // Пароль: не короче 8 символов, буквы + цифры (совпадает с проверкой бэкенда).
+  const passwordProblem = (pw) => {
+    if ((pw || '').length < 8) return 'Пароль должен быть не короче 8 символов'
+    if (!/[A-Za-zА-Яа-я]/.test(pw) || !/\d/.test(pw)) return 'Пароль должен содержать буквы и цифры'
+    return ''
+  }
+
   const handleLogin = async (e) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) setError(translateError(error.message))
-    setLoading(false)
+    try {
+      const { data } = await authLogin({ email, password })
+      setToken(data.token)
+      onAuthSuccess?.(data.user)  // App поставит пользователя и решит про онбординг
+    } catch (err) {
+      setError(translateError(err?.response?.data?.detail || 'Не удалось войти'))
+    } finally { setLoading(false) }
   }
 
   const handleRegister = async (e) => {
     e.preventDefault()
     setError('')
     if (password !== confirmPassword) { setError('Пароли не совпадают'); return }
-    if (password.length < 6) { setError('Пароль минимум 6 символов'); return }
+    const pw = passwordProblem(password)
+    if (pw) { setError(pw); return }
     setLoading(true)
-    const { error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } })
-    if (error) setError(translateError(error.message))
-    else setMode('check_email')
-    setLoading(false)
+    try {
+      // Регистрация без выбора роли — роль/профиль выбираются в онбординге.
+      // Пользователь сразу авторизуется, доступ не блокируется; письмо с
+      // подтверждением уходит, баннер о подтверждении покажется внутри продукта.
+      const { data } = await authRegister({ name: email.split('@')[0], email, password })
+      setToken(data.token)
+      onAuthSuccess?.(data.user)
+    } catch (err) {
+      setError(translateError(err?.response?.data?.detail || 'Не удалось зарегистрироваться'))
+    } finally { setLoading(false) }
+  }
+
+  const handleForgot = async (e) => {
+    e.preventDefault()
+    setError('')
+    setLoading(true)
+    try {
+      await authForgotPassword(email)
+      setMode('forgot_sent')  // всегда успех — не раскрываем наличие аккаунта
+    } catch {
+      setMode('forgot_sent')
+    } finally { setLoading(false) }
   }
 
   const handleAdminLogin = (e) => {
@@ -75,13 +108,8 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
     }
   }
 
-  const translateError = (msg) => {
-    if (msg.includes('Invalid login credentials')) return 'Неверный email или пароль'
-    if (msg.includes('Email not confirmed')) return 'Сначала подтвердите email — проверьте почту'
-    if (msg.includes('already registered')) return 'Этот email уже зарегистрирован'
-    if (msg.includes('rate limit')) return 'Слишком много попыток, подождите немного'
-    return msg
-  }
+  // Бэкенд уже отдаёт понятные русские сообщения в detail — показываем как есть.
+  const translateError = (msg) => (typeof msg === 'string' ? msg : 'Произошла ошибка')
 
   return (
     <div style={{
@@ -92,24 +120,58 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
       <div style={{ width: '100%', maxWidth: 420 }} className="anim-fade">
         <Logo />
 
-        {/* Check email screen */}
-        {mode === 'check_email' && (
+        {/* Письмо для сброса пароля отправлено */}
+        {mode === 'forgot_sent' && (
           <div className="card anim-slide" style={{ padding: 32, textAlign: 'center' }}>
             <div style={{ width: 64, height: 64, borderRadius: 16, background: 'var(--blue-50)', border: '1px solid var(--blue-200)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}><svg width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="6" width="22" height="15" rx="2" stroke="var(--color-accent)" strokeWidth="1.5"/><path d="M2 9l11 7 11-7" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinejoin="round"/></svg></div>
             <h2 style={{ fontWeight: 600, fontSize: 20, color: 'var(--color-text-primary)', marginBottom: 10 }}>
               Проверьте почту
             </h2>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 6 }}>
-              Мы отправили письмо на
+              Если для этого адреса есть аккаунт с паролем, мы отправили ссылку для смены пароля на
             </p>
             <p style={{ fontWeight: 600, color: 'var(--color-accent)', fontSize: 15, marginBottom: 20 }}>
               {email}
             </p>
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 24 }}>
-              Перейдите по ссылке в письме, затем войдите в аккаунт.
+              Ссылка действует 1 час.
             </p>
-            <button onClick={() => setMode('login')} className="btn btn-accent" style={{ width: '100%' }}>
-              Войти
+            <button onClick={() => { setMode('login'); setError('') }} className="btn btn-accent" style={{ width: '100%' }}>
+              Вернуться ко входу
+            </button>
+          </div>
+        )}
+
+        {/* Забыли пароль — ввод email */}
+        {mode === 'forgot' && (
+          <div className="card anim-slide" style={{ padding: 28 }}>
+            <h2 style={{ fontWeight: 600, fontSize: 18, color: 'var(--color-text-primary)', marginBottom: 6 }}>
+              Сброс пароля
+            </h2>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 18 }}>
+              Укажите email — пришлём ссылку для смены пароля.
+            </p>
+            <form onSubmit={handleForgot}>
+              <div className="form-group">
+                <label className="form-label" htmlFor="forgot-email">Email</label>
+                <input
+                  id="forgot-email" type="email" value={email}
+                  onChange={e => setEmail(e.target.value)}
+                  placeholder="ivan@company.com" className="input" required autoComplete="email" autoFocus
+                />
+              </div>
+              {error && (
+                <div style={{ background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14 }}>{error}</div>
+              )}
+              <button type="submit" disabled={loading} className="btn btn-accent" style={{ width: '100%' }}>
+                {loading ? 'Отправляем...' : 'Отправить ссылку'}
+              </button>
+            </form>
+            <button
+              onClick={() => { setMode('login'); setError('') }}
+              style={{ width: '100%', marginTop: 12, background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 13 }}
+            >
+              Назад ко входу
             </button>
           </div>
         )}
@@ -157,7 +219,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
         )}
 
         {/* Auth form */}
-        {mode !== 'check_email' && mode !== 'admin' && (
+        {(mode === 'login' || mode === 'register') && (
           <div className="card anim-slide" style={{ padding: 28 }}>
             {/* Tabs */}
             <div style={{
@@ -235,6 +297,18 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth }) {
                   ? (mode === 'login' ? 'Входим...' : 'Регистрируемся...')
                   : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
               </button>
+
+              {mode === 'login' && (
+                <div style={{ textAlign: 'center', marginTop: 12 }}>
+                  <button
+                    type="button"
+                    onClick={() => { setMode('forgot'); setError('') }}
+                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-muted)' }}
+                  >
+                    Забыли пароль?
+                  </button>
+                </div>
+              )}
 
               <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 14, lineHeight: 1.5 }}>
                 {mode === 'register' ? 'Регистрируясь' : 'Продолжая'}, вы даёте{' '}

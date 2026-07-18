@@ -10,7 +10,8 @@ class RegisterReq(BaseModel):
     name: str
     email: str
     password: str
-    role: str = "member"
+    # Роль по умолчанию пустая — выбирается в онбординге (тимлид/участник).
+    role: str = ""
     title: Optional[str] = None
 
 
