@@ -112,6 +112,21 @@ def checkout(data: CheckoutReq, db: Session = Depends(get_db), current=Depends(g
     user = current or (db.query(User).filter(User.id == data.user_id).first() if data.user_id else None)
     if user is None:
         raise HTTPException(401, "User required")
+
+    # ЕДИНСТВЕННЫЙ жёсткий барьер (Этап 5/6): оплата требует подтверждённого
+    # email — независимо от способа регистрации. Формулировка разная для тех,
+    # у кого email нет вовсе (Telegram-only), и для тех, у кого он не подтверждён.
+    if not user.email_confirmed:
+        if not user.email:
+            raise HTTPException(status_code=403, detail={
+                "code": "email_required",
+                "message": "Для оформления подписки укажите и подтвердите email в настройках профиля.",
+            })
+        raise HTTPException(status_code=403, detail={
+            "code": "email_unconfirmed",
+            "message": "Для оформления подписки подтвердите email. Мы отправили письмо со ссылкой; можно отправить его повторно.",
+        })
+
     plan = get_plan(db, data.plan_code)
     if plan is None or plan.is_enterprise:
         raise HTTPException(400, "Plan not purchasable self-serve")

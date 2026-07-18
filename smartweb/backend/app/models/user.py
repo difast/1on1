@@ -9,6 +9,12 @@ class User(Base):
     email = Column(String(255), unique=True, nullable=True)
     role = Column(String(50), default="member")
     title = Column(String(255), nullable=True)
+    # Собственная аутентификация email/пароль. bcrypt-хэш, nullable —
+    # у пользователей, зарегистрированных только через Telegram, пароля нет.
+    password_hash = Column(String(255), nullable=True)
+    # Подтверждён ли email. Не блокирует доступ к продукту (мягкая логика),
+    # но требуется для оформления платной подписки.
+    email_confirmed = Column(Boolean, nullable=False, default=False, server_default="false")
     telegram = Column(String(100), nullable=True)  # @handle из профиля (ручной ввод)
     # Telegram ID — отдельный идентификатор для входа через бота/виджет.
     # Уникальный, nullable: привязка есть не у всех пользователей.
@@ -34,3 +40,8 @@ class User(Base):
     # Онбординг-гид пройден — общий флаг аккаунта (веб и Telegram Mini App).
     onboarding_tour_done = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())
+
+    @property
+    def has_password(self) -> bool:
+        """Есть ли у пользователя пароль (вход по email). У Telegram-only — нет."""
+        return bool(self.password_hash)
