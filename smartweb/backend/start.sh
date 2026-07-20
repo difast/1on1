@@ -4,6 +4,10 @@
 # «нет соединения»). По таймауту/ошибке всё равно поднимаем uvicorn —
 # liveness /healthz заработает, а состояние БД видно в /api/health.
 echo "=== Running Alembic migrations ==="
+# alembic (в отличие от uvicorn) не добавляет текущую папку в sys.path, поэтому
+# `from app.database import Base` в env.py падал с ModuleNotFoundError на Timeweb,
+# где рабочая директория — /app/smartweb/backend. Добавляем её в PYTHONPATH.
+export PYTHONPATH="$(pwd):${PYTHONPATH}"
 timeout 90 alembic upgrade head
 EXIT=$?
 if [ $EXIT -ne 0 ]; then

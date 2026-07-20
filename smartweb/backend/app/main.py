@@ -195,16 +195,17 @@ app.include_router(company.router, prefix="/api/companies", tags=["companies"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 
-@app.get("/healthz")
-@app.get("/api/health/live")
+@app.api_route("/", methods=["GET", "HEAD"])
+@app.api_route("/healthz", methods=["GET", "HEAD"])
+@app.api_route("/api/health/live", methods=["GET", "HEAD"])
 def health_live():
     """Liveness без зависимостей (без БД/Redis) — всегда 200, пока процесс жив.
-    Именно этот путь стоит указывать как health check в Timeweb App Platform,
-    чтобы проверка не падала из-за временной недоступности БД."""
+    Отвечает и на GET, и на HEAD: платформенные health-проверки (в т.ч. Timeweb
+    App Platform, которая шлёт HEAD /) не должны получать 405 и перезапускать
+    контейнер. БД тут не трогаем, чтобы проверка не падала при её недоступности."""
     return {"status": "ok"}
 
 
-@app.get("/")
 @app.get("/api/health")
 def health_check(db: Session = Depends(get_db)):
     db_host = os.environ.get("DATABASE_URL", "").split("@")[-1].split("?")[0]
