@@ -4,9 +4,12 @@ class Settings(BaseSettings):
     # Реальное значение приходит из окружения (DATABASE_URL). Значение по
     # умолчанию не используется — app/database.py читает os.environ напрямую.
     database_url: str = ""
+    # Redis для Celery. На managed-Redis (Timeweb) обычно один адрес — тогда
+    # достаточно задать только REDIS_URL, а broker/backend возьмут его же
+    # (см. свойства celery_broker/celery_backend). Явные CELERY_* переопределяют.
     redis_url: str = "redis://localhost:6379/0"
-    celery_broker_url: str = "redis://localhost:6379/1"
-    celery_result_backend: str = "redis://localhost:6379/2"
+    celery_broker_url: str = ""
+    celery_result_backend: str = ""
     secret_key: str = "change-me"
 
     # --- Собственная аутентификация (email/пароль + JWT). Supabase убран. ---
@@ -40,6 +43,16 @@ class Settings(BaseSettings):
     class Config:
         env_file = ".env"
         extra = "ignore"
+
+    @property
+    def celery_broker(self) -> str:
+        """Брокер Celery: CELERY_BROKER_URL, иначе REDIS_URL."""
+        return self.celery_broker_url or self.redis_url
+
+    @property
+    def celery_backend(self) -> str:
+        """Backend результатов Celery: CELERY_RESULT_BACKEND, иначе REDIS_URL."""
+        return self.celery_result_backend or self.redis_url
 
     @property
     def jwt_signing_key(self) -> str:
