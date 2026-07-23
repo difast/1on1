@@ -12,6 +12,7 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
 import MeetingProposals from './MeetingProposals'
+import InteractionsPanel from './InteractionsPanel'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
@@ -43,6 +44,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [meetings, setMeetings] = useState([])
   const [showRequestMeeting, setShowRequestMeeting] = useState(false)
   const [showProposals, setShowProposals] = useState(false)  // предложения встреч (Задача 5)
+  const [showInteractions, setShowInteractions] = useState(false)  // взаимодействия (блок 39)
   const [meetingDate, setMeetingDate] = useState('')
   const [meetingTopic, setMeetingTopic] = useState('')
   const [meetingLoading, setMeetingLoading] = useState(false)
@@ -600,6 +602,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">
                 Предложения встреч
               </button>
+              <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">
+                Взаимодействия
+              </button>
               <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
                 + Запросить встречу
               </button>
@@ -998,6 +1003,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         teamId={teamId}
         onClose={() => setShowProposals(false)}
         onChanged={() => loadMeetings()}
+      />
+    )}
+
+    {/* Взаимодействия (блок 39) */}
+    {showInteractions && (
+      <InteractionsPanel
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        tasks={tasks}
+        teamId={teamId}
+        onClose={() => setShowInteractions(false)}
       />
     )}
     </>

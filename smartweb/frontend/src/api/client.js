@@ -64,6 +64,24 @@ export const declineProposal = (id, userId) => api.post(`/proposals/${id}/declin
 export const counterProposal = (id, userId, proposedTime, topic) =>
   api.post(`/proposals/${id}/counter`, { user_id: userId, proposed_time: proposedTime, topic })
 
+// Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
+export const createInteraction = (data) => api.post('/interactions/', data)
+export const getInteractions = (userId) => api.get('/interactions/', { params: { user_id: userId } })
+export const acceptInteraction = (id, userId) => api.post(`/interactions/${id}/accept`, { user_id: userId })
+export const declineInteraction = (id, userId) => api.post(`/interactions/${id}/decline`, { user_id: userId })
+export const replyInteraction = (id, userId, body) => api.post(`/interactions/${id}/reply`, { user_id: userId, body })
+export const closeInteraction = (id, userId, outcome) => api.post(`/interactions/${id}/close`, { user_id: userId, outcome })
+export const getUserRecommendations = (userId) => api.get(`/interactions/recommendations/${userId}`)
+
+// Совместная работа над задачей (39.2/39.3): состав, лента активности, комментарии
+export const addTaskAssignee = (taskId, data) => api.post(`/tasks/${taskId}/assignees`, data)
+export const removeTaskAssigneeById = (taskId, assigneeId, actorId) =>
+  api.delete(`/tasks/${taskId}/assignees/${assigneeId}`, { params: { actor_id: actorId } })
+export const getTask = (taskId) => api.get(`/tasks/${taskId}`)
+export const getTaskActivity = (taskId) => api.get(`/tasks/${taskId}/activity`)
+export const getTaskComments = (taskId) => api.get(`/tasks/${taskId}/comments`)
+export const addTaskComment = (taskId, authorId, body) => api.post(`/tasks/${taskId}/comments`, { author_id: authorId, body })
+
 // Scheduling
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
 

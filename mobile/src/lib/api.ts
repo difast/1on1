@@ -196,6 +196,33 @@ export const declineProposal = (id: number, userId: number) =>
 export const counterProposal = (id: number, userId: number, proposed_time: string, topic?: string) =>
   req<any>(`/proposals/${id}/counter`, { method: 'POST', body: JSON.stringify({ user_id: userId, proposed_time, topic }) });
 
+// Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
+export const createInteraction = (data: any) =>
+  req<any>('/interactions/', { method: 'POST', body: JSON.stringify(data) });
+export const getInteractions = (userId: number) =>
+  req<any[]>(`/interactions/?user_id=${userId}`);
+export const acceptInteraction = (id: number, userId: number) =>
+  req<any>(`/interactions/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineInteraction = (id: number, userId: number) =>
+  req<any>(`/interactions/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const replyInteraction = (id: number, userId: number, body: string) =>
+  req<any>(`/interactions/${id}/reply`, { method: 'POST', body: JSON.stringify({ user_id: userId, body }) });
+export const closeInteraction = (id: number, userId: number, outcome?: string) =>
+  req<any>(`/interactions/${id}/close`, { method: 'POST', body: JSON.stringify({ user_id: userId, outcome }) });
+export const getUserRecommendations = (userId: number) =>
+  req<any[]>(`/interactions/recommendations/${userId}`);
+
+// Совместная работа над задачей (39.2/39.3)
+export const addTaskAssignee = (taskId: number, data: { user_id: number; actor_id: number; part_description?: string | null }) =>
+  req<any>(`/tasks/${taskId}/assignees`, { method: 'POST', body: JSON.stringify(data) });
+export const removeTaskAssigneeById = (taskId: number, assigneeId: number, actorId: number) =>
+  req<any>(`/tasks/${taskId}/assignees/${assigneeId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const getTaskActivity = (taskId: number) => req<any[]>(`/tasks/${taskId}/activity`);
+export const getTaskComments = (taskId: number) => req<any[]>(`/tasks/${taskId}/comments`);
+export const addTaskComment = (taskId: number, authorId: number, body: string) =>
+  req<any>(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ author_id: authorId, body }) });
+export const getTaskById = (taskId: number) => req<any>(`/tasks/${taskId}`);
+
 // Собственная аутентификация (email/пароль + JWT), замена Supabase
 export const authRegister = (data: { name: string; email: string; password: string }) =>
   req<{ token: string; user: any }>('/auth/register', { method: 'POST', body: JSON.stringify(data) });

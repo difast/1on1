@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import TaskStatusSelect, { StatusIcon, STATUS_LABEL } from './TaskStatusSelect'
 import { updateTaskAssignee } from '../api/client'
+import TaskCollabModal from './TaskCollabModal'
 
 const STATUS_COLOR = {
   in_progress: '#1d4ed8', review: '#b45309', blocked: '#dc2626', done: '#15803d',
@@ -15,8 +16,9 @@ const STATUS_COLOR = {
  * Права: тимлид (canManageAll) может менять статус любого участника; участник —
  * только свой. Остальным статус показывается как read-only бейдж.
  */
-export default function TaskAssignees({ task, currentUserId, canManageAll = false, onChanged }) {
+export default function TaskAssignees({ task, currentUserId, canManageAll = false, onChanged, contacts = [] }) {
   const [busyId, setBusyId] = useState(null)
+  const [showCollab, setShowCollab] = useState(false)
   const assignees = task.assignees || []
   if (assignees.length === 0) return null
   const progress = task.progress || { done: assignees.filter(a => a.completed).length, total: assignees.length, percent: 0 }
@@ -84,6 +86,23 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
           )
         })}
       </div>
+
+      {/* Совместная работа (39.2/39.3): активность, комментарии, состав */}
+      <button
+        onClick={() => setShowCollab(true)}
+        style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
+        Активность и комментарии
+      </button>
+      {showCollab && (
+        <TaskCollabModal
+          task={task}
+          currentUser={{ id: currentUserId }}
+          canManage={canManageAll}
+          contacts={contacts}
+          onChanged={onChanged}
+          onClose={() => setShowCollab(false)}
+        />
+      )}
     </div>
   )
 }

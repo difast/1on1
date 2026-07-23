@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
-import { getUserStats } from '../api/client'
+import { getUserStats, getUserRecommendations } from '../api/client'
 
 export default function UserCard({ user, onClose }) {
   const [stats, setStats] = useState(null)
+  const [recs, setRecs] = useState([])  // рекомендации об участнике (39.7), видны команде
 
   useEffect(() => {
     if (!user?.id) return
     getUserStats(user.id).then(r => setStats(r.data)).catch(() => {})
+    getUserRecommendations(user.id).then(r => setRecs(r.data || [])).catch(() => {})
   }, [user?.id])
 
   if (!user) return null
@@ -104,6 +106,23 @@ export default function UserCard({ user, onClose }) {
             )}
           </div>
         </div>
+
+        {/* Рекомендации об участнике (39.7) — видны всей команде */}
+        {recs.length > 0 && (
+          <div style={{ marginTop: 8 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
+              Рекомендации как эксперта
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {recs.map(r => (
+                <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0 }}>{r.topic || 'Эксперт'}</p>
+                  <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>от {r.from_user_name || 'коллеги'}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

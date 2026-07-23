@@ -4,6 +4,8 @@ from app.models.meeting import Meeting
 from app.models.meeting_proposal import MeetingProposal, MeetingProposalEvent
 from app.models.task import Task
 from app.models.task_assignee import TaskAssignee
+from app.models.task_activity import TaskActivity, TaskComment
+from app.models.interaction import Interaction, InteractionParticipant, InteractionReply
 from app.models.notification import Notification
 from app.models.note import Note
 from app.models.mood import MoodEntry

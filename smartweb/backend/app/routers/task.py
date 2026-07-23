@@ -15,6 +15,8 @@ from app.schemas.task import (
 from app.tasks.reminders import send_new_task_notification
 from app.prompts import AITUNNEL_KEY, task_ai_prompt
 from app.services import entitlements
+from app.services import task_collab
+from app.models.task_activity import TaskActivity, TaskComment
 
 router = APIRouter()
 
@@ -183,6 +185,11 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
             part_description=(a.get("part_description") or None),
         ))
 
+    # 39.2: старт ленты активности задачи.
+    _creator = db.query(User).filter(User.id == task.assigned_by).first()
+    task_collab.log_activity(db, task.id, task.assigned_by,
+                             "created", f"{_creator.name if _creator else 'Пользователь'} создал(а) задачу")
+
     db.commit()
     db.refresh(task)
 
@@ -334,9 +341,121 @@ def update_assignee(assignee_id: int, data: AssigneeStatusUpdate, db: Session = 
     if task:
         db.refresh(task)
         _recompute_task_from_assignees(task)
+        # 39.2: значимое изменение — логируем в ленту и уведомляем других участников.
+        if data.status is not None:
+            actor = db.query(User).filter(User.id == a.user_id).first()
+            actor_name = actor.name if actor else "Участник"
+            task_collab.log_activity(db, task.id, a.user_id, "status_changed",
+                                     f"{actor_name}: статус части -> {data.status}")
+            task_collab.notify_task_participants(
+                db, task, "Обновление задачи",
+                f"{actor_name}: {task.title}", exclude={a.user_id})
     db.commit()
     db.refresh(task)
     return _serialize(task)
+
+
+# ── Совместная работа над задачей (39.2 / 39.3) ───────────────────────────────
+
+class AssigneeAddIn(PydanticBaseModel):
+    user_id: int
+    actor_id: int
+    part_description: Optional[str] = None
+
+
+class CommentIn(PydanticBaseModel):
+    author_id: int
+    body: str
+
+
+def _require_lead(db: Session, task: Task, actor_id: int):
+    """39.3: менять состав исполнителей может только тимлид команды задачи
+    (или постановщик задачи)."""
+    if actor_id == task.assigned_by:
+        return
+    from app.models.team import Team
+    team = db.query(Team).filter(Team.id == task.team_id).first() if task.team_id else None
+    if not team or team.team_lead_id != actor_id:
+        raise HTTPException(status_code=403, detail="Only the team lead can change assignees")
+
+
+@router.post("/{task_id}/assignees", response_model=TaskOut)
+def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    _require_lead(db, task, data.actor_id)
+    task_collab.add_assignee(db, task, data.user_id, data.actor_id, part=data.part_description)
+    db.commit()
+    db.refresh(task)
+    return _serialize(task)
+
+
+@router.delete("/{task_id}/assignees/{assignee_id}", response_model=TaskOut)
+def remove_task_assignee(task_id: int, assignee_id: int, actor_id: int = Query(...), db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    _require_lead(db, task, actor_id)
+    ok = task_collab.remove_assignee(db, task, assignee_id, actor_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Assignee not found")
+    db.refresh(task)
+    _recompute_task_from_assignees(task)
+    db.commit()
+    db.refresh(task)
+    return _serialize(task)
+
+
+@router.get("/{task_id}/activity", response_model=List[dict])
+def task_activity(task_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(TaskActivity)
+        .filter(TaskActivity.task_id == task_id)
+        .order_by(TaskActivity.created_at.desc(), TaskActivity.id.desc())
+        .all()
+    )
+    out = []
+    for r in rows:
+        u = db.query(User).filter(User.id == r.actor_id).first()
+        out.append({"id": r.id, "actor_id": r.actor_id, "actor_name": u.name if u else None,
+                    "action": r.action, "detail": r.detail, "created_at": r.created_at})
+    return out
+
+
+@router.get("/{task_id}/comments", response_model=List[dict])
+def list_comments(task_id: int, db: Session = Depends(get_db)):
+    rows = (
+        db.query(TaskComment)
+        .filter(TaskComment.task_id == task_id)
+        .order_by(TaskComment.created_at.asc(), TaskComment.id.asc())
+        .all()
+    )
+    out = []
+    for r in rows:
+        u = db.query(User).filter(User.id == r.author_id).first()
+        out.append({"id": r.id, "author_id": r.author_id, "author_name": u.name if u else None,
+                    "body": r.body, "created_at": r.created_at})
+    return out
+
+
+@router.post("/{task_id}/comments", response_model=dict)
+def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db)):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if not data.body.strip():
+        raise HTTPException(status_code=400, detail="Empty comment")
+    c = TaskComment(task_id=task_id, author_id=data.author_id, body=data.body.strip())
+    db.add(c)
+    author = db.query(User).filter(User.id == data.author_id).first()
+    author_name = author.name if author else "Участник"
+    task_collab.log_activity(db, task_id, data.author_id, "commented", f"{author_name} оставил(а) комментарий")
+    task_collab.notify_task_participants(db, task, "Комментарий к задаче",
+                                         f"{author_name}: {task.title}", exclude={data.author_id})
+    db.commit(); db.refresh(c)
+    return {"id": c.id, "author_id": c.author_id, "author_name": author_name,
+            "body": c.body, "created_at": c.created_at}
 
 
 @router.delete("/{task_id}")

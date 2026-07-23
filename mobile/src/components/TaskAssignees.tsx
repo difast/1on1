@@ -4,6 +4,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { StatusPicker, STATUS_LABEL, TaskStatus } from './StatusPicker';
 import { Status3DIcon } from './Status3DIcon';
+import { TaskCollabModal } from './TaskCollabModal';
 import { updateTaskAssignee } from '../lib/api';
 
 /*
@@ -14,17 +15,19 @@ import { updateTaskAssignee } from '../lib/api';
  * участник — только свой; остальным статус показывается только для чтения.
  */
 export function TaskAssignees({
-  task, currentUserId, canManageAll = false, onChanged,
+  task, currentUserId, canManageAll = false, onChanged, contacts = [],
 }: {
   task: any;
   currentUserId: number;
   canManageAll?: boolean;
   onChanged?: (updated: any) => void;
+  contacts?: { user_id: number; name: string }[];
 }) {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [pickerFor, setPickerFor] = useState<number | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const [showCollab, setShowCollab] = useState(false);
 
   const assignees: any[] = task.assignees || [];
   if (assignees.length === 0) return null;
@@ -87,11 +90,26 @@ export function TaskAssignees({
           </View>
         );
       })}
+
+      {/* Совместная работа (39.2/39.3): активность, комментарии, состав */}
+      <TouchableOpacity onPress={() => setShowCollab(true)}>
+        <Text style={styles.collabLink}>Активность и комментарии</Text>
+      </TouchableOpacity>
+      <TaskCollabModal
+        visible={showCollab}
+        onClose={() => setShowCollab(false)}
+        task={task}
+        currentUserId={currentUserId}
+        canManage={canManageAll}
+        contacts={contacts}
+        onChanged={onChanged}
+      />
     </View>
   );
 }
 
 const makeStyles = (c: AppColors) => StyleSheet.create({
+  collabLink: { fontSize: 12, fontWeight: '600', color: c.accent, marginTop: 4 },
   wrap: { marginTop: 10, paddingTop: 10, borderTopWidth: 1, borderTopColor: c.border, gap: 8 },
   progressRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   progressLabel: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5 },
