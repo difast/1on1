@@ -10,6 +10,7 @@ import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
+import TaskAssignees from './TaskAssignees'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
@@ -785,7 +786,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               )
                             })()}
                           </div>
-                          <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
+                          {/* Совместная задача (Задача 4): статус на уровне задачи сводится из
+                              частей участников; здесь показываем прогресс, статус — по частям ниже. */}
+                          {task.is_multi ? (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: task.completed ? '#15803d' : 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                              {task.progress ? `${task.progress.done}/${task.progress.total}` : ''}
+                            </span>
+                          ) : (
+                            <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
+                          )}
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           {isSelf && (
@@ -795,14 +804,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                               title="Удалить">✕</button>
                           )}
-                          {!task.completed && (
+                          {!task.completed && !task.is_multi && (
                             <TaskAIHelper
                               task={task}
                               role="member"
+                              userId={user.id}
                               onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
                             />
                           )}
                         </div>
+                      )}
+                      {task.is_multi && (
+                        <TaskAssignees task={task} currentUserId={user.id} canManageAll={false}
+                          onChanged={(updated) => setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))} />
                       )}
                       <SubtaskList
                         taskId={task.id}

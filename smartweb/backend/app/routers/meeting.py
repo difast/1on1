@@ -207,6 +207,11 @@ def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db)):
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
 
+    # Тарифное ограничение (Задача 3): AI-подбор слотов доступен не на всех тарифах.
+    from app.services import entitlements
+    _lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
+    entitlements.require_feature(db, _lead, "ai_slots")
+
     orig_dt = meeting.scheduled_date
     now = datetime.utcnow()
     cadence = data.cadence_days or 14

@@ -272,14 +272,41 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{user_id}/stats")
 def get_user_stats(user_id: int, db: Session = Depends(get_db)):
-    from app.models.team import TeamMember
+    from datetime import datetime
+    from app.models.team import TeamMember, Team
     meetings = db.query(Meeting).filter(
         (Meeting.member_id == user_id) | (Meeting.team_lead_id == user_id),
         Meeting.status.notin_(["cancelled"]),
     ).count()
     tasks_done = db.query(Task).filter(Task.assigned_to == user_id, Task.completed == True).count()
     teams = db.query(TeamMember).filter(TeamMember.user_id == user_id).count()
-    return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams}
+
+    # Закрыто СЕГОДНЯ (Задача 2), с учётом роли:
+    #   участник — свои; тимлид — суммарно по участникам его команд.
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and user.role == "team_lead":
+        team_ids = [t.id for t in db.query(Team).filter(Team.team_lead_id == user_id).all()]
+        member_ids = set()
+        if team_ids:
+            for tm in db.query(TeamMember).filter(TeamMember.team_id.in_(team_ids)).all():
+                member_ids.add(tm.user_id)
+        member_ids.discard(user_id)
+        closed_today = (
+            db.query(Task).filter(
+                Task.assigned_to.in_(member_ids),
+                Task.completed == True,
+                Task.completed_at >= today,
+            ).count() if member_ids else 0
+        )
+    else:
+        closed_today = db.query(Task).filter(
+            Task.assigned_to == user_id,
+            Task.completed == True,
+            Task.completed_at >= today,
+        ).count()
+
+    return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams, "closed_today": closed_today}
 
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):

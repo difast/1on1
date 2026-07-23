@@ -3,6 +3,7 @@ import { pitChat } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
 import useStickyScroll from '../lib/useStickyScroll'
+import { parseFeatureLock, openPricing } from '../lib/featureLock'
 import { useIsTelegram } from '../lib/surface'
 
 const PIT_STYLES = `
@@ -93,7 +94,7 @@ export default function PitAssistant() {
         ctxRef.current = await buildPitContext(currentUser)
       }
       const context = ctxRef.current?.text || ''
-      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), context)
+      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), context, currentUser?.id)
       const rawReply = data.reply || 'Нет ответа'
 
       const { clean, actions } = parsePitActions(rawReply)
@@ -106,8 +107,15 @@ export default function PitAssistant() {
       }
       setMessages(prev => [...prev, { role: 'assistant', content: reply }])
     } catch (err) {
-      const detail = err?.response?.data?.detail || err?.message || 'неизвестная ошибка'
-      setMessages(prev => [...prev, { role: 'assistant', content: `Ошибка: ${detail}` }])
+      // Недоступно по тарифу (Задача 3) -> мягкое сообщение, а не техошибка.
+      const fl = parseFeatureLock(err)
+      if (fl) {
+        setMessages(prev => [...prev, { role: 'assistant', content: fl.message, locked: true }])
+      } else {
+        const detail = err?.response?.data?.detail
+        const text = (detail && typeof detail === 'string') ? detail : (err?.message || 'неизвестная ошибка')
+        setMessages(prev => [...prev, { role: 'assistant', content: `Не удалось получить ответ. ${text}` }])
+      }
     } finally {
       setLoading(false)
     }
@@ -174,7 +182,14 @@ export default function PitAssistant() {
                   color: m.role === 'user' ? '#fff' : '#1e293b',
                   fontSize: 13, lineHeight: 1.55,
                   boxShadow: m.role === 'user' ? '0 2px 8px rgba(37,84,212,0.3)' : 'none',
-                }}>{m.content}</div>
+                }}>
+                  {m.content}
+                  {m.locked && (
+                    <button onClick={() => openPricing('start')} style={{ display: 'block', marginTop: 8, background: 'linear-gradient(135deg, #2554D4, #4f46e5)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, padding: '6px 12px', cursor: 'pointer' }}>
+                      Посмотреть тарифы
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
             {loading && (

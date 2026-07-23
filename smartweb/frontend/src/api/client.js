@@ -58,12 +58,21 @@ export const getTranscript = (meetingId) =>
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
 
 // Tasks
-export const createTask = (data) => api.post('/tasks/', data)
+// После любой мутации задачи оповещаем интерфейс событием 'tasks-updated',
+// чтобы счётчик «Закрыто сегодня» (Задача 2) обновлялся мгновенно, без refresh.
+const notifyTasksUpdated = (r) => {
+  try { window.dispatchEvent(new Event('tasks-updated')) } catch {}
+  return r
+}
+export const createTask = (data) => api.post('/tasks/', data).then(notifyTasksUpdated)
 export const getTasks = (params) => api.get('/tasks/', { params })
 export const getMyLeadTasks = (userId) => api.get('/tasks/', { params: { assigned_to: userId, assigned_by: userId } })
-export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data)
-export const deleteTask = (id) => api.delete(`/tasks/${id}`)
+export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data).then(notifyTasksUpdated)
+export const deleteTask = (id) => api.delete(`/tasks/${id}`).then(notifyTasksUpdated)
 export const getTaskAIAdvice = (data) => api.post('/tasks/ai-advice', data)
+// Совместные задачи (Задача 4): статус части одного участника + закрытые сегодня.
+export const updateTaskAssignee = (assigneeId, data) => api.patch(`/tasks/assignee/${assigneeId}`, data).then(notifyTasksUpdated)
+export const getClosedTodayTasks = (userId) => api.get(`/tasks/closed-today/${userId}`)
 
 // Notifications
 export const getNotifications = (userId, unreadOnly = false) =>
@@ -93,7 +102,7 @@ export const broadcastNotification = (data) => api.post('/notifications/broadcas
 export const getServiceHealth = () => api.get('/health/detailed')
 
 // Assistant (Пит)
-export const pitChat = (messages, context = '') => api.post('/assistant/chat', { messages, context })
+export const pitChat = (messages, context = '', userId = null) => api.post('/assistant/chat', { messages, context, user_id: userId })
 
 // Knowledge Base
 export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)

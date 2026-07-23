@@ -1,28 +1,36 @@
 import { useState } from 'react'
 import { getTaskAIAdvice, createSubtasks } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
+import { parseFeatureLock, openPricing } from '../lib/featureLock'
 
-export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded }) {
+export default function TaskAIHelper({ task, role = 'member', userId = null, onSubtasksAdded }) {
   const [open, setOpen] = useState(false)
   useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
   const [loading, setLoading] = useState(false)
   const [adding, setAdding] = useState(false)
   const [steps, setSteps] = useState(null)
   const [added, setAdded] = useState(false)
+  // Мягкое тарифное уведомление (Задача 3): { feature_label, message } | null
+  const [locked, setLocked] = useState(null)
 
   const fetchSteps = async () => {
     setLoading(true)
     setSteps(null)
     setAdded(false)
+    setLocked(null)
     try {
       const { data } = await getTaskAIAdvice({
         title: task.title || task.description || '',
         status: task.status,
         due_date: task.due_date,
         role,
+        user_id: userId,
       })
       setSteps(data.steps?.length ? data.steps : null)
-    } catch {
+    } catch (err) {
+      // Недоступно по тарифу -> понятное сообщение, а не «AI не смог обработать».
+      const fl = parseFeatureLock(err)
+      setLocked(fl)
       setSteps(null)
     } finally {
       setLoading(false)
@@ -126,9 +134,20 @@ export default function TaskAIHelper({ task, role = 'member', onSubtasksAdded })
                   </button>
                 </div>
               </>
+            ) : locked ? (
+              // Тарифное ограничение (Задача 3): нейтральное сообщение + переход к тарифам.
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 8px', textAlign: 'center' }}>
+                <span style={{ width: 40, height: 40, borderRadius: 12, background: 'linear-gradient(135deg, #eef2ff, #e0eaff)', border: '1px solid #ddd6fe', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1112 0v2" stroke="#4f46e5" strokeWidth="1.7" strokeLinecap="round"/><rect x="4.5" y="10" width="15" height="10" rx="2.2" stroke="#4f46e5" strokeWidth="1.7"/></svg>
+                </span>
+                <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5, maxWidth: 320 }}>
+                  {locked.message || `Функция «${locked.feature_label}» доступна на другом тарифе. Повысьте тариф, чтобы использовать ${locked.feature_label.toLowerCase()}.`}
+                </p>
+                <button onClick={() => openPricing('team')} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, padding: '9px 20px', cursor: 'pointer' }}>Посмотреть тарифы</button>
+              </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0' }}>
-                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>AI не смог обработать запрос</p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>Не удалось получить подсказку. Проверьте соединение.</p>
                 <button onClick={fetchSteps} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 700, padding: '7px 18px', cursor: 'pointer' }}>Повторить</button>
               </div>
             )}
