@@ -8,6 +8,7 @@ import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorho
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat } from '../lib/api';
+import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
@@ -25,6 +26,8 @@ export default function MemberMeetingsScreen() {
   const goToDetail = (m: any) => router.push({ pathname: '/meeting-detail', params: { id: String(m.id) } } as any);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
+  const [contacts, setContacts] = useState<{ user_id: number; name: string }[]>([]);
+  const [showProposals, setShowProposals] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [calendarView, setCalendarView] = useState(false);
@@ -103,6 +106,11 @@ export default function MemberMeetingsScreen() {
     try {
       const detail = await getMemberTeam(user!.id) as any;
       setTeamId(detail.id);
+      // Контакты для предложений встреч: участники команды + тимлид, кроме себя.
+      const cs = (detail.members || [])
+        .filter((m: any) => m.user_id !== user!.id)
+        .map((m: any) => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }));
+      setContacts(cs);
     } catch {}
   }, [user]);
 
@@ -229,6 +237,12 @@ export default function MemberMeetingsScreen() {
             </TouchableOpacity>
           </View>
           <TouchableOpacity
+            style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
+            onPress={() => setShowProposals(true)}
+          >
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Предложить</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.requestBtn}
             onPress={() => bottomSheetRef.current?.expand()}
           >
@@ -236,6 +250,16 @@ export default function MemberMeetingsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Предложения встреч (Задача 5): участник может предложить встречу другому */}
+      <MeetingProposalsModal
+        visible={showProposals}
+        onClose={() => setShowProposals(false)}
+        currentUser={{ id: user!.id }}
+        contacts={contacts}
+        teamId={teamId}
+        onChanged={loadMeetings}
+      />
 
       <ScrollView
         contentContainerStyle={styles.content}
