@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
+from app.config import settings
 from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth
 
 
@@ -228,6 +229,58 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ── Этап 8: принудительная проверка JWT (AUTH_ENFORCE) ───────────────────────
+# Единый гейт вместо правки каждого роутера: при AUTH_ENFORCE=1 любой запрос к
+# /api/* вне публичного списка обязан нести валидный Bearer-JWT, иначе 401.
+# Публичный список — только точки входа (регистрация/логин/восстановление),
+# точки входа Telegram, платёжный вебхук и health. Проверяется лишь подлинность
+# и срок действия токена (без БД) — то есть аутентификация; авторизация по
+# владению ресурсом остаётся на следующий подэтап (перевод идентификации с
+# body user_id на токен).
+from starlette.responses import JSONResponse as _JSONResponse
+import jwt as _jwt
+
+_AUTH_PUBLIC_EXACT = {
+    "/", "/healthz",
+    "/api/auth/register", "/api/auth/login",
+    "/api/auth/forgot-password", "/api/auth/reset-password",
+    "/api/auth/confirm-email", "/api/auth/resend-confirmation",
+    "/api/telegram/config", "/api/telegram/webhook",
+    "/api/telegram/miniapp-auth", "/api/telegram/callback", "/api/telegram/link",
+    "/api/billing/plans", "/api/billing/webhooks/cloudpayments",
+}
+_AUTH_PUBLIC_PREFIX = ("/api/health",)
+
+
+def _auth_is_public(path: str) -> bool:
+    p = path.rstrip("/") or "/"
+    if p in _AUTH_PUBLIC_EXACT:
+        return True
+    return any(p.startswith(pref) for pref in _AUTH_PUBLIC_PREFIX)
+
+
+def _auth_token_valid(authorization: str | None) -> bool:
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return False
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        _jwt.decode(token, settings.jwt_signing_key, algorithms=["HS256"])
+        return True
+    except Exception:
+        return False
+
+
+@app.middleware("http")
+async def _auth_enforce_gate(request, call_next):
+    if settings.auth_enforce and request.method != "OPTIONS":
+        path = request.url.path
+        if path.startswith("/api/") and not _auth_is_public(path):
+            if not _auth_token_valid(request.headers.get("authorization")):
+                return _JSONResponse(
+                    {"detail": "Не авторизовано"}, status_code=401,
+                )
+    return await call_next(request)
 
 app.include_router(user.router, prefix="/api/users", tags=["users"])
 app.include_router(team.router, prefix="/api/teams", tags=["teams"])
