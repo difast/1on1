@@ -84,7 +84,21 @@ export default function LeadTasksScreen() {
   }, [user, teamsLoaded]);
 
   useEffect(() => { loadMyTasks(); }, [user?.id]);
+  // Грузим состав команд и на монтировании — чтобы список «добавить исполнителя»
+  // в совместной работе был доступен на обеих вкладках (39.3).
+  useEffect(() => { loadTeamsWithMembers(); }, [user?.id]);
   useEffect(() => { if (tab === 'members') loadTeamsWithMembers(); }, [tab]);
+
+  // Плоский список участников команд (кроме тимлида) для добавления в задачу.
+  const teamContacts = useMemo(() => {
+    const map = new Map<number, { user_id: number; name: string }>();
+    for (const t of teams) {
+      for (const m of (t.members || [])) {
+        if (m.user_id !== user!.id) map.set(m.user_id, { user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` });
+      }
+    }
+    return Array.from(map.values());
+  }, [teams, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -169,7 +183,7 @@ export default function LeadTasksScreen() {
   };
 
   const renderTask = (task: any, onSetStatus: (s: TaskStatus) => void, onDel?: () => void, onUpdated?: (u: any) => void, role: string = 'lead') => (
-    <TaskRow key={task.id} task={task} onSetStatus={onSetStatus} onDel={onDel} onTaskUpdated={onUpdated} role={role} />
+    <TaskRow key={task.id} task={task} onSetStatus={onSetStatus} onDel={onDel} onTaskUpdated={onUpdated} role={role} contacts={teamContacts} />
   );
 
   if (loading && tab === 'mine') return <Spinner />;
@@ -389,7 +403,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   subtaskText: { fontSize: 12, flex: 1 },
 });
 
-function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead' }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void; onTaskUpdated?: (u: any) => void; role?: string }) {
+function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', contacts = [] }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void; onTaskUpdated?: (u: any) => void; role?: string; contacts?: { user_id: number; name: string }[] }) {
   const { colors } = useTheme();
   const { user } = useAuth();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -499,6 +513,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead' }: { t
             currentUserId={user?.id ?? 0}
             canManageAll={role === 'lead'}
             onChanged={(u) => onTaskUpdated?.(u)}
+            contacts={contacts}
           />
         )}
       </View>

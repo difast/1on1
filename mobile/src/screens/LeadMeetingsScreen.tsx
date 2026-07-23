@@ -18,6 +18,7 @@ import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
 import { InteractionsModal } from '../components/InteractionsModal';
+import { SpontaneousCallModal } from '../components/SpontaneousCallModal';
 
 export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
@@ -81,6 +82,8 @@ export default function LeadMeetingsScreen() {
 
   const [showInteractions, setShowInteractions] = useState(false);
   const [interactionTasks, setInteractionTasks] = useState<{ id: number; title: string }[]>([]);
+  const [showQuickCall, setShowQuickCall] = useState(false);
+  const openQuickCall = async () => { await ensureMembers(); setShowQuickCall(true); };
   const openInteractions = async () => {
     await ensureMembers();
     try { const t = await getTasks({ assigned_by: user!.id }) as any[]; setInteractionTasks((t || []).map((x: any) => ({ id: x.id, title: x.title }))); } catch {}
@@ -285,6 +288,9 @@ export default function LeadMeetingsScreen() {
               <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openQuickCall}>
+            <Ionicons name="videocam-outline" size={18} color={colors.accent} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openInteractions}>
             <Ionicons name="people-outline" size={18} color={colors.accent} />
           </TouchableOpacity>
@@ -306,6 +312,16 @@ export default function LeadMeetingsScreen() {
         tasks={interactionTasks}
         teamId={teamMembers[0]?.team_id ?? null}
         onChanged={load}
+      />
+
+      {/* Спонтанный созвон (39.8): всем / нескольким / индивидуально */}
+      <SpontaneousCallModal
+        visible={showQuickCall}
+        onClose={() => setShowQuickCall(false)}
+        leadId={user!.id}
+        teamId={teamMembers[0]?.team_id ?? null}
+        members={teamMembers.map(m => ({ user_id: m.user_id, name: m.user_name }))}
+        onStarted={load}
       />
 
       {/* Предложения встреч (Задача 5) */}
