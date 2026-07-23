@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat, getMyMoodSeries } from '../api/client'
 import { useIsTelegram } from '../lib/surface'
 import XLSXStyle from 'xlsx-js-style'
 
@@ -291,6 +291,10 @@ export default function LeadAnalytics({ user }) {
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
   const [moodByTeam, setMoodByTeam] = useState({})
   const [checkinsByTeam, setCheckinsByTeam] = useState({})
+  // Личный график настроения самого тимлида (27.2) — отдельно от анонимной
+  // командной статистики. Тимлид — тоже пользователь, видит только свои отметки.
+  const [myMood, setMyMood] = useState(null)
+  const [myMoodLoading, setMyMoodLoading] = useState(false)
   // Повестка в аналитике: агрегируем данные, введённые при планировании встреч,
   // чтобы поле повестки работало дальше (а не жило только в карточке встречи).
   // Считаем на фронте из списка встреч руководителя — без изменения бэкенда.
@@ -318,23 +322,55 @@ export default function LeadAnalytics({ user }) {
       .catch(() => {})
   }, [user.id])
 
-  useEffect(() => {
-    setLoading(true)
+  const loadMoodForTeam = (teamId) => {
+    getTeamMoodSummary(teamId)
+      .then(mr => setMoodByTeam(prev => ({ ...prev, [teamId]: mr.data })))
+      .catch(() => {})
+    getTeamCheckins(teamId, 7)
+      .then(cr => setCheckinsByTeam(prev => ({ ...prev, [teamId]: cr.data })))
+      .catch(() => {})
+  }
+
+  const loadLead = () => {
     getLeadAnalytics(user.id)
       .then(r => {
         setData(r.data)
-        r.data.teams.forEach(t => {
-          getTeamMoodSummary(t.team_id)
-            .then(mr => setMoodByTeam(prev => ({ ...prev, [t.team_id]: mr.data })))
-            .catch(() => {})
-          getTeamCheckins(t.team_id, 7)
-            .then(cr => setCheckinsByTeam(prev => ({ ...prev, [t.team_id]: cr.data })))
-            .catch(() => {})
-        })
+        r.data.teams.forEach(t => loadMoodForTeam(t.team_id))
       })
       .catch(() => setData(null))
       .finally(() => setLoading(false))
+  }
+
+  const loadMyMood = (teamId) => {
+    setMyMoodLoading(true)
+    getMyMoodSeries(user.id, { period: 'month', teamId })
+      .then(r => setMyMood(r.data))
+      .catch(() => setMyMood(null))
+      .finally(() => setMyMoodLoading(false))
+  }
+
+  useEffect(() => {
+    setLoading(true)
+    loadLead()
   }, [user.id])
+
+  // Личный ряд настроения тимлида грузим для выбранной команды (для часового пояса).
+  useEffect(() => {
+    const t = data?.teams?.[selectedTeamIdx]
+    if (t) loadMyMood(t.team_id)
+  }, [data, selectedTeamIdx, user.id])
+
+  // Реактивное обновление после любого чек-ина (свой или командный): обновляем
+  // анонимную командную сводку выбранной команды и личный график тимлида, без
+  // ручного обновления страницы.
+  useEffect(() => {
+    const onMood = () => {
+      const t = data?.teams?.[selectedTeamIdx]
+      if (t) { loadMoodForTeam(t.team_id); loadMyMood(t.team_id) }
+    }
+    window.addEventListener('mood-updated', onMood)
+    return () => window.removeEventListener('mood-updated', onMood)
+  }, [data, selectedTeamIdx, user.id])
 
   const exportExcel = (team, members, mood, checkins) => {
     const XLSX = XLSXStyle
@@ -1072,29 +1108,126 @@ export default function LeadAnalytics({ user }) {
           </div>
         </div>
 
-        <div className="card" style={{ padding: '18px 20px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        {/* Анонимная командная статистика настроения (13.5): при недостатке
+            заполнивших (ниже порога) статистика скрывается — только сообщение. */}
+        <div className="card" style={{ padding: '18px 20px', borderTop: '3px solid #3B6EF0' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>
               Настроение команды
             </p>
-            {mood?.overall_avg && (
-              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-                ср. {mood.overall_avg}/5 · {mood.total} отзывов
-              </span>
-            )}
+            <span className="badge badge-blue" style={{ fontSize: 10 }}>анонимно</span>
           </div>
-          {moodLinePoints.length >= 2
-            ? <LineChart points={moodLinePoints} color="#3B6EF0" height={100} />
-            : <p style={{ fontSize: 13, color: 'var(--color-text-muted)', paddingTop: 20 }}>Нет данных по настроению — участники ещё не заполняли опросник</p>}
-          {mood?.recent_summaries?.length > 0 && (
-            <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 5 }}>
-              <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Последние темы (анонимно)</p>
-              {mood.recent_summaries.map((s, i) => (
-                <p key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>«{s}»</p>
-              ))}
+          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>
+            Обобщённая статистика без привязки к участникам
+          </p>
+          {!mood ? (
+            <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><div className="spinner" /></div>
+          ) : mood.insufficient ? (
+            <div style={{ background: 'var(--color-bg)', border: '1px dashed var(--color-border)', borderRadius: 10, padding: '16px 18px' }}>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                {mood.message || `Недостаточно данных для анонимной статистики (нужно от ${mood.threshold} ответов).`}
+              </p>
+              {mood.share_pct != null && (
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
+                  Сегодня заполнили: {mood.filled}{mood.team_size ? ` из ${mood.team_size}` : ''}
+                </p>
+              )}
             </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 14 }}>
+                <div>
+                  <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1 }}>{mood.avg}/5</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>средний балл сегодня</p>
+                </div>
+                {mood.delta_prev != null && (
+                  <div>
+                    <p style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: mood.delta_prev > 0 ? 'var(--color-success)' : mood.delta_prev < 0 ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
+                      {mood.delta_prev > 0 ? '+' : ''}{mood.delta_prev}
+                    </p>
+                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>к прошлому дню</p>
+                  </div>
+                )}
+                {mood.share_pct != null && (
+                  <div>
+                    <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1 }}>{mood.share_pct}%</p>
+                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>заполнили ({mood.filled}{mood.team_size ? `/${mood.team_size}` : ''})</p>
+                  </div>
+                )}
+              </div>
+              {/* Распределение баллов сегодня */}
+              {mood.distribution && (
+                <div style={{ marginBottom: 14 }}>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Распределение сегодня</p>
+                  {(() => {
+                    const dist = mood.distribution
+                    const maxC = Math.max(...Object.values(dist), 1)
+                    const LBL = { '1': 'Плохо', '2': 'Ниже сред.', '3': 'Нормально', '4': 'Хорошо', '5': 'Отлично' }
+                    const COL = { '1': '#ef4444', '2': '#f59e0b', '3': '#eab308', '4': '#84cc16', '5': '#22c55e' }
+                    return ['5', '4', '3', '2', '1'].map(k => (
+                      <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 11, color: 'var(--color-text-muted)', width: 74 }}>{LBL[k]}</span>
+                        <div style={{ flex: 1, height: 8, background: 'var(--gray-200)', borderRadius: 4, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${(dist[k] / maxC) * 100}%`, background: COL[k], borderRadius: 4, transition: 'width 0.6s var(--ease-spring)' }} />
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 700, width: 20, textAlign: 'right' }}>{dist[k]}</span>
+                      </div>
+                    ))
+                  })()}
+                </div>
+              )}
+              {moodLinePoints.filter(p => p.y != null).length >= 2 && (
+                <>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Динамика по неделям</p>
+                  <LineChart points={moodLinePoints} color="#3B6EF0" height={90} />
+                </>
+              )}
+              {mood.recent_summaries?.length > 0 && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 5 }}>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Последние темы (анонимно)</p>
+                  {mood.recent_summaries.map((s, i) => (
+                    <p key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>«{s}»</p>
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
+      </div>
+
+      {/* Личный график настроения тимлида (27.2) — визуально отделён от анонимной
+          командной статистики: это личные отметки самого тимлида, не команда. */}
+      <div className="card" style={{ padding: '18px 20px', borderTop: '3px solid #0D9488' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>Моё настроение (чек-ины)</p>
+          <span className="badge badge-green" style={{ fontSize: 10 }}>личное</span>
+        </div>
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>Только ваши отметки за 30 дней</p>
+        {myMoodLoading ? (
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><div className="spinner" /></div>
+        ) : (() => {
+          const s = myMood?.series || []
+          if (s.length === 0) return (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+              Вы ещё не отмечали настроение. График появится сразу после первой отметки.
+            </p>
+          )
+          // Непрерывная ось: пропущенные дни — разрыв (null), не ноль.
+          const byDate = {}; s.forEach(p => { byDate[p.date] = p.score })
+          const pts = []
+          const start = new Date(myMood.start + 'T00:00:00'), end = new Date(myMood.end + 'T00:00:00')
+          for (let dt = new Date(start); dt <= end; dt.setDate(dt.getDate() + 1)) {
+            const iso = dt.toISOString().slice(0, 10)
+            pts.push({ label: `${String(dt.getDate()).padStart(2, '0')}.${String(dt.getMonth() + 1).padStart(2, '0')}`, y: iso in byDate ? byDate[iso] : null })
+          }
+          const valid = pts.filter(p => p.y != null)
+          if (valid.length < 2) return (
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+              Есть отметка ({valid.length}). График продолжит строиться с каждым днём.
+            </p>
+          )
+          return <LineChart points={pts} color="#0D9488" height={90} />
+        })()}
       </div>
 
       {/* Risk zone */}

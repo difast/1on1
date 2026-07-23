@@ -63,7 +63,7 @@ export default function MemberOverviewScreen() {
     if (!team) return;
     setMoodLoading(true);
     try {
-      await submitMood(team.id, moodAnswers);
+      await submitMood(team.id, moodAnswers, user?.id);
       const today = new Date().toDateString();
       await AsyncStorage.setItem('moodDoneDate', today);
       setMoodDone(true);

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { submitMood } from '../api/client'
+import { submitMood, getMoodToday } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 
 const QUESTIONS = [
@@ -11,7 +11,7 @@ const QUESTIONS = [
 
 const todayKey = () => `mood_submitted_${new Date().toDateString()}`
 
-export default function MoodPrompt({ teamId }) {
+export default function MoodPrompt({ teamId, user }) {
   const [visible, setVisible] = useState(false)
   const [open, setOpen] = useState(false)
   useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
@@ -22,17 +22,40 @@ export default function MoodPrompt({ teamId }) {
 
   useEffect(() => {
     if (!teamId) return
-    if (localStorage.getItem(todayKey())) return
+    let cancelled = false
 
-    const now = new Date()
-    const target = new Date()
-    target.setHours(20, 0, 0, 0)
+    // Проверяем на сервере (по локальному дню команды), заполнил ли уже пользователь
+    // сегодня — надёжнее localStorage: работает с любого устройства и после
+    // повторного входа. localStorage остаётся быстрым кэшем.
+    const decideVisibility = () => {
+      const now = new Date()
+      const target = new Date()
+      target.setHours(20, 0, 0, 0)
+      if (now >= target) { if (!cancelled) setVisible(true); return }
+      const delay = target - now
+      const t = setTimeout(() => { if (!cancelled) setVisible(true) }, delay)
+      timers.push(t)
+    }
+    const timers = []
 
-    if (now >= target) { setVisible(true); return }
-    const delay = target - now
-    const t = setTimeout(() => setVisible(true), delay)
-    return () => clearTimeout(t)
-  }, [teamId])
+    if (user?.id) {
+      getMoodToday(user.id, teamId)
+        .then(r => {
+          if (cancelled) return
+          if (r.data?.filled) {
+            localStorage.setItem(todayKey(), '1')
+            setVisible(false)
+          } else {
+            localStorage.removeItem(todayKey())
+            decideVisibility()
+          }
+        })
+        .catch(() => { if (!cancelled && !localStorage.getItem(todayKey())) decideVisibility() })
+    } else if (!localStorage.getItem(todayKey())) {
+      decideVisibility()
+    }
+    return () => { cancelled = true; timers.forEach(clearTimeout) }
+  }, [teamId, user?.id])
 
   const canSubmit = answers.overall.trim().length > 0
 
@@ -41,7 +64,7 @@ export default function MoodPrompt({ teamId }) {
     setSubmitting(true)
     try {
       const answerList = QUESTIONS.map(q => answers[q.id].trim())
-      const res = await submitMood({ team_id: teamId, answers: answerList })
+      const res = await submitMood({ team_id: teamId, user_id: user?.id, answers: answerList })
       localStorage.setItem(todayKey(), '1')
       setResultScore(res.data?.score ?? null)
       setDone(true)

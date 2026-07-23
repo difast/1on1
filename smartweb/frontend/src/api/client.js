@@ -139,8 +139,16 @@ export const updateKnowledgeArticle = (id, data) => api.patch(`/knowledge/${id}`
 export const deleteKnowledgeArticle = (id) => api.delete(`/knowledge/${id}`)
 
 // Mood
-export const submitMood = (data) => api.post('/mood/', data)
+// После сохранения чек-ина оповещаем интерфейс, чтобы аналитика/график
+// обновились реактивно, без ручного refresh.
+export const submitMood = (data) => api.post('/mood/', data).then(r => {
+  try { window.dispatchEvent(new Event('mood-updated')) } catch {}
+  return r
+})
 export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)
+export const getMoodToday = (userId, teamId) => api.get(`/mood/today/${userId}`, { params: { team_id: teamId } })
+export const getMyMoodSeries = (userId, { period = 'month', start, end, teamId } = {}) =>
+  api.get(`/mood/me/${userId}/series`, { params: { period, start, end, team_id: teamId } })
 
 // Subtasks
 export const createSubtasks = (taskId, titles) => api.post('/subtasks/bulk', { task_id: taskId, titles })

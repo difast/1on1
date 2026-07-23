@@ -145,6 +145,72 @@ async def _billing_sweep_loop():
         await asyncio.sleep(6 * 3600)  # every 6 hours
 
 
+def _send_mood_summaries():
+    """Ежедневная сводка настроения (задача 13). Для каждой команды в её ЧАСОВОМ
+    ПОЯСЕ, начиная с 10:00, отправляем тимлиду анонимную сводку за день — один раз
+    в сутки. Защита от дублей и от пропуска: если сводка за локальные сутки ещё
+    не отправлена и локальное время уже >= 10:00 — отправляем (догоняем после
+    простоя сервера, но не раньше 10:00). Анонимность: при недостатке данных
+    отдаём сообщение о недостаточности вместо статистики (13.5)."""
+    from zoneinfo import ZoneInfo
+    from app.database import SessionLocal
+    from app.models.team import Team
+    from app.models.notification import Notification
+    from app.services import mood_service
+    from app.services.notification_service import NotificationService
+    db = SessionLocal()
+    try:
+        utc = ZoneInfo("UTC")
+        for team in db.query(Team).all():
+            try:
+                tz = mood_service.team_tz(db, team.id)
+                local_now = datetime.now(utc).astimezone(tz)
+                if local_now.hour < 10:
+                    continue  # сбор опросов ещё идёт — сводку не шлём до 10:00
+                # Локальная полночь -> UTC (naive) для сравнения с created_at.
+                local_midnight_utc = local_now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(utc).replace(tzinfo=None)
+                already = db.query(Notification).filter(
+                    Notification.user_id == team.team_lead_id,
+                    Notification.type == "mood_summary",
+                    Notification.created_at >= local_midnight_utc,
+                ).first()
+                if already:
+                    continue
+                s = mood_service.team_summary(db, team.id, ref=local_now.date())
+                if s.get("insufficient"):
+                    body = f"Недостаточно данных для анонимной статистики за сегодня (заполнили {s['filled']} из {s['team_size']}, нужно от {s['threshold']})."
+                else:
+                    delta = s.get("delta_prev")
+                    delta_txt = "" if delta is None else f" Динамика к вчера: {'+' if delta > 0 else ''}{delta}."
+                    body = (f"Средний уровень: {s['avg']} из 5. "
+                            f"Заполнили: {s['filled']} из {s['team_size']}"
+                            + (f" ({s['share_pct']}%)." if s.get('share_pct') is not None else ".")
+                            + delta_txt)
+                NotificationService(db).create_notification(
+                    user_id=team.team_lead_id, type="mood_summary",
+                    title="Сводка настроения команды", body=body,
+                    data={"team_id": team.id, "summary": s},
+                )
+            except Exception:
+                db.rollback()
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
+async def _mood_summary_loop():
+    """Проверяем раз в минуту — точное срабатывание в 10:00 по поясу каждой
+    команды, с дедупом и догоном после простоя (см. _send_mood_summaries)."""
+    await asyncio.sleep(100)
+    while True:
+        try:
+            await asyncio.to_thread(_send_mood_summaries)
+        except Exception:
+            pass
+        await asyncio.sleep(60)
+
+
 async def _telegram_polling_loop():
     """Long polling для Telegram — альтернатива вебхуку (TELEGRAM_MODE=polling).
     Нужен, когда входящий трафик до сервера фильтруется и Telegram не может
@@ -201,6 +267,7 @@ async def lifespan(app: FastAPI):
     _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())
+    mood_summary_task = asyncio.create_task(_mood_summary_loop())
     billing_task = asyncio.create_task(_billing_sweep_loop())
     # Polling запускается сам, только если TELEGRAM_MODE=polling (иначе выходит
     # сразу и остаётся штатный режим вебхука).
@@ -208,6 +275,7 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
     mood_task.cancel()
+    mood_summary_task.cancel()
     billing_task.cancel()
     tg_poll_task.cancel()
 

@@ -940,7 +940,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         {/* Tab: Analytics */}
-        {activeTab === 'analytics' && <MemberAnalytics user={user} />}
+        {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
 
       </div>
 
@@ -992,7 +992,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => setActiveCall(null)}
       />
     )}
-    <MoodPrompt teamId={teamId} />
+    <MoodPrompt teamId={teamId} user={user} />
     {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
 
     {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}

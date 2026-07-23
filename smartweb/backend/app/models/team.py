@@ -12,6 +12,9 @@ class Team(Base):
     # Есть ли у пространства заполненные реквизиты компании (Этап 3). Отсутствие
     # ничего не блокирует — реквизиты нужны позже, на этапе оплаты.
     has_company = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Часовой пояс команды (IANA, напр. "Europe/Moscow"). Используется для
+    # ежедневной сводки в 10:00 и границ суток чек-ина. NULL -> пояс по умолчанию.
+    timezone = Column(String(64), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
 
     team_lead = relationship("User", foreign_keys=[team_lead_id])

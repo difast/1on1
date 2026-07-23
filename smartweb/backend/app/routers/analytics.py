@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from datetime import datetime, timedelta
 from collections import defaultdict
 
 from app.database import get_db
 from app.models import Meeting, Task, Team, TeamMember, User
+from app.utils.auth import get_current_user
+from app.services import mood_service
 
 router = APIRouter()
 
@@ -82,7 +84,10 @@ def _weeks_chart(meetings: list, now: datetime, n: int = 12):
 
 
 @router.get("/lead/{user_id}")
-def get_lead_analytics(user_id: int, db: Session = Depends(get_db)):
+def get_lead_analytics(user_id: int, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    # Права (27.5): аналитику тимлида отдаём только ему самому.
+    if current and current.id != user_id:
+        raise HTTPException(status_code=403, detail="Доступ только к своей аналитике")
     now = datetime.utcnow()
     teams = db.query(Team).filter(Team.team_lead_id == user_id).all()
 
@@ -167,10 +172,15 @@ def get_lead_analytics(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/member/{user_id}")
-def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
+def get_member_analytics(user_id: int, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    # Права (31.4): участник видит только СВОЮ аналитику, никогда чужую.
+    if current and current.id != user_id:
+        raise HTTPException(status_code=403, detail="Доступ только к своей аналитике")
     now = datetime.utcnow()
     ninety_ago = now - timedelta(days=90)
     thirty_ago = now - timedelta(days=30)
+    sixty_ago = now - timedelta(days=60)
+    prev30_start = sixty_ago  # предыдущие 30 дней: [60..30) назад
 
     meetings = db.query(Meeting).filter(
         Meeting.member_id == user_id,
@@ -201,6 +211,28 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
         1 for t in all_tasks
         if t.completed and t.completed_at and t.completed_at >= thirty_ago
     )
+    # Сравнение с собственным прошлым периодом (31.3): предыдущие 30 дней [60..30).
+    closed_prev_30 = sum(
+        1 for t in all_tasks
+        if t.completed and t.completed_at and prev30_start <= t.completed_at < thirty_ago
+    )
+    meetings_30 = sum(1 for m in meetings if m.scheduled_date >= thirty_ago)
+    meetings_prev_30 = sum(1 for m in meetings if prev30_start <= m.scheduled_date < thirty_ago)
+
+    # Личный ряд настроения по чек-инам (27.1 / 31.3) — только собственные данные.
+    tm = db.query(TeamMember).filter(TeamMember.user_id == user_id).first()
+    tz = mood_service.team_tz(db, tm.team_id) if tm else mood_service.ZoneInfo("UTC")
+    from datetime import date as _date
+    today_local = mood_service.now_local(tz).date()
+    mood_series = mood_service.user_series(db, user_id, tz, today_local - timedelta(days=29), today_local)
+    mood_vals = [p["score"] for p in mood_series]
+    mood_avg = round(sum(mood_vals) / len(mood_vals), 2) if mood_vals else None
+    # Настроение: текущие 15 дней vs предыдущие 15 (динамика personal).
+    recent_half = [p["score"] for p in mood_series if _date.fromisoformat(p["date"]) >= today_local - timedelta(days=14)]
+    older_half = [p["score"] for p in mood_series if _date.fromisoformat(p["date"]) < today_local - timedelta(days=14)]
+    mood_delta = None
+    if recent_half and older_half:
+        mood_delta = round(sum(recent_half) / len(recent_half) - sum(older_half) / len(older_half), 2)
 
     return {
         "meetings_last_90": len(meetings_90),
@@ -214,4 +246,12 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db)):
         "closed_last_30": closed_30,
         "mood_trend": mood_trend,
         "meetings_per_week": _weeks_chart(meetings, now),
+        # Личное настроение по чек-инам + персональные тренды и сравнение с прошлым.
+        "mood_checkin_series": mood_series,
+        "mood_checkin_avg": mood_avg,
+        "compare": {
+            "closed_tasks_30": closed_30, "closed_tasks_prev_30": closed_prev_30,
+            "meetings_30": meetings_30, "meetings_prev_30": meetings_prev_30,
+            "mood_delta_15d": mood_delta,
+        },
     }

@@ -176,10 +176,23 @@ export const getTaskAiAdvice = (title: string, status?: string, due_date?: strin
   req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member', user_id }) });
 
 // Mood
-export const submitMood = (team_id: number, answers: string[]) =>
-  req<any>('/mood/', { method: 'POST', body: JSON.stringify({ team_id, answers }) });
+export const submitMood = (team_id: number, answers: string[], user_id?: number) =>
+  req<any>('/mood/', { method: 'POST', body: JSON.stringify({ team_id, user_id, answers }) });
 export const getTeamMoodSummary = (teamId: number) =>
   req<any>(`/mood/team/${teamId}/summary`);
+export const getMoodToday = (userId: number, teamId: number) =>
+  req<any>(`/mood/today/${userId}?team_id=${teamId}`);
+export const getMyMoodSeries = (
+  userId: number,
+  opts: { period?: string; start?: string; end?: string; teamId?: number } = {},
+) => {
+  const p = new URLSearchParams();
+  if (opts.period) p.set('period', opts.period);
+  if (opts.start) p.set('start', opts.start);
+  if (opts.end) p.set('end', opts.end);
+  if (opts.teamId != null) p.set('team_id', String(opts.teamId));
+  return req<any>(`/mood/me/${userId}/series?${p.toString()}`);
+};
 
 // AI Assistant
 export const assistantChat = (messages: { role: string; content: string }[], context = '', user_id?: number) =>
