@@ -47,6 +47,12 @@ async def webhook(
     if not tg.verify_webhook_secret(x_telegram_bot_api_secret_token):
         raise HTTPException(status_code=403, detail="Forbidden")
 
+    # Защита от двойной обработки: если сервер работает в режиме polling, апдейты
+    # уже забирает getUpdates. Случайно оставшийся вебхук молча игнорируем, чтобы
+    # одно и то же сообщение не обработалось дважды.
+    if (settings.telegram_mode or "webhook").lower() == "polling":
+        return {"ok": True}
+
     update = await request.json()
     try:
         from app.services import telegram_bot

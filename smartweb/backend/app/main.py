@@ -144,16 +144,71 @@ async def _billing_sweep_loop():
         await asyncio.sleep(6 * 3600)  # every 6 hours
 
 
+async def _telegram_polling_loop():
+    """Long polling для Telegram — альтернатива вебхуку (TELEGRAM_MODE=polling).
+    Нужен, когда входящий трафик до сервера фильтруется и Telegram не может
+    достучаться до вебхука: бот сам ходит за апдейтами через getUpdates.
+
+    Перед стартом ОБЯЗАТЕЛЬНО снимаем вебхук (deleteWebhook) — иначе getUpdates
+    отдаёт 409, а сам факт двойного канала грозил бы двойной обработкой.
+    Каждый апдейт обрабатываем в отдельной сессии БД тем же handle_update, что
+    и вебхук, — общая логика, без дублирования обработчиков."""
+    import logging
+    from app.config import settings
+    from app.database import SessionLocal
+    from app.services import telegram as tg
+    log = logging.getLogger("telegram.polling")
+
+    if (settings.telegram_mode or "webhook").lower() != "polling":
+        return
+    if not tg.bot_token():
+        log.warning("TELEGRAM_MODE=polling, но TELEGRAM_BOT_TOKEN не задан — polling не запущен")
+        return
+
+    await asyncio.sleep(5)  # дать серверу подняться
+    # Снимаем вебхук (без сброса накопленной очереди — обработаем её).
+    try:
+        res = await asyncio.to_thread(tg.delete_webhook, False)
+        log.info("polling: deleteWebhook -> %s", res)
+    except Exception as e:
+        log.warning("polling: deleteWebhook error: %s", e)
+
+    offset: int | None = None
+    from app.services import telegram_bot
+    while True:
+        try:
+            updates = await asyncio.to_thread(tg.get_updates, offset, 25)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            log.warning("polling: getUpdates error: %s", e)
+            await asyncio.sleep(5)  # backoff, чтобы не долбить API при сбое
+            continue
+        for upd in updates:
+            offset = int(upd["update_id"]) + 1
+            db = SessionLocal()
+            try:
+                await asyncio.to_thread(telegram_bot.handle_update, db, upd)
+            except Exception as e:
+                log.warning("polling: handle_update error: %s", e)
+            finally:
+                db.close()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())
     billing_task = asyncio.create_task(_billing_sweep_loop())
+    # Polling запускается сам, только если TELEGRAM_MODE=polling (иначе выходит
+    # сразу и остаётся штатный режим вебхука).
+    tg_poll_task = asyncio.create_task(_telegram_polling_loop())
     yield
     task.cancel()
     mood_task.cancel()
     billing_task.cancel()
+    tg_poll_task.cancel()
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.0", lifespan=lifespan)
 

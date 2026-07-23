@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""    # напр. oneononehq_bot (без @) — публично
     telegram_webhook_secret: str = ""  # секрет для проверки заголовка вебхука
     app_web_url: str = ""              # базовый URL веба для ссылок из бота
+    # Режим получения апдейтов от Telegram: "webhook" (по умолчанию) или
+    # "polling". polling полезен, когда входящий трафик до сервера фильтруется
+    # и Telegram не может достучаться до вебхука — бот сам ходит за апдейтами.
+    telegram_mode: str = "webhook"     # webhook | polling
 
     class Config:
         env_file = ".env"
