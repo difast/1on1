@@ -6,6 +6,7 @@
 основную операцию — письмо можно запросить повторно.
 """
 import re
+import logging
 import secrets
 from datetime import datetime, timedelta
 
@@ -26,9 +27,15 @@ from app.utils.auth import create_access_token, get_current_user, require_admin
 from app.services import mailer
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 CONFIRM_TTL = timedelta(hours=24)
-RESET_TTL = timedelta(hours=1)
+# Сброс пароля: 1 час был слишком жёстким на новой инфраструктуре — при
+# малейшей задержке доставки письма или если пользователь открывал ссылку не
+# сразу, токен успевал истечь, и корректная ссылка отдавала «недействительна».
+# 3 часа: по-прежнему короткоживущий одноразовый токен (гасится при повторном
+# запросе), но терпимый к задержкам доставки. Текст письма обновлён синхронно.
+RESET_TTL = timedelta(hours=3)
 
 
 # ── валидация ────────────────────────────────────────────────────────────────
@@ -212,11 +219,21 @@ def resend_confirmation(data: ResendReq, background_tasks: BackgroundTasks, db: 
 
 @router.post("/forgot-password")
 def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == _norm_email(data.email)).first()
+    email = _norm_email(data.email)
+    user = db.query(User).filter(User.email == email).first()
     # Не раскрываем, есть ли аккаунт. Письмо уходит только если есть пароль.
-    if user is not None and user.email and user.password_hash:
+    # Логируем причину (без утечки наружу — ответ всегда {ok: true}), чтобы в
+    # логах Timeweb было видно, ушло письмо или нет и почему.
+    if user is None:
+        logger.info("forgot-password: аккаунт не найден (%s) — письмо не отправляется", email)
+    elif not user.password_hash:
+        logger.info("forgot-password: у аккаунта нет пароля (%s, вход через Telegram) — письмо не отправляется", email)
+    elif not user.email:
+        logger.info("forgot-password: у аккаунта нет email (id=%s) — письмо не отправляется", user.id)
+    else:
         tok = _issue_token(db, user.id, "reset", RESET_TTL)
         background_tasks.add_task(mailer.send_reset_email, user.email, user.name or "", tok)
+        logger.info("forgot-password: письмо сброса поставлено в очередь (%s)", email)
     return {"ok": True}
 
 
@@ -225,10 +242,23 @@ def reset_password(data: ResetReq, db: Session = Depends(get_db)):
     _validate_password(data.new_password)
     row = _consume_token(db, data.token, "reset")
     if row is None:
+        # Разбираем, ПОЧЕМУ токен не принят (истёк / уже использован / нет
+        # такого) — иначе в проде «Ссылка недействительна» не диагностируется.
+        probe = db.query(AuthToken).filter(
+            AuthToken.token == data.token, AuthToken.purpose == "reset",
+        ).first()
+        if probe is None:
+            reason = "нет такого токена (устарел после нового запроса сброса или неверная ссылка)"
+        elif probe.used_at is not None:
+            reason = "токен уже использован"
+        else:
+            reason = "срок действия истёк"
+        logger.info("reset-password: отклонён — %s", reason)
         raise HTTPException(400, "Ссылка недействительна или устарела")
     user = db.query(User).filter(User.id == row.user_id).first()
     if user is None:
         raise HTTPException(404, "Пользователь не найден")
+    logger.info("reset-password: пароль успешно изменён (user id=%s)", user.id)
     user.password_hash = hash_password(data.new_password)
     db.commit()
     db.refresh(user)
