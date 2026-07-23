@@ -212,6 +212,19 @@ def resolve_web_login(db: Session, tg: dict, link_user_id: int | None = None):
 
 # ---- Bot API ----------------------------------------------------------------
 
+def _api_post(method: str, payload: dict, timeout: float = 8) -> httpx.Response:
+    """POST к Telegram Bot API с принудительным IPv4.
+
+    На Timeweb api.telegram.org резолвится в том числе в IPv6, а у контейнера
+    исходящего IPv6 нет — connect падает с [Errno 99] Cannot assign requested
+    address (и вебхук, и polling). Привязка локального сокета к 0.0.0.0
+    заставляет httpx открывать IPv4-соединение. Токен добавляется здесь."""
+    token = bot_token()
+    transport = httpx.HTTPTransport(local_address="0.0.0.0")
+    with httpx.Client(timeout=timeout, transport=transport) as client:
+        return client.post(f"{API_BASE}/bot{token}/{method}", json=payload)
+
+
 def notify_user(db: Session, user_id: int, title: str, body: str | None = None) -> None:
     """Продублировать пользовательское уведомление в Telegram, если у аккаунта
     привязан telegram_id. Безопасно для всех — у кого нет привязки, пропускаем."""
@@ -238,7 +251,7 @@ def send_message(chat_id: int, text: str, reply_markup: dict | None = None,
     if parse_mode:
         payload["parse_mode"] = parse_mode
     try:
-        httpx.post(f"{API_BASE}/bot{token}/sendMessage", json=payload, timeout=8)
+        _api_post("sendMessage", payload)
     except Exception:
         pass
 
@@ -252,7 +265,7 @@ def answer_callback(callback_query_id: str, text: str | None = None) -> None:
     if text:
         payload["text"] = text
     try:
-        httpx.post(f"{API_BASE}/bot{token}/answerCallbackQuery", json=payload, timeout=8)
+        _api_post("answerCallbackQuery", payload)
     except Exception:
         pass
 
@@ -265,7 +278,7 @@ def edit_message_text(chat_id: int, message_id: int, text: str, reply_markup: di
     payload = {"chat_id": chat_id, "message_id": message_id, "text": text, "disable_web_page_preview": True}
     payload["reply_markup"] = reply_markup or {"inline_keyboard": []}
     try:
-        httpx.post(f"{API_BASE}/bot{token}/editMessageText", json=payload, timeout=8)
+        _api_post("editMessageText", payload)
     except Exception:
         pass
 
@@ -279,8 +292,7 @@ def set_webhook(url: str) -> dict:
     if settings.telegram_webhook_secret:
         payload["secret_token"] = settings.telegram_webhook_secret
     try:
-        r = httpx.post(f"{API_BASE}/bot{token}/setWebhook", json=payload, timeout=10)
-        return r.json()
+        return _api_post("setWebhook", payload, timeout=10).json()
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -298,11 +310,9 @@ def delete_webhook(drop_pending: bool = False) -> dict:
     if not token:
         return {"ok": False, "error": "no_token"}
     try:
-        r = httpx.post(
-            f"{API_BASE}/bot{token}/deleteWebhook",
-            json={"drop_pending_updates": drop_pending}, timeout=10,
-        )
-        return r.json()
+        return _api_post(
+            "deleteWebhook", {"drop_pending_updates": drop_pending}, timeout=10,
+        ).json()
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
@@ -318,10 +328,7 @@ def get_updates(offset: int | None, timeout: int = 25) -> list:
     payload = {"timeout": timeout, "allowed_updates": ALLOWED_UPDATES}
     if offset is not None:
         payload["offset"] = offset
-    r = httpx.post(
-        f"{API_BASE}/bot{token}/getUpdates", json=payload, timeout=timeout + 10,
-    )
-    data = r.json()
+    data = _api_post("getUpdates", payload, timeout=timeout + 10).json()
     if not data.get("ok"):
         raise RuntimeError(f"getUpdates: {data.get('description') or data}")
     return data.get("result") or []
