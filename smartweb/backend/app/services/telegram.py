@@ -275,7 +275,7 @@ def set_webhook(url: str) -> dict:
     token = bot_token()
     if not token:
         return {"ok": False, "error": "no_token"}
-    payload = {"url": url, "allowed_updates": ["message"]}
+    payload = {"url": url, "allowed_updates": ALLOWED_UPDATES}
     if settings.telegram_webhook_secret:
         payload["secret_token"] = settings.telegram_webhook_secret
     try:
@@ -283,3 +283,45 @@ def set_webhook(url: str) -> dict:
         return r.json()
     except Exception as e:
         return {"ok": False, "error": str(e)}
+
+
+# Бот обрабатывает и обычные сообщения, и нажатия inline-кнопок (callback_query),
+# поэтому запрашиваем оба типа апдейтов и в вебхуке, и в polling.
+ALLOWED_UPDATES = ["message", "callback_query"]
+
+
+def delete_webhook(drop_pending: bool = False) -> dict:
+    """Снять вебхук. Обязательно перед запуском polling: пока вебхук активен,
+    Telegram отдаёт getUpdates ошибку 409 и не даёт забирать апдейты — а если
+    бы отдавал, мы получили бы двойную обработку сообщений."""
+    token = bot_token()
+    if not token:
+        return {"ok": False, "error": "no_token"}
+    try:
+        r = httpx.post(
+            f"{API_BASE}/bot{token}/deleteWebhook",
+            json={"drop_pending_updates": drop_pending}, timeout=10,
+        )
+        return r.json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def get_updates(offset: int | None, timeout: int = 25) -> list:
+    """Забрать пачку апдейтов через long polling (getUpdates). Блокирующий
+    вызов до timeout секунд; httpx-таймаут заведомо больше, чтобы не рвать
+    соединение раньше самого long-poll. Возвращает список апдейтов (может быть
+    пустым). Ошибки — наверх, чтобы цикл мог их залогировать и притормозить."""
+    token = bot_token()
+    if not token:
+        return []
+    payload = {"timeout": timeout, "allowed_updates": ALLOWED_UPDATES}
+    if offset is not None:
+        payload["offset"] = offset
+    r = httpx.post(
+        f"{API_BASE}/bot{token}/getUpdates", json=payload, timeout=timeout + 10,
+    )
+    data = r.json()
+    if not data.get("ok"):
+        raise RuntimeError(f"getUpdates: {data.get('description') or data}")
+    return data.get("result") or []

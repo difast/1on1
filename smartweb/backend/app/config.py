@@ -18,6 +18,13 @@ class Settings(BaseSettings):
     # обязательно задать JWT_SECRET.
     jwt_secret: str = ""
     jwt_expire_days: int = 30
+    # Этап 8: принудительная проверка JWT на защищённых эндпоинтах. Когда флаг
+    # включён (AUTH_ENFORCE=1), любой запрос к /api/* вне публичного списка
+    # (вход/регистрация/health/вебхуки) без валидного токена получает 401.
+    # По умолчанию выключен: включать только после smoke-теста всех способов
+    # входа на боевой инфраструктуре. Отключение — только явным AUTH_ENFORCE=0,
+    # тихого обхода на отдельных запросах нет.
+    auth_enforce: bool = False
 
     # SMTP (Reg.ru) для писем подтверждения email и сброса пароля.
     # Пароль — только из окружения (SMTP_PASSWORD), в коде его нет.
@@ -39,6 +46,10 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""    # напр. oneononehq_bot (без @) — публично
     telegram_webhook_secret: str = ""  # секрет для проверки заголовка вебхука
     app_web_url: str = ""              # базовый URL веба для ссылок из бота
+    # Режим получения апдейтов от Telegram: "webhook" (по умолчанию) или
+    # "polling". polling полезен, когда входящий трафик до сервера фильтруется
+    # и Telegram не может достучаться до вебхука — бот сам ходит за апдейтами.
+    telegram_mode: str = "webhook"     # webhook | polling
 
     class Config:
         env_file = ".env"
