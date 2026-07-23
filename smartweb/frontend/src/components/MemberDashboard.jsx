@@ -11,6 +11,7 @@ import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
+import MeetingProposals from './MeetingProposals'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
@@ -41,6 +42,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [meetings, setMeetings] = useState([])
   const [showRequestMeeting, setShowRequestMeeting] = useState(false)
+  const [showProposals, setShowProposals] = useState(false)  // предложения встреч (Задача 5)
   const [meetingDate, setMeetingDate] = useState('')
   const [meetingTopic, setMeetingTopic] = useState('')
   const [meetingLoading, setMeetingLoading] = useState(false)
@@ -593,7 +595,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {/* Tab: Meetings — calendar view */}
         {activeTab === 'meetings' && (
           <div style={{ maxWidth: 700, width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+              {/* Предложить встречу другому участнику (Задача 5) */}
+              <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">
+                Предложения встреч
+              </button>
               <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
                 + Запросить встречу
               </button>
@@ -983,6 +989,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     )}
     <MoodPrompt teamId={teamId} />
     {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
+
+    {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}
+    {showProposals && (
+      <MeetingProposals
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        teamId={teamId}
+        onClose={() => setShowProposals(false)}
+        onChanged={() => loadMeetings()}
+      />
+    )}
     </>
   )
 }
