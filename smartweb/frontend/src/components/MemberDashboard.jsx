@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Spinner from '../lib/Spinner'
 import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
@@ -213,19 +214,28 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const handleCreateSelfTask = async (e) => {
     e.preventDefault()
-    if (!selfTaskForm.title.trim()) return
-    setSelfTaskForm(f => ({ ...f, loading: true }))
+    const title = selfTaskForm.title.trim()
+    if (!title) return
+    const due_date = selfTaskForm.due_date || null
+    // Оптимистичное добавление: задача видна сразу, до ответа сервера.
+    const tempId = `temp-${Date.now()}`
+    const optimistic = {
+      id: tempId, _optimistic: true, title, due_date,
+      team_id: null, assigned_to: user.id, assigned_by: user.id,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+    }
+    setTasks(prev => [optimistic, ...prev])
+    setSelfTaskForm({ title: '', due_date: '', open: false, loading: false })
     try {
       const { data } = await createTask({
-        title: selfTaskForm.title.trim(),
-        due_date: selfTaskForm.due_date || null,
-        team_id: null,
-        assigned_to: user.id,
-        assigned_by: user.id,
+        title, due_date, team_id: null, assigned_to: user.id, assigned_by: user.id,
       })
-      setTasks(prev => [data, ...prev])
-      setSelfTaskForm({ title: '', due_date: '', open: false, loading: false })
-    } catch { setSelfTaskForm(f => ({ ...f, loading: false })) }
+      setTasks(prev => prev.map(t => t.id === tempId ? data : t))
+    } catch {
+      setTasks(prev => prev.filter(t => t.id !== tempId))
+      setSelfTaskForm({ title, due_date: selfTaskForm.due_date || '', open: true, loading: false })
+      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+    }
   }
 
   const handleDeleteTask = async (taskId) => {
@@ -353,8 +363,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   {joinError}
                 </div>
               )}
-              <button type="submit" disabled={joinLoading} className="btn btn-accent" style={{ width: '100%' }}>
-                {joinLoading ? 'Присоединение...' : 'Присоединиться'}
+              <button type="submit" disabled={joinLoading} className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {joinLoading ? <><Spinner size={15} /> Присоединение...</> : 'Присоединиться'}
               </button>
             </form>
           </div>
@@ -831,9 +841,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   onClick={handleCreateNote}
                   disabled={noteLoading || !newNoteText.trim()}
                   className="btn btn-accent btn-sm"
-                  style={{ marginTop: 10 }}
+                  style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+                  {noteLoading ? <><Spinner size={14} /> Сохранение...</> : '+ Добавить заметку'}
                 </button>
               </div>
               {freeNotes.length > 0 ? (
@@ -940,8 +950,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
               <button type="button" onClick={() => setShowRequestMeeting(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={meetingLoading} className="btn btn-accent" style={{ flex: 1 }}>
-                {meetingLoading ? 'Отправка...' : 'Запросить'}
+              <button type="submit" disabled={meetingLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {meetingLoading ? <><Spinner size={15} /> Отправка...</> : 'Запросить'}
               </button>
             </div>
           </form>
