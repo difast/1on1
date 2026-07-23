@@ -6,6 +6,7 @@ import {
 } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 import { confirmDialog, toast } from '../lib/ui'
+import Spinner from '../lib/Spinner'
 
 const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 
@@ -159,12 +160,12 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                     )}
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} disabled={mgr.saving} onClick={() => setMgr(null)}>Отмена</button>
-                      <button className="btn btn-sm btn-accent" style={{ flex: 1 }} disabled={mgr.saving}
+                      <button className="btn btn-sm btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} disabled={mgr.saving}
                         onClick={async () => {
                           setMgr(m => ({ ...m, saving: true }))
                           try { await assignManager(user.id, mgr.managerId ? Number(mgr.managerId) : null); await loadBilling(); toast('Менеджер обновлён', 'success'); setMgr(null) }
                           catch { toast('Не удалось сохранить', 'error'); setMgr(m => ({ ...m, saving: false })) }
-                        }}>{mgr.saving ? 'Сохранение…' : 'Сохранить'}</button>
+                        }}>{mgr.saving ? <><Spinner size={14} /> Сохранение…</> : 'Сохранить'}</button>
                     </div>
                   </div>
                 )}
@@ -193,10 +194,10 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
             </div>
 
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-              <button disabled={busy} onClick={toggleBlock} className="btn btn-sm" style={{ flex: 1, background: blocked ? '#f0fdf4' : '#fff7ed', color: blocked ? '#16a34a' : '#c2410c', border: '1px solid var(--color-border)' }}>
-                {blocked ? 'Разблокировать' : 'Заблокировать'}
+              <button disabled={busy} onClick={toggleBlock} className="btn btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: blocked ? '#f0fdf4' : '#fff7ed', color: blocked ? '#16a34a' : '#c2410c', border: '1px solid var(--color-border)' }}>
+                {busy && <Spinner size={13} tone="accent" />}{blocked ? 'Разблокировать' : 'Заблокировать'}
               </button>
-              <button disabled={busy} onClick={handleDelete} className="btn btn-sm" style={{ flex: 1, background: '#dc2626', color: '#fff', border: 'none' }}>Удалить</button>
+              <button disabled={busy} onClick={handleDelete} className="btn btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#dc2626', color: '#fff', border: 'none' }}>{busy && <Spinner size={13} />}Удалить</button>
             </div>
           </>
         )}

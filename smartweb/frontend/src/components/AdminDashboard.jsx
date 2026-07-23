@@ -11,6 +11,8 @@ import {
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import { toast, confirmDialog } from '../lib/ui'
+import Spinner from '../lib/Spinner'
+import useStickyScroll from '../lib/useStickyScroll'
 import AdminManage from './AdminManage'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
@@ -91,7 +93,9 @@ export default function AdminDashboard({ onLogout }) {
   const [activeTicket, setActiveTicket]     = useState(null)
   const [replyText, setReplyText]           = useState('')
   const [replying, setReplying]             = useState(false)
-  const threadEndRef = useRef(null)
+  // Умный автоскролл треда поддержки: доскроллить к новому сообщению только
+  // если админ уже был у нижнего края.
+  const { scrollRef: threadScrollRef, bottomRef: threadEndRef, onScroll: onThreadScroll } = useStickyScroll([activeTicket?.id, activeTicket?.messages?.length])
 
   // Analytics
   const [analytics, setAnalytics]   = useState(null)
@@ -160,7 +164,6 @@ export default function AdminDashboard({ onLogout }) {
   // поэтому грузим один раз при монтировании.
   useEffect(() => { loadManagers() }, [])
 
-  useEffect(() => { threadEndRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [activeTicket?.messages?.length])
 
   const openTicket = (ticket) => {
     setActiveTicket(ticket)
@@ -480,7 +483,7 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
 
                       {/* Messages */}
-                      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
+                      <div ref={threadScrollRef} onScroll={onThreadScroll} style={{ flex: 1, overflowY: 'auto', padding: '16px 18px' }}>
                         {activeTicket.messages.map(m => <MessageBubble key={m.id} msg={m} />)}
                         <div ref={threadEndRef} />
                       </div>
@@ -497,8 +500,8 @@ export default function AdminDashboard({ onLogout }) {
                           onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(e) } }}
                         />
-                        <button type="submit" disabled={replying || !replyText.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end' }}>
-                          {replying ? '...' : 'Ответить'}
+                        <button type="submit" disabled={replying || !replyText.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                          {replying ? <><Spinner size={13} /> Ответ...</> : 'Ответить'}
                         </button>
                       </form>
                     </>
@@ -605,8 +608,8 @@ export default function AdminDashboard({ onLogout }) {
                       <label className="form-label">Текст сообщения</label>
                       <textarea className="input" value={broadcastForm.body} onChange={e => setBroadcastForm(f => ({ ...f, body: e.target.value }))} placeholder="Дополнительный текст (необязательно)..." rows={4} style={{ minHeight: 100, resize: 'vertical' }} />
                     </div>
-                    <button type="submit" disabled={broadcastSending} className="btn btn-accent" style={{ fontWeight: 700 }}>
-                      {broadcastSending ? 'Отправка...' : 'Отправить уведомление'}
+                    <button type="submit" disabled={broadcastSending} className="btn btn-accent" style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      {broadcastSending ? <><Spinner size={15} /> Отправка...</> : 'Отправить уведомление'}
                     </button>
                     {broadcastResult && (
                       <div style={{
@@ -960,8 +963,8 @@ export default function AdminDashboard({ onLogout }) {
                       {kbEditing && (
                         <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setKbEditing(null); setKbForm({ title: '', content: '' }) }}>Отмена</button>
                       )}
-                      <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2 }}>
-                        {kbSaving ? '...' : kbEditing ? 'Сохранить' : '+ Создать статью'}
+                      <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        {kbSaving ? <Spinner size={14} /> : kbEditing ? 'Сохранить' : '+ Создать статью'}
                       </button>
                     </div>
                   </form>
@@ -1031,7 +1034,7 @@ export default function AdminDashboard({ onLogout }) {
                 </select>
               </div>
             )}
-            <button className="btn btn-accent" style={{ width: '100%' }} disabled={mgrEdit.saving}
+            <button className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} disabled={mgrEdit.saving}
               onClick={async () => {
                 setMgrEdit(m => ({ ...m, saving: true }))
                 try {
@@ -1041,7 +1044,7 @@ export default function AdminDashboard({ onLogout }) {
                   setMgrEdit(null)
                 } catch { toast('Не удалось сохранить', 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
               }}>
-              {mgrEdit.saving ? 'Сохранение…' : 'Сохранить'}
+              {mgrEdit.saving ? <><Spinner size={15} /> Сохранение…</> : 'Сохранить'}
             </button>
           </div>
         </div>

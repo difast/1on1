@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
+import Spinner from '../lib/Spinner'
 import {
   getTelegramConfig, telegramCallback,
   authLogin, authRegister, authForgotPassword,
@@ -10,14 +11,9 @@ import {
 const ADMIN_PASSWORD = '1on12026'
 
 // Небольшой крутящийся индикатор для кнопок — показываем при долгой загрузке
-// (холодный старт бэкенда). Использует глобальный keyframe spin.
-const BtnSpinner = () => (
-  <span style={{
-    display: 'inline-block', width: 16, height: 16,
-    border: '2px solid rgba(255,255,255,0.45)', borderTopColor: '#fff',
-    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-  }} />
-)
+// (холодный старт бэкенда). Общий компонент Spinner переиспользуется всем
+// приложением (веб и админка), чтобы индикатор был единым.
+const BtnSpinner = () => <Spinner />
 
 const Logo = () => (
   <div style={{ textAlign: 'center', marginBottom: 32 }}>

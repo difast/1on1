@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import Spinner from '../lib/Spinner'
 import { createUser, joinTeam, updateUser } from '../api/client'
 
 const STYLES = `
@@ -308,8 +309,9 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                   background:loading?'rgba(37,84,212,0.4)':'linear-gradient(135deg,#2554D4,#4f46e5)',
                   color:'#fff',border:'none',borderRadius:12,cursor:loading?'default':'pointer',
                   boxShadow:'0 4px 16px rgba(37,84,212,0.35)',transition:'all 0.2s',
+                  display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,
                 }}>
-                  {loading ? 'Сохранение...' : 'Далее →'}
+                  {loading ? <><Spinner size={15} /> Сохранение...</> : 'Далее →'}
                 </button>
               </form>
             </div>

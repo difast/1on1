@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { createSupportTicket, getUserTickets, userSendMessage, userReadReply } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
+import useStickyScroll from '../lib/useStickyScroll'
+import Spinner from '../lib/Spinner'
 
 function MessageBubble({ msg }) {
   const isAdmin = msg.sender === 'admin'
@@ -32,10 +34,10 @@ function MessageBubble({ msg }) {
 function TicketThread({ ticket, currentUser, onUpdate }) {
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
-  const bottomRef = useRef(null)
+  // Умный автоскролл к новым сообщениям, если пользователь уже у нижнего края.
+  const { scrollRef, bottomRef, onScroll } = useStickyScroll([ticket.id, ticket.messages.length])
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
     if (ticket.has_unread_reply) {
       userReadReply(ticket.id).catch(() => {})
       onUpdate(ticket.id, { has_unread_reply: false })
@@ -64,7 +66,7 @@ function TicketThread({ ticket, currentUser, onUpdate }) {
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
+      <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
         {ticket.messages.map(m => <MessageBubble key={m.id} msg={m} />)}
         <div ref={bottomRef} />
       </div>
@@ -89,8 +91,8 @@ function TicketThread({ ticket, currentUser, onUpdate }) {
           onBlur={e => e.target.style.borderColor = 'var(--color-border)'}
           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(e) } }}
         />
-        <button type="submit" disabled={sending || !reply.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end' }}>
-          {sending ? '...' : '↑'}
+        <button type="submit" disabled={sending || !reply.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>
+          {sending ? <Spinner size={14} /> : '↑'}
         </button>
       </form>
     </div>
@@ -260,8 +262,8 @@ export default function SupportPage({ currentUser, onClose }) {
                   {error && <p style={{ fontSize: 13, color: 'var(--color-danger)', margin: 0 }}>{error}</p>}
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>Назад</button>
-                    <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2 }}>
-                      {submitting ? 'Отправка...' : 'Отправить'}
+                    <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                      {submitting ? <><Spinner size={15} /> Отправка...</> : 'Отправить'}
                     </button>
                   </div>
                 </form>

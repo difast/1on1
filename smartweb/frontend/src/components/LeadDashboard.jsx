@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import Spinner from '../lib/Spinner'
 import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
@@ -400,19 +401,28 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   const handleCreateMyTask = async (e) => {
     e.preventDefault()
-    if (!myTaskForm.title.trim()) return
-    setMyTaskForm(f => ({ ...f, loading: true }))
+    const title = myTaskForm.title.trim()
+    if (!title) return
+    const due_date = myTaskForm.due_date || null
+    // Оптимистичное добавление: задача видна сразу, до ответа сервера.
+    const tempId = `temp-${Date.now()}`
+    const optimistic = {
+      id: tempId, _optimistic: true, title, due_date,
+      team_id: null, assigned_to: user.id, assigned_by: user.id,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+    }
+    setMyTasks(prev => [optimistic, ...prev])
+    setMyTaskForm({ title: '', due_date: '', open: false, loading: false })
     try {
       const { data } = await createTask({
-        title: myTaskForm.title.trim(),
-        due_date: myTaskForm.due_date || null,
-        team_id: null,
-        assigned_to: user.id,
-        assigned_by: user.id,
+        title, due_date, team_id: null, assigned_to: user.id, assigned_by: user.id,
       })
-      setMyTasks(prev => [data, ...prev])
-      setMyTaskForm({ title: '', due_date: '', open: false, loading: false })
-    } catch { setMyTaskForm(f => ({ ...f, loading: false })) }
+      setMyTasks(prev => prev.map(t => t.id === tempId ? data : t))
+    } catch {
+      setMyTasks(prev => prev.filter(t => t.id !== tempId))
+      setMyTaskForm({ title, due_date: myTaskForm.due_date || '', open: true, loading: false })
+      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+    }
   }
 
   const handleDeleteMyTask = async (taskId) => {
@@ -456,21 +466,33 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const handleCreateTask = async (e, memberId) => {
     e.preventDefault()
     const form = taskForms[memberId] || {}
-    if (!form.title?.trim()) return
-    setTaskForms((prev) => ({ ...prev, [memberId]: { ...prev[memberId], loading: true } }))
+    const title = form.title?.trim()
+    if (!title) return
+    // Оптимистичное добавление: задача появляется в списке мгновенно, ещё до
+    // ответа сервера. Форму сразу закрываем и очищаем. При ошибке — откат.
+    const tempId = `temp-${Date.now()}`
+    const optimistic = {
+      id: tempId, _optimistic: true,
+      title, due_date: form.due_date || null,
+      team_id: selectedTeamId, assigned_to: memberId, assigned_by: user.id,
+      meeting_id: null, status: 'in_progress', completed: false,
+      created_at: new Date().toISOString(),
+    }
+    setMemberTasks((prev) => ({ ...prev, [memberId]: [optimistic, ...(prev[memberId] || [])] }))
+    setTaskForms((prev) => ({ ...prev, [memberId]: { title: '', due_date: '', loading: false, open: false } }))
     try {
       const { data: newTask } = await createTask({
-        title: form.title.trim(),
-        due_date: form.due_date || null,
-        team_id: selectedTeamId,
-        assigned_to: memberId,
-        assigned_by: user.id,
+        title, due_date: form.due_date || null,
+        team_id: selectedTeamId, assigned_to: memberId, assigned_by: user.id,
         meeting_id: null,
       })
-      setMemberTasks((prev) => ({ ...prev, [memberId]: [...(prev[memberId] || []), newTask] }))
-      setTaskForms((prev) => ({ ...prev, [memberId]: { title: '', due_date: '', loading: false, open: false } }))
+      // Заменяем временную задачу на реальную с сервера.
+      setMemberTasks((prev) => ({ ...prev, [memberId]: (prev[memberId] || []).map(t => t.id === tempId ? newTask : t) }))
     } catch {
-      setTaskForms((prev) => ({ ...prev, [memberId]: { ...prev[memberId], loading: false } }))
+      // Откат: убираем временную задачу и возвращаем текст в форму.
+      setMemberTasks((prev) => ({ ...prev, [memberId]: (prev[memberId] || []).filter(t => t.id !== tempId) }))
+      setTaskForms((prev) => ({ ...prev, [memberId]: { title, due_date: form.due_date || '', loading: false, open: true } }))
+      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
     }
   }
 
@@ -1809,7 +1831,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => setShowCreateTeam(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Создание...' : 'Создать'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Создание...</> : 'Создать'}</button>
             </div>
           </form>
         </Modal>
@@ -1948,7 +1970,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             ))}
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Добавление...' : 'Добавить'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Добавление...</> : 'Добавить'}</button>
             </div>
           </form>
         </Modal>
@@ -2017,7 +2039,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1 }}>{formLoading ? 'Сохранение...' : 'Запланировать'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Сохранение...</> : 'Запланировать'}</button>
             </div>
           </form>
         </Modal>

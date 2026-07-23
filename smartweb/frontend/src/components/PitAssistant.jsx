@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { pitChat } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
+import useStickyScroll from '../lib/useStickyScroll'
 import { useIsTelegram } from '../lib/surface'
 
 const PIT_STYLES = `
@@ -62,7 +63,9 @@ export default function PitAssistant() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [shifted, setShifted] = useState(false)
-  const bottomRef = useRef(null)
+  // Умный автоскролл: доскроллить к новому сообщению только если пользователь
+  // уже был у нижнего края (не выдёргиваем его, если он листает историю).
+  const { scrollRef, bottomRef, onScroll } = useStickyScroll([messages, loading])
   const inputRef = useRef(null)
   const ctxRef = useRef(null)
   useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
@@ -72,10 +75,6 @@ export default function PitAssistant() {
     window.addEventListener('quickwidget-toggle', handler)
     return () => window.removeEventListener('quickwidget-toggle', handler)
   }, [])
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, loading])
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150)
@@ -160,7 +159,7 @@ export default function PitAssistant() {
           </div>
 
           {/* Messages */}
-          <div style={{ flex: 1, overflow: 'auto', padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflow: 'auto', padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6 }}>
                 {m.role === 'assistant' && (
