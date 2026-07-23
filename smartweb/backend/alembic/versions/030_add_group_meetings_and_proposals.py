@@ -14,8 +14,19 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('meetings', sa.Column('group_id', sa.String(64), nullable=True))
-    op.create_index('ix_meetings_group_id', 'meetings', ['group_id'])
+    # Идемпотентно: не падаем, если объект уже существует (частично применённая
+    # схема), иначе цепочка миграций застревает и новые колонки не появляются.
+    insp = sa.inspect(op.get_bind())
+    existing_tables = set(insp.get_table_names())
+    mtg_cols = {c['name'] for c in insp.get_columns('meetings')}
+    mtg_idx = {i['name'] for i in insp.get_indexes('meetings')}
+    if 'group_id' not in mtg_cols:
+        op.add_column('meetings', sa.Column('group_id', sa.String(64), nullable=True))
+    if 'ix_meetings_group_id' not in mtg_idx:
+        op.create_index('ix_meetings_group_id', 'meetings', ['group_id'])
+
+    if 'meeting_proposals' in existing_tables:
+        return  # таблицы предложений уже есть — миграция уже проходила
 
     op.create_table(
         'meeting_proposals',

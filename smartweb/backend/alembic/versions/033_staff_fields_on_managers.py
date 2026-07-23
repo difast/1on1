@@ -15,10 +15,18 @@ depends_on = None
 
 
 def upgrade():
-    op.add_column('managers', sa.Column('email', sa.String(255), nullable=True))
-    op.add_column('managers', sa.Column('role', sa.String(50), nullable=False, server_default='manager'))
-    op.add_column('managers', sa.Column('responsibility', sa.Text(), nullable=True))
-    op.add_column('managers', sa.Column('updated_at', sa.DateTime(), nullable=True))
+    # Идемпотентно: добавляем только отсутствующие колонки — чтобы миграция могла
+    # догнать частично применённую схему и не блокировать цепочку.
+    insp = sa.inspect(op.get_bind())
+    cols = {c['name'] for c in insp.get_columns('managers')}
+    if 'email' not in cols:
+        op.add_column('managers', sa.Column('email', sa.String(255), nullable=True))
+    if 'role' not in cols:
+        op.add_column('managers', sa.Column('role', sa.String(50), nullable=False, server_default='manager'))
+    if 'responsibility' not in cols:
+        op.add_column('managers', sa.Column('responsibility', sa.Text(), nullable=True))
+    if 'updated_at' not in cols:
+        op.add_column('managers', sa.Column('updated_at', sa.DateTime(), nullable=True))
 
 
 def downgrade():

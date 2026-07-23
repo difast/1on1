@@ -62,10 +62,38 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
     ago14 = now - timedelta(days=14)
     ago7 = now - timedelta(days=7)
 
-    users = db.query(User).order_by(User.created_at.desc()).all()
-    teams = db.query(Team).all()
-    meetings = db.query(Meeting).all()
-    tasks = db.query(Task).all()
+    # Устойчивость к рассинхрону схемы (задача: «Ошибка загрузки»). Если код
+    # временно опережает миграции (напр. teams.timezone из 032 или meetings.group_id
+    # из 030 ещё не в БД), ORM-запрос по всей модели падает и роняет ВЕСЬ ответ —
+    # админ-панель показывает «Ошибка загрузки». Поэтому каждый верхнеуровневый
+    # запрос обёрнут: ключевые вкладки (пользователи, команды) сохраняем через
+    # выборку только заведомо старых колонок, остальное деградирует до пустого.
+    def _safe(fetch, fallback=None):
+        try:
+            return fetch()
+        except Exception:
+            db.rollback()
+            if fallback is None:
+                return []
+            try:
+                return fallback()
+            except Exception:
+                db.rollback()
+                return []
+
+    teams = _safe(
+        lambda: db.query(Team).all(),
+        lambda: db.query(Team.id, Team.name, Team.created_at).all(),
+    )
+    meetings = _safe(lambda: db.query(Meeting).all())
+    tasks = _safe(lambda: db.query(Task).all())
+    users = _safe(
+        lambda: db.query(User).order_by(User.created_at.desc()).all(),
+        lambda: db.query(
+            User.id, User.name, User.email, User.role, User.title,
+            User.is_blocked, User.billing_override, User.created_at, User.last_active_at,
+        ).order_by(User.created_at.desc()).all(),
+    )
 
     leads = [u for u in users if u.role == 'team_lead']
     members = [u for u in users if u.role == 'member']
@@ -214,8 +242,26 @@ def get_admin_analytics(db: Session = Depends(get_db), _admin=Depends(require_ad
     from app.models.team import TeamMember
     now = datetime.utcnow()
 
-    users = db.query(User).order_by(User.created_at).all()
-    meetings = db.query(Meeting).all()
+    # Устойчивость к рассинхрону схемы (как в /admin/stats): не роняем аналитику,
+    # если код опережает миграции.
+    def _safe(fetch, fallback=None):
+        try:
+            return fetch()
+        except Exception:
+            db.rollback()
+            if fallback is None:
+                return []
+            try:
+                return fallback()
+            except Exception:
+                db.rollback()
+                return []
+
+    users = _safe(
+        lambda: db.query(User).order_by(User.created_at).all(),
+        lambda: db.query(User.id, User.created_at).order_by(User.created_at).all(),
+    )
+    meetings = _safe(lambda: db.query(Meeting).all())
 
     # Funnel
     registered = len(users)
