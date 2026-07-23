@@ -395,6 +395,16 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           <div className="page-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Самостоятельное заполнение настроения (задача 6): открываем тот же
+                опросник чек-ина, что и по уведомлению в 20:00 — та же логика
+                (дедуп/часовой пояс/права), не отдельная система. */}
+            <button
+              onClick={() => { try { window.dispatchEvent(new Event('mood-open')) } catch {} }}
+              className="btn btn-secondary btn-sm"
+              title="Заполнить опрос настроения"
+            >
+              Настроение
+            </button>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                 Пришёл: {fmtTime(checkin.arrived_at)}

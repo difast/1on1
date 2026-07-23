@@ -309,13 +309,18 @@ export default function MemberOverviewScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
-        {/* Mood survey banner */}
-        {!moodDone && team && (
-          <TouchableOpacity style={styles.moodBanner} onPress={() => setShowMoodSurvey(true)} activeOpacity={0.85}>
-            <Text style={styles.moodBannerEmoji}>🌤</Text>
+        {/* Опрос настроения. Точка входа доступна всегда (задача 6): можно
+            заполнить самостоятельно, не дожидаясь уведомления в 20:00. После
+            заполнения вход остаётся — повторное заполнение обновляет запись за
+            день на бэкенде (дедуп), не создавая дубль. Без эмодзи. */}
+        {team && (
+          <TouchableOpacity style={styles.moodBanner} onPress={() => { setMoodSent(false); setShowMoodSurvey(true) }} activeOpacity={0.85}>
+            <Ionicons name="partly-sunny-outline" size={22} color="#fff" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.moodBannerTitle}>Опрос настроения</Text>
-              <Text style={styles.moodBannerSub}>Как прошёл день? AI анализирует анонимно</Text>
+              <Text style={styles.moodBannerTitle}>{moodDone ? 'Настроение отмечено' : 'Опрос настроения'}</Text>
+              <Text style={styles.moodBannerSub}>
+                {moodDone ? 'Можно обновить ответ за сегодня' : 'Как прошёл день? AI анализирует анонимно'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
           </TouchableOpacity>

@@ -57,6 +57,15 @@ export default function MoodPrompt({ teamId, user }) {
     return () => { cancelled = true; timers.forEach(clearTimeout) }
   }, [teamId, user?.id])
 
+  // Самостоятельный вызов опроса (задача 6): по событию mood-open открываем тот
+  // же модал. Повторное заполнение допустимо — на бэкенде тот же чек-ин
+  // обновляет запись за день (дедуп), новая запись не создаётся.
+  useEffect(() => {
+    const openManual = () => { setDone(false); setVisible(true); setOpen(true) }
+    window.addEventListener('mood-open', openManual)
+    return () => window.removeEventListener('mood-open', openManual)
+  }, [])
+
   const canSubmit = answers.overall.trim().length > 0
 
   const handleSubmit = async () => {

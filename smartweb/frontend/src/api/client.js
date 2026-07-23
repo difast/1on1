@@ -199,6 +199,7 @@ export const getUserBilling = (userId) => api.get(`/admin/billing/user/${userId}
 // Реестр менеджеров + назначение из списка (manager_id, null = снять).
 export const getManagers = () => api.get('/admin/billing/managers')
 export const createManager = (data) => api.post('/admin/billing/managers', data)
+export const updateManager = (id, data) => api.patch(`/admin/billing/managers/${id}`, data)
 export const deleteManager = (id) => api.delete(`/admin/billing/managers/${id}`)
 export const assignManager = (userId, managerId) => api.post(`/admin/billing/users/${userId}/manager`, { manager_id: managerId })
 // Компания рабочего пространства (Этапы 2-4) + регион по IP (Этап 5)

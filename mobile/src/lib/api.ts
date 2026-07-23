@@ -286,3 +286,16 @@ export const broadcastNotification = (data: { title: string; body?: string; targ
 export const getSupportTickets = () => req<any[]>('/support/');
 export const adminReplyTicket = (ticketId: number, body: string) =>
   req<any>(`/support/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
+
+// Сотрудники (реестр менеджеров) — тот же backend, что и в вебе (задача 2).
+export interface StaffMember {
+  id: number; name: string; contact?: string | null; email?: string | null;
+  role?: string | null; responsibility?: string | null;
+}
+export const getManagers = () => req<StaffMember[]>('/admin/billing/managers');
+export const createManager = (data: Partial<StaffMember>) =>
+  req<StaffMember>('/admin/billing/managers', { method: 'POST', body: JSON.stringify(data) });
+export const updateManager = (id: number, data: Partial<StaffMember>) =>
+  req<StaffMember>(`/admin/billing/managers/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteManager = (id: number) =>
+  req<any>(`/admin/billing/managers/${id}`, { method: 'DELETE' });

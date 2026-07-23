@@ -40,40 +40,66 @@ async def _keep_alive():
             await asyncio.sleep(240)  # 4 minutes
 
 def _send_mood_reminders():
-    """Create + push the daily 'fill the mood survey' reminder (once/day, deduped)."""
+    """Ежедневный опрос настроения участникам (задача 7). Для КАЖДОЙ команды в её
+    ЧАСОВОМ ПОЯСЕ, начиная с 20:00, рассылаем участникам приглашение заполнить
+    опрос — один раз в локальные сутки, по всем каналам (веб-уведомление, push,
+    Telegram). Отдельная рассылка от сводки лиду в 10:00. Защита от дублей и от
+    пропуска: дедуп по команде за локальные сутки; если время уже >= 20:00, а
+    сегодня ещё не рассылали — догоняем после простоя сервера."""
+    from zoneinfo import ZoneInfo
     from app.database import SessionLocal
     from app.models.user import User
+    from app.models.team import Team, TeamMember
     from app.models.notification import Notification
     from app.utils.push import send_push_bulk
+    from app.services import mood_service
     db = SessionLocal()
     try:
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        already = db.query(Notification).filter(
-            Notification.type == "mood_reminder",
-            Notification.created_at >= today,
-        ).first()
-        if already:
-            return
-        members = db.query(User).filter(User.is_blocked == False, User.role == "member").all()
+        utc = ZoneInfo("UTC")
         title = "Как прошёл ваш день?"
         body = "Пройдите короткий опрос настроения в приложении"
-        msgs = []
-        for u in members:
-            db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
-            if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
-                msgs.append({
-                    "to": u.push_token, "title": title, "body": body,
-                    "sound": "default", "priority": "high", "data": {"type": "mood_reminder"},
-                })
-        db.commit()
-        if msgs:
-            send_push_bulk(msgs)
-        # Чек-ин настроения в Telegram — основной канал (Этап 3). Тот же mood-API.
-        try:
-            from app.services.telegram_bot import send_mood_checkins
-            send_mood_checkins(db)
-        except Exception:
-            pass
+        pushes = []
+        for team in db.query(Team).all():
+            try:
+                tz = mood_service.team_tz(db, team.id)
+                local_now = datetime.now(utc).astimezone(tz)
+                if local_now.hour < 20:
+                    continue  # опрос уходит в 20:00 локального времени команды (с догоном до конца суток)
+                local_midnight_utc = local_now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(utc).replace(tzinfo=None)
+                # Участники команды (кроме лида) — им адресован опрос.
+                member_ids = [tm.user_id for tm in db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+                              if tm.user_id != team.team_lead_id]
+                if not member_ids:
+                    continue
+                # Дедуп на уровне команды за локальные сутки: если сегодня уже
+                # рассылали хотя бы одному участнику — пропускаем всю команду.
+                already = db.query(Notification).filter(
+                    Notification.type == "mood_reminder",
+                    Notification.user_id.in_(member_ids),
+                    Notification.created_at >= local_midnight_utc,
+                ).first()
+                if already:
+                    continue
+                users = db.query(User).filter(User.id.in_(member_ids), User.is_blocked == False).all()  # noqa: E712
+                for u in users:
+                    db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
+                    if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
+                        pushes.append({
+                            "to": u.push_token, "title": title, "body": body,
+                            "sound": "default", "priority": "high", "data": {"type": "mood_reminder"},
+                        })
+                    # Telegram-канал: тот же вопрос настроения кнопками 1..5.
+                    if getattr(u, "telegram_id", None):
+                        try:
+                            from app.services.telegram_bot import _send_mood_question
+                            _send_mood_question(u.telegram_id, team.id)
+                        except Exception:
+                            pass
+                db.commit()
+            except Exception:
+                db.rollback()
+        if pushes:
+            send_push_bulk(pushes)
     except Exception:
         pass
     finally:
@@ -81,14 +107,13 @@ def _send_mood_reminders():
 
 
 async def _mood_reminder_loop():
-    """Fire the mood-survey reminder daily at 20:00 МСК (17:00 UTC). In-process
-    scheduler since Celery beat is not running on this deployment."""
+    """Проверяем раз в минуту — срабатывание в 20:00 по поясу каждой команды, с
+    дедупом и догоном после простоя (см. _send_mood_reminders). In-process
+    планировщик, поскольку Celery beat здесь не запущен."""
     await asyncio.sleep(90)
     while True:
         try:
-            now = datetime.utcnow()
-            if now.hour == 17 and now.minute < 5:  # 20:00 Moscow time
-                await asyncio.to_thread(_send_mood_reminders)
+            await asyncio.to_thread(_send_mood_reminders)
         except Exception:
             pass
         await asyncio.sleep(60)

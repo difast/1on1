@@ -14,6 +14,7 @@ import { toast, confirmDialog } from '../lib/ui'
 import Spinner from '../lib/Spinner'
 import useStickyScroll from '../lib/useStickyScroll'
 import AdminManage from './AdminManage'
+import AdminEmployees from './AdminEmployees'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
 const ROLE_BADGE  = { team_lead: 'badge-blue', member: 'badge-gray' }
@@ -215,6 +216,19 @@ export default function AdminDashboard({ onLogout }) {
   const handleBroadcast = async (e) => {
     e.preventDefault()
     if (!broadcastForm.title.trim()) return
+    // Подтверждение перед отправкой (задача 1: статус/подтверждение доставки;
+    // задача 4: подтверждение для массового действия). Показываем область охвата.
+    const targetUser = broadcastForm.target === 'all'
+      ? null
+      : allUsers.find(u => String(u.id) === String(broadcastForm.target))
+    const scopeText = targetUser
+      ? `сотруднику ${targetUser.name} (${targetUser.email})`
+      : `всем активным пользователям (${allUsers.filter(u => !u.is_blocked).length})`
+    if (!await confirmDialog({
+      title: 'Отправить уведомление?',
+      message: `Уведомление «${broadcastForm.title.trim()}» будет отправлено ${scopeText}.`,
+      confirmText: 'Отправить', cancelText: 'Отмена',
+    })) return
     setBroadcastSending(true)
     setBroadcastResult(null)
     try {
@@ -223,7 +237,7 @@ export default function AdminDashboard({ onLogout }) {
         body: broadcastForm.body || null,
         target: broadcastForm.target,
       })
-      setBroadcastResult({ ok: true, sent: res.sent })
+      setBroadcastResult({ ok: true, sent: res.sent, toUser: targetUser?.name || null })
       setBroadcastForm(f => ({ ...f, title: '', body: '' }))
     } catch {
       setBroadcastResult({ ok: false })
@@ -291,6 +305,7 @@ export default function AdminDashboard({ onLogout }) {
         {/* Tabs */}
         <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
           <TabBtn id="users"      label="Пользователи" />
+          <TabBtn id="employees"  label="Сотрудники" />
           <TabBtn id="tickets"    label="Обращения" badge={unreadTickets} />
           <TabBtn id="broadcast"  label="Рассылка" />
           <TabBtn id="manage"     label="Управление" />
@@ -302,7 +317,7 @@ export default function AdminDashboard({ onLogout }) {
           <TabBtn id="metrics"    label="Инвест-метрики" />
         </div>
 
-        {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' ? (
+        {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' && tab !== 'employees' ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
         ) : !data && tab === 'users' ? (
           <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки</p>
@@ -332,7 +347,13 @@ export default function AdminDashboard({ onLogout }) {
                     <tbody>
                       {filteredUsers.map(u => {
                         const now = Date.now()
-                        const lastMs = u.last_meeting ? new Date(u.last_meeting).getTime() : 0
+                        // Активность аккаунта: берём самое свежее из реальной
+                        // активности (вход/использование) и последней встречи —
+                        // раньше учитывались только встречи, из-за чего активные
+                        // пользователи без недавних встреч показывались неактивными.
+                        const activeMs = u.last_active_at ? new Date(u.last_active_at).getTime() : 0
+                        const meetMs = u.last_meeting ? new Date(u.last_meeting).getTime() : 0
+                        const lastMs = Math.max(activeMs, meetMs)
                         const ago7  = now - 7 * 86400000
                         const ago30 = now - 30 * 86400000
                         return (
@@ -353,11 +374,13 @@ export default function AdminDashboard({ onLogout }) {
                             <Td center>{u.tasks_count}</Td>
                             <Td muted>{u.last_meeting ? new Date(u.last_meeting).toLocaleDateString('ru-RU') : '—'}</Td>
                             <Td>
-                              {lastMs > ago7
-                                ? <span className="badge badge-green" style={{ fontSize: 11 }}>Активен</span>
-                                : lastMs > ago30
-                                  ? <span className="badge badge-amber" style={{ fontSize: 11 }}>Слабая</span>
-                                  : <span className="badge badge-red" style={{ fontSize: 11 }}>Неактивен</span>}
+                              <span title={activeMs ? `Активность: ${new Date(activeMs).toLocaleString('ru-RU')}` : 'Активность аккаунта не зафиксирована'}>
+                                {lastMs > ago7
+                                  ? <span className="badge badge-green" style={{ fontSize: 11 }}>Активен</span>
+                                  : lastMs > ago30
+                                    ? <span className="badge badge-amber" style={{ fontSize: 11 }}>Слабая</span>
+                                    : <span className="badge badge-red" style={{ fontSize: 11 }}>Неактивен</span>}
+                              </span>
                             </Td>
                             <Td>
                               <div style={{ display: 'flex', gap: 4 }}>
@@ -403,6 +426,11 @@ export default function AdminDashboard({ onLogout }) {
                   </table>
                 </div>
               </div>
+            )}
+
+            {/* ── СОТРУДНИКИ ── */}
+            {tab === 'employees' && (
+              <AdminEmployees />
             )}
 
             {/* ── УПРАВЛЕНИЕ ── */}
@@ -631,7 +659,11 @@ export default function AdminDashboard({ onLogout }) {
                             }
                           </svg>
                         </span>
-                        {broadcastResult.ok ? `Отправлено ${broadcastResult.sent} пользователям` : 'Ошибка отправки'}
+                        {broadcastResult.ok
+                          ? (broadcastResult.toUser
+                              ? `Доставлено: ${broadcastResult.toUser}`
+                              : `Доставлено ${broadcastResult.sent} пользователям`)
+                          : 'Ошибка отправки'}
                       </div>
                     )}
                   </form>
@@ -814,9 +846,14 @@ export default function AdminDashboard({ onLogout }) {
                         </tbody>
                       </table>
                     </div>
-                    {/* Реестр менеджеров: заводятся вручную, назначаются из списка */}
+                    {/* Реестр менеджеров: заводятся вручную, назначаются из списка.
+                        Полный CRUD (роль, email, зона ответственности) — на вкладке «Сотрудники». */}
                     <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Менеджеры</p>
                     <div className="card" style={{ padding: 16 }}>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
+                        Быстрое добавление для назначения. Роли, email и зону ответственности можно
+                        задать на вкладке «Сотрудники».
+                      </p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: managers.length ? 14 : 0 }}>
                         <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder="Имя менеджера" value={newMgr.name}
                           onChange={e => setNewMgr(m => ({ ...m, name: e.target.value }))} />
@@ -832,16 +869,24 @@ export default function AdminDashboard({ onLogout }) {
                         <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '10px 0 0' }}>Менеджеров пока нет.</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                          {managers.map(m => (
-                            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--color-bg)' }}>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: 13 }}>{m.name}</div>
-                                {m.contact && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.contact}</div>}
+                          {managers.map(m => {
+                            const roleLabel = { admin: 'Администратор', manager: 'Менеджер', support: 'Поддержка' }[m.role] || m.role
+                            const roleBadge = { admin: 'badge-red', manager: 'badge-blue', support: 'badge-amber' }[m.role] || 'badge-gray'
+                            return (
+                              <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--color-bg)' }}>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <span style={{ fontWeight: 600, fontSize: 13 }}>{m.name}</span>
+                                    {m.role && <span className={`badge ${roleBadge}`} style={{ fontSize: 10 }}>{roleLabel}</span>}
+                                  </div>
+                                  {m.contact && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.contact}</div>}
+                                  {m.responsibility && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.responsibility}</div>}
+                                </div>
+                                <button onClick={async () => { if (!await confirmDialog({ title: 'Удалить менеджера?', message: 'Он будет снят со всех назначений.', confirmText: 'Удалить', cancelText: 'Отмена', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Удалить</button>
                               </div>
-                              <button onClick={async () => { if (!await confirmDialog({ title: 'Удалить менеджера?', message: 'Он будет снят со всех назначений.', confirmText: 'Удалить', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
-                                style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Удалить</button>
-                            </div>
-                          ))}
+                            )
+                          })}
                         </div>
                       )}
                     </div>
@@ -959,13 +1004,14 @@ export default function AdminDashboard({ onLogout }) {
                       <label className="form-label">Содержание</label>
                       <textarea className="input" value={kbForm.content} onChange={e => setKbForm(f => ({ ...f, content: e.target.value }))} placeholder="Текст статьи..." rows={8} style={{ minHeight: 160, resize: 'vertical' }} />
                     </div>
+                    {/* Порядок кнопок: основное действие первым, отмена — второй (задача 4). */}
                     <div style={{ display: 'flex', gap: 8 }}>
+                      <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                        {kbSaving ? <Spinner size={14} /> : kbEditing ? 'Сохранить' : 'Создать статью'}
+                      </button>
                       {kbEditing && (
                         <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setKbEditing(null); setKbForm({ title: '', content: '' }) }}>Отмена</button>
                       )}
-                      <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        {kbSaving ? <Spinner size={14} /> : kbEditing ? 'Сохранить' : '+ Создать статью'}
-                      </button>
                     </div>
                   </form>
                 </div>
@@ -1023,29 +1069,48 @@ export default function AdminDashboard({ onLogout }) {
             </p>
             {managers.length === 0 ? (
               <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
-                Список менеджеров пуст. Добавьте менеджера в разделе «Менеджеры» на вкладке «Биллинг».
+                Список сотрудников пуст. Добавьте сотрудника на вкладке «Сотрудники».
               </p>
             ) : (
               <div className="form-group">
-                <label className="form-label">Менеджер</label>
+                <label className="form-label">Сотрудник</label>
                 <select className="input" value={mgrEdit.managerId} onChange={e => setMgrEdit(m => ({ ...m, managerId: e.target.value }))}>
                   <option value="">— не назначен —</option>
-                  {managers.map(m => <option key={m.id} value={m.id}>{m.name}{m.contact ? ` · ${m.contact}` : ''}</option>)}
+                  {managers.map(m => {
+                    const rl = { admin: 'Администратор', manager: 'Менеджер', support: 'Поддержка' }[m.role] || m.role
+                    return <option key={m.id} value={m.id}>{m.name}{m.role ? ` · ${rl}` : ''}{m.contact ? ` · ${m.contact}` : ''}</option>
+                  })}
                 </select>
+                {/* Предпросмотр выбранного сотрудника — видно, кого назначаем. */}
+                {(() => {
+                  const sel = managers.find(m => String(m.id) === String(mgrEdit.managerId))
+                  if (!sel) return null
+                  return (
+                    <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 8, background: 'var(--color-bg)', border: '1px solid var(--color-border)' }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{sel.name}</div>
+                      {sel.contact && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Контакт: {sel.contact}</div>}
+                      {sel.responsibility && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{sel.responsibility}</div>}
+                    </div>
+                  )
+                })()}
               </div>
             )}
-            <button className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} disabled={mgrEdit.saving}
-              onClick={async () => {
-                setMgrEdit(m => ({ ...m, saving: true }))
-                try {
-                  await assignManager(mgrEdit.userId, mgrEdit.managerId ? Number(mgrEdit.managerId) : null)
-                  const r = await getAdminSubscriptions(); setSubs(r.data)
-                  toast('Менеджер обновлён', 'success')
-                  setMgrEdit(null)
-                } catch { toast('Не удалось сохранить', 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
-              }}>
-              {mgrEdit.saving ? <><Spinner size={15} /> Сохранение…</> : 'Сохранить'}
-            </button>
+            {/* Порядок: основное действие первым, отмена — второй (задача 4). */}
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn btn-accent" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} disabled={mgrEdit.saving}
+                onClick={async () => {
+                  setMgrEdit(m => ({ ...m, saving: true }))
+                  try {
+                    await assignManager(mgrEdit.userId, mgrEdit.managerId ? Number(mgrEdit.managerId) : null)
+                    const r = await getAdminSubscriptions(); setSubs(r.data)
+                    toast('Назначение обновлено', 'success')
+                    setMgrEdit(null)
+                  } catch { toast('Не удалось сохранить', 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
+                }}>
+                {mgrEdit.saving ? <><Spinner size={15} /> Сохранение…</> : 'Сохранить'}
+              </button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} disabled={mgrEdit.saving} onClick={() => setMgrEdit(null)}>Отмена</button>
+            </div>
           </div>
         </div>
       )}

@@ -154,7 +154,14 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
                 "meetings_count": user_meeting_counts.get(u.id, 0),
                 "tasks_count": user_task_counts.get(u.id, 0),
                 "last_meeting": user_last_meeting[u.id].isoformat() if user_last_meeting.get(u.id) else None,
-                "inactive": (user_last_meeting.get(u.id) is None or user_last_meeting[u.id] < ago14),
+                # Реальная активность аккаунта (вход/использование), а не только
+                # встречи — обновляется heartbeat-эндпоинтом (задача 5).
+                "last_active_at": u.last_active_at.isoformat() if u.last_active_at else None,
+                # «Неактивен» = нет ни активности аккаунта, ни встреч за 14 дней.
+                "inactive": (
+                    (u.last_active_at is None or u.last_active_at < ago14)
+                    and (user_last_meeting.get(u.id) is None or user_last_meeting[u.id] < ago14)
+                ),
             }
             for u in users
         ],
