@@ -94,6 +94,11 @@ export const startCall = (meetingId: number, userId: number) =>
     `/meetings/${meetingId}/start-call?user_id=${userId}`,
     { method: 'POST' },
   );
+// Спонтанный созвон (39.8): всем / нескольким / индивидуально. Сам звонок
+// открывается внешним клиентом по ссылке (согласно таблице).
+export const startSpontaneousCall = (data: { lead_id: number; team_id: number; member_ids: number[]; is_group?: boolean }) =>
+  req<{ room_url: string; room_name: string; meeting_id: number | null }>(
+    '/video/start-call', { method: 'POST', body: JSON.stringify(data) });
 
 // Tasks
 export const createTask = (data: unknown) =>

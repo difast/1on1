@@ -184,15 +184,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   // Spontaneous call modal
   const [showStartCall, setShowStartCall] = useState(false)
   const [callModalLoading, setCallModalLoading] = useState(false)
-  const [callStep, setCallStep] = useState('type') // 'type' | 'members' | 'done'
+  const [callStep, setCallStep] = useState('type') // 'type' | 'members' | 'select' | 'done'
   const [callResult, setCallResult] = useState(null) // { room_url, room_name }
   const [roomUrlCopied, setRoomUrlCopied] = useState(false)
   const [memberCallLoading, setMemberCallLoading] = useState({})
+  const [callSelected, setCallSelected] = useState([]) // 39.8: выбор нескольких участников
 
   const openCallModal = () => {
     setCallStep('type')
     setCallResult(null)
     setRoomUrlCopied(false)
+    setCallSelected([])
     setShowStartCall(true)
   }
 
@@ -1793,6 +1795,22 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               </button>
               <button
+                onClick={() => { setCallSelected([]); setCallStep('select') }}
+                disabled={callModalLoading}
+                className="btn btn-secondary"
+                style={{ justifyContent: 'flex-start', gap: 12, padding: '14px 16px' }}
+              >
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none" style={{ flexShrink: 0 }}>
+                    <circle cx="7" cy="8" r="3" stroke="currentColor" strokeWidth="1.5"/>
+                    <circle cx="15" cy="8" r="3" stroke="currentColor" strokeWidth="1.5" opacity="0.7"/>
+                    <path d="M2 19c0-2.8 2.24-5 5-5s5 2.2 5 5M11 19c0-2.8 2.24-5 5-5s4 1.5 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                <div style={{ textAlign: 'left' }}>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>Несколько участников</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Выбрать нескольких из команды</div>
+                </div>
+              </button>
+              <button
                 onClick={() => setCallStep('members')}
                 disabled={callModalLoading}
                 className="btn btn-secondary"
@@ -1812,6 +1830,46 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   Создаём комнату и отправляем уведомления...
                 </p>
               )}
+            </div>
+          )}
+
+          {/* Step 2b: pick several members (39.8) */}
+          {callStep === 'select' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <button
+                onClick={() => setCallStep('type')}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'left', padding: 0, marginBottom: 4 }}
+              >
+                ← Назад
+              </button>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
+                Отметьте участников созвона:
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
+                {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
+                  const on = callSelected.includes(member.user_id)
+                  return (
+                    <label key={member.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, border: '1px solid var(--color-border)', background: on ? 'var(--blue-50)' : 'var(--color-bg)', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={on} onChange={() => setCallSelected(s => on ? s.filter(x => x !== member.user_id) : [...s, member.user_id])} />
+                      <div className="avatar avatar-sm avatar-accent" style={{ flexShrink: 0, width: 26, height: 26, fontSize: 12 }}>
+                        {(member.user_name || '?').charAt(0).toUpperCase()}
+                      </div>
+                      <span style={{ fontSize: 13.5, fontWeight: 600 }}>{member.user_name}</span>
+                    </label>
+                  )
+                })}
+                {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
+                  <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>Нет участников в команде</p>
+                )}
+              </div>
+              <button
+                onClick={() => { if (callSelected.length === 0) return toast('Выберите участников', 'error'); handleStartSpontaneousCall(callSelected, callSelected.length > 1) }}
+                disabled={callModalLoading || callSelected.length === 0}
+                className="btn btn-accent"
+                style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
+              >
+                {callModalLoading ? <><Spinner size={15} /> Создаём...</> : `Начать созвон${callSelected.length ? ` (${callSelected.length})` : ''}`}
+              </button>
             </div>
           )}
 
