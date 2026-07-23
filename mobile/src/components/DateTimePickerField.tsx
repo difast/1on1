@@ -63,11 +63,22 @@ export function DateTimePickerField({
     return cells;
   }, [viewMonth]);
 
-  const confirm = () => {
-    if (!selected) return;
-    const iso = `${selected.getFullYear()}-${pad(selected.getMonth() + 1)}-${pad(selected.getDate())}T${pad(hour)}:${pad(minute)}`;
+  const commit = (day: Date | null, h: number, m: number) => {
+    if (!day) return;
+    const iso = `${day.getFullYear()}-${pad(day.getMonth() + 1)}-${pad(day.getDate())}T${pad(h)}:${pad(m)}`;
     onChange(iso);
     setOpen(false);
+  };
+
+  const confirm = () => commit(selected, hour, minute);
+
+  // Автозакрытие (Задача 1): минуты — самый мелкий шаг выбора времени, поэтому их
+  // выбор считаем завершением выбора времени и закрываем календарь без «Готово»,
+  // но только когда день уже выбран (иначе выбор ещё не завершён). Выбор часа
+  // календарь НЕ закрывает — иначе минуты не успеть указать (преждевременно).
+  const selectMinute = (m: number) => {
+    setMinute(m);
+    if (selected) commit(selected, hour, m);
   };
 
   const shiftMonth = (delta: number) =>
@@ -149,7 +160,7 @@ export function DateTimePickerField({
             </View>
             <View style={styles.timeRow}>
               {[0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55].map(m => (
-                <TouchableOpacity key={m} onPress={() => setMinute(m)} style={[styles.minChip, minute === m && styles.timeChipActive]}>
+                <TouchableOpacity key={m} onPress={() => selectMinute(m)} style={[styles.minChip, minute === m && styles.timeChipActive]}>
                   <Text style={[styles.timeChipText, minute === m && styles.timeChipTextActive]}>{pad(m)}</Text>
                 </TouchableOpacity>
               ))}

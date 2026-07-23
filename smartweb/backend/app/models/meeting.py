@@ -11,6 +11,10 @@ class Meeting(Base):
     member_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     scheduled_date = Column(DateTime, nullable=False)
     status = Column(String(20), default="scheduled")  # scheduled, confirmed, rescheduled, cancelled, completed
+    # Групповой созвон (Задача 4): несколько встреч, созданных вместе, делят один
+    # group_id (по строке на участника). У обычных 1-на-1 это NULL — формат 1-на-1
+    # продолжает работать без изменений.
+    group_id = Column(String(64), nullable=True, index=True)
     mood = Column(String(20), nullable=True)  # great, good, neutral, bad
     notes = Column(Text, nullable=True)
     agenda = Column(Text, nullable=True)

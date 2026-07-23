@@ -21,6 +21,8 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
 import CollabTaskModal from './CollabTaskModal'
+import GroupMeetingModal from './GroupMeetingModal'
+import MeetingProposals from './MeetingProposals'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import { parseFeatureLock, openPricing } from '../lib/featureLock'
@@ -170,7 +172,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [aiSlots, setAiSlots] = useState([])
   const [slotsLoading, setSlotsLoading] = useState(false)
   const [slotsLocked, setSlotsLocked] = useState(null)  // мягкое тарифное уведомление (Задача 3)
-  const [collabModal, setCollabModal] = useState(false)  // модалка совместной задачи (Задача 4)
+  const [collabModal, setCollabModal] = useState(false)  // модалка совместной задачи
+  const [showGroupModal, setShowGroupModal] = useState(false)  // групповая встреча (Задача 4)
+  const [showProposals, setShowProposals] = useState(false)    // предложения встреч (Задача 5)
 
   // Analytics force-refresh key
   const [analyticsKey, setAnalyticsKey] = useState(0)
@@ -695,6 +699,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <span className={`badge ${meetingStatusBadge(m.status)}`}>
               {meetingStatusLabel(m.status)}
             </span>
+            {m.group_id && (
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
+                Групповая
+              </span>
+            )}
             {m.is_rescheduled && !['cancelled','declined'].includes(m.status) && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#2554D4', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
                 ↻ Перенесена
@@ -1317,6 +1326,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
           ) : (
             <div style={{ maxWidth: 720, width: '100%' }}>
+              {/* Групповая встреча (Задача 4) + Предложения встреч (Задача 5) */}
+              <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+                <button onClick={() => setShowGroupModal(true)} className="btn btn-accent btn-sm">+ Групповая встреча</button>
+                <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">Предложения встреч</button>
+              </div>
               {/* Status filter chips */}
               <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
                 {MEETING_FILTERS.filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (
@@ -1555,7 +1569,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             </div>
 
                             <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
-                              Последняя встреча:{' '}
+                              {/* Задача 2: будущая назначенная встреча — «Ближайшая», прошедшая — «Последняя». */}
+                              {member.last_meeting_date && new Date(member.last_meeting_date) >= new Date()
+                                ? 'Ближайшая встреча: '
+                                : 'Последняя встреча: '}
                               <span style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>
                                 {member.last_meeting_date
                                   ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
@@ -2120,7 +2137,29 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
 
-    {/* Совместная задача (Задача 4) */}
+    {/* Групповая встреча (Задача 4) */}
+    {showGroupModal && (
+      <GroupMeetingModal
+        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        teamId={selectedTeamId}
+        teamLeadId={user.id}
+        onClose={() => setShowGroupModal(false)}
+        onCreated={() => loadMyMeetings()}
+      />
+    )}
+
+    {/* Предложения встреч (Задача 5) */}
+    {showProposals && (
+      <MeetingProposals
+        currentUser={user}
+        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        teamId={selectedTeamId}
+        onClose={() => setShowProposals(false)}
+        onChanged={() => loadMyMeetings()}
+      />
+    )}
+
+    {/* Совместная задача */}
     {collabModal && (
       <CollabTaskModal
         members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}

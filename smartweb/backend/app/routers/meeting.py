@@ -8,10 +8,67 @@ from app.database import get_db
 from app.models.meeting import Meeting
 from app.models.team import Team, TeamMember
 from app.models.user import User
-from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, MeetingRequest
+from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, MeetingRequest, GroupMeetingCreate
 from app.services.notification_service import NotificationService
 
 router = APIRouter()
+
+
+@router.post("/group", response_model=List[MeetingOut])
+def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)):
+    """Групповой созвон (Задача 4): назначить встречу нескольким участникам или
+    всей команде. Создаём по одной строке Meeting на участника с общим group_id —
+    формат 1-на-1 не затрагивается. Каждый участник получает уведомление.
+    """
+    from app.services import entitlements
+    lead = db.query(User).filter(User.id == data.team_lead_id).first()
+    # Лимит тарифа проверяем один раз на всю группу (это одно «событие встречи»).
+    err = entitlements.meeting_limit_error(db, lead)
+    if err:
+        raise HTTPException(status_code=402, detail=err)
+
+    # Определяем участников: вся команда (кроме тимлида) или явный список.
+    if data.whole_team:
+        rows = (
+            db.query(TeamMember)
+            .filter(TeamMember.team_id == data.team_id, TeamMember.role != "lead")
+            .all()
+        )
+        member_ids = [tm.user_id for tm in rows if tm.user_id != data.team_lead_id]
+    else:
+        member_ids = [mid for mid in (data.member_ids or []) if mid != data.team_lead_id]
+
+    # Дедуп, сохраняя порядок.
+    seen = set()
+    member_ids = [m for m in member_ids if not (m in seen or seen.add(m))]
+    if not member_ids:
+        raise HTTPException(status_code=400, detail="No members selected for the group meeting")
+
+    group_id = uuid.uuid4().hex
+    lead_name = lead.name if lead else "Тимлид"
+    when = data.scheduled_date.strftime("%d.%m %H:%M") if data.scheduled_date else ""
+
+    created = []
+    for mid in member_ids:
+        meeting = Meeting(
+            team_id=data.team_id,
+            team_lead_id=data.team_lead_id,
+            member_id=mid,
+            scheduled_date=data.scheduled_date,
+            agenda=data.agenda,
+            status="scheduled",
+            group_id=group_id,
+        )
+        db.add(meeting)
+        created.append(meeting)
+    db.commit()
+
+    # Уведомления каждому участнику (переиспользуем существующую систему).
+    for meeting in created:
+        db.refresh(meeting)
+        NotificationService(db).meeting_scheduled(meeting.member_id, meeting.id, lead_name, when)
+
+    return created
 
 @router.post("/", response_model=MeetingOut)
 def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
@@ -91,6 +148,18 @@ def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(g
     # When rescheduling a cancelled meeting, restore it to scheduled
     if updates.get('is_rescheduled') and meeting.status in ('cancelled', 'declined'):
         meeting.status = 'scheduled'
+
+    # Групповой созвон (Задача 4): смена статуса группового звонка применяется ко
+    # ВСЕМ строкам группы (напр. завершение звонка гасит баннер у всех участников).
+    if meeting.group_id and 'status' in updates:
+        siblings = db.query(Meeting).filter(
+            Meeting.group_id == meeting.group_id, Meeting.id != meeting.id
+        ).all()
+        for gm in siblings:
+            gm.status = meeting.status
+            if 'call_duration_seconds' in updates:
+                gm.call_duration_seconds = updates['call_duration_seconds']
+
     db.commit()
     db.refresh(meeting)
     return meeting
@@ -157,19 +226,38 @@ def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends
         raise HTTPException(status_code=404, detail="Meeting not found")
 
     if not meeting.jitsi_room_name:
-        room_name = f"1on1-{meeting_id}-{uuid.uuid4().hex[:8]}"
-        meeting.jitsi_room_name = room_name
-        meeting.jitsi_room_url = f"https://meet.jit.si/{room_name}"
-        meeting.status = "in_progress"
+        # Групповой созвон (Задача 4): все участники группы заходят в ОДНУ комнату
+        # (ключ по group_id), поэтому и статус, и комната ставятся на все строки
+        # группы, а не только на текущую. У 1-на-1 поведение прежнее.
+        if meeting.group_id:
+            room_name = f"group-{meeting.group_id[:12]}-{uuid.uuid4().hex[:6]}"
+            room_url = f"https://meet.jit.si/{room_name}"
+            group_rows = db.query(Meeting).filter(Meeting.group_id == meeting.group_id).all()
+            for gm in group_rows:
+                gm.jitsi_room_name = room_name
+                gm.jitsi_room_url = room_url
+                gm.status = "in_progress"
+        else:
+            room_name = f"1on1-{meeting_id}-{uuid.uuid4().hex[:8]}"
+            meeting.jitsi_room_name = room_name
+            meeting.jitsi_room_url = f"https://meet.jit.si/{room_name}"
+            meeting.status = "in_progress"
         db.commit()
         db.refresh(meeting)
 
     user = db.query(User).filter(User.id == user_id).first()
     caller_name = user.name if user else "Участник"
 
-    # Notify the other participant about the call
-    notify_id = meeting.member_id if user_id == meeting.team_lead_id else meeting.team_lead_id
-    NotificationService(db).call_started(notify_id, caller_name, meeting.jitsi_room_url)
+    # Уведомляем других участников о начале созвона.
+    if meeting.group_id:
+        group_rows = db.query(Meeting).filter(Meeting.group_id == meeting.group_id).all()
+        notify_ids = {meeting.team_lead_id, *[gm.member_id for gm in group_rows]}
+        notify_ids.discard(user_id)
+        for nid in notify_ids:
+            NotificationService(db).call_started(nid, caller_name, meeting.jitsi_room_url)
+    else:
+        notify_id = meeting.member_id if user_id == meeting.team_lead_id else meeting.team_lead_id
+        NotificationService(db).call_started(notify_id, caller_name, meeting.jitsi_room_url)
 
     return {
         "room_url": meeting.jitsi_room_url,

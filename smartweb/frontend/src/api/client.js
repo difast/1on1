@@ -38,6 +38,8 @@ export const regenerateInviteCode = (teamId) =>
 
 // Meetings
 export const createMeeting = (data) => api.post('/meetings/', data)
+// Групповой созвон (Задача 4): несколько участников / вся команда.
+export const createGroupMeeting = (data) => api.post('/meetings/group', data)
 export const getMeetings = (params) => api.get('/meetings/', { params })
 export const getMeeting = (id) => api.get(`/meetings/${id}`)
 export const updateMeeting = (id, data) => api.patch(`/meetings/${id}`, data)
@@ -53,6 +55,14 @@ export const uploadRecording = (meetingId, formData) =>
   api.post(`/video/meetings/${meetingId}/upload-recording`, formData, { headers: { 'Content-Type': 'multipart/form-data' } })
 export const getTranscript = (meetingId) =>
   api.get(`/video/meetings/${meetingId}/transcript`)
+
+// Предложения встреч (Задача 5): переговоры о встрече с подтверждением.
+export const createProposal = (data) => api.post('/proposals/', data)
+export const getProposals = (userId) => api.get('/proposals/', { params: { user_id: userId } })
+export const acceptProposal = (id, userId) => api.post(`/proposals/${id}/accept`, { user_id: userId })
+export const declineProposal = (id, userId) => api.post(`/proposals/${id}/decline`, { user_id: userId })
+export const counterProposal = (id, userId, proposedTime, topic) =>
+  api.post(`/proposals/${id}/counter`, { user_id: userId, proposed_time: proposedTime, topic })
 
 // Scheduling
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)

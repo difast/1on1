@@ -29,33 +29,62 @@ def build_team_detail(team: Team, team_id: int, db: Session) -> TeamDetailOut:
         for u in db.query(User).filter(User.id.in_(member_user_ids)).all()
     } if member_user_ids else {}
 
-    # Batch-load last meeting date per member in one query
+    # «Последняя встреча» (Задача 2). БАГ был в том, что запрос брал только
+    # ПРОШЕДШИЕ встречи (scheduled_date <= now), поэтому уже НАЗНАЧЕННАЯ будущая
+    # встреча показывалась как «Не было». Берём самую свежую по дате встречу,
+    # включая будущие (последняя назначенная), исключая отменённые/отклонённые —
+    # это то, что реально стоит в календаре по участнику.
+    #
+    # Выбор варианта: показываем последнюю НАЗНАЧЕННУЮ встречу (включая будущие),
+    # а не только последнюю прошедшую. Обоснование: поле в карточке отвечает на
+    # вопрос «есть ли встреча с этим участником и когда» — назначенная будущая
+    # встреча это реальный факт, и скрывать её под «Не было» вводит в заблуждение.
+    now = datetime.utcnow()
+    ACTIVE_STATUSES = ("scheduled", "confirmed", "in_progress", "completed", "rescheduled", "requested")
     last_meeting_rows = (
         db.query(Meeting.member_id, sqlfunc.max(Meeting.scheduled_date).label("last_date"))
         .filter(
             Meeting.team_id == team_id,
-            Meeting.status != "cancelled",
-            Meeting.scheduled_date <= datetime.utcnow(),
+            Meeting.status.in_(ACTIVE_STATUSES),
         )
         .group_by(Meeting.member_id)
         .all()
     )
     last_meeting_map = {row.member_id: row.last_date for row in last_meeting_rows}
+    # Отдельно — последняя ПРОШЕДШАЯ встреча: по ней считаем «здоровье» каденции
+    # (цвет), чтобы будущая встреча не красила участника в зелёный, когда по факту
+    # давно не виделись.
+    last_past_rows = (
+        db.query(Meeting.member_id, sqlfunc.max(Meeting.scheduled_date).label("last_date"))
+        .filter(
+            Meeting.team_id == team_id,
+            Meeting.status.in_(ACTIVE_STATUSES),
+            Meeting.scheduled_date <= now,
+        )
+        .group_by(Meeting.member_id)
+        .all()
+    )
+    last_past_map = {row.member_id: row.last_date for row in last_past_rows}
 
     members_out = []
     for tm in team.members:
         user = users_map.get(tm.user_id)
         last_date = last_meeting_map.get(tm.user_id)
 
+        # Цвет каденции считаем по последней прошедшей встрече. Если прошедших
+        # нет, но есть назначенная будущая — не красный (встреча уже в календаре).
+        last_past = last_past_map.get(tm.user_id)
         color = "green"
-        if last_date:
-            days_since = (datetime.utcnow() - last_date).days
+        if last_past:
+            days_since = (now - last_past).days
             if days_since > tm.cadence_days * 2:
                 color = "red"
             elif days_since > tm.cadence_days:
                 color = "yellow"
+        elif last_date:
+            color = "green"  # только предстоящая встреча — нейтрально, не красный
         else:
-            color = "red"
+            color = "red"  # действительно ни одной встречи
 
         members_out.append(TeamMemberOut(
             id=tm.id,
