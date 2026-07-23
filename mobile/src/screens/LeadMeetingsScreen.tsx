@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall, getTeams, getTeam, createMeeting, createGroupMeeting } from '../lib/api';
+import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall, getTeams, getTeam, createMeeting, createGroupMeeting, getTasks } from '../lib/api';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
@@ -17,6 +17,7 @@ import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
+import { InteractionsModal } from '../components/InteractionsModal';
 
 export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
@@ -76,6 +77,14 @@ export default function LeadMeetingsScreen() {
   const openProposals = async () => {
     await ensureMembers();
     setShowProposals(true);
+  };
+
+  const [showInteractions, setShowInteractions] = useState(false);
+  const [interactionTasks, setInteractionTasks] = useState<{ id: number; title: string }[]>([]);
+  const openInteractions = async () => {
+    await ensureMembers();
+    try { const t = await getTasks({ assigned_by: user!.id }) as any[]; setInteractionTasks((t || []).map((x: any) => ({ id: x.id, title: x.title }))); } catch {}
+    setShowInteractions(true);
   };
 
   // Подсказки повестки для выбранного участника. Данные берём из уже
@@ -276,6 +285,9 @@ export default function LeadMeetingsScreen() {
               <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openInteractions}>
+            <Ionicons name="people-outline" size={18} color={colors.accent} />
+          </TouchableOpacity>
           <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openProposals}>
             <Ionicons name="swap-horizontal" size={18} color={colors.accent} />
           </TouchableOpacity>
@@ -284,6 +296,17 @@ export default function LeadMeetingsScreen() {
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Взаимодействия (блок 39) */}
+      <InteractionsModal
+        visible={showInteractions}
+        onClose={() => setShowInteractions(false)}
+        currentUser={{ id: user!.id }}
+        contacts={teamMembers.map(m => ({ user_id: m.user_id, name: m.user_name }))}
+        tasks={interactionTasks}
+        teamId={teamMembers[0]?.team_id ?? null}
+        onChanged={load}
+      />
 
       {/* Предложения встреч (Задача 5) */}
       <MeetingProposalsModal

@@ -23,6 +23,7 @@ import TaskAssignees from './TaskAssignees'
 import CollabTaskModal from './CollabTaskModal'
 import GroupMeetingModal from './GroupMeetingModal'
 import MeetingProposals from './MeetingProposals'
+import InteractionsPanel from './InteractionsPanel'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import { parseFeatureLock, openPricing } from '../lib/featureLock'
@@ -175,6 +176,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [collabModal, setCollabModal] = useState(false)  // модалка совместной задачи
   const [showGroupModal, setShowGroupModal] = useState(false)  // групповая встреча (Задача 4)
   const [showProposals, setShowProposals] = useState(false)    // предложения встреч (Задача 5)
+  const [showInteractions, setShowInteractions] = useState(false)  // взаимодействия (блок 39)
 
   // Analytics force-refresh key
   const [analyticsKey, setAnalyticsKey] = useState(0)
@@ -1256,7 +1258,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     </div>
                                   )}
                                   {task.is_multi && (
-                                    <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} />
+                                    <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} contacts={(teamDetail?.members || []).filter(mm => mm.user_id !== user.id).map(mm => ({ user_id: mm.user_id, name: usersMap[mm.user_id]?.name || `Участник #${mm.user_id}` }))} />
                                   )}
                                   <SubtaskList
                                     taskId={task.id}
@@ -1330,6 +1332,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                 <button onClick={() => setShowGroupModal(true)} className="btn btn-accent btn-sm">+ Групповая встреча</button>
                 <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">Предложения встреч</button>
+                <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">Взаимодействия</button>
               </div>
               {/* Status filter chips */}
               <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
@@ -1676,7 +1679,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                           )}
                                         </div>
                                         {task.is_multi && (
-                                          <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} />
+                                          <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} contacts={(teamDetail?.members || []).filter(mm => mm.user_id !== user.id).map(mm => ({ user_id: mm.user_id, name: usersMap[mm.user_id]?.name || `Участник #${mm.user_id}` }))} />
                                         )}
                                         <SubtaskList
                                           taskId={task.id}
@@ -2156,6 +2159,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         teamId={selectedTeamId}
         onClose={() => setShowProposals(false)}
         onChanged={() => loadMyMeetings()}
+      />
+    )}
+
+    {/* Взаимодействия (блок 39) */}
+    {showInteractions && (
+      <InteractionsPanel
+        currentUser={user}
+        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        tasks={myTasks}
+        teamId={selectedTeamId}
+        onClose={() => setShowInteractions(false)}
       />
     )}
 

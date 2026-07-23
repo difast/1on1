@@ -7,8 +7,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import BottomSheet, { BottomSheetScrollView, BottomSheetTextInput } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat } from '../lib/api';
+import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat, getTasks } from '../lib/api';
 import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
+import { InteractionsModal } from '../components/InteractionsModal';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
@@ -28,6 +29,12 @@ export default function MemberMeetingsScreen() {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [contacts, setContacts] = useState<{ user_id: number; name: string }[]>([]);
   const [showProposals, setShowProposals] = useState(false);
+  const [showInteractions, setShowInteractions] = useState(false);
+  const [interactionTasks, setInteractionTasks] = useState<{ id: number; title: string }[]>([]);
+  const openInteractions = async () => {
+    try { const t = await getTasks({ assigned_to: user!.id }) as any[]; setInteractionTasks((t || []).map((x: any) => ({ id: x.id, title: x.title }))); } catch {}
+    setShowInteractions(true);
+  };
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [calendarView, setCalendarView] = useState(false);
@@ -238,6 +245,12 @@ export default function MemberMeetingsScreen() {
           </View>
           <TouchableOpacity
             style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
+            onPress={openInteractions}
+          >
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Взаимодействия</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
             onPress={() => setShowProposals(true)}
           >
             <Text style={[styles.requestBtnText, { color: colors.accent }]}>Предложить</Text>
@@ -257,6 +270,17 @@ export default function MemberMeetingsScreen() {
         onClose={() => setShowProposals(false)}
         currentUser={{ id: user!.id }}
         contacts={contacts}
+        teamId={teamId}
+        onChanged={loadMeetings}
+      />
+
+      {/* Взаимодействия (блок 39) */}
+      <InteractionsModal
+        visible={showInteractions}
+        onClose={() => setShowInteractions(false)}
+        currentUser={{ id: user!.id }}
+        contacts={contacts}
+        tasks={interactionTasks}
         teamId={teamId}
         onChanged={loadMeetings}
       />
