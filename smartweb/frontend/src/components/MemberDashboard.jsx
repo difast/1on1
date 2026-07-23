@@ -5,7 +5,7 @@ import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin, getMoodToday } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import MeetingCalendar from './MeetingCalendar'
@@ -67,10 +67,24 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
   const [activeCall, setActiveCall] = useState(null)
+  // Настроение можно заполнять раз в сутки (по локальному дню команды). Держим
+  // признак «уже отмечено сегодня», чтобы кнопка «Настроение» не давала дублей.
+  const [moodFilledToday, setMoodFilledToday] = useState(false)
 
   useEffect(() => {
     getTodayCheckin(user.id).then(r => setCheckin(r.data)).catch(() => {})
   }, [user.id])
+
+  useEffect(() => {
+    if (!teamId) return
+    const refresh = () => getMoodToday(user.id, teamId)
+      .then(r => setMoodFilledToday(!!r.data?.filled))
+      .catch(() => {})
+    refresh()
+    // После заполнения (событие mood-updated) сразу закрываем возможность повторного.
+    window.addEventListener('mood-updated', refresh)
+    return () => window.removeEventListener('mood-updated', refresh)
+  }, [user.id, teamId])
 
   const handleArrive = async () => {
     setCheckinLoading(true)
@@ -397,13 +411,16 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
           <div className="page-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             {/* Самостоятельное заполнение настроения (задача 6): открываем тот же
                 опросник чек-ина, что и по уведомлению в 20:00 — та же логика
-                (дедуп/часовой пояс/права), не отдельная система. */}
+                (дедуп/часовой пояс/права), не отдельная система. Раз в сутки:
+                после отметки за сегодня кнопка блокируется до следующего дня. */}
             <button
-              onClick={() => { try { window.dispatchEvent(new Event('mood-open')) } catch {} }}
+              onClick={() => { if (!moodFilledToday) { try { window.dispatchEvent(new Event('mood-open')) } catch {} } }}
               className="btn btn-secondary btn-sm"
-              title="Заполнить опрос настроения"
+              disabled={moodFilledToday}
+              style={moodFilledToday ? { opacity: 0.6, cursor: 'default' } : undefined}
+              title={moodFilledToday ? 'Настроение уже отмечено сегодня' : 'Заполнить опрос настроения'}
             >
-              Настроение
+              {moodFilledToday ? 'Настроение отмечено' : 'Настроение'}
             </button>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>

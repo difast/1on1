@@ -271,10 +271,11 @@ export default function MemberAnalytics({ user, teamId }) {
       <div className="card" style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
           <div>
-            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>Моё настроение (чек-ины)</p>
-            {data.mood_checkin_avg != null && (
-              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>Средний балл: {data.mood_checkin_avg}/5</p>
-            )}
+            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>Моё настроение</p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+              {data.mood_checkin_avg != null ? `Средний балл: ${data.mood_checkin_avg}/5 · ` : ''}
+              опрос и быстрая оценка — единая шкала 1–5
+            </p>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
             {[['week', 'Неделя'], ['month', 'Месяц'], ['range', 'Период']].map(([val, lbl]) => (

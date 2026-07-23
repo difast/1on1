@@ -104,18 +104,36 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
         if tid not in team_last_meeting or (m.scheduled_date and m.scheduled_date > team_last_meeting[tid]):
             team_last_meeting[tid] = m.scheduled_date
 
-    # Mood stats
-    mood_entries = db.query(MoodEntry).all()
-    mood_7d = [e for e in mood_entries if e.created_at and e.created_at >= ago7]
-    mood_avg = round(sum(e.score for e in mood_entries) / len(mood_entries), 2) if mood_entries else None
-    mood_avg_7d = round(sum(e.score for e in mood_7d) / len(mood_7d), 2) if mood_7d else None
+    # Mood stats. Обёрнуто в защиту: если схема mood_entries на короткое время
+    # отстаёт от кода (окно фонового применения миграций), сбой одной таблицы не
+    # должен «терять» всю статистику админ-панели — деградируем мягко.
+    try:
+        mood_entries = db.query(MoodEntry).all()
+        mood_7d = [e for e in mood_entries if e.created_at and e.created_at >= ago7]
+        mood_avg = round(sum(e.score for e in mood_entries) / len(mood_entries), 2) if mood_entries else None
+        mood_avg_7d = round(sum(e.score for e in mood_7d) / len(mood_7d), 2) if mood_7d else None
 
-    # Weekly mood trend (last 7 days, daily avg)
-    daily_mood = {}
-    for e in mood_7d:
-        day = e.created_at.date().isoformat()
-        daily_mood.setdefault(day, []).append(e.score)
-    mood_daily = [{"date": d, "avg": round(sum(v)/len(v), 2)} for d, v in sorted(daily_mood.items())]
+        # Weekly mood trend (last 7 days, daily avg)
+        daily_mood = {}
+        for e in mood_7d:
+            day = e.created_at.date().isoformat()
+            daily_mood.setdefault(day, []).append(e.score)
+        mood_daily = [{"date": d, "avg": round(sum(v)/len(v), 2)} for d, v in sorted(daily_mood.items())]
+        mood_total = len(mood_entries)
+    except Exception:
+        db.rollback()
+        mood_entries = []
+        mood_avg = mood_avg_7d = None
+        mood_7d = []
+        mood_daily = []
+        mood_total = 0
+
+    def _safe_count(model):
+        try:
+            return db.query(model).count()
+        except Exception:
+            db.rollback()
+            return 0
 
     # System table counts
     system_counts = {
@@ -123,10 +141,10 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
         "teams": len(teams),
         "meetings": len(meetings),
         "tasks": len(tasks),
-        "notes": db.query(Note).count(),
-        "notifications": db.query(Notification).count(),
-        "mood_entries": len(mood_entries),
-        "knowledge_articles": db.query(KnowledgeArticle).count(),
+        "notes": _safe_count(Note),
+        "notifications": _safe_count(Notification),
+        "mood_entries": mood_total,
+        "knowledge_articles": _safe_count(KnowledgeArticle),
     }
 
     return {

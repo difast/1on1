@@ -1118,7 +1118,7 @@ export default function LeadAnalytics({ user }) {
             <span className="badge badge-blue" style={{ fontSize: 10 }}>анонимно</span>
           </div>
           <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>
-            Обобщённая статистика без привязки к участникам
+            Обобщённая статистика без привязки к участникам · опрос и быстрая оценка (единая шкала 1–5)
           </p>
           {!mood ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><div className="spinner" /></div>
