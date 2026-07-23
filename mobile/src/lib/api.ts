@@ -67,6 +67,11 @@ export const regenerateInviteCode = (teamId: number) =>
 // Meetings
 export const createMeeting = (data: unknown) =>
   req('/meetings/', { method: 'POST', body: JSON.stringify(data) });
+// Групповой созвон: несколько участников / вся команда.
+export const createGroupMeeting = (data: {
+  team_id: number; team_lead_id: number; scheduled_date: string; agenda?: string | null;
+  member_ids?: number[] | null; whole_team?: boolean;
+}) => req<any[]>('/meetings/group', { method: 'POST', body: JSON.stringify(data) });
 export const getMeetings = (params: Record<string, string | number>) => {
   const qs = Object.entries(params)
     .map(([k, v]) => `${k}=${v}`)
@@ -103,6 +108,11 @@ export const updateTask = (id: number, data: unknown) =>
   req(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteTask = (id: number) =>
   req(`/tasks/${id}`, { method: 'DELETE' });
+// Совместные задачи: статус части одного участника + закрытые сегодня.
+export const updateTaskAssignee = (assigneeId: number, data: { status?: string; part_description?: string }) =>
+  req<any>(`/tasks/assignee/${assigneeId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const getClosedTodayTasks = (userId: number) =>
+  req<any[]>(`/tasks/closed-today/${userId}`);
 
 // Notifications
 export const getNotifications = (userId: number) =>
@@ -157,8 +167,8 @@ export const updateSubtask = (subtaskId: number, data: { completed?: boolean; ti
   req<any>(`/subtasks/${subtaskId}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteSubtask = (subtaskId: number) =>
   req<any>(`/subtasks/${subtaskId}`, { method: 'DELETE' });
-export const getTaskAiAdvice = (title: string, status?: string, due_date?: string, role?: string) =>
-  req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member' }) });
+export const getTaskAiAdvice = (title: string, status?: string, due_date?: string, role?: string, user_id?: number) =>
+  req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member', user_id }) });
 
 // Mood
 export const submitMood = (team_id: number, answers: string[]) =>
@@ -167,8 +177,24 @@ export const getTeamMoodSummary = (teamId: number) =>
   req<any>(`/mood/team/${teamId}/summary`);
 
 // AI Assistant
-export const assistantChat = (messages: { role: string; content: string }[], context = '') =>
-  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context }) });
+export const assistantChat = (messages: { role: string; content: string }[], context = '', user_id?: number) =>
+  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context, user_id }) });
+
+// Per-user summary stats (включает closed_today — закрытые сегодня, по роли)
+export const getUserStats = (userId: number) =>
+  req<{ meetings: number; tasks_done: number; teams: number; closed_today: number }>(`/users/${userId}/stats`);
+
+// Предложения встреч (переговоры о встрече с подтверждением)
+export const createProposal = (data: { from_user_id: number; to_user_id: number; proposed_time: string; topic?: string | null; team_id?: number | null }) =>
+  req<any>('/proposals/', { method: 'POST', body: JSON.stringify(data) });
+export const getProposals = (userId: number) =>
+  req<any[]>(`/proposals/?user_id=${userId}`);
+export const acceptProposal = (id: number, userId: number) =>
+  req<any>(`/proposals/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineProposal = (id: number, userId: number) =>
+  req<any>(`/proposals/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const counterProposal = (id: number, userId: number, proposed_time: string, topic?: string) =>
+  req<any>(`/proposals/${id}/counter`, { method: 'POST', body: JSON.stringify({ user_id: userId, proposed_time, topic }) });
 
 // Собственная аутентификация (email/пароль + JWT), замена Supabase
 export const authRegister = (data: { name: string; email: string; password: string }) =>

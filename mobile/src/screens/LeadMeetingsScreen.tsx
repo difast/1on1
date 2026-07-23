@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall, getTeams, getTeam, createMeeting } from '../lib/api';
+import { getMeetings, getUsers, confirmMeeting, declineMeeting, getNotes, createNote, updateNote, startCall, getTeams, getTeam, createMeeting, createGroupMeeting } from '../lib/api';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
 import type { AppColors } from '../constants/colors';
@@ -16,6 +16,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
+import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
 
 export default function LeadMeetingsScreen() {
   const { colors } = useTheme();
@@ -39,28 +40,42 @@ export default function LeadMeetingsScreen() {
   const [createDate, setCreateDate] = useState('');
   const [createTopic, setCreateTopic] = useState('');
   const [creating, setCreating] = useState(false);
+  // Групповой созвон: несколько участников / вся команда.
+  const [groupMode, setGroupMode] = useState(false);
+  const [wholeTeam, setWholeTeam] = useState(false);
+  const [groupSelected, setGroupSelected] = useState<number[]>([]);
 
   // Коучинг «до встречи»: подсказки тем повестки у поля темы. Опционально.
   const [coachOn, setCoachOn] = useState(false);
   const [coachHidden, setCoachHidden] = useState(false);
   useEffect(() => { getCoaching().then(setCoachOn); }, []);
 
+  const [showProposals, setShowProposals] = useState(false);
+
+  const ensureMembers = async () => {
+    if (teamMembers.length > 0) return;
+    try {
+      const all = await getTeams() as any[];
+      const mine = (all || []).filter((t: any) => t.team_lead_id === user!.id);
+      const details = await Promise.all(mine.map((t: any) => getTeam(t.id)));
+      const members: { user_id: number; user_name: string; team_id: number }[] = [];
+      for (const t of details as any[]) {
+        for (const m of (t.members || [])) {
+          if (m.user_id !== user!.id) members.push({ user_id: m.user_id, user_name: m.user_name, team_id: t.id });
+        }
+      }
+      setTeamMembers(members);
+    } catch {}
+  };
+
   const openCreate = async () => {
     setShowCreate(true);
-    if (teamMembers.length === 0) {
-      try {
-        const all = await getTeams() as any[];
-        const mine = (all || []).filter((t: any) => t.team_lead_id === user!.id);
-        const details = await Promise.all(mine.map((t: any) => getTeam(t.id)));
-        const members: { user_id: number; user_name: string; team_id: number }[] = [];
-        for (const t of details as any[]) {
-          for (const m of (t.members || [])) {
-            if (m.user_id !== user!.id) members.push({ user_id: m.user_id, user_name: m.user_name, team_id: t.id });
-          }
-        }
-        setTeamMembers(members);
-      } catch {}
-    }
+    await ensureMembers();
+  };
+
+  const openProposals = async () => {
+    await ensureMembers();
+    setShowProposals(true);
   };
 
   // Подсказки повестки для выбранного участника. Данные берём из уже
@@ -79,20 +94,43 @@ export default function LeadMeetingsScreen() {
   const addAgendaLine = (line: string) =>
     setCreateTopic(prev => (prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`));
 
+  const resetCreate = () => {
+    setShowCreate(false);
+    setCreateMemberId(null); setCreateDate(''); setCreateTopic('');
+    setGroupMode(false); setWholeTeam(false); setGroupSelected([]);
+  };
+
   const handleCreateMeeting = async () => {
-    const member = teamMembers.find(m => m.user_id === createMemberId);
-    if (!member || !createDate) { Alert.alert('Заполните поля', 'Выберите участника и дату'); return; }
+    if (!createDate) { Alert.alert('Заполните поля', 'Выберите дату'); return; }
     setCreating(true);
     try {
-      await createMeeting({
-        team_id: member.team_id,
-        team_lead_id: user!.id,
-        member_id: member.user_id,
-        scheduled_date: createDate,
-        agenda: createTopic.trim() || undefined,
-      });
-      setShowCreate(false);
-      setCreateMemberId(null); setCreateDate(''); setCreateTopic('');
+      if (groupMode) {
+        // Групповая встреча: несколько участников или вся команда.
+        const teamId = teamMembers[0]?.team_id;
+        if (!teamId) { Alert.alert('Ошибка', 'Нет команды'); setCreating(false); return; }
+        if (!wholeTeam && groupSelected.length === 0) {
+          Alert.alert('Выберите участников', 'Отметьте участников или «Вся команда»'); setCreating(false); return;
+        }
+        await createGroupMeeting({
+          team_id: teamId,
+          team_lead_id: user!.id,
+          scheduled_date: createDate,
+          agenda: createTopic.trim() || null,
+          member_ids: wholeTeam ? null : groupSelected,
+          whole_team: wholeTeam,
+        });
+      } else {
+        const member = teamMembers.find(m => m.user_id === createMemberId);
+        if (!member) { Alert.alert('Заполните поля', 'Выберите участника'); setCreating(false); return; }
+        await createMeeting({
+          team_id: member.team_id,
+          team_lead_id: user!.id,
+          member_id: member.user_id,
+          scheduled_date: createDate,
+          agenda: createTopic.trim() || undefined,
+        });
+      }
+      resetCreate();
       await load();
     } catch { Alert.alert('Ошибка', 'Не удалось создать встречу'); }
     finally { setCreating(false); }
@@ -238,11 +276,24 @@ export default function LeadMeetingsScreen() {
               <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
             </TouchableOpacity>
           </View>
+          <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openProposals}>
+            <Ionicons name="swap-horizontal" size={18} color={colors.accent} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.createBtn} onPress={openCreate}>
             <Ionicons name="add" size={20} color="#fff" />
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* Предложения встреч (Задача 5) */}
+      <MeetingProposalsModal
+        visible={showProposals}
+        onClose={() => setShowProposals(false)}
+        currentUser={{ id: user!.id }}
+        contacts={teamMembers.map(m => ({ user_id: m.user_id, name: m.user_name }))}
+        teamId={teamMembers[0]?.team_id ?? null}
+        onChanged={load}
+      />
 
       {/* Create meeting modal */}
       <Modal visible={showCreate} transparent animationType="fade" onRequestClose={() => setShowCreate(false)}>
@@ -250,24 +301,60 @@ export default function LeadMeetingsScreen() {
           <Pressable style={styles.modalSheet} onPress={() => {}}>
             <Text style={styles.modalTitle}>Новая встреча</Text>
 
-            <Text style={styles.modalLabel}>Участник</Text>
+            {/* Формат: 1-на-1 или групповая (Задача 4) */}
+            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
+              <TouchableOpacity
+                style={[styles.memberPick, { flex: 1, justifyContent: 'center' }, !groupMode && styles.memberPickActive]}
+                onPress={() => setGroupMode(false)}
+              >
+                <Text style={[styles.memberPickName, { flex: 0 }]}>1-на-1</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.memberPick, { flex: 1, justifyContent: 'center' }, groupMode && styles.memberPickActive]}
+                onPress={() => setGroupMode(true)}
+              >
+                <Text style={[styles.memberPickName, { flex: 0 }]}>Групповая</Text>
+              </TouchableOpacity>
+            </View>
+
+            {groupMode && (
+              <TouchableOpacity
+                style={[styles.memberPick, wholeTeam && styles.memberPickActive]}
+                onPress={() => setWholeTeam(w => !w)}
+              >
+                <Ionicons name={wholeTeam ? 'checkbox' : 'square-outline'} size={20} color={wholeTeam ? colors.accent : colors.textMuted} />
+                <Text style={styles.memberPickName}>Вся команда</Text>
+              </TouchableOpacity>
+            )}
+
+            <Text style={styles.modalLabel}>{groupMode ? 'Участники' : 'Участник'}</Text>
             {teamMembers.length === 0 ? (
               <Text style={styles.modalHint}>Нет участников в командах</Text>
             ) : (
               <ScrollView style={{ maxHeight: 160 }} keyboardShouldPersistTaps="handled">
-                {teamMembers.map(m => (
-                  <TouchableOpacity
-                    key={m.user_id}
-                    style={[styles.memberPick, createMemberId === m.user_id && styles.memberPickActive]}
-                    onPress={() => setCreateMemberId(m.user_id)}
-                  >
-                    <View style={styles.memberPickAvatar}>
-                      <Text style={styles.memberPickAvatarText}>{(m.user_name || '?').charAt(0).toUpperCase()}</Text>
-                    </View>
-                    <Text style={styles.memberPickName}>{m.user_name}</Text>
-                    {createMemberId === m.user_id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
-                  </TouchableOpacity>
-                ))}
+                {teamMembers.map(m => {
+                  const selected = groupMode ? groupSelected.includes(m.user_id) : createMemberId === m.user_id;
+                  return (
+                    <TouchableOpacity
+                      key={m.user_id}
+                      style={[styles.memberPick, selected && styles.memberPickActive, groupMode && wholeTeam && { opacity: 0.4 }]}
+                      disabled={groupMode && wholeTeam}
+                      onPress={() => {
+                        if (groupMode) {
+                          setGroupSelected(prev => prev.includes(m.user_id) ? prev.filter(x => x !== m.user_id) : [...prev, m.user_id]);
+                        } else {
+                          setCreateMemberId(m.user_id);
+                        }
+                      }}
+                    >
+                      <View style={styles.memberPickAvatar}>
+                        <Text style={styles.memberPickAvatarText}>{(m.user_name || '?').charAt(0).toUpperCase()}</Text>
+                      </View>
+                      <Text style={styles.memberPickName}>{m.user_name}</Text>
+                      {selected && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
+                    </TouchableOpacity>
+                  );
+                })}
               </ScrollView>
             )}
 
@@ -306,16 +393,23 @@ export default function LeadMeetingsScreen() {
             )}
 
             <View style={styles.modalActions}>
-              <TouchableOpacity style={styles.modalCancel} onPress={() => setShowCreate(false)}>
+              <TouchableOpacity style={styles.modalCancel} onPress={resetCreate}>
                 <Text style={styles.modalCancelText}>Отмена</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalCreate, (!createMemberId || !createDate || creating) && styles.btnDisabled]}
-                onPress={handleCreateMeeting}
-                disabled={!createMemberId || !createDate || creating}
-              >
-                <Text style={styles.modalCreateText}>{creating ? 'Создание...' : 'Создать встречу'}</Text>
-              </TouchableOpacity>
+              {(() => {
+                const invalid = !createDate || creating || (groupMode
+                  ? (!wholeTeam && groupSelected.length === 0)
+                  : !createMemberId);
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalCreate, invalid && styles.btnDisabled]}
+                    onPress={handleCreateMeeting}
+                    disabled={invalid}
+                  >
+                    <Text style={styles.modalCreateText}>{creating ? 'Создание...' : 'Создать встречу'}</Text>
+                  </TouchableOpacity>
+                );
+              })()}
             </View>
           </Pressable>
         </Pressable>

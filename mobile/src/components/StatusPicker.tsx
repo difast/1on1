@@ -3,6 +3,7 @@ import { Modal, View, Text, TouchableOpacity, StyleSheet, Pressable } from 'reac
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
+import { Status3DIcon } from './Status3DIcon';
 
 export type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
@@ -46,7 +47,7 @@ export function StatusPicker({
               onPress={() => { onSelect(s); onClose(); }}
               activeOpacity={0.7}
             >
-              <View style={[styles.dot, { backgroundColor: tint[s] }]} />
+              <Status3DIcon status={s} size={24} />
               <Text style={[styles.rowText, current === s && { color: tint[s], fontWeight: '700' }]}>
                 {STATUS_LABEL[s]}
               </Text>
