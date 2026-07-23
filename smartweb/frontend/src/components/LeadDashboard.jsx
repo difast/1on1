@@ -19,8 +19,11 @@ import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
+import TaskAssignees from './TaskAssignees'
+import CollabTaskModal from './CollabTaskModal'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
+import { parseFeatureLock, openPricing } from '../lib/featureLock'
 import JitsiCall from './JitsiCall'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
@@ -166,6 +169,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [rescheduleModal, setRescheduleModal] = useState(null) // { meetingId, memberName, cadence }
   const [aiSlots, setAiSlots] = useState([])
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [slotsLocked, setSlotsLocked] = useState(null)  // мягкое тарифное уведомление (Задача 3)
+  const [collabModal, setCollabModal] = useState(false)  // модалка совместной задачи (Задача 4)
 
   // Analytics force-refresh key
   const [analyticsKey, setAnalyticsKey] = useState(0)
@@ -320,11 +325,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     const cadence = member?.cadence_days || 14
     setRescheduleModal({ meetingId: meeting.id, memberName: usersMap[meeting.member_id]?.name || 'Участник', cadence })
     setAiSlots([])
+    setSlotsLocked(null)
     setSlotsLoading(true)
     try {
       const { data } = await getMeetingAISlots({ meeting_id: meeting.id, cadence_days: cadence })
       setAiSlots(data.slots || [])
-    } catch { setAiSlots([]) }
+    } catch (err) { setSlotsLocked(parseFeatureLock(err)); setAiSlots([]) }
     finally { setSlotsLoading(false) }
   }
 
@@ -441,6 +447,37 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setMemberTasks((prev) => ({ ...prev, [memberId]: [] }))
     }
   }, [])
+
+  // Совместная задача создана (Задача 4): добавляем её во все загруженные списки
+  // участников, которых она касается (у каждого она появится сразу, без refresh).
+  const handleCollabCreated = (task) => {
+    const ids = (task.assignees || []).map(a => a.user_id)
+    setMemberTasks(prev => {
+      const next = { ...prev }
+      for (const uid of ids) {
+        if (next[uid] !== undefined && !next[uid].some(t => t.id === task.id)) {
+          next[uid] = [task, ...next[uid]]
+        }
+      }
+      return next
+    })
+    if (ids.includes(user.id)) setMyTasks(prev => prev.some(t => t.id === task.id) ? prev : [task, ...prev])
+  }
+
+  // Обновлённая задача (после смены статуса части участника) — заменяем во всех
+  // загруженных списках участников и в «моих задачах».
+  const patchTaskEverywhere = (task) => {
+    setMemberTasks(prev => {
+      const next = { ...prev }
+      for (const uid of Object.keys(next)) {
+        if (next[uid]?.some(t => t.id === task.id)) {
+          next[uid] = next[uid].map(t => t.id === task.id ? task : t)
+        }
+      }
+      return next
+    })
+    setMyTasks(prev => prev.some(t => t.id === task.id) ? prev.map(t => t.id === task.id ? task : t) : prev)
+  }
 
   const toggleTasksExpanded = (memberId) => {
     setExpandedTasks((prev) => {
@@ -1081,6 +1118,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             <TaskAIHelper
                               task={task}
                               role="lead"
+                              userId={user.id}
                               onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
                             />
                           )}
@@ -1109,13 +1147,19 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <EmptyState title="Нет команд" desc="Создайте команду, чтобы видеть задачи участников" />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                    <div style={{ display: 'flex', gap: 6 }}>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
                       {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
                         <button key={f} onClick={() => setMemberTaskFilter(f)}
                           className={memberTaskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
                           {label}
                         </button>
                       ))}
+                      {/* Совместная задача (Задача 4): одна задача на нескольких участников. */}
+                      {teamDetail?.members?.filter(m => m.user_id !== user.id).length > 1 && (
+                        <button onClick={() => setCollabModal(true)} className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', fontWeight: 600 }}>
+                          + Совместная задача
+                        </button>
+                      )}
                     </div>
                     {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
                       const tasks = memberTasks[member.user_id]
@@ -1176,22 +1220,34 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                           )
                                         })()}
                                       </div>
-                                      <TaskStatusSelect status={task.status || 'in_progress'} onChange={async (newStatus) => {
-                                        try {
-                                          await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
-                                          setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t) }))
-                                        } catch {}
-                                      }} canMarkDone={true} />
+                                      {/* Совместная задача (Задача 4): статус на уровне задачи не редактируется —
+                                          он сводится из статусов участников ниже (TaskAssignees). */}
+                                      {task.is_multi ? (
+                                        <span style={{ fontSize: 12, fontWeight: 700, color: task.completed ? '#15803d' : 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                          {task.progress ? `${task.progress.done}/${task.progress.total}` : ''}
+                                        </span>
+                                      ) : (
+                                        <TaskStatusSelect status={task.status || 'in_progress'} onChange={async (newStatus) => {
+                                          try {
+                                            await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                            setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(t => t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t) }))
+                                          } catch {}
+                                        }} canMarkDone={true} />
+                                      )}
                                       <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
                                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
-                                      {!task.completed && (
+                                      {!task.completed && !task.is_multi && (
                                         <TaskAIHelper
                                           task={task}
                                           role="lead"
+                                          userId={user.id}
                                           onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
                                         />
                                       )}
                                     </div>
+                                  )}
+                                  {task.is_multi && (
+                                    <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} />
                                   )}
                                   <SubtaskList
                                     taskId={task.id}
@@ -1580,22 +1636,31 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                               )
                                             })()}
                                           </div>
-                                          <TaskStatusSelect
-                                            status={st}
-                                            onChange={async (newStatus) => {
-                                              try {
-                                                await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
-                                                setMemberTasks(prev => ({
-                                                  ...prev,
-                                                  [member.user_id]: (prev[member.user_id] || []).map(t =>
-                                                    t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
-                                                  ),
-                                                }))
-                                              } catch {}
-                                            }}
-                                            canMarkDone={true}
-                                          />
+                                          {task.is_multi ? (
+                                            <span style={{ fontSize: 12, fontWeight: 700, color: task.completed ? '#15803d' : 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                                              {task.progress ? `${task.progress.done}/${task.progress.total}` : ''}
+                                            </span>
+                                          ) : (
+                                            <TaskStatusSelect
+                                              status={st}
+                                              onChange={async (newStatus) => {
+                                                try {
+                                                  await updateTask(task.id, { status: newStatus, completed: newStatus === 'done' })
+                                                  setMemberTasks(prev => ({
+                                                    ...prev,
+                                                    [member.user_id]: (prev[member.user_id] || []).map(t =>
+                                                      t.id === task.id ? { ...t, status: newStatus, completed: newStatus === 'done' } : t
+                                                    ),
+                                                  }))
+                                                } catch {}
+                                              }}
+                                              canMarkDone={true}
+                                            />
+                                          )}
                                         </div>
+                                        {task.is_multi && (
+                                          <TaskAssignees task={task} currentUserId={user.id} canManageAll={true} onChanged={patchTaskEverywhere} />
+                                        )}
                                         <SubtaskList
                                           taskId={task.id}
                                           refreshKey={subtaskRefresh[task.id] || 0}
@@ -2055,6 +2120,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
 
+    {/* Совместная задача (Задача 4) */}
+    {collabModal && (
+      <CollabTaskModal
+        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        teamId={selectedTeamId}
+        assignedBy={user.id}
+        onClose={() => setCollabModal(false)}
+        onCreated={handleCollabCreated}
+      />
+    )}
+
     {rescheduleModal && (
       <div className="overlay-center" onClick={() => setRescheduleModal(null)}>
         <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400, width: '90vw' }}>
@@ -2074,6 +2150,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
               <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#3B6EF0' }} />
               <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI подбирает слоты...</span>
+            </div>
+          ) : slotsLocked ? (
+            // Тарифное ограничение (Задача 3): мягкое сообщение + переход к тарифам.
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12, padding: '18px 8px', textAlign: 'center' }}>
+              <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5 }}>
+                {slotsLocked.message}
+              </p>
+              <button onClick={() => openPricing('team')} className="btn btn-accent btn-sm">Посмотреть тарифы</button>
             </div>
           ) : aiSlots.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

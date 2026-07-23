@@ -65,6 +65,57 @@ def feature_enabled(limits: dict, feature: str) -> bool:
     return bool((limits.get("features") or {}).get(feature, False))
 
 
+# Человекочитаемые названия функций для мягких тарифных уведомлений (Задача 3).
+# Совпадают с формулировками на странице «Мой тариф» и лендинге.
+FEATURE_LABELS = {
+    "pit": "AI-ассистент Пит",
+    "ai_slots": "AI-подбор слотов для встреч",
+    "ru_queries": "Запросы на русском",
+    "ai_decomposition": "AI-декомпозиция задач",
+    "mood": "Настроение команды",
+    "analytics": "Аналитика",
+    "risk_alerts": "Оповещения о рисках",
+    "csv_export": "Экспорт данных (Excel)",
+    "video_calls": "Видеозвонки",
+    "transcripts": "Транскрипты встреч",
+    "time_tracking": "Учёт времени",
+    "sso": "SSO",
+    "on_premise": "On-premise",
+    "dedicated_manager": "Персональный менеджер",
+}
+
+
+def feature_lock(db: Session, user, feature: str) -> dict | None:
+    """Вернуть структуру мягкого тарифного уведомления, если функция недоступна
+    на тарифе пользователя (и включён enforcement). Иначе None — функция доступна.
+
+    Возвращаемая структура становится detail у HTTP 402 и распознаётся фронтом,
+    чтобы показать понятное сообщение с ссылкой на тарифы, а не техническую ошибку.
+    """
+    if user is None or not entitlements_enforced():
+        return None
+    limits = effective_limits(db, user)
+    if feature_enabled(limits, feature):
+        return None
+    label = FEATURE_LABELS.get(feature, "Эта функция")
+    return {
+        "code": "feature_locked",
+        "feature": feature,
+        "feature_label": label,
+        "message": f"Функция «{label}» доступна на другом тарифе. "
+                   f"Повысьте тариф, чтобы использовать {label.lower()}.",
+    }
+
+
+def require_feature(db: Session, user, feature: str) -> None:
+    """Бросить HTTP 402 со структурированным detail, если функция недоступна по
+    тарифу. No-op, пока enforcement выключен или функция доступна."""
+    lock = feature_lock(db, user, feature)
+    if lock is not None:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=402, detail=lock)
+
+
 # ---- enforcement: проверки лимитов при создании сущностей ------------------
 # Все функции — no-op, пока ENTITLEMENTS_ENFORCE выключен (возвращают None).
 # Возвращают текст ошибки (для HTTP 402) либо None, если создавать можно.

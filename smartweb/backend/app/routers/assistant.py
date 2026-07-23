@@ -1,7 +1,11 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
+from sqlalchemy.orm import Session
 from pydantic import BaseModel as PydanticBase
-from typing import List
+from typing import List, Optional
 import httpx
+from app.database import get_db
+from app.models.user import User
+from app.services import entitlements
 from app.prompts import AITUNNEL_KEY, PIT_SYSTEM_PROMPT
 
 router = APIRouter()
@@ -15,6 +19,7 @@ class ChatMessage(PydanticBase):
 class ChatRequest(PydanticBase):
     messages: List[ChatMessage]
     context: str = ""
+    user_id: Optional[int] = None
 
 
 @router.get("/diagnose")
@@ -37,7 +42,11 @@ def diagnose():
 
 
 @router.post("/chat")
-def pit_chat(data: ChatRequest):
+def pit_chat(data: ChatRequest, db: Session = Depends(get_db)):
+    # Тарифное ограничение (Задача 3): Пит доступен не на всех тарифах.
+    if data.user_id is not None:
+        user = db.query(User).filter(User.id == data.user_id).first()
+        entitlements.require_feature(db, user, "pit")
     system = PIT_SYSTEM_PROMPT
     if data.context:
         system += f"\n\n=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===\n{data.context}\n=== КОНЕЦ КОНТЕКСТА ==="
