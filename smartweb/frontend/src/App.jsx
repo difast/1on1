@@ -157,7 +157,7 @@ function App() {
     </div>
   )
 
-  if (isAdmin) return <AdminDashboard onLogout={() => { setAdminSession(false); setIsAdmin(false) }} />
+  if (isAdmin) return <AdminDashboard onLogout={() => { clearToken(); setAdminSession(false); setIsAdmin(false) }} />
 
   if (!appUser && !tgAuthed) {
     return (

@@ -23,11 +23,30 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserOut
 from app.utils.passwords import hash_password, verify_password
-from app.utils.auth import create_access_token, get_current_user, require_admin
+from app.utils.auth import create_access_token, create_admin_token, get_current_user, require_admin
 from app.services import mailer
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+import os
+from pydantic import BaseModel
+
+
+class AdminLoginReq(BaseModel):
+    password: str
+
+
+@router.post("/admin-login")
+def admin_login(data: AdminLoginReq):
+    """Вход в админ-панель по паролю. Возвращает админ-JWT, который клиент кладёт
+    в Authorization — тогда запросы проходят гейт AUTH_ENFORCE и require_admin.
+    Пароль берётся из окружения ADMIN_PASSWORD (по умолчанию — прежний клиентский,
+    ради обратной совместимости до задания переменной)."""
+    expected = os.getenv("ADMIN_PASSWORD", "1on12026")
+    if not data.password or data.password != expected:
+        raise HTTPException(status_code=401, detail="Неверный пароль администратора")
+    return {"token": create_admin_token()}
 
 CONFIRM_TTL = timedelta(hours=24)
 # Сброс пароля: 1 час был слишком жёстким на новой инфраструктуре — при

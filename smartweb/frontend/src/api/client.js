@@ -125,6 +125,7 @@ export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
 export const getUserStats = (userId) => api.get(`/users/${userId}/stats`)
 
 // Admin
+export const adminLogin = (password) => api.post('/auth/admin-login', { password })
 export const getAdminStats = () => api.get('/users/admin/stats')
 export const broadcastNotification = (data) => api.post('/notifications/broadcast', data)
 export const getServiceHealth = () => api.get('/health/detailed')

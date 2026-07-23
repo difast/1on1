@@ -336,7 +336,7 @@ import jwt as _jwt
 
 _AUTH_PUBLIC_EXACT = {
     "/", "/healthz",
-    "/api/auth/register", "/api/auth/login",
+    "/api/auth/register", "/api/auth/login", "/api/auth/admin-login",
     "/api/auth/forgot-password", "/api/auth/reset-password",
     "/api/auth/confirm-email", "/api/auth/resend-confirmation",
     "/api/telegram/config", "/api/telegram/webhook",

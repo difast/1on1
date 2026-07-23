@@ -5,7 +5,7 @@ import TelegramLoginButton from './TelegramLoginButton'
 import Spinner from '../lib/Spinner'
 import {
   getTelegramConfig, telegramCallback,
-  authLogin, authRegister, authForgotPassword,
+  authLogin, authRegister, authForgotPassword, adminLogin,
 } from '../api/client'
 
 const ADMIN_PASSWORD = '1on12026'
@@ -105,11 +105,19 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     } finally { setLoading(false) }
   }
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault()
-    if (adminPwd === ADMIN_PASSWORD) {
+    // Получаем серверный админ-JWT: с ним запросы админки проходят гейт
+    // AUTH_ENFORCE и require_admin. При недоступности эндпоинта (старый бэкенд)
+    // откатываемся на локальную проверку пароля, чтобы вход не ломался.
+    try {
+      const { data } = await adminLogin(adminPwd)
+      if (data?.token) setToken(data.token)
       onAdminLogin?.()
-    } else {
+      return
+    } catch (err) {
+      if (err?.response?.status === 401) { setError('Неверный пароль администратора'); return }
+      if (adminPwd === ADMIN_PASSWORD) { onAdminLogin?.(); return }
       setError('Неверный пароль администратора')
     }
   }
