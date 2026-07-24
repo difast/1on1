@@ -75,6 +75,7 @@ export const commentTaskProposal = (id, userId, note) => api.post(`/task-proposa
 export const createGoal = (data) => api.post('/goals/', data)
 export const getGoals = (userId, actorId) => api.get('/goals/', { params: { user_id: userId, actor_id: actorId } })
 export const getTeamGoals = (teamId, actorId) => api.get(`/goals/team/${teamId}`, { params: { actor_id: actorId } })
+export const getTeamSharedGoals = (teamId, actorId) => api.get(`/goals/team/${teamId}/goals`, { params: { actor_id: actorId } })
 export const getGoal = (goalId, actorId) => api.get(`/goals/${goalId}`, { params: { actor_id: actorId } })
 export const updateGoal = (goalId, data) => api.patch(`/goals/${goalId}`, data)
 export const deleteGoal = (goalId, actorId) => api.delete(`/goals/${goalId}`, { params: { actor_id: actorId } })

@@ -12,17 +12,29 @@ GOAL_STATUSES = ("not_started", "in_progress", "at_risk", "achieved", "failed")
 # Открытые статусы — по ним считаем стагнацию/подсказки.
 GOAL_OPEN_STATUSES = ("not_started", "in_progress", "at_risk")
 
+# Тип цели:
+#   personal — личная цель сотрудника (владелец = сотрудник, редактирует он сам);
+#   team     — командная цель (владелец = тимлид, ставит и ведёт прогресс он,
+#              видит вся команда, участники могут комментировать).
+GOAL_SCOPES = ("personal", "team")
+
 
 class Goal(Base):
-    """Персональная цель сотрудника на период (квартал). Принадлежит конкретному
-    пользователю; тимлид цель НЕ редактирует (только комментирует/даёт фидбэк —
-    проверяется на бэкенде). Прогресс — числовой 0..100 (простая база для v1,
-    единый источник истины; ключевые результаты можно нарастить позже)."""
+    """Цель на период (квартал). Та же логика для личной и командной цели:
+    числовой прогресс 0..100, те же статусы и правила их связки, обсуждение и
+    подсказки. Разница — во владельце и правах (см. scope), что проверяется на
+    бэкенде:
+      personal — принадлежит сотруднику, редактирует только он; тимлид
+                 комментирует/даёт фидбэк, но не меняет прогресс;
+      team     — принадлежит тимлиду (user_id = тимлид), редактирует только он;
+                 видна всей команде, участники могут комментировать."""
     __tablename__ = "goals"
 
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)   # владелец (сотрудник)
+    # Владелец, который ведёт прогресс: сотрудник (personal) или тимлид (team).
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
+    scope = Column(String(20), nullable=False, default="personal", server_default="personal")
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)        # ожидаемый результат
     period_label = Column(String(50), nullable=True)  # напр. "Q3 2026"

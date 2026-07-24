@@ -234,6 +234,7 @@ export type GoalComment = {
 };
 export type Goal = {
   id: number; user_id: number; user_name?: string | null; team_id?: number | null;
+  scope?: string;
   title: string; description?: string | null;
   period_label?: string | null; period_start?: string | null; period_end?: string | null;
   progress: number; status: string;
@@ -247,12 +248,14 @@ export type TeamGoals = {
 };
 export const createGoal = (data: {
   user_id: number; title: string; description?: string | null; team_id?: number | null;
-  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+  scope?: string; period_label?: string | null; period_start?: string | null; period_end?: string | null;
 }) => req<Goal>('/goals/', { method: 'POST', body: JSON.stringify(data) });
 export const getGoals = (userId: number, actorId: number) =>
   req<Goal[]>(`/goals/?user_id=${userId}&actor_id=${actorId}`);
 export const getTeamGoals = (teamId: number, actorId: number) =>
   req<TeamGoals>(`/goals/team/${teamId}?actor_id=${actorId}`);
+export const getTeamSharedGoals = (teamId: number, actorId: number) =>
+  req<Goal[]>(`/goals/team/${teamId}/goals?actor_id=${actorId}`);
 export const getGoal = (goalId: number, actorId: number) =>
   req<Goal>(`/goals/${goalId}?actor_id=${actorId}`);
 export const updateGoal = (goalId: number, data: {

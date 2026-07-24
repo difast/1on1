@@ -4,7 +4,7 @@ import EmptyState from './EmptyState'
 import { toast } from '../lib/ui'
 import { fmtDate } from '../lib/datetime'
 import {
-  createGoal, getGoals, getTeamGoals, getGoal, updateGoal, deleteGoal, addGoalComment,
+  createGoal, getGoals, getTeamGoals, getTeamSharedGoals, getGoal, updateGoal, deleteGoal, addGoalComment,
 } from '../api/client'
 
 // ── справочники статусов ─────────────────────────────────────────────────────
@@ -265,22 +265,107 @@ function OwnGoalCard({ goal, meId, onChanged }) {
   )
 }
 
-// ── сотрудник: список своих целей + создание ─────────────────────────────────
-export function GoalsMember({ user }) {
-  const meId = user.id
-  const [goals, setGoals] = useState(null)
-  const [showForm, setShowForm] = useState(false)
+// ── переиспользуемая форма создания цели (личная / командная) ───────────────
+function GoalForm({ onCreate, onCancel, submitLabel = 'Создать цель', placeholder }) {
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const qOpts = useRef(quarterOptions()).current
   const [period, setPeriod] = useState(qOpts[0].value)
   const [creating, setCreating] = useState(false)
 
+  const submit = async () => {
+    if (!title.trim()) { toast('Укажите название цели', 'error'); return }
+    setCreating(true)
+    try {
+      const opt = qOpts.find(o => o.value === period) || qOpts[0]
+      await onCreate({
+        title: title.trim(), description: desc.trim() || null,
+        period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end,
+      })
+      setTitle(''); setDesc(''); setPeriod(qOpts[0].value)
+    } catch (e) {
+      toast(e?.response?.data?.detail || 'Не удалось создать цель', 'error')
+    } finally { setCreating(false) }
+  }
+
+  return (
+    <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div>
+        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Название цели</label>
+        <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder={placeholder || 'Например: Запустить онбординг новых сотрудников'} style={{ marginTop: 4 }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Ожидаемый результат</label>
+        <textarea className="input" value={desc} onChange={e => setDesc(e.target.value)} rows={3}
+          placeholder="Как поймём, что цель достигнута — измеримый результат" style={{ marginTop: 4, resize: 'vertical' }} />
+      </div>
+      <div>
+        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Период</label>
+        <select className="input" value={period} onChange={e => setPeriod(e.target.value)} style={{ marginTop: 4 }}>
+          {qOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+        </select>
+      </div>
+      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+        <button className="btn btn-secondary btn-sm" onClick={onCancel}>Отмена</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? 'Создаём…' : submitLabel}</button>
+      </div>
+    </div>
+  )
+}
+
+// ── командная цель глазами сотрудника (только чтение + обсуждение) ────────────
+function TeamGoalCard({ goal, meId, onChanged }) {
+  const [expanded, setExpanded] = useState(false)
+  const c = STATUS_COLOR[goal.status] || STATUS_COLOR.not_started
+  return (
+    <div className="card" style={{ padding: 16, borderLeft: `3px solid ${c.fg}` }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)', wordBreak: 'break-word' }}>{goal.title}</h4>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(goal)} · ведёт тимлид</p>
+        </div>
+        <StatusBadge status={goal.status} />
+      </div>
+      {goal.description && (
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{goal.description}</p>
+      )}
+      <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <ProgressBar value={goal.progress} />
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-secondary)', width: 42, textAlign: 'right' }}>{goal.progress}%</span>
+      </div>
+      <div style={{ marginTop: 12 }}>
+        <button onClick={() => setExpanded(v => !v)} style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: 0 }}>
+          Обсуждение{goal.comments?.length ? ` (${goal.comments.length})` : ''}
+        </button>
+      </div>
+      {expanded && (
+        <CommentThread goal={goal} meId={meId} canFeedback={false}
+          onSend={async (payload) => {
+            const { data } = await addGoalComment(goal.id, { actor_id: meId, ...payload })
+            onChanged(data)
+          }} />
+      )}
+    </div>
+  )
+}
+
+// ── сотрудник: список своих целей + создание ─────────────────────────────────
+export function GoalsMember({ user, teamId }) {
+  const meId = user.id
+  const [goals, setGoals] = useState(null)
+  const [teamGoals, setTeamGoals] = useState([])
+  const [showForm, setShowForm] = useState(false)
+
   const load = useCallback(async () => {
     try { const { data } = await getGoals(meId, meId); setGoals(data || []) }
     catch { setGoals([]) }
   }, [meId])
   useEffect(() => { load() }, [load])
+
+  useEffect(() => {
+    if (!teamId) { setTeamGoals([]); return }
+    getTeamSharedGoals(teamId, meId).then(r => setTeamGoals(r.data || [])).catch(() => setTeamGoals([]))
+  }, [teamId, meId])
 
   const applyChange = (updated, removedId) => {
     setGoals(prev => {
@@ -289,23 +374,7 @@ export function GoalsMember({ user }) {
       return (prev || []).map(g => g.id === updated.id ? updated : g)
     })
   }
-
-  const submit = async () => {
-    if (!title.trim()) { toast('Укажите название цели', 'error'); return }
-    setCreating(true)
-    try {
-      const opt = qOpts.find(o => o.value === period) || qOpts[0]
-      const { data } = await createGoal({
-        user_id: meId, title: title.trim(), description: desc.trim() || null,
-        period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end,
-      })
-      setGoals(prev => [data, ...(prev || [])])
-      setTitle(''); setDesc(''); setPeriod(qOpts[0].value); setShowForm(false)
-      toast('Цель создана', 'success')
-    } catch (e) {
-      toast(e?.response?.data?.detail || 'Не удалось создать цель', 'error')
-    } finally { setCreating(false) }
-  }
+  const applyTeamChange = (updated) => setTeamGoals(prev => prev.map(g => g.id === updated.id ? updated : g))
 
   if (goals === null) return <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>
 
@@ -314,6 +383,14 @@ export function GoalsMember({ user }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Командные цели — ставит тимлид, сотрудник видит и участвует в обсуждении */}
+      {teamGoals.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Цели команды</h3>
+          {teamGoals.map(g => <TeamGoalCard key={g.id} goal={g} meId={meId} onChanged={applyTeamChange} />)}
+        </div>
+      )}
+
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
           Ставьте личные цели на квартал и регулярно отмечайте прогресс. Тимлид видит ваши цели и может оставить обратную связь.
@@ -322,36 +399,24 @@ export function GoalsMember({ user }) {
       </div>
 
       {showForm && (
-        <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Название цели</label>
-            <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="Например: Запустить онбординг новых сотрудников" style={{ marginTop: 4 }} />
-          </div>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Ожидаемый результат</label>
-            <textarea className="input" value={desc} onChange={e => setDesc(e.target.value)} rows={3}
-              placeholder="Как поймём, что цель достигнута — измеримый результат" style={{ marginTop: 4, resize: 'vertical' }} />
-          </div>
-          <div>
-            <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Период</label>
-            <select className="input" value={period} onChange={e => setPeriod(e.target.value)} style={{ marginTop: 4 }}>
-              {qOpts.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          </div>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => { setShowForm(false); setTitle(''); setDesc('') }}>Отмена</button>
-            <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? 'Создаём…' : 'Создать цель'}</button>
-          </div>
-        </div>
+        <GoalForm
+          onCancel={() => setShowForm(false)}
+          onCreate={async (payload) => {
+            const { data } = await createGoal({ user_id: meId, ...payload })
+            setGoals(prev => [data, ...(prev || [])])
+            setShowForm(false)
+            toast('Цель создана', 'success')
+          }}
+        />
       )}
 
-      {goals.length === 0 && !showForm && (
+      {goals.length === 0 && !showForm && teamGoals.length === 0 && (
         <EmptyState title="Целей пока нет" desc="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
       )}
 
       {active.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Текущие цели</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Мои цели</h3>
           {active.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} onChanged={applyChange} />)}
         </div>
       )}
@@ -424,6 +489,8 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
   const [teamId, setTeamId] = useState(selectedTeamId || myTeams[0]?.id || null)
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(false)
+  const [teamGoals, setTeamGoals] = useState([])
+  const [showTeamForm, setShowTeamForm] = useState(false)
 
   useEffect(() => { if (selectedTeamId) setTeamId(selectedTeamId) }, [selectedTeamId])
   useEffect(() => { if (!teamId && myTeams[0]?.id) setTeamId(myTeams[0].id) }, [myTeams, teamId])
@@ -436,6 +503,22 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
     finally { setLoading(false) }
   }, [teamId, meId])
   useEffect(() => { load() }, [load])
+
+  const loadTeamGoals = useCallback(async () => {
+    if (!teamId) { setTeamGoals([]); return }
+    try { const { data } = await getTeamSharedGoals(teamId, meId); setTeamGoals(data || []) }
+    catch { setTeamGoals([]) }
+  }, [teamId, meId])
+  useEffect(() => { loadTeamGoals() }, [loadTeamGoals])
+
+  // Командную цель ведёт тимлид (он владелец) — те же карточки с редактированием.
+  const applyTeamChange = (updated, removedId) => {
+    setTeamGoals(prev => {
+      if (removedId) return prev.filter(g => g.id !== removedId)
+      if (!updated) return prev
+      return prev.map(g => g.id === updated.id ? updated : g)
+    })
+  }
 
   // Локально подменяем цель после комментария/оценки без полной перезагрузки.
   const patchGoal = (updated) => {
@@ -456,7 +539,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-            Цели команды на одном экране. Прогресс сотрудников меняете не вы — вы оставляете комментарии и итоговую оценку.
+            Командные цели ставите и ведёте вы, их видит вся команда. Личные цели сотрудников вы не редактируете — оставляете комментарии и итоговую оценку.
           </p>
           {totalGoals > 0 && (
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
@@ -471,10 +554,42 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
         )}
       </div>
 
+      {/* Командные цели: ставит и ведёт тимлид, видит вся команда */}
+      {teamId && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>Цели команды</h3>
+            {!showTeamForm && <button className="btn btn-accent btn-sm" onClick={() => setShowTeamForm(true)}>+ Командная цель</button>}
+          </div>
+          {showTeamForm && (
+            <GoalForm
+              submitLabel="Создать командную цель"
+              placeholder="Например: Сократить время ответа клиенту до 2 часов"
+              onCancel={() => setShowTeamForm(false)}
+              onCreate={async (payload) => {
+                const { data } = await createGoal({ user_id: meId, scope: 'team', team_id: teamId, ...payload })
+                setTeamGoals(prev => [data, ...prev])
+                setShowTeamForm(false)
+                toast('Командная цель создана', 'success')
+              }}
+            />
+          )}
+          {teamGoals.length === 0 && !showTeamForm && (
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+              Командных целей пока нет. Поставьте цель на команду — её увидят все участники.
+            </p>
+          )}
+          {teamGoals.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} onChanged={applyTeamChange} />)}
+        </div>
+      )}
+
+      <div style={{ height: 1, background: 'var(--gray-100)', margin: '4px 0' }} />
+      <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>Личные цели сотрудников</h3>
+
       {loading && <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>}
 
       {!loading && members.length === 0 && (
-        <EmptyState title="В команде пока нет целей" desc="Как только сотрудники создадут цели, они появятся здесь со статусами и прогрессом." />
+        <EmptyState title="В команде пока нет целей" desc="Как только сотрудники создадут личные цели, они появятся здесь со статусами и прогрессом." />
       )}
 
       {!loading && members.map(m => (

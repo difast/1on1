@@ -16,7 +16,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import {
   getGoals, createGoal, updateGoal, deleteGoal, addGoalComment,
-  getTeams, getTeamGoals, getGoal,
+  getTeams, getTeamGoals, getTeamSharedGoals, getGoal, getMemberTeam,
   type Goal, type GoalComment, type TeamGoals,
 } from '../lib/api';
 
@@ -285,41 +285,112 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
   );
 }
 
-// ── экран сотрудника ────────────────────────────────────────────────────────
-function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
+// ── переиспользуемая форма создания цели (личная / командная) ────────────────
+function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCancel }: {
+  colors: AppColors; submitLabel: string; titlePlaceholder: string;
+  onCreate: (p: { title: string; description: string | null; period_label: string; period_start: string; period_end: string }) => Promise<void>;
+  onCancel: () => void;
+}) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const [goals, setGoals] = useState<Goal[] | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
   const qOpts = useMemo(() => quarterOptions(), []);
   const [period, setPeriod] = useState(qOpts[0].value);
   const [creating, setCreating] = useState(false);
 
-  const load = useCallback(async () => {
-    try { const data = await getGoals(meId, meId); setGoals(data || []); }
-    catch { setGoals([]); }
-  }, [meId]);
-  useEffect(() => { load(); }, [load]);
-
-  const onChanged = (g: Goal) => setGoals(prev => (prev || []).map(x => x.id === g.id ? g : x));
-  const onRemoved = (id: number) => setGoals(prev => (prev || []).filter(x => x.id !== id));
-
   const submit = async () => {
     if (!title.trim()) { Alert.alert('Укажите название цели'); return; }
     setCreating(true);
     try {
       const opt = qOpts.find(o => o.value === period) || qOpts[0];
-      const g = await createGoal({
-        user_id: meId, title: title.trim(), description: desc.trim() || null,
-        period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end,
-      });
-      setGoals(prev => [g, ...(prev || [])]);
-      setTitle(''); setDesc(''); setPeriod(qOpts[0].value); setShowForm(false);
+      await onCreate({ title: title.trim(), description: desc.trim() || null, period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end });
+      setTitle(''); setDesc(''); setPeriod(qOpts[0].value);
     } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось создать цель'); }
     finally { setCreating(false); }
   };
+
+  return (
+    <View style={styles.formCard}>
+      <TextInput style={styles.formInput} value={title} onChangeText={setTitle}
+        placeholder={titlePlaceholder} placeholderTextColor={colors.textMuted} />
+      <TextInput style={[styles.formInput, { minHeight: 70, textAlignVertical: 'top' }]} value={desc} onChangeText={setDesc}
+        placeholder="Ожидаемый результат — как поймём, что цель достигнута" placeholderTextColor={colors.textMuted} multiline />
+      <Text style={styles.formLabel}>Период</Text>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
+        {qOpts.map(o => (
+          <TouchableOpacity key={o.value} onPress={() => setPeriod(o.value)}
+            style={[styles.periodChip, period === o.value && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
+            <Text style={[styles.periodChipText, period === o.value && { color: colors.accent }]}>{o.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
+        <TouchableOpacity style={styles.formBtnSecondary} onPress={onCancel}>
+          <Text style={styles.formBtnSecondaryText}>Отмена</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={[styles.formBtnPrimary, creating && { opacity: 0.6 }]} onPress={submit} disabled={creating}>
+          <Text style={styles.formBtnPrimaryText}>{creating ? 'Создаём…' : submitLabel}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+// ── командная цель глазами сотрудника (только чтение + обсуждение) ────────────
+function TeamGoalCardRO({ goal, meId, colors, onChanged }: {
+  goal: Goal; meId: number; colors: AppColors; onChanged: (g: Goal) => void;
+}) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [expanded, setExpanded] = useState(false);
+  const sc = statusColors(colors)[goal.status] || statusColors(colors).not_started;
+  return (
+    <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: sc.fg }]}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.goalTitle}>{goal.title}</Text>
+          <Text style={styles.goalPeriod}>{periodText(goal)} · ведёт тимлид</Text>
+        </View>
+        <StatusBadge status={goal.status} colors={colors} />
+      </View>
+      {!!goal.description && <Text style={styles.goalDesc}>{goal.description}</Text>}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 }}>
+        <Bar value={goal.progress} colors={colors} />
+        <Text style={styles.pct}>{goal.progress}%</Text>
+      </View>
+      <TouchableOpacity onPress={() => setExpanded(v => !v)} style={{ marginTop: 12 }}>
+        <Text style={styles.link}>Обсуждение{goal.comments?.length ? ` (${goal.comments.length})` : ''}</Text>
+      </TouchableOpacity>
+      {expanded && (
+        <Thread comments={goal.comments || []} meId={meId} colors={colors} canFeedback={false}
+          onSend={async (p) => { const g = await addGoalComment(goal.id, { actor_id: meId, ...p }); onChanged(g); }} />
+      )}
+    </View>
+  );
+}
+
+// ── экран сотрудника ────────────────────────────────────────────────────────
+function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [goals, setGoals] = useState<Goal[] | null>(null);
+  const [teamGoals, setTeamGoals] = useState<Goal[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+
+  const load = useCallback(async () => {
+    try { const data = await getGoals(meId, meId); setGoals(data || []); }
+    catch { setGoals([]); }
+    // Командные цели своей команды (только чтение + обсуждение).
+    try {
+      const team = await getMemberTeam(meId);
+      if (team?.id) { const t = await getTeamSharedGoals(team.id, meId); setTeamGoals(t || []); }
+      else setTeamGoals([]);
+    } catch { setTeamGoals([]); }
+  }, [meId]);
+  useEffect(() => { load(); }, [load]);
+
+  const onChanged = (g: Goal) => setGoals(prev => (prev || []).map(x => x.id === g.id ? g : x));
+  const onRemoved = (id: number) => setGoals(prev => (prev || []).filter(x => x.id !== id));
+  const onTeamChanged = (g: Goal) => setTeamGoals(prev => prev.map(x => x.id === g.id ? g : x));
 
   if (goals === null) return <Spinner />;
   const active = goals.filter(g => OPEN_STATUSES.includes(g.status));
@@ -330,6 +401,13 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.accent} />}
     >
+      {teamGoals.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Цели команды</Text>
+          {teamGoals.map(g => <TeamGoalCardRO key={g.id} goal={g} meId={meId} colors={colors} onChanged={onTeamChanged} />)}
+        </>
+      )}
+
       <Text style={styles.intro}>Ставьте личные цели на квартал и регулярно отмечайте прогресс. Тимлид видит ваши цели и может оставить обратную связь.</Text>
 
       {!showForm && (
@@ -339,36 +417,20 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       )}
 
       {showForm && (
-        <View style={styles.formCard}>
-          <TextInput style={styles.formInput} value={title} onChangeText={setTitle}
-            placeholder="Название цели" placeholderTextColor={colors.textMuted} />
-          <TextInput style={[styles.formInput, { minHeight: 70, textAlignVertical: 'top' }]} value={desc} onChangeText={setDesc}
-            placeholder="Ожидаемый результат — как поймём, что цель достигнута" placeholderTextColor={colors.textMuted} multiline />
-          <Text style={styles.formLabel}>Период</Text>
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            {qOpts.map(o => (
-              <TouchableOpacity key={o.value} onPress={() => setPeriod(o.value)}
-                style={[styles.periodChip, period === o.value && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
-                <Text style={[styles.periodChipText, period === o.value && { color: colors.accent }]}>{o.label}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-          <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
-            <TouchableOpacity style={styles.formBtnSecondary} onPress={() => { setShowForm(false); setTitle(''); setDesc(''); }}>
-              <Text style={styles.formBtnSecondaryText}>Отмена</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={[styles.formBtnPrimary, creating && { opacity: 0.6 }]} onPress={submit} disabled={creating}>
-              <Text style={styles.formBtnPrimaryText}>{creating ? 'Создаём…' : 'Создать'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <GoalForm colors={colors} submitLabel="Создать" titlePlaceholder="Название цели"
+          onCancel={() => setShowForm(false)}
+          onCreate={async (p) => {
+            const g = await createGoal({ user_id: meId, ...p });
+            setGoals(prev => [g, ...(prev || [])]);
+            setShowForm(false);
+          }} />
       )}
 
-      {goals.length === 0 && !showForm && (
+      {goals.length === 0 && !showForm && teamGoals.length === 0 && (
         <EmptyState icon="flag-outline" title="Целей пока нет" description="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
       )}
 
-      {active.length > 0 && <Text style={styles.sectionTitle}>Текущие цели</Text>}
+      {active.length > 0 && <Text style={styles.sectionTitle}>Мои цели</Text>}
       {active.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onChanged} onRemoved={onRemoved} />)}
 
       {history.length > 0 && <Text style={[styles.sectionTitle, { marginTop: 8 }]}>История</Text>}
@@ -433,6 +495,8 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
   const [data, setData] = useState<TeamGoals | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [teamGoals, setTeamGoals] = useState<Goal[]>([]);
+  const [showTeamForm, setShowTeamForm] = useState(false);
 
   useEffect(() => {
     getTeams().then((all: any[]) => {
@@ -443,11 +507,13 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
   }, [meId]);
 
   const load = useCallback(async () => {
-    if (!teamId) { setData(null); setLoading(false); return; }
+    if (!teamId) { setData(null); setTeamGoals([]); setLoading(false); return; }
     setLoading(true);
     try { const d = await getTeamGoals(teamId, meId); setData(d); }
     catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось загрузить цели'); setData(null); }
     finally { setLoading(false); }
+    try { const tg = await getTeamSharedGoals(teamId, meId); setTeamGoals(tg || []); }
+    catch { setTeamGoals([]); }
   }, [teamId, meId]);
   useEffect(() => { load(); }, [load]);
 
@@ -455,6 +521,10 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
     ...prev,
     members: prev.members.map(m => ({ ...m, goals: m.goals.map(x => x.id === g.id ? { ...x, ...g } : x) })),
   }));
+
+  // Командную цель ведёт тимлид (он владелец) — те же карточки с редактированием.
+  const onTeamChanged = (g: Goal) => setTeamGoals(prev => prev.map(x => x.id === g.id ? g : x));
+  const onTeamRemoved = (id: number) => setTeamGoals(prev => prev.filter(x => x.id !== id));
 
   const members = data?.members || [];
   const totalGoals = members.reduce((n, m) => n + m.goals.length, 0);
@@ -465,7 +535,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.accent} />}
     >
-      <Text style={styles.intro}>Цели команды на одном экране. Прогресс меняют сотрудники — вы оставляете комментарии и итоговую оценку.</Text>
+      <Text style={styles.intro}>Командные цели ставите и ведёте вы, их видит вся команда. Личные цели сотрудников вы не редактируете — оставляете комментарии и итоговую оценку.</Text>
 
       {teams.length > 1 && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 4 }}>
@@ -478,6 +548,33 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
         </View>
       )}
 
+      {/* Командные цели — их ставит и ведёт тимлид */}
+      {teamId && (
+        <>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <Text style={styles.sectionTitle}>Цели команды</Text>
+            {!showTeamForm && (
+              <TouchableOpacity onPress={() => setShowTeamForm(true)}><Text style={styles.link}>+ Командная цель</Text></TouchableOpacity>
+            )}
+          </View>
+          {showTeamForm && (
+            <GoalForm colors={colors} submitLabel="Создать командную цель" titlePlaceholder="Например: Сократить время ответа клиенту до 2 часов"
+              onCancel={() => setShowTeamForm(false)}
+              onCreate={async (p) => {
+                const g = await createGoal({ user_id: meId, scope: 'team', team_id: teamId, ...p });
+                setTeamGoals(prev => [g, ...prev]);
+                setShowTeamForm(false);
+              }} />
+          )}
+          {teamGoals.length === 0 && !showTeamForm && (
+            <Text style={styles.muted}>Командных целей пока нет. Поставьте цель на команду — её увидят все участники.</Text>
+          )}
+          {teamGoals.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onTeamChanged} onRemoved={onTeamRemoved} />)}
+        </>
+      )}
+
+      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Личные цели сотрудников</Text>
+
       {totalGoals > 0 && (
         <Text style={styles.summary}>Всего целей: {totalGoals}{attention > 0 ? `  ·  требуют внимания: ${attention}` : ''}</Text>
       )}
@@ -485,7 +582,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       {loading && <Spinner />}
 
       {!loading && members.length === 0 && (
-        <EmptyState icon="flag-outline" title="В команде пока нет целей" description="Как только сотрудники создадут цели, они появятся здесь." />
+        <EmptyState icon="flag-outline" title="В команде пока нет личных целей" description="Как только сотрудники создадут цели, они появятся здесь." />
       )}
 
       {!loading && members.map(m => (

@@ -980,7 +980,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         {/* Tab: Analytics */}
-        {activeTab === 'goals' && <GoalsMember user={user} />}
+        {activeTab === 'goals' && <GoalsMember user={user} teamId={team?.id} />}
 
         {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
 

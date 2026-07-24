@@ -4,10 +4,11 @@ from datetime import datetime
 
 
 class GoalCreate(BaseModel):
-    user_id: int                 # владелец = автор запроса (сотрудник)
+    user_id: int                 # владелец = автор запроса (сотрудник или тимлид)
     title: str
     description: Optional[str] = None
     team_id: Optional[int] = None
+    scope: str = "personal"      # personal | team (team ставит только тимлид)
     period_label: Optional[str] = None
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None
@@ -49,6 +50,7 @@ class GoalOut(BaseModel):
     user_id: int
     user_name: Optional[str] = None
     team_id: Optional[int] = None
+    scope: str = "personal"
     title: str
     description: Optional[str] = None
     period_label: Optional[str] = None

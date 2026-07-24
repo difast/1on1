@@ -4,7 +4,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database import get_db
-from app.models.goal import Goal, GoalComment, GOAL_STATUSES, GOAL_OPEN_STATUSES
+from app.models.goal import Goal, GoalComment, GOAL_STATUSES, GOAL_OPEN_STATUSES, GOAL_SCOPES
 from app.models.team import Team, TeamMember
 from app.models.user import User
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalCommentCreate, GoalOut
@@ -38,6 +38,36 @@ def _leads_of_user(db: Session, owner_id: int) -> set:
 
 def _is_lead_of(db: Session, actor_id: int, owner_id: int) -> bool:
     return actor_id in _leads_of_user(db, owner_id)
+
+
+def _team_member_ids(db: Session, team_id: int) -> list:
+    """Участники команды (без тимлида) — для рассылки уведомлений."""
+    team = db.query(Team).filter(Team.id == team_id).first()
+    lead_id = team.team_lead_id if team else None
+    return [tm.user_id for tm in db.query(TeamMember).filter(TeamMember.team_id == team_id).all()
+            if tm.user_id != lead_id]
+
+
+def _is_team_lead(db: Session, actor_id: int, team_id: int) -> bool:
+    team = db.query(Team).filter(Team.id == team_id).first()
+    return bool(team and team.team_lead_id == actor_id)
+
+
+def _can_view_team(db: Session, actor_id: int, team_id: int) -> bool:
+    """Командную цель видит тимлид команды и любой её участник."""
+    if _is_team_lead(db, actor_id, team_id):
+        return True
+    return db.query(TeamMember).filter(
+        TeamMember.team_id == team_id, TeamMember.user_id == actor_id
+    ).first() is not None
+
+
+def _can_view_goal(db: Session, actor_id: int, goal: Goal) -> bool:
+    """Видимость цели: личную видит владелец и тимлид его команды; командную —
+    тимлид команды и любой её участник."""
+    if getattr(goal, "scope", "personal") == "team":
+        return bool(goal.team_id and _can_view_team(db, actor_id, goal.team_id))
+    return actor_id == goal.user_id or _is_lead_of(db, actor_id, goal.user_id)
 
 
 def _enforce_actor(current, actor_id: int):
@@ -79,6 +109,7 @@ def _serialize(db: Session, goal: Goal, with_comments: bool = True) -> dict:
         "user_id": goal.user_id,
         "user_name": _name(db, goal.user_id),
         "team_id": goal.team_id,
+        "scope": getattr(goal, "scope", "personal") or "personal",
         "title": goal.title,
         "description": goal.description,
         "period_label": goal.period_label,
@@ -135,18 +166,32 @@ def _apply_status_progress(goal: Goal, status: Optional[str], progress: Optional
 
 @router.post("/", response_model=GoalOut)
 def create_goal(data: GoalCreate, db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """Создать цель. Владелец = автор (сотрудник создаёт СВОИ цели)."""
+    """Создать цель.
+    personal — владелец = автор (сотрудник создаёт СВОИ цели);
+    team     — командную цель ставит ТОЛЬКО тимлид своей команды (владелец = тимлид)."""
     _enforce_actor(current, data.user_id)
     if not (data.title or "").strip():
         raise HTTPException(status_code=400, detail="Укажите название цели")
-    # team_id по умолчанию — команда сотрудника (для видимости тимлиду).
+
+    scope = data.scope if data.scope in GOAL_SCOPES else "personal"
     team_id = data.team_id
-    if team_id is None:
-        tm = db.query(TeamMember).filter(TeamMember.user_id == data.user_id).first()
-        team_id = tm.team_id if tm else None
+
+    if scope == "team":
+        # Командную цель может завести только тимлид указанной команды.
+        if not team_id:
+            raise HTTPException(status_code=400, detail="Для командной цели укажите команду")
+        if not _is_team_lead(db, data.user_id, team_id):
+            raise HTTPException(status_code=403, detail="Командную цель ставит тимлид команды")
+    else:
+        # team_id по умолчанию — команда сотрудника (для видимости тимлиду).
+        if team_id is None:
+            tm = db.query(TeamMember).filter(TeamMember.user_id == data.user_id).first()
+            team_id = tm.team_id if tm else None
+
     goal = Goal(
         user_id=data.user_id,
         team_id=team_id,
+        scope=scope,
         title=data.title.strip(),
         description=(data.description or None),
         period_label=data.period_label,
@@ -170,15 +215,18 @@ def list_goals(user_id: int = Query(...), actor_id: int = Query(...),
     _enforce_actor(current, actor_id)
     if actor_id != user_id and not _is_lead_of(db, actor_id, user_id):
         raise HTTPException(status_code=403, detail="Нет доступа к целям этого пользователя")
-    rows = db.query(Goal).filter(Goal.user_id == user_id).order_by(Goal.created_at.desc()).all()
+    # Только личные цели: командные приходят через /team/{team_id}/goals.
+    rows = (db.query(Goal)
+            .filter(Goal.user_id == user_id, Goal.scope == "personal")
+            .order_by(Goal.created_at.desc()).all())
     return [_serialize(db, g) for g in rows]
 
 
 @router.get("/team/{team_id}")
 def team_goals(team_id: int, actor_id: int = Query(...),
                db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """Сводный вид для тимлида: все сотрудники команды с их целями/статусами/
-    прогрессом на одном экране. Доступ — только тимлиду команды."""
+    """Сводный вид для тимлида: все сотрудники команды с их ЛИЧНЫМИ целями/
+    статусами/прогрессом на одном экране. Доступ — только тимлиду команды."""
     _enforce_actor(current, actor_id)
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
@@ -191,7 +239,9 @@ def team_goals(team_id: int, actor_id: int = Query(...),
     members = []
     for uid in member_ids:
         u = db.query(User).filter(User.id == uid).first()
-        goals = db.query(Goal).filter(Goal.user_id == uid).order_by(Goal.created_at.desc()).all()
+        goals = (db.query(Goal)
+                 .filter(Goal.user_id == uid, Goal.scope == "personal")
+                 .order_by(Goal.created_at.desc()).all())
         members.append({
             "user_id": uid,
             "user_name": u.name if u else f"#{uid}",
@@ -201,6 +251,23 @@ def team_goals(team_id: int, actor_id: int = Query(...),
     return {"team_id": team_id, "members": members}
 
 
+@router.get("/team/{team_id}/goals", response_model=List[GoalOut])
+def team_shared_goals(team_id: int, actor_id: int = Query(...),
+                      db: Session = Depends(get_db), current=Depends(get_current_user)):
+    """Командные цели (scope='team'): их ставит тимлид, видит вся команда.
+    Доступ — тимлиду команды или любому её участнику."""
+    _enforce_actor(current, actor_id)
+    team = db.query(Team).filter(Team.id == team_id).first()
+    if not team:
+        raise HTTPException(status_code=404, detail="Команда не найдена")
+    if not _can_view_team(db, actor_id, team_id):
+        raise HTTPException(status_code=403, detail="Нет доступа к целям этой команды")
+    rows = (db.query(Goal)
+            .filter(Goal.team_id == team_id, Goal.scope == "team")
+            .order_by(Goal.created_at.desc()).all())
+    return [_serialize(db, g) for g in rows]
+
+
 @router.get("/{goal_id}", response_model=GoalOut)
 def get_goal(goal_id: int, actor_id: int = Query(...),
              db: Session = Depends(get_db), current=Depends(get_current_user)):
@@ -208,7 +275,7 @@ def get_goal(goal_id: int, actor_id: int = Query(...),
     goal = db.query(Goal).filter(Goal.id == goal_id).first()
     if not goal:
         raise HTTPException(status_code=404, detail="Цель не найдена")
-    if actor_id != goal.user_id and not _is_lead_of(db, actor_id, goal.user_id):
+    if not _can_view_goal(db, actor_id, goal):
         raise HTTPException(status_code=403, detail="Нет доступа к этой цели")
     return _serialize(db, goal)
 
@@ -259,7 +326,10 @@ def delete_goal(goal_id: int, actor_id: int = Query(...),
 
 @router.post("/{goal_id}/comments", response_model=GoalOut)
 def add_comment(goal_id: int, data: GoalCommentCreate, db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """Комментарий (обе стороны) или итоговая обратная связь (только тимлид)."""
+    """Комментарий к цели.
+    personal — комментируют обе стороны; итоговую обратную связь (feedback) даёт
+               только тимлид;
+    team     — обсуждают тимлид и участники команды (только обычные комментарии)."""
     _enforce_actor(current, data.actor_id)
     goal = db.query(Goal).filter(Goal.id == goal_id).first()
     if not goal:
@@ -267,19 +337,25 @@ def add_comment(goal_id: int, data: GoalCommentCreate, db: Session = Depends(get
     if not (data.body or "").strip():
         raise HTTPException(status_code=400, detail="Пустой комментарий")
 
+    is_team = getattr(goal, "scope", "personal") == "team"
     is_owner = data.actor_id == goal.user_id
-    is_lead = _is_lead_of(db, data.actor_id, goal.user_id)
-    if not (is_owner or is_lead):
-        raise HTTPException(status_code=403, detail="Комментировать может владелец цели или тимлид команды")
-
-    kind = "feedback" if data.kind == "feedback" else "comment"
-    # Итоговая обратная связь — прерогатива тимлида (оценка сотрудника).
-    if kind == "feedback" and not is_lead:
-        raise HTTPException(status_code=403, detail="Обратную связь по цели оставляет тимлид")
-
     rating = None
-    if kind == "feedback" and data.rating is not None:
-        rating = max(1, min(5, int(data.rating)))
+
+    if is_team:
+        # Командную цель обсуждает вся команда; feedback тут неприменим.
+        if not (goal.team_id and _can_view_team(db, data.actor_id, goal.team_id)):
+            raise HTTPException(status_code=403, detail="Комментировать может тимлид или участник команды")
+        kind = "comment"
+    else:
+        is_lead = _is_lead_of(db, data.actor_id, goal.user_id)
+        if not (is_owner or is_lead):
+            raise HTTPException(status_code=403, detail="Комментировать может владелец цели или тимлид команды")
+        kind = "feedback" if data.kind == "feedback" else "comment"
+        # Итоговая обратная связь — прерогатива тимлида (оценка сотрудника).
+        if kind == "feedback" and not is_lead:
+            raise HTTPException(status_code=403, detail="Обратную связь по цели оставляет тимлид")
+        if kind == "feedback" and data.rating is not None:
+            rating = max(1, min(5, int(data.rating)))
 
     db.add(GoalComment(goal_id=goal.id, author_id=data.actor_id, body=data.body.strip(), kind=kind, rating=rating))
     db.commit()
@@ -287,19 +363,32 @@ def add_comment(goal_id: int, data: GoalCommentCreate, db: Session = Depends(get
 
     # Уведомление другой стороне (существующая система: веб + push + Telegram).
     actor_name = _name(db, data.actor_id) or "Участник"
-    if is_owner:
+    snippet = data.body.strip()[:80]
+    if is_team:
+        # Командная цель: владелец (тимлид) → всем участникам; участник → тимлиду.
+        recipients = _team_member_ids(db, goal.team_id) if is_owner else [goal.user_id]
+        title = "Комментарий к командной цели"
+        for rid in recipients:
+            if rid == data.actor_id:
+                continue
+            NotificationService(db).create_notification(
+                user_id=rid, type="goal_comment",
+                title=title, body=f"{actor_name}: {snippet}",
+                data={"goal_id": goal.id, "team_id": goal.team_id},
+            )
+    elif is_owner:
         # сотрудник ответил — уведомляем тимлидов его команды
         for lead_id in _leads_of_user(db, goal.user_id):
             NotificationService(db).create_notification(
                 user_id=lead_id, type="goal_comment",
-                title="Комментарий к цели", body=f"{actor_name}: {data.body.strip()[:80]}",
+                title="Комментарий к цели", body=f"{actor_name}: {snippet}",
                 data={"goal_id": goal.id},
             )
     else:
         title = "Обратная связь по цели" if kind == "feedback" else "Комментарий к цели"
         NotificationService(db).create_notification(
             user_id=goal.user_id, type=("goal_feedback" if kind == "feedback" else "goal_comment"),
-            title=title, body=f"{actor_name}: {data.body.strip()[:80]}",
+            title=title, body=f"{actor_name}: {snippet}",
             data={"goal_id": goal.id},
         )
     return _serialize(db, goal)
