@@ -1,7 +1,7 @@
 import { getToken } from './authToken';
 
 const BASE =
-  (process.env.EXPO_PUBLIC_API_URL || 'https://difast-1on1-1320.twc1.net') + '/api';
+  (process.env.EXPO_PUBLIC_API_URL || 'https://api.oneononehq.com') + '/api';
 
 async function req<T>(path: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const token = await getToken();
