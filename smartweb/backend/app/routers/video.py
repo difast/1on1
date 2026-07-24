@@ -24,6 +24,13 @@ class StartCallBody(BaseModel):
 @router.post("/start-call")
 def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db)):
     from datetime import datetime
+    from app.models.team import Team
+    # Права (быстрое действие «Инициировать звонок» из карточки): спонтанный
+    # созвон инициирует только тимлид команды — консистентно с текущей моделью
+    # (у участников нет точки входа в спонтанный созвон).
+    team = db.query(Team).filter(Team.id == body.team_id).first()
+    if team and team.team_lead_id and body.lead_id != team.team_lead_id:
+        raise HTTPException(status_code=403, detail="Спонтанный созвон может инициировать только тимлид команды")
     room_name = f"1on1-{body.team_id}-{uuid.uuid4().hex[:8]}"
     room_url = f"https://meet.jit.si/{room_name}"
 

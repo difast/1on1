@@ -16,17 +16,17 @@ const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit
  * предлагает другое время (цикл переговоров). Встреча создаётся только после
  * принятия — на бэкенде.
  */
-export default function MeetingProposals({ currentUser, contacts = [], teamId, onClose, onChanged }) {
+export default function MeetingProposals({ currentUser, contacts = [], teamId, onClose, onChanged, presetToUserId = null }) {
   useEscapeKey(onClose)
   const [proposals, setProposals] = useState(null)
-  const [tab, setTab] = useState('inbox')   // inbox | outbox | new
+  const [tab, setTab] = useState(presetToUserId ? 'new' : 'inbox')   // inbox | outbox | new
   const [busyId, setBusyId] = useState(null)
   const [counterFor, setCounterFor] = useState(null)   // proposal id being countered
   const [counterTime, setCounterTime] = useState('')
   const [expanded, setExpanded] = useState(null)
 
   // New proposal form
-  const [toUser, setToUser] = useState('')
+  const [toUser, setToUser] = useState(presetToUserId ? String(presetToUserId) : '')
   const [topic, setTopic] = useState('')
   const [when, setWhen] = useState('')
   const [creating, setCreating] = useState(false)

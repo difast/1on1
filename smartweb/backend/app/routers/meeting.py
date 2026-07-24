@@ -73,6 +73,12 @@ def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)
 @router.post("/", response_model=MeetingOut)
 def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
     from app.services import entitlements
+    # Права (быстрое действие «Создать встречу» из карточки): прямое назначение
+    # встречи доступно только тимлиду команды. Участник вместо этого пользуется
+    # предложением встречи (с согласием) — /api/proposals.
+    _team = db.query(Team).filter(Team.id == data.team_id).first()
+    if _team and _team.team_lead_id and data.team_lead_id != _team.team_lead_id:
+        raise HTTPException(status_code=403, detail="Прямое создание встречи доступно только тимлиду команды")
     _lead = db.query(User).filter(User.id == data.team_lead_id).first()
     err = entitlements.meeting_limit_error(db, _lead)
     if err:

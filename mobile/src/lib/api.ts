@@ -214,6 +214,18 @@ export const declineProposal = (id: number, userId: number) =>
 export const counterProposal = (id: number, userId: number, proposed_time: string, topic?: string) =>
   req<any>(`/proposals/${id}/counter`, { method: 'POST', body: JSON.stringify({ user_id: userId, proposed_time, topic }) });
 
+// Предложения задач (отдельная сущность от предложения встречи и от задачи).
+export const createTaskProposal = (data: { from_user_id: number; to_user_id: number; title: string; description?: string | null; due_date?: string | null; team_id?: number | null }) =>
+  req<any>('/task-proposals/', { method: 'POST', body: JSON.stringify(data) });
+export const getTaskProposals = (userId: number) =>
+  req<any[]>(`/task-proposals/?user_id=${userId}`);
+export const acceptTaskProposal = (id: number, userId: number) =>
+  req<any>(`/task-proposals/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineTaskProposal = (id: number, userId: number) =>
+  req<any>(`/task-proposals/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const commentTaskProposal = (id: number, userId: number, note: string) =>
+  req<any>(`/task-proposals/${id}/comment`, { method: 'POST', body: JSON.stringify({ user_id: userId, note }) });
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data: any) =>
   req<any>('/interactions/', { method: 'POST', body: JSON.stringify(data) });

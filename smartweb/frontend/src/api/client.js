@@ -64,6 +64,13 @@ export const declineProposal = (id, userId) => api.post(`/proposals/${id}/declin
 export const counterProposal = (id, userId, proposedTime, topic) =>
   api.post(`/proposals/${id}/counter`, { user_id: userId, proposed_time: proposedTime, topic })
 
+// Предложения задач (отдельная сущность от предложения встречи и от задачи).
+export const createTaskProposal = (data) => api.post('/task-proposals/', data)
+export const getTaskProposals = (userId) => api.get('/task-proposals/', { params: { user_id: userId } })
+export const acceptTaskProposal = (id, userId) => api.post(`/task-proposals/${id}/accept`, { user_id: userId })
+export const declineTaskProposal = (id, userId) => api.post(`/task-proposals/${id}/decline`, { user_id: userId })
+export const commentTaskProposal = (id, userId, note) => api.post(`/task-proposals/${id}/comment`, { user_id: userId, note })
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data) => api.post('/interactions/', data)
 export const getInteractions = (userId) => api.get('/interactions/', { params: { user_id: userId } })

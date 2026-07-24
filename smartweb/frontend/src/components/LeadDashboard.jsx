@@ -23,6 +23,7 @@ import TaskAssignees from './TaskAssignees'
 import CollabTaskModal from './CollabTaskModal'
 import GroupMeetingModal from './GroupMeetingModal'
 import MeetingProposals from './MeetingProposals'
+import TaskProposals from './TaskProposals'
 import InteractionsPanel from './InteractionsPanel'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
@@ -176,6 +177,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const [collabModal, setCollabModal] = useState(false)  // модалка совместной задачи
   const [showGroupModal, setShowGroupModal] = useState(false)  // групповая встреча (Задача 4)
   const [showProposals, setShowProposals] = useState(false)    // предложения встреч (Задача 5)
+  const [showTaskProposals, setShowTaskProposals] = useState(false)  // предложения задач
+  const [taskProposalPreset, setTaskProposalPreset] = useState(null)
   const [showInteractions, setShowInteractions] = useState(false)  // взаимодействия (блок 39)
 
   // Analytics force-refresh key
@@ -853,6 +856,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       bannerTeamId={selectedTeamId}
       onNavigate={type => {
         if (type === 'new_task' || type === 'tasks') setActiveView('tasks')
+        else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
+        else if (type === 'meeting_proposal') setShowProposals(true)
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
       }}
 >
@@ -1334,6 +1339,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
                 <button onClick={() => setShowGroupModal(true)} className="btn btn-accent btn-sm">+ Групповая встреча</button>
                 <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">Предложения встреч</button>
+                <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">Предложения задач</button>
                 <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">Взаимодействия</button>
               </div>
               {/* Status filter chips */}
@@ -1761,7 +1767,25 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </>)}
       </div>
 
-      {userCardMember && <UserCard user={userCardMember} teamId={selectedTeamId} organization={teamDetail?.organization} onClose={() => setUserCardMember(null)} />}
+      {userCardMember && <UserCard user={userCardMember} teamId={selectedTeamId} organization={teamDetail?.organization}
+        onClose={() => setUserCardMember(null)}
+        /* Тимлид: все три быстрых действия. Встреча — прямое назначение;
+           звонок — спонтанный созвон; задача — предложение (с согласием). */
+        onCreateMeeting={(u) => { setScheduleMember({ user_id: u.id, user_name: u.name }); setShowSchedule(true) }}
+        onStartCall={(u) => handleStartSpontaneousCall([u.id], false)}
+        onProposeTask={(u) => { setTaskProposalPreset(u.id); setShowTaskProposals(true) }}
+      />}
+
+      {showTaskProposals && (
+        <TaskProposals
+          currentUser={user}
+          contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+          teamId={selectedTeamId}
+          presetToUserId={taskProposalPreset}
+          onClose={() => { setShowTaskProposals(false); setTaskProposalPreset(null) }}
+          onChanged={() => { if (selectedTeamId) loadTeamDetail(selectedTeamId) }}
+        />
+      )}
 
       {showStartCall && (
         <Modal

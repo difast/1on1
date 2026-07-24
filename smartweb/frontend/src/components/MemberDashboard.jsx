@@ -12,6 +12,7 @@ import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
 import MeetingProposals from './MeetingProposals'
+import TaskProposals from './TaskProposals'
 import InteractionsPanel from './InteractionsPanel'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
@@ -44,6 +45,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [meetings, setMeetings] = useState([])
   const [showRequestMeeting, setShowRequestMeeting] = useState(false)
   const [showProposals, setShowProposals] = useState(false)  // предложения встреч (Задача 5)
+  const [meetingPreset, setMeetingPreset] = useState(null)   // предвыбранный получатель для предложения встречи
+  const [showTaskProposals, setShowTaskProposals] = useState(false)  // предложения задач
+  const [taskProposalPreset, setTaskProposalPreset] = useState(null) // предвыбранный получатель
   const [showInteractions, setShowInteractions] = useState(false)  // взаимодействия (блок 39)
   const [meetingDate, setMeetingDate] = useState('')
   const [meetingTopic, setMeetingTopic] = useState('')
@@ -399,6 +403,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       bannerTeamId={team?.id}
       onNavigate={type => {
         if (type === 'new_task' || type === 'tasks') setActiveTab('tasks')
+        else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
+        else if (type === 'meeting_proposal') setShowProposals(true)
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
       }}
 >
@@ -629,6 +635,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               {/* Предложить встречу другому участнику (Задача 5) */}
               <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">
                 Предложения встреч
+              </button>
+              <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">
+                Предложения задач
               </button>
               <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">
                 Взаимодействия
@@ -1021,7 +1030,14 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <MoodPrompt teamId={teamId} user={user} />
-    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} organization={team?.organization} onClose={() => setViewUserCard(null)} />}
+    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} organization={team?.organization}
+      onClose={() => setViewUserCard(null)}
+      /* Участник: встречу с другим участником — через предложение (с согласием);
+         задачу — через предложение задачи. Спонтанный созвон участнику недоступен
+         (нет такой возможности в его роли), поэтому onStartCall не передаём. */
+      onCreateMeeting={(u) => { setMeetingPreset(u.id); setShowProposals(true) }}
+      onProposeTask={(u) => { setTaskProposalPreset(u.id); setShowTaskProposals(true) }}
+    />}
 
     {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}
     {showProposals && (
@@ -1029,8 +1045,20 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         currentUser={user}
         contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
         teamId={teamId}
-        onClose={() => setShowProposals(false)}
+        presetToUserId={meetingPreset}
+        onClose={() => { setShowProposals(false); setMeetingPreset(null) }}
         onChanged={() => loadMeetings()}
+      />
+    )}
+
+    {/* Предложения задач — участник может предложить задачу другому (с согласием) */}
+    {showTaskProposals && (
+      <TaskProposals
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        teamId={teamId}
+        presetToUserId={taskProposalPreset}
+        onClose={() => { setShowTaskProposals(false); setTaskProposalPreset(null) }}
       />
     )}
 

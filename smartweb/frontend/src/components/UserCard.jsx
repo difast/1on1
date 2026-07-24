@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getUserStats, getUserRecommendations, getUserCard } from '../api/client'
 
-export default function UserCard({ user, teamId, organization: orgProp = null, onClose }) {
+export default function UserCard({ user, teamId, organization: orgProp = null, onClose, onCreateMeeting, onStartCall, onProposeTask }) {
   const [stats, setStats] = useState(null)
   const [recs, setRecs] = useState([])  // рекомендации об участнике (39.7), видны команде
   const [card, setCard] = useState(null)  // полные данные карточки (контакты/соцсети/фото/организация)
@@ -79,6 +79,32 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
             </span>
           )}
         </div>
+
+        {/* Быстрые действия — доступность задаётся родителем по ролевой модели:
+            если действие не разрешено роли просматривающего, колбэк не передан и
+            кнопка не показывается. Проверка прав дублируется на бэкенде. */}
+        {uid && (onCreateMeeting || onStartCall || onProposeTask) && (
+          <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
+            {onCreateMeeting && (
+              <button onClick={() => { onCreateMeeting({ id: uid, name }); onClose?.() }}
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+                Создать встречу
+              </button>
+            )}
+            {onStartCall && (
+              <button onClick={() => { onStartCall({ id: uid, name }); onClose?.() }}
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+                Позвонить
+              </button>
+            )}
+            {onProposeTask && (
+              <button onClick={() => { onProposeTask({ id: uid, name }); onClose?.() }}
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer' }}>
+                Предложить задачу
+              </button>
+            )}
+          </div>
+        )}
 
         {/* Организация (одна на команду; видна коллегам по команде) */}
         {organization?.name && (

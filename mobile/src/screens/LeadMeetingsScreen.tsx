@@ -17,6 +17,7 @@ import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
+import { TaskProposalsModal } from '../components/TaskProposalsModal';
 import { InteractionsModal } from '../components/InteractionsModal';
 import { SpontaneousCallModal } from '../components/SpontaneousCallModal';
 
@@ -78,6 +79,12 @@ export default function LeadMeetingsScreen() {
   const openProposals = async () => {
     await ensureMembers();
     setShowProposals(true);
+  };
+
+  const [showTaskProposals, setShowTaskProposals] = useState(false);
+  const openTaskProposals = async () => {
+    await ensureMembers();
+    setShowTaskProposals(true);
   };
 
   const [showInteractions, setShowInteractions] = useState(false);
@@ -297,6 +304,9 @@ export default function LeadMeetingsScreen() {
           <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openProposals}>
             <Ionicons name="swap-horizontal" size={18} color={colors.accent} />
           </TouchableOpacity>
+          <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openTaskProposals}>
+            <Ionicons name="clipboard-outline" size={18} color={colors.accent} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.createBtn} onPress={openCreate}>
             <Ionicons name="add" size={20} color="#fff" />
           </TouchableOpacity>
@@ -328,6 +338,16 @@ export default function LeadMeetingsScreen() {
       <MeetingProposalsModal
         visible={showProposals}
         onClose={() => setShowProposals(false)}
+        currentUser={{ id: user!.id }}
+        contacts={teamMembers.map(m => ({ user_id: m.user_id, name: m.user_name }))}
+        teamId={teamMembers[0]?.team_id ?? null}
+        onChanged={load}
+      />
+
+      {/* Предложения задач */}
+      <TaskProposalsModal
+        visible={showTaskProposals}
+        onClose={() => setShowTaskProposals(false)}
         currentUser={{ id: user!.id }}
         contacts={teamMembers.map(m => ({ user_id: m.user_id, name: m.user_name }))}
         teamId={teamMembers[0]?.team_id ?? null}

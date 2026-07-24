@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { getMeetings, requestMeeting, getMemberTeam, getNotes, createNote, updateNote, startCall, updateMeeting, assistantChat, getTasks } from '../lib/api';
 import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
+import { TaskProposalsModal } from '../components/TaskProposalsModal';
 import { InteractionsModal } from '../components/InteractionsModal';
 import { useTheme } from '../context/theme';
 import { useRouter } from 'expo-router';
@@ -29,6 +30,7 @@ export default function MemberMeetingsScreen() {
   const [teamId, setTeamId] = useState<number | null>(null);
   const [contacts, setContacts] = useState<{ user_id: number; name: string }[]>([]);
   const [showProposals, setShowProposals] = useState(false);
+  const [showTaskProposals, setShowTaskProposals] = useState(false);
   const [showInteractions, setShowInteractions] = useState(false);
   const [interactionTasks, setInteractionTasks] = useState<{ id: number; title: string }[]>([]);
   const openInteractions = async () => {
@@ -256,6 +258,12 @@ export default function MemberMeetingsScreen() {
             <Text style={[styles.requestBtnText, { color: colors.accent }]}>Предложить</Text>
           </TouchableOpacity>
           <TouchableOpacity
+            style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
+            onPress={() => setShowTaskProposals(true)}
+          >
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Задачи</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
             style={styles.requestBtn}
             onPress={() => bottomSheetRef.current?.expand()}
           >
@@ -272,6 +280,15 @@ export default function MemberMeetingsScreen() {
         contacts={contacts}
         teamId={teamId}
         onChanged={loadMeetings}
+      />
+
+      {/* Предложения задач: участник может предложить задачу другому (с согласием) */}
+      <TaskProposalsModal
+        visible={showTaskProposals}
+        onClose={() => setShowTaskProposals(false)}
+        currentUser={{ id: user!.id }}
+        contacts={contacts}
+        teamId={teamId}
       />
 
       {/* Взаимодействия (блок 39) */}
