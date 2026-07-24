@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useIsTelegram } from '../lib/surface'
+import { useExclusiveOverlay } from '../lib/overlay'
 import { PitTriggerButton } from './PitAssistant'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
@@ -9,6 +10,9 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
   useEffect(() => {
     window.dispatchEvent(new CustomEvent('quickwidget-toggle', { detail: { open } }))
   }, [open])
+
+  // Взаимное исключение с остальными оверлеями (Задача 1).
+  useExclusiveOverlay('quick-widget', open, () => setOpen(false))
 
   // В Telegram Mini App нижний виджет «следующая встреча/задача» не показываем.
   if (isTg) return null

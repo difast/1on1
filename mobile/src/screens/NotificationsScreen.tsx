@@ -76,20 +76,38 @@ export default function NotificationsScreen() {
       Linking.openURL(data.room_url).catch(() => {});
       return;
     }
-    if (type.startsWith('meeting') && data.meeting_id) {
-      router.push({ pathname: '/meeting-detail', params: { id: String(data.meeting_id) } } as any);
+    // Встречи: конкретную встречу открываем её детальным экраном; при
+    // отсутствии id или недоступности — вкладка встреч (см. meeting-detail:
+    // если встреча удалена/недоступна, показывается понятное сообщение).
+    if (type.startsWith('meeting')) {
+      if (data.meeting_id) {
+        router.push({ pathname: '/meeting-detail', params: { id: String(data.meeting_id) } } as any);
+      } else {
+        router.navigate('/(tabs)/meetings' as any);
+      }
       return;
     }
-    if ((type === 'new_task' || type === 'task_assigned')) {
+    // Задачи (в т.ч. изменения статуса, соисполнители, просрочка, предложения).
+    if (['new_task', 'task_assigned', 'task_update', 'task_assignee_added',
+         'task_assignee_removed', 'overdue_alert', 'tasks', 'task_proposal'].includes(type)) {
       router.navigate('/(tabs)/tasks' as any);
       return;
     }
-    if (type === 'goal_comment' || type === 'goal_feedback') {
+    if (['goal_comment', 'goal_feedback', 'goals'].includes(type)) {
       router.push('/goals' as any);
       return;
     }
-    if (['dev_direction_assigned', 'dev_feedback', 'dev_level_reached', 'dev_step_due'].includes(type)) {
+    if (['dev_direction_assigned', 'dev_feedback', 'dev_level_reached', 'dev_step_due', 'development'].includes(type)) {
       router.push('/development' as any);
+      return;
+    }
+    if (type === 'mood_reminder') {
+      // Опрос настроения живёт на главном экране.
+      router.navigate('/(tabs)' as any);
+      return;
+    }
+    if (['mood_summary', 'burnout_alert'].includes(type)) {
+      router.push({ pathname: '/(tabs)/analytics', params: { from: 'notif' } } as any);
       return;
     }
     // broadcast / generic — no destination, just mark read

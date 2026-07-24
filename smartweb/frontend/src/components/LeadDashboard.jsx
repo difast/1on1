@@ -20,6 +20,7 @@ import LeadAnalytics from './LeadAnalytics'
 import { GoalsLead } from './Goals'
 import { DevelopmentLead } from './Development'
 import OneAI from './OneAI'
+import { notificationSection } from '../lib/notify'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
@@ -857,13 +858,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
       bannerTasks={myTasks}
       bannerTeamId={selectedTeamId}
-      onNavigate={type => {
-        if (type === 'new_task' || type === 'tasks') setActiveView('tasks')
-        else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
-        else if (type === 'meeting_proposal') setShowProposals(true)
-        else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
-        else if (type === 'goals' || type === 'goal_comment' || type === 'goal_feedback') setActiveView('goals')
-        else if (type === 'development' || ['dev_direction_assigned','dev_feedback','dev_level_reached','dev_step_due'].includes(type)) setActiveView('development')
+      onNavigate={(type) => {
+        // Единая карта маршрутизации (Задача 2): тип -> раздел.
+        const sec = notificationSection(type)
+        if (sec === 'tasks') setActiveView('tasks')
+        else if (sec === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
+        else if (sec === 'meeting_proposal') setShowProposals(true)
+        else if (sec === 'meetings') { setActiveView('meetings'); loadMyMeetings() }
+        else if (sec === 'goals') setActiveView('goals')
+        else if (sec === 'development') setActiveView('development')
+        else if (sec === 'mood') { try { window.dispatchEvent(new Event('mood-open')) } catch {} }
+        else if (sec === 'analytics') setActiveView('analytics')
       }}
 >
       <div style={{ maxWidth: 1100, width: '100%' }}>

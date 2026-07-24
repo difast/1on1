@@ -4,6 +4,7 @@ import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
 import useStickyScroll from '../lib/useStickyScroll'
 import { parseFeatureLock, openPricing } from '../lib/featureLock'
+import { useExclusiveOverlay } from '../lib/overlay'
 import { useIsTelegram } from '../lib/surface'
 
 const PIT_STYLES = `
@@ -101,6 +102,10 @@ export default function PitAssistant() {
     window.addEventListener('pit-toggle', toggle)
     return () => window.removeEventListener('pit-toggle', toggle)
   }, [])
+
+  // Общий механизм взаимного исключения оверлеев (Задача 1): открытие окна Пита
+  // закрывает меню/панели, и наоборот.
+  useExclusiveOverlay('pit', open, () => setOpen(false))
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150)

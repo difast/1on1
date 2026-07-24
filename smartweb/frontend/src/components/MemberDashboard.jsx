@@ -11,6 +11,7 @@ import MemberAnalytics from './MemberAnalytics'
 import { GoalsMember } from './Goals'
 import { DevelopmentMember } from './Development'
 import OneAI from './OneAI'
+import { notificationSection } from '../lib/notify'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
@@ -404,13 +405,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
       bannerTasks={tasks}
       bannerTeamId={team?.id}
-      onNavigate={type => {
-        if (type === 'new_task' || type === 'tasks') setActiveTab('tasks')
-        else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
-        else if (type === 'meeting_proposal') setShowProposals(true)
-        else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
-        else if (type === 'goals' || type === 'goal_comment' || type === 'goal_feedback') setActiveTab('goals')
-        else if (type === 'development' || ['dev_direction_assigned','dev_feedback','dev_level_reached','dev_step_due'].includes(type)) setActiveTab('development')
+      onNavigate={(type) => {
+        // Единая карта маршрутизации (Задача 2): тип -> раздел, затем в свою вкладку.
+        const sec = notificationSection(type)
+        if (sec === 'tasks') setActiveTab('tasks')
+        else if (sec === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
+        else if (sec === 'meeting_proposal') setShowProposals(true)
+        else if (sec === 'meetings') setActiveTab('meetings')
+        else if (sec === 'goals') setActiveTab('goals')
+        else if (sec === 'development') setActiveTab('development')
+        else if (sec === 'mood') { try { window.dispatchEvent(new Event('mood-open')) } catch {} }
+        else if (sec === 'analytics') setActiveTab('analytics')
       }}
 >
       <div style={{ maxWidth: 900, width: '100%' }}>

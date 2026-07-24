@@ -9,6 +9,7 @@ import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
 import AvatarCropModal from './AvatarCropModal'
 import { coachingEnabled, setCoaching } from '../lib/coaching'
+import { useExclusiveOverlay } from '../lib/overlay'
 import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGS } from '../i18n'
@@ -321,6 +322,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Взаимное исключение оверлеев (Задача 1): открытие одного закрывает остальные.
+  // Механизм общий (lib/overlay) — новые оверлеи подключаются одной строкой.
+  useExclusiveOverlay('user-menu', showUserMenu, () => setShowUserMenu(false))
+  useExclusiveOverlay('notifications', showNotifications, () => setShowNotifications(false))
+  useExclusiveOverlay('lang-menu', showLangMenu, () => setShowLangMenu(false))
+
   useEffect(() => {
     const timer = setInterval(() => {
       const now = Date.now()
@@ -592,7 +599,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                           setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
                         }
                         setShowNotifications(false)
-                        if (onNavigate) onNavigate(n.type)
+                        if (onNavigate) onNavigate(n.type, n.data)
                       }
                       return (
                         <div
@@ -1099,7 +1106,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   setUnreadCount(c => Math.max(0, c - 1))
                   setToasts(prev => prev.filter(x => x.id !== t.id))
                   setNotifications(prev => prev.map(n => n.id === t.id ? { ...n, read: true } : n))
-                  if (onNavigate) onNavigate(t.type)
+                  if (onNavigate) onNavigate(t.type, t.data)
                 }}
               >
                 <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
