@@ -469,7 +469,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   <div
                     className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setViewUserCard({ user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                    onClick={() => setViewUserCard(lead ? { ...lead, role: 'team_lead' } : { user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title })}
                   >
                     {lead?.user_avatar_url
                       ? <img src={lead.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -479,7 +479,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
                     <p
                       style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)', cursor: 'pointer' }}
-                      onClick={() => setViewUserCard({ user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                      onClick={() => setViewUserCard(lead ? { ...lead, role: 'team_lead' } : { user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title })}
                     >
                       {team.team_lead_name || 'Тимлид'}
                     </p>
