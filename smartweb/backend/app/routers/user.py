@@ -379,6 +379,55 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
 
     return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams, "closed_today": closed_today}
 
+
+@router.get("/{user_id}/card")
+def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depends(get_db)):
+    """Публичная карточка участника для просмотра коллегами по команде.
+
+    Модель видимости: внутри продукта участники команды видят профили друг друга
+    (имя, должность, роль, фото, контакты-соцсети, организацию) — это инструмент
+    для 1-на-1 и командной работы, где нужно знать коллег и как с ними связаться.
+    НЕ отдаём приватные учётные данные (email, регион и т.п.) — email является
+    логином и управляется только в собственном профиле. Так видимость логична и
+    последовательна на любой карточке, кем бы она ни просматривалась.
+    """
+    from app.models.team import Team, TeamMember
+    from app.models.company import CompanyProfile
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Организация = компания рабочего пространства (одна на команду). Берём
+    # компанию команды-контекста (откуда открыли карточку) либо первой команды
+    # пользователя — где он лид, иначе где он участник.
+    tid = team_id
+    if tid is None:
+        led = db.query(Team).filter(Team.team_lead_id == user_id).first()
+        if led:
+            tid = led.id
+        else:
+            tm = db.query(TeamMember).filter(TeamMember.user_id == user_id).first()
+            tid = tm.team_id if tm else None
+    org = None
+    if tid is not None:
+        comp = db.query(CompanyProfile).filter(CompanyProfile.team_id == tid).first()
+        if comp and comp.name:
+            org = {"name": comp.name, "industry": comp.industry or None}
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "title": user.title,
+        "role": user.role,
+        "avatar": user.avatar,
+        "telegram": user.telegram,
+        "telegram_id": user.telegram_id,
+        "linkedin": user.linkedin,
+        "github": user.github,
+        "organization": org,
+    }
+
+
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()

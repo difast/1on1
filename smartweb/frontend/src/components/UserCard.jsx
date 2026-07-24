@@ -1,22 +1,36 @@
 import { useState, useEffect } from 'react'
-import { getUserStats, getUserRecommendations } from '../api/client'
+import { getUserStats, getUserRecommendations, getUserCard } from '../api/client'
 
-export default function UserCard({ user, onClose }) {
+export default function UserCard({ user, teamId, onClose }) {
   const [stats, setStats] = useState(null)
   const [recs, setRecs] = useState([])  // рекомендации об участнике (39.7), видны команде
+  const [card, setCard] = useState(null)  // полные данные карточки (контакты/соцсети/фото/организация)
+
+  // id может прийти как id или user_id (карточки из списков команды).
+  const uid = user?.id || user?.user_id || null
 
   useEffect(() => {
-    if (!user?.id) return
-    getUserStats(user.id).then(r => setStats(r.data)).catch(() => {})
-    getUserRecommendations(user.id).then(r => setRecs(r.data || [])).catch(() => {})
-  }, [user?.id])
+    if (!uid) { setStats(null); setRecs([]); setCard(null); return }
+    // Полную карточку (контакты, соцсети, фото, организация) берём с бэкенда по id
+    // — в списках команды этих полей нет, поэтому раньше они не отображались.
+    getUserCard(uid, teamId).then(r => setCard(r.data)).catch(() => setCard(null))
+    getUserStats(uid).then(r => setStats(r.data)).catch(() => {})
+    getUserRecommendations(uid).then(r => setRecs(r.data || [])).catch(() => {})
+  }, [uid, teamId])
 
   if (!user) return null
 
-  const initial = (user.user_name || user.name || '?').charAt(0).toUpperCase()
-  const name = user.user_name || user.name || '—'
-  const title = user.user_title || user.title || null
-  const role = user.role || null
+  // Пока карточка грузится, показываем то, что уже передано (имя/должность/фото),
+  // затем дополняем/актуализируем данными с бэкенда.
+  const name = card?.name || user.user_name || user.name || '—'
+  const title = card?.title ?? (user.user_title || user.title || null)
+  const role = card?.role || user.role || null
+  const avatar = card?.avatar ?? (user.user_avatar_url || user.avatar || null)
+  const telegram = card?.telegram ?? user.telegram ?? null
+  const linkedin = card?.linkedin ?? user.linkedin ?? null
+  const github = card?.github ?? user.github ?? null
+  const organization = card?.organization || null
+  const initial = (name || '?').charAt(0).toUpperCase()
 
   const roleBadge = {
     team_lead: { label: 'Тимлид', cls: 'bg-indigo-100 text-indigo-700' },
@@ -40,10 +54,13 @@ export default function UserCard({ user, onClose }) {
           ×
         </button>
 
-        {/* Avatar */}
+        {/* Avatar (фото профиля, если задано) */}
         <div className="flex flex-col items-center text-center mb-5">
-          <div className="w-20 h-20 bg-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-3xl mb-3">
-            {initial}
+          <div className="w-20 h-20 rounded-full flex items-center justify-center text-white font-bold text-3xl mb-3 overflow-hidden"
+            style={{ background: avatar ? 'transparent' : '#4f46e5' }}>
+            {avatar
+              ? <img src={avatar} alt={name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              : initial}
           </div>
           <h2 className="text-xl font-bold text-gray-900">{name}</h2>
           {title && <p className="text-sm text-gray-500 mt-0.5">{title}</p>}
@@ -53,6 +70,15 @@ export default function UserCard({ user, onClose }) {
             </span>
           )}
         </div>
+
+        {/* Организация (одна на команду; видна коллегам по команде) */}
+        {organization?.name && (
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Организация</p>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{organization.name}</p>
+            {organization.industry && <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>{organization.industry}</p>}
+          </div>
+        )}
 
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
@@ -70,14 +96,14 @@ export default function UserCard({ user, onClose }) {
           ))}
         </div>
 
-        {/* Social links */}
+        {/* Контакты и соцсети */}
         <div className="space-y-2">
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center">TG</span>
             <span className="text-sm font-medium text-gray-500 w-20">Telegram</span>
-            {user.telegram ? (
-              <a href={`https://t.me/${user.telegram.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
-                @{user.telegram.replace(/^@/, '')}
+            {telegram ? (
+              <a href={`https://t.me/${telegram.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
+                @{telegram.replace(/^@/, '')}
               </a>
             ) : (
               <span className="text-sm text-gray-300">не указан</span>
@@ -86,9 +112,9 @@ export default function UserCard({ user, onClose }) {
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center">in</span>
             <span className="text-sm font-medium text-gray-500 w-20">LinkedIn</span>
-            {user.linkedin ? (
-              <a href={user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
-                {user.linkedin}
+            {linkedin ? (
+              <a href={linkedin.startsWith('http') ? linkedin : `https://linkedin.com/in/${linkedin}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
+                {linkedin}
               </a>
             ) : (
               <span className="text-sm text-gray-300">не указан</span>
@@ -97,9 +123,9 @@ export default function UserCard({ user, onClose }) {
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
             <span className="text-gray-400 w-5 text-center font-bold">{'<>'}</span>
             <span className="text-sm font-medium text-gray-500 w-20">GitHub</span>
-            {user.github ? (
-              <a href={`https://github.com/${user.github.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
-                {user.github}
+            {github ? (
+              <a href={`https://github.com/${github.replace(/^@/, '')}`} target="_blank" rel="noreferrer" className="text-sm text-indigo-600 hover:underline truncate">
+                {github}
               </a>
             ) : (
               <span className="text-sm text-gray-300">не указан</span>

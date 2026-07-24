@@ -469,7 +469,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   <div
                     className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                    onClick={() => setViewUserCard({ user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
                   >
                     {lead?.user_avatar_url
                       ? <img src={lead.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -479,7 +479,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
                     <p
                       style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)', cursor: 'pointer' }}
-                      onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                      onClick={() => setViewUserCard({ user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
                     >
                       {team.team_lead_name || 'Тимлид'}
                     </p>
@@ -1020,7 +1020,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <MoodPrompt teamId={teamId} user={user} />
-    {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
+    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} onClose={() => setViewUserCard(null)} />}
 
     {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}
     {showProposals && (

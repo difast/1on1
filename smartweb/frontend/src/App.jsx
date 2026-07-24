@@ -143,6 +143,26 @@ function App() {
     localStorage.setItem('smart_user', JSON.stringify(updatedUser))
   }
 
+  // Подтверждение email происходит по ссылке в отдельной вкладке. Чтобы статус
+  // (и другие поля профиля) отражались без ручного обновления, при возврате на
+  // вкладку тихо перечитываем профиль и обновляем состояние тем же механизмом.
+  useEffect(() => {
+    if (!appUser?.id) return
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const { data } = getToken() ? await authMe() : await getUser(appUser.id)
+        if (data) handleUserUpdate(data)
+      } catch { /* тихо */ }
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [appUser?.id])
+
   // Mini App и отдельные страницы писем — не ждём сессию.
   if (isTelegramRoute) return <TelegramApp />
   if (isConfirmRoute) return <ConfirmEmailPage />

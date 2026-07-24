@@ -7,6 +7,7 @@ import KnowledgeBasePage from './KnowledgeBasePage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
+import AvatarCropModal from './AvatarCropModal'
 import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
@@ -132,6 +133,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
 
   // Переключатель встроенного AI-коучинга. Живёт в меню настроек рядом с темой —
   // не в отдельном разделе, — потому что это тумблер поведения продукта, а не
@@ -454,6 +456,29 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       // silent
     } finally {
       setSavingProfile(false)
+    }
+  }
+
+  // Сохранение уже кадрированного (в модалке) фото. Обновляем сразу везде через
+  // onUserUpdate + localStorage — та же логика моментального обновления, что и в
+  // остальном профиле; отдельная страница не перезагружается.
+  const handleAvatarSave = async (base64) => {
+    if (!base64 || !currentUser?.id) return
+    setUploadingAvatar(true)
+    try {
+      await updateUser(currentUser.id, { avatar: base64 })
+      const stored = localStorage.getItem('smart_user')
+      const u = stored ? JSON.parse(stored) : {}
+      const merged = { ...u, avatar: base64 }
+      localStorage.setItem('smart_user', JSON.stringify(merged))
+      if (onUserUpdate) onUserUpdate(merged)
+      try { window.dispatchEvent(new Event('profile-updated')) } catch {}
+      setShowAvatarModal(false)
+      toast('Фото профиля обновлено', 'success')
+    } catch {
+      toast('Не удалось обновить фото', 'error')
+    } finally {
+      setUploadingAvatar(false)
     }
   }
 
@@ -1121,7 +1146,16 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
             borderBottom: '1px solid var(--color-border)',
           }}>
-            <label style={{ position: 'relative', cursor: 'pointer', marginBottom: 12 }} className="group">
+            {/* Клик по аватару открывает ОТДЕЛЬНОЕ окно замены фото (загрузка +
+                кадрирование/позиция), а не встроенный выбор файла. */}
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              style={{ position: 'relative', cursor: 'pointer', marginBottom: 8, background: 'none', border: 'none', padding: 0 }}
+              className="group"
+              title="Изменить фото"
+              aria-label="Изменить фото профиля"
+            >
               <div className={`avatar avatar-xl avatar-circle ${user?.avatar ? '' : 'avatar-accent'}`}
                 style={{ width: 64, height: 64, borderRadius: '50%' }}>
                 {user?.avatar
@@ -1144,8 +1178,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                     }
                   </svg>
               </div>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
-            </label>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginBottom: 10 }}
+            >
+              Изменить фото
+            </button>
 
             <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
               {user?.name || '—'}
@@ -1310,6 +1350,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       <PitAssistant />
       {showKnowledge && <KnowledgeBasePage onClose={() => setShowKnowledge(false)} />}
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
+      <AvatarCropModal
+        open={showAvatarModal}
+        saving={uploadingAvatar}
+        onSave={handleAvatarSave}
+        onClose={() => setShowAvatarModal(false)}
+      />
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
       <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
 

@@ -123,6 +123,10 @@ export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
 export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
 export const getUserStats = (userId) => api.get(`/users/${userId}/stats`)
+// Публичная карточка участника (контакты/соцсети/фото/организация) — по правилам
+// видимости для коллег по команде. team_id даёт контекст организации.
+export const getUserCard = (userId, teamId) =>
+  api.get(`/users/${userId}/card`, { params: teamId ? { team_id: teamId } : {} })
 
 // Admin
 export const adminLogin = (password) => api.post('/auth/admin-login', { password })

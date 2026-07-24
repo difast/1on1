@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import Spinner from '../lib/Spinner'
 import { createUser, joinTeam, updateUser } from '../api/client'
+import AvatarCropModal from './AvatarCropModal'
 
 const STYLES = `
 @keyframes obFloat {
@@ -142,6 +143,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
   const [error, setError] = useState('')
   const [avatarPreview, setAvatarPreview] = useState(existingUser?.avatar || null)
   const [avatarBase64, setAvatarBase64] = useState(null)
+  const [showCropModal, setShowCropModal] = useState(false)
   const [photoLoading, setPhotoLoading] = useState(false)
   const [done, setDone] = useState(false)
   const fileRef = useRef()
@@ -327,7 +329,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                     Помогает коллегам узнать вас. Можно пропустить.
                   </p>
                   <div
-                    onClick={() => fileRef.current?.click()}
+                    onClick={() => setShowCropModal(true)}
                     style={{
                       width:100,height:100,borderRadius:'50%',margin:'0 auto 16px',cursor:'pointer',
                       background:avatarPreview?'transparent':'linear-gradient(135deg,#2554D4,#4f46e5)',
@@ -343,13 +345,17 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                       ? <img src={avatarPreview} alt="preview" style={{ width:'100%',height:'100%',objectFit:'cover' }} />
                       : (name?.charAt(0)?.toUpperCase() || '?')}
                   </div>
-                  <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePhotoChange} />
-                  <button onClick={() => fileRef.current?.click()} style={{
+                  <button onClick={() => setShowCropModal(true)} style={{
                     background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',
                     color:'#fff',borderRadius:10,padding:'8px 20px',cursor:'pointer',fontSize:13,fontWeight:600,marginBottom:24,
                   }}>
-                    {avatarPreview ? 'Выбрать другое' : '+ Выбрать фото'}
+                    {avatarPreview ? 'Выбрать другое' : 'Выбрать фото'}
                   </button>
+                  <AvatarCropModal
+                    open={showCropModal}
+                    onSave={(b64) => { setAvatarBase64(b64); setAvatarPreview(b64); setShowCropModal(false) }}
+                    onClose={() => setShowCropModal(false)}
+                  />
                   <div style={{ display:'flex',gap:12 }}>
                     <button onClick={() => finish(createdUser)} disabled={photoLoading} style={{
                       flex:1,padding:'12px',background:'rgba(255,255,255,0.07)',
