@@ -84,6 +84,10 @@ export default function NotificationsScreen() {
       router.navigate('/(tabs)/tasks' as any);
       return;
     }
+    if (type === 'goal_comment' || type === 'goal_feedback') {
+      router.push('/goals' as any);
+      return;
+    }
     // broadcast / generic — no destination, just mark read
   };
 

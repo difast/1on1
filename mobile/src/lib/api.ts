@@ -226,6 +226,45 @@ export const declineTaskProposal = (id: number, userId: number) =>
 export const commentTaskProposal = (id: number, userId: number, note: string) =>
   req<any>(`/task-proposals/${id}/comment`, { method: 'POST', body: JSON.stringify({ user_id: userId, note }) });
 
+// Цели (постановка и отслеживание). Права проверяются на бэкенде: цель редактирует
+// только владелец; тимлид видит цели команды и оставляет комментарии/итоговую оценку.
+export type GoalComment = {
+  id: number; author_id: number; author_name?: string | null;
+  body: string; kind: string; rating?: number | null; created_at?: string | null;
+};
+export type Goal = {
+  id: number; user_id: number; user_name?: string | null; team_id?: number | null;
+  title: string; description?: string | null;
+  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+  progress: number; status: string;
+  created_at?: string | null; updated_at?: string | null; progress_updated_at?: string | null;
+  suggested_status?: string | null; stagnant?: boolean; days_since_progress?: number | null;
+  comments?: GoalComment[];
+};
+export type TeamGoals = {
+  team_id: number;
+  members: { user_id: number; user_name: string; user_avatar_url?: string | null; goals: Goal[] }[];
+};
+export const createGoal = (data: {
+  user_id: number; title: string; description?: string | null; team_id?: number | null;
+  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+}) => req<Goal>('/goals/', { method: 'POST', body: JSON.stringify(data) });
+export const getGoals = (userId: number, actorId: number) =>
+  req<Goal[]>(`/goals/?user_id=${userId}&actor_id=${actorId}`);
+export const getTeamGoals = (teamId: number, actorId: number) =>
+  req<TeamGoals>(`/goals/team/${teamId}?actor_id=${actorId}`);
+export const getGoal = (goalId: number, actorId: number) =>
+  req<Goal>(`/goals/${goalId}?actor_id=${actorId}`);
+export const updateGoal = (goalId: number, data: {
+  actor_id: number; title?: string; description?: string | null;
+  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+  progress?: number; status?: string;
+}) => req<Goal>(`/goals/${goalId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteGoal = (goalId: number, actorId: number) =>
+  req<any>(`/goals/${goalId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const addGoalComment = (goalId: number, data: { actor_id: number; body: string; kind?: string; rating?: number }) =>
+  req<Goal>(`/goals/${goalId}/comments`, { method: 'POST', body: JSON.stringify(data) });
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data: any) =>
   req<any>('/interactions/', { method: 'POST', body: JSON.stringify(data) });

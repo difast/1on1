@@ -8,6 +8,7 @@ import EmptyState from './EmptyState'
 import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin, getMoodToday } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
+import { GoalsMember } from './Goals'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
@@ -406,6 +407,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
         else if (type === 'meeting_proposal') setShowProposals(true)
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
+        else if (type === 'goals' || type === 'goal_comment' || type === 'goal_feedback') setActiveTab('goals')
       }}
 >
       <div style={{ maxWidth: 900, width: '100%' }}>
@@ -453,6 +455,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'overview', label: 'Обзор' },
             { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
+            { key: 'goals', label: 'Цели' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
@@ -977,6 +980,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         {/* Tab: Analytics */}
+        {activeTab === 'goals' && <GoalsMember user={user} />}
+
         {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
 
       </div>

@@ -17,6 +17,7 @@ const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 
 const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
+import { GoalsLead } from './Goals'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
@@ -859,6 +860,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         else if (type === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
         else if (type === 'meeting_proposal') setShowProposals(true)
         else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveView('meetings')
+        else if (type === 'goals' || type === 'goal_comment' || type === 'goal_feedback') setActiveView('goals')
       }}
 >
       <div style={{ maxWidth: 1100, width: '100%' }}>
@@ -866,7 +868,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
-              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'notes' ? 'Заметки' : 'Аналитика'}
+              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'notes' ? 'Заметки' : 'Аналитика'}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
@@ -892,6 +894,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             // несла "Мои", ломая ряд Команды/Встречи/Задачи/Заметки/Аналитика.
             { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
+            { key: 'goals', label: 'Цели' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
@@ -914,6 +917,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </button>
           ))}
         </div>
+
+        {/* Goals view — сводный просмотр целей команды */}
+        {activeView === 'goals' && (
+          <GoalsLead user={user} teams={teams} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} />
+        )}
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}

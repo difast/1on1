@@ -11,7 +11,7 @@ from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal
 
 
 def _seed_billing():
@@ -397,6 +397,7 @@ app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(proposal.router, prefix="/api/proposals", tags=["proposals"])
 app.include_router(task_proposal.router, prefix="/api/task-proposals", tags=["task-proposals"])
+app.include_router(goal.router, prefix="/api/goals", tags=["goals"])
 app.include_router(interaction.router, prefix="/api/interactions", tags=["interactions"])
 
 @app.api_route("/", methods=["GET", "HEAD"])

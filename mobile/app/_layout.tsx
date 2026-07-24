@@ -120,6 +120,7 @@ function AppContent() {
           <Stack.Screen name="company" />
           <Stack.Screen name="tariff" />
           <Stack.Screen name="knowledge" />
+          <Stack.Screen name="goals" />
           <Stack.Screen name="+not-found" />
         </Stack>
       </View>

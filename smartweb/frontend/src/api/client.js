@@ -71,6 +71,15 @@ export const acceptTaskProposal = (id, userId) => api.post(`/task-proposals/${id
 export const declineTaskProposal = (id, userId) => api.post(`/task-proposals/${id}/decline`, { user_id: userId })
 export const commentTaskProposal = (id, userId, note) => api.post(`/task-proposals/${id}/comment`, { user_id: userId, note })
 
+// Цели (модуль постановки и отслеживания целей)
+export const createGoal = (data) => api.post('/goals/', data)
+export const getGoals = (userId, actorId) => api.get('/goals/', { params: { user_id: userId, actor_id: actorId } })
+export const getTeamGoals = (teamId, actorId) => api.get(`/goals/team/${teamId}`, { params: { actor_id: actorId } })
+export const getGoal = (goalId, actorId) => api.get(`/goals/${goalId}`, { params: { actor_id: actorId } })
+export const updateGoal = (goalId, data) => api.patch(`/goals/${goalId}`, data)
+export const deleteGoal = (goalId, actorId) => api.delete(`/goals/${goalId}`, { params: { actor_id: actorId } })
+export const addGoalComment = (goalId, data) => api.post(`/goals/${goalId}/comments`, data)
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data) => api.post('/interactions/', data)
 export const getInteractions = (userId) => api.get('/interactions/', { params: { user_id: userId } })
