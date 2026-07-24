@@ -92,6 +92,7 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
         lambda: db.query(
             User.id, User.name, User.email, User.role, User.title,
             User.is_blocked, User.billing_override, User.created_at, User.last_active_at,
+            User.avatar,
         ).order_by(User.created_at.desc()).all(),
     )
 
@@ -194,6 +195,7 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
                 "email": u.email,
                 "role": u.role,
                 "title": u.title or "",
+                "avatar": getattr(u, "avatar", None),
                 "is_blocked": bool(getattr(u, "is_blocked", False)),
                 "billing_override": bool(getattr(u, "billing_override", False)),
                 "created_at": u.created_at.isoformat() if u.created_at else None,

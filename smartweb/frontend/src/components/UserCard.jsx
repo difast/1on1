@@ -1,21 +1,28 @@
 import { useState, useEffect } from 'react'
 import { getUserStats, getUserRecommendations, getUserCard } from '../api/client'
 
-export default function UserCard({ user, teamId, onClose }) {
+export default function UserCard({ user, teamId, organization: orgProp = null, onClose }) {
   const [stats, setStats] = useState(null)
   const [recs, setRecs] = useState([])  // рекомендации об участнике (39.7), видны команде
   const [card, setCard] = useState(null)  // полные данные карточки (контакты/соцсети/фото/организация)
 
-  // id может прийти как id или user_id (карточки из списков команды).
-  const uid = user?.id || user?.user_id || null
+  // ВАЖНО: в объектах из списка команды `id` — это id членства (TeamMember.id),
+  // а настоящий пользователь — в `user_id`. Поэтому сначала берём user_id, иначе
+  // откроется чужая карточка (в т.ч. пользователь из старой БД с тем же id членства).
+  const uid = user?.user_id || user?.id || null
 
   useEffect(() => {
-    if (!uid) { setStats(null); setRecs([]); setCard(null); return }
+    // Сбрасываем данные предыдущего пользователя, чтобы не показать чужие
+    // контакты/организацию при переключении карточек.
+    setStats(null); setRecs([]); setCard(null)
+    if (!uid) return
+    let alive = true
     // Полную карточку (контакты, соцсети, фото, организация) берём с бэкенда по id
     // — в списках команды этих полей нет, поэтому раньше они не отображались.
-    getUserCard(uid, teamId).then(r => setCard(r.data)).catch(() => setCard(null))
-    getUserStats(uid).then(r => setStats(r.data)).catch(() => {})
-    getUserRecommendations(uid).then(r => setRecs(r.data || [])).catch(() => {})
+    getUserCard(uid, teamId).then(r => { if (alive) setCard(r.data) }).catch(() => {})
+    getUserStats(uid).then(r => { if (alive) setStats(r.data) }).catch(() => {})
+    getUserRecommendations(uid).then(r => { if (alive) setRecs(r.data || []) }).catch(() => {})
+    return () => { alive = false }
   }, [uid, teamId])
 
   if (!user) return null
@@ -29,7 +36,9 @@ export default function UserCard({ user, teamId, onClose }) {
   const telegram = card?.telegram ?? user.telegram ?? null
   const linkedin = card?.linkedin ?? user.linkedin ?? null
   const github = card?.github ?? user.github ?? null
-  const organization = card?.organization || null
+  // Организацию показываем мгновенно из пропа (команда её уже знает), затем
+  // подтверждаем данными карточки — без «задержки/подскока».
+  const organization = card?.organization || orgProp || null
   const initial = (name || '?').charAt(0).toUpperCase()
 
   const roleBadge = {

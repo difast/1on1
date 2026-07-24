@@ -88,9 +88,16 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 9500, display: 'flex', justifyContent: 'center', alignItems: 'flex-start', padding: 16, overflowY: 'auto' }}>
       <div onClick={e => e.stopPropagation()} className="card" style={{ width: '100%', maxWidth: 520, marginTop: 40, padding: 20 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div>
-            <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{user.name}</h3>
-            <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className={`avatar avatar-lg ${user.avatar ? '' : 'avatar-accent'}`} style={{ width: 48, height: 48, borderRadius: '50%', overflow: 'hidden', flexShrink: 0 }}>
+              {user.avatar
+                ? <img src={user.avatar} alt={user.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                : (user.name || '?').charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 20, fontWeight: 700 }}>{user.name}</h3>
+              <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
+            </div>
           </div>
           <button aria-label="Закрыть" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
         </div>

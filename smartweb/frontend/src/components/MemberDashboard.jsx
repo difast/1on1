@@ -590,7 +590,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     if (!b.last_meeting_date) return 1
                     return new Date(a.last_meeting_date) - new Date(b.last_meeting_date)
                   }).map(m => (
-                    <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                      onClick={() => setViewUserCard(m)} title="Открыть карточку">
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <div className={`avatar avatar-sm ${m.user_avatar_url ? '' : 'avatar-accent'}`}>
                           {m.user_avatar_url
@@ -1020,7 +1021,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
     )}
     <MoodPrompt teamId={teamId} user={user} />
-    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} onClose={() => setViewUserCard(null)} />}
+    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} organization={team?.organization} onClose={() => setViewUserCard(null)} />}
 
     {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}
     {showProposals && (

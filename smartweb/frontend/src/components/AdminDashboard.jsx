@@ -361,7 +361,11 @@ export default function AdminDashboard({ onLogout }) {
                             <Td muted>{u.id}</Td>
                             <Td>
                               <div onClick={() => setDetailUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} title="Открыть детали">
-                                <div className="avatar avatar-sm avatar-accent">{(u.name || '?').charAt(0).toUpperCase()}</div>
+                                <div className={`avatar avatar-sm ${u.avatar ? '' : 'avatar-accent'}`} style={{ overflow: 'hidden' }}>
+                                  {u.avatar
+                                    ? <img src={u.avatar} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    : (u.name || '?').charAt(0).toUpperCase()}
+                                </div>
                                 <div>
                                   <p style={{ fontWeight: 600, margin: 0, fontSize: 13, color: 'var(--color-accent)' }}>{u.name}</p>
                                   {u.title && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>{u.title}</p>}

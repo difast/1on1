@@ -104,6 +104,10 @@ def build_team_detail(team: Team, team_id: int, db: Session) -> TeamDetailOut:
             is_online=online_cache.is_online(tm.user_id) if user else False,
         ))
 
+    from app.models.company import CompanyProfile
+    comp = db.query(CompanyProfile).filter(CompanyProfile.team_id == team_id).first()
+    organization = {"name": comp.name, "industry": comp.industry or None} if (comp and comp.name) else None
+
     return TeamDetailOut(
         id=team.id,
         name=team.name,
@@ -111,6 +115,7 @@ def build_team_detail(team: Team, team_id: int, db: Session) -> TeamDetailOut:
         team_lead_id=team.team_lead_id,
         created_at=team.created_at,
         members=members_out,
+        organization=organization,
     )
 
 

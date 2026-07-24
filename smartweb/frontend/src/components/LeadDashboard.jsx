@@ -1761,7 +1761,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         </>)}
       </div>
 
-      {userCardMember && <UserCard user={userCardMember} teamId={selectedTeamId} onClose={() => setUserCardMember(null)} />}
+      {userCardMember && <UserCard user={userCardMember} teamId={selectedTeamId} organization={teamDetail?.organization} onClose={() => setUserCardMember(null)} />}
 
       {showStartCall && (
         <Modal
