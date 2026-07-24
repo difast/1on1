@@ -198,6 +198,13 @@ export const getMyMoodSeries = (
 export const assistantChat = (messages: { role: string; content: string }[], context = '', user_id?: number) =>
   req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context, user_id }) });
 
+// ONE AI (стратегический AI-центр; общий AI-слой с Питом, права на бэкенде)
+export type OneAiSection = { key: string; title: string; scope: string };
+export const getOneAiSections = (actorId: number) =>
+  req<{ sections: OneAiSection[] }>(`/oneai/sections?actor_id=${actorId}`);
+export const oneAiQuery = (data: { actor_id: number; section: string; target_user_id?: number; team_id?: number; message?: string }) =>
+  req<{ reply: string; based_on: any }>('/oneai/query', { method: 'POST', body: JSON.stringify(data) });
+
 // Per-user summary stats (включает closed_today — закрытые сегодня, по роли)
 export const getUserStats = (userId: number) =>
   req<{ meetings: number; tasks_done: number; teams: number; closed_today: number }>(`/users/${userId}/stats`);

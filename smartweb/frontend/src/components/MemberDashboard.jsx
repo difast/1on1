@@ -10,6 +10,7 @@ import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
 import { GoalsMember } from './Goals'
 import { DevelopmentMember } from './Development'
+import OneAI from './OneAI'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
 import TaskAssignees from './TaskAssignees'
@@ -459,6 +460,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'tasks', label: 'Задачи' },
             { key: 'goals', label: 'Цели' },
             { key: 'development', label: 'Развитие' },
+            { key: 'oneai', label: 'ONE AI' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
@@ -986,6 +988,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {activeTab === 'goals' && <GoalsMember user={user} teamId={team?.id} />}
 
         {activeTab === 'development' && <DevelopmentMember user={user} />}
+
+        {activeTab === 'oneai' && <OneAI user={user} />}
 
         {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
 

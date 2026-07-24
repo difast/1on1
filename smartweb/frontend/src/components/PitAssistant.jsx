@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { pitChat } from '../api/client'
+import { pitChat, createSupportTicket, getUserTickets, userSendMessage, userReadReply } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
 import useStickyScroll from '../lib/useStickyScroll'
@@ -64,6 +64,23 @@ export default function PitAssistant() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [shifted, setShifted] = useState(false)
+  // Режим Пита: обычный чат или обращение в поддержку (переиспользуем систему
+  // поддержки — createSupportTicket / userSendMessage, без второй системы).
+  const [mode, setMode] = useState('chat')
+  const [tickets, setTickets] = useState([])
+  const [activeTicketId, setActiveTicketId] = useState(null)
+
+  const loadTickets = useCallback(async () => {
+    if (!currentUser?.id) return
+    try {
+      const { data } = await getUserTickets(currentUser.id)
+      setTickets(data || [])
+      // отметить ответы прочитанными при открытии
+      ;(data || []).filter(t => t.has_unread_reply).forEach(t => userReadReply(t.id).catch(() => {}))
+    } catch { /* ignore */ }
+  }, [currentUser?.id])
+
+  useEffect(() => { if (open && mode === 'support') loadTickets() }, [open, mode, loadTickets])
   // Умный автоскролл: доскроллить к новому сообщению только если пользователь
   // уже был у нижнего края (не выдёргиваем его, если он листает историю).
   const { scrollRef, bottomRef, onScroll } = useStickyScroll([messages, loading])
@@ -77,11 +94,41 @@ export default function PitAssistant() {
     return () => window.removeEventListener('quickwidget-toggle', handler)
   }, [])
 
+  // Триггер Пита теперь — компактная кнопка рядом с кнопкой даты (QuickWidget),
+  // а не плавающий блок. Открытие/закрытие — по событию 'pit-toggle'.
+  useEffect(() => {
+    const toggle = () => setOpen(o => !o)
+    window.addEventListener('pit-toggle', toggle)
+    return () => window.removeEventListener('pit-toggle', toggle)
+  }, [])
+
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
 
+  const submitSupport = async () => {
+    const text = input.trim()
+    if (!text || loading || !currentUser?.id) return
+    setLoading(true)
+    try {
+      if (activeTicketId) {
+        const { data } = await userSendMessage(activeTicketId, text)
+        setTickets(prev => prev.map(t => t.id === data.id ? data : t))
+      } else {
+        const subject = text.length > 60 ? text.slice(0, 57) + '…' : text
+        const { data } = await createSupportTicket({ user_id: currentUser.id, subject, body: text })
+        setTickets(prev => [data, ...prev])
+        setActiveTicketId(data.id)
+      }
+      setInput('')
+    } catch (err) {
+      const detail = err?.response?.data?.detail
+      alert(typeof detail === 'string' ? detail : 'Не удалось отправить обращение')
+    } finally { setLoading(false) }
+  }
+
   const handleSend = async () => {
+    if (mode === 'support') return submitSupport()
     const text = input.trim()
     if (!text || loading) return
     const newMessages = [...messages, { role: 'user', content: text }]
@@ -89,17 +136,18 @@ export default function PitAssistant() {
     setInput('')
     setLoading(true)
     try {
-      // Build (and cache) the team context so Pit can see members and ids.
-      if (!ctxRef.current && currentUser) {
-        ctxRef.current = await buildPitContext(currentUser)
-      }
-      const context = ctxRef.current?.text || ''
-      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), context, currentUser?.id)
+      // Контекст для модели теперь собирает БЭКЕНД (общий AI-слой с проверкой
+      // прав). Клиент больше НЕ строит тяжёлый контекст перед каждым запросом —
+      // это убирает N сетевых обращений до ответа Пита (ускорение).
+      const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), '', currentUser?.id)
       const rawReply = data.reply || 'Нет ответа'
 
       const { clean, actions } = parsePitActions(rawReply)
       let reply = clean || rawReply
-      if (actions.length && ctxRef.current && currentUser) {
+      if (actions.length && currentUser) {
+        // Карту участников для выполнения действий строим ЛЕНИВО — только когда
+        // Пит вернул действие (создать задачу/встречу).
+        if (!ctxRef.current) ctxRef.current = await buildPitContext(currentUser)
         const results = await Promise.all(
           actions.map(a => executePitAction(a, ctxRef.current, currentUser)),
         )
@@ -128,7 +176,7 @@ export default function PitAssistant() {
       {/* ── Chat window ── */}
       {open && !covered && (
         <div style={{
-          position: 'fixed', bottom: isTg ? 84 : 195, right: isTg ? 12 : 24, zIndex: 9400,
+          position: 'fixed', bottom: isTg ? 84 : 96, right: isTg ? 12 : 24, zIndex: 9400,
           width: isTg ? 'calc(100vw - 24px)' : 340, maxWidth: 340,
           maxHeight: isTg ? '68vh' : 500, display: 'flex', flexDirection: 'column',
           background: '#ffffff',
@@ -158,15 +206,52 @@ export default function PitAssistant() {
             </div>
             <div style={{ flex: 1 }}>
               <p style={{ fontWeight: 700, fontSize: 14, color: '#fff', margin: 0, lineHeight: 1.2 }}>Пит</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0 }}>AI-ассистент · всегда на связи</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0 }}>{mode === 'support' ? 'Обращение в поддержку' : 'AI-ассистент · всегда на связи'}</p>
             </div>
+            <button
+              onClick={() => { setMode(m => m === 'support' ? 'chat' : 'support'); setActiveTicketId(null) }}
+              title={mode === 'support' ? 'Вернуться к чату' : 'Обратиться в поддержку'}
+              style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', height: 28, padding: '0 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', flexShrink: 0 }}
+            >{mode === 'support' ? 'Чат' : 'Поддержка'}</button>
             <button
               onClick={() => setOpen(false)}
               style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', width: 28, height: 28, borderRadius: 8, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
             >✕</button>
           </div>
 
+          {/* Support panel */}
+          {mode === 'support' && (
+            <div style={{ flex: 1, overflow: 'auto', padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button onClick={() => setActiveTicketId(null)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: `1px solid ${activeTicketId === null ? '#2554D4' : '#e2e8f0'}`, background: activeTicketId === null ? '#eff6ff' : '#fff', color: activeTicketId === null ? '#2554D4' : '#475569', cursor: 'pointer' }}>Новое обращение</button>
+                {tickets.map(t => (
+                  <button key={t.id} onClick={() => setActiveTicketId(t.id)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: `1px solid ${activeTicketId === t.id ? '#2554D4' : '#e2e8f0'}`, background: activeTicketId === t.id ? '#eff6ff' : '#fff', color: activeTicketId === t.id ? '#2554D4' : '#475569', cursor: 'pointer', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {t.subject}{t.has_unread_reply ? ' •' : ''}
+                  </button>
+                ))}
+              </div>
+              {activeTicketId === null ? (
+                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Опишите проблему в поле ниже и отправьте — обращение попадёт в поддержку. Ответ придёт сюда же.</p>
+              ) : (() => {
+                const t = tickets.find(x => x.id === activeTicketId)
+                if (!t) return null
+                const thread = [{ sender: 'user', body: t.body, created_at: t.created_at }, ...(t.messages || [])]
+                return (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {thread.map((m, i) => (
+                      <div key={i} style={{ alignSelf: m.sender === 'admin' ? 'flex-start' : 'flex-end', maxWidth: '85%', background: m.sender === 'admin' ? '#f1f5f9' : 'linear-gradient(135deg, #2554D4, #4f46e5)', color: m.sender === 'admin' ? '#1e293b' : '#fff', borderRadius: 12, padding: '8px 12px', fontSize: 13 }}>
+                        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, marginBottom: 2 }}>{m.sender === 'admin' ? 'Поддержка' : 'Вы'}</div>
+                        {m.body}
+                      </div>
+                    ))}
+                  </div>
+                )
+              })()}
+            </div>
+          )}
+
           {/* Messages */}
+          {mode !== 'support' && (
           <div ref={scrollRef} onScroll={onScroll} style={{ flex: 1, overflow: 'auto', padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
             {messages.map((m, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start', alignItems: 'flex-end', gap: 6 }}>
@@ -206,6 +291,7 @@ export default function PitAssistant() {
             )}
             <div ref={bottomRef} style={{ height: 4 }} />
           </div>
+          )}
 
           {/* Input */}
           <div style={{ padding: '10px 12px 12px', display: 'flex', gap: 8, borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
@@ -214,7 +300,7 @@ export default function PitAssistant() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder="Спросите Пита..."
+              placeholder={mode === 'support' ? (activeTicketId ? 'Ваш ответ в поддержку...' : 'Опишите проблему...') : 'Спросите Пита...'}
               disabled={loading}
               style={{
                 flex: 1, padding: '9px 13px', borderRadius: 12,
@@ -244,107 +330,56 @@ export default function PitAssistant() {
         </div>
       )}
 
-      {/* ── 3D Character ── */}
-      <div data-tour="pit" style={{
-        position: 'fixed', bottom: isTg ? 74 : 90,
-        right: shifted ? 320 : (isTg ? 12 : 24),
-        // Убираем иконку, когда её перекрывает окно/модалка.
-        display: covered ? 'none' : undefined,
-        zIndex: 9350, userSelect: 'none',
-        // В Mini App масштабируем всю фигуру целиком (иконка, антенна, тень),
-        // чтобы не доминировала на маленьком экране. Якорь — нижний правый угол.
-        transform: isTg ? 'scale(0.58)' : 'none',
-        transformOrigin: 'bottom right',
-        transition: 'right 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)',
-      }}>
-        {/* Shadow */}
-        <div style={{
-          width: 52, height: 10, borderRadius: '50%', margin: '0 auto',
-          background: 'rgba(79,70,229,0.35)',
-          animation: 'pitShadow 3s ease-in-out infinite',
-        }} />
-
-        {/* Body */}
-        <div
+      {/* Компактный триггер в Mini App (в вебе кнопка Пита живёт в ряду с кнопкой
+          даты — QuickWidget). Открытие — общий обработчик 'pit-toggle'. */}
+      {isTg && !covered && (
+        <button
+          data-tour="pit"
           onClick={() => setOpen(o => !o)}
           title="Пит — AI-ассистент"
           style={{
-            width: 62, height: 62, borderRadius: '50%', cursor: 'pointer',
-            position: 'relative', marginBottom: 2,
-            background: 'radial-gradient(ellipse at 36% 30%, #c7d2fe 0%, #2554D4 38%, #3730a3 68%, #1e1b4b 100%)',
-            animation: 'pitFloat 3.2s ease-in-out infinite, pitGlow 3.2s ease-in-out infinite',
-            transition: 'transform 0.15s',
+            position: 'fixed', bottom: 74, right: 12, zIndex: 9350,
+            width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
+            background: 'linear-gradient(135deg, #2554D4, #4f46e5)',
+            boxShadow: '0 4px 16px rgba(37,84,212,0.4)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4,
           }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.08)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
         >
-          {/* Antenna stem */}
-          <div style={{
-            position: 'absolute', top: -14, left: '50%', transform: 'translateX(-50%)',
-            width: 3, height: 12,
-            background: 'linear-gradient(to top, #2554D4, #a5b4fc)',
-            borderRadius: 3,
-          }}>
-            {/* Antenna tip */}
-            <div style={{
-              position: 'absolute', top: -5, left: '50%', transform: 'translateX(-50%)',
-              width: 8, height: 8, borderRadius: '50%',
-              background: '#c7d2fe',
-              animation: 'pitAntenna 2s ease-in-out infinite',
-            }} />
-          </div>
-
-          {/* Highlight (3D sphere illusion) */}
-          <div style={{
-            position: 'absolute', top: '16%', left: '18%',
-            width: '34%', height: '24%',
-            background: 'radial-gradient(ellipse, rgba(255,255,255,0.52) 0%, transparent 70%)',
-            borderRadius: '50%', transform: 'rotate(-30deg)',
-            pointerEvents: 'none',
-          }} />
-
-          {/* Left eye */}
-          <div style={{
-            position: 'absolute', top: '32%', left: '22%',
-            width: 12, height: 12, borderRadius: '50%',
-            background: '#fff',
-            animation: 'pitBlink 4.5s ease-in-out infinite',
-            boxShadow: '0 0 6px rgba(199,210,254,0.9)',
-          }}>
-            <div style={{ position: 'absolute', bottom: 2, right: 2, width: 5, height: 5, background: '#1e1b4b', borderRadius: '50%' }} />
-          </div>
-
-          {/* Right eye */}
-          <div style={{
-            position: 'absolute', top: '32%', right: '22%',
-            width: 12, height: 12, borderRadius: '50%',
-            background: '#fff',
-            animation: 'pitBlink 4.5s ease-in-out infinite 0.18s',
-            boxShadow: '0 0 6px rgba(199,210,254,0.9)',
-          }}>
-            <div style={{ position: 'absolute', bottom: 2, right: 2, width: 5, height: 5, background: '#1e1b4b', borderRadius: '50%' }} />
-          </div>
-
-          {/* Smile */}
-          <div style={{
-            position: 'absolute', bottom: '22%', left: '50%', transform: 'translateX(-50%)',
-            width: 20, height: 9,
-            borderBottom: '2.5px solid rgba(255,255,255,0.72)',
-            borderRadius: '0 0 20px 20px',
-          }} />
-        </div>
-
-        {/* Name label */}
-        <div style={{
-          textAlign: 'center', marginTop: 6,
-          fontSize: 11, fontWeight: 700, color: 'var(--color-accent)',
-          background: 'var(--color-surface)',
-          border: '1px solid #c7d2fe',
-          borderRadius: 8, padding: '2px 10px',
-          boxShadow: '0 2px 8px rgba(37,84,212,0.15)',
-          letterSpacing: '0.03em',
-        }}>Пит</div>
-      </div>
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#fff' }} />
+          <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#fff' }} />
+        </button>
+      )}
     </>
+  )
+}
+
+// Компактная кнопка-триггер Пита для веб-интерфейса: ставится СЛЕВА от кнопки
+// даты (QuickWidget), на той же горизонтальной линии внизу справа. Иконка и
+// размер согласованы с кнопкой даты.
+export function PitTriggerButton() {
+  return (
+    <button
+      data-tour="pit"
+      onClick={() => { try { window.dispatchEvent(new Event('pit-toggle')) } catch {} }}
+      title="Пит — AI-ассистент"
+      style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        background: 'var(--color-surface)', color: 'var(--color-accent)',
+        border: '1px solid #c7d2fe', borderRadius: 32,
+        padding: '10px 16px 10px 14px', cursor: 'pointer',
+        boxShadow: '0 4px 16px rgba(37,84,212,0.14)',
+        fontWeight: 600, fontSize: 14, whiteSpace: 'nowrap',
+      }}
+    >
+      <span style={{
+        width: 22, height: 22, borderRadius: '50%', flexShrink: 0,
+        background: 'radial-gradient(ellipse at 38% 30%, #a5b4fc 0%, #2554D4 60%)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+      }}>
+        <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
+        <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
+      </span>
+      Пит
+    </button>
   )
 }

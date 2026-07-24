@@ -122,6 +122,7 @@ function AppContent() {
           <Stack.Screen name="knowledge" />
           <Stack.Screen name="goals" />
           <Stack.Screen name="development" />
+          <Stack.Screen name="one-ai" />
           <Stack.Screen name="+not-found" />
         </Stack>
       </View>

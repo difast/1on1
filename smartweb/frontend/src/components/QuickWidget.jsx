@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useIsTelegram } from '../lib/surface'
+import { PitTriggerButton } from './PitAssistant'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
   const [open, setOpen] = useState(false)
@@ -138,33 +139,38 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
           </div>
         )}
 
-        {/* Trigger button */}
-        <button
-          onClick={() => setOpen(v => !v)}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            background: nextMeeting ? 'var(--color-accent)' : 'var(--color-surface)',
-            color: nextMeeting ? '#fff' : 'var(--color-text-primary)',
-            border: nextMeeting ? 'none' : '1px solid var(--color-border)',
-            borderRadius: 32,
-            padding: '10px 18px 10px 14px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
-            fontWeight: 600,
-            fontSize: 14,
-            whiteSpace: 'nowrap',
-          }}
-        >
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
-              <rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
-              <path d="M1.5 6h13M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-            </svg>
-          {nextMeeting
-            ? new Date(nextMeeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
-            : 'Следующая встреча'}
-        </button>
+        {/* Кнопка Пита слева от кнопки даты, на одной линии (Задача 1) */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <PitTriggerButton />
+
+          {/* Trigger button (дата/следующая встреча) */}
+          <button
+            onClick={() => setOpen(v => !v)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              background: nextMeeting ? 'var(--color-accent)' : 'var(--color-surface)',
+              color: nextMeeting ? '#fff' : 'var(--color-text-primary)',
+              border: nextMeeting ? 'none' : '1px solid var(--color-border)',
+              borderRadius: 32,
+              padding: '10px 18px 10px 14px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
+              fontWeight: 600,
+              fontSize: 14,
+              whiteSpace: 'nowrap',
+            }}
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+                <rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+                <path d="M1.5 6h13M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+              </svg>
+            {nextMeeting
+              ? new Date(nextMeeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
+              : 'Следующая встреча'}
+          </button>
+        </div>
       </div>
     </>
   )

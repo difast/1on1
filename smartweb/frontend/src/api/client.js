@@ -99,6 +99,10 @@ export const getTeamDevelopment = (teamId, actorId) => api.get(`/development/tea
 export const getMemberDevAnalytics = (userId, actorId) => api.get(`/development/analytics/member/${userId}`, { params: { actor_id: actorId } })
 export const getTeamDevAnalytics = (teamId, actorId) => api.get(`/development/analytics/team/${teamId}`, { params: { actor_id: actorId } })
 
+// ONE AI (стратегический AI-центр; общий AI-слой с Питом)
+export const getOneAiSections = (actorId) => api.get('/oneai/sections', { params: { actor_id: actorId } })
+export const oneAiQuery = (data) => api.post('/oneai/query', data)
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data) => api.post('/interactions/', data)
 export const getInteractions = (userId) => api.get('/interactions/', { params: { user_id: userId } })
