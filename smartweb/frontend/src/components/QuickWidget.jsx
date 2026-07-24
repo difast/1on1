@@ -143,7 +143,8 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <PitTriggerButton />
 
-          {/* Trigger button (дата/следующая встреча) */}
+          {/* Trigger button (расписание). Размер совпадает с компактной кнопкой
+              Пита: те же padding/скругление/шрифт и иконка в контейнере 22px. */}
           <button
             onClick={() => setOpen(v => !v)}
             style={{
@@ -154,7 +155,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
               color: nextMeeting ? '#fff' : 'var(--color-text-primary)',
               border: nextMeeting ? 'none' : '1px solid var(--color-border)',
               borderRadius: 32,
-              padding: '10px 18px 10px 14px',
+              padding: '10px 16px 10px 14px',
               cursor: 'pointer',
               boxShadow: '0 4px 16px rgba(0,0,0,0.14)',
               fontWeight: 600,
@@ -162,13 +163,15 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
               whiteSpace: 'nowrap',
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0 }}>
+            <span style={{ width: 22, height: 22, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
                 <rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
                 <path d="M1.5 6h13M5 1v3M11 1v3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
               </svg>
+            </span>
             {nextMeeting
               ? new Date(nextMeeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
-              : 'Следующая встреча'}
+              : 'Расписание'}
           </button>
         </div>
       </div>
