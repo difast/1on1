@@ -25,6 +25,14 @@ def _name(db: Session, uid: Optional[int]) -> Optional[str]:
     return u.name if u else None
 
 
+def _skill_name(db: Session, skill_id: Optional[int]) -> Optional[str]:
+    if not skill_id:
+        return None
+    from app.models.development import Skill
+    s = db.query(Skill).filter(Skill.id == skill_id).first()
+    return s.name if s else None
+
+
 def _leads_of_user(db: Session, owner_id: int) -> set:
     """Тимлиды команд, в которых состоит владелец цели."""
     team_ids = [tm.team_id for tm in db.query(TeamMember).filter(TeamMember.user_id == owner_id).all()]
@@ -110,6 +118,9 @@ def _serialize(db: Session, goal: Goal, with_comments: bool = True) -> dict:
         "user_name": _name(db, goal.user_id),
         "team_id": goal.team_id,
         "scope": getattr(goal, "scope", "personal") or "personal",
+        "goal_kind": getattr(goal, "goal_kind", "standard") or "standard",
+        "skill_id": getattr(goal, "skill_id", None),
+        "skill_name": _skill_name(db, getattr(goal, "skill_id", None)),
         "title": goal.title,
         "description": goal.description,
         "period_label": goal.period_label,
@@ -192,6 +203,8 @@ def create_goal(data: GoalCreate, db: Session = Depends(get_db), current=Depends
         user_id=data.user_id,
         team_id=team_id,
         scope=scope,
+        goal_kind=("learning" if data.goal_kind == "learning" else "standard"),
+        skill_id=data.skill_id,
         title=data.title.strip(),
         description=(data.description or None),
         period_label=data.period_label,
@@ -303,10 +316,16 @@ def update_goal(goal_id: int, data: GoalUpdate, db: Session = Depends(get_db), c
         goal.period_start = data.period_start
     if data.period_end is not None:
         goal.period_end = data.period_end
+    if data.skill_id is not None:
+        goal.skill_id = data.skill_id or None
 
     _apply_status_progress(goal, data.status, data.progress, datetime.utcnow())
     db.commit()
     db.refresh(goal)
+    # Синхронизация прогресса: цель — единый источник. Обновляем связанные шаги
+    # плана развития под прогресс/статус цели (одно направление, без циклов).
+    from app.services.development_sync import sync_steps_from_goal
+    sync_steps_from_goal(db, goal)
     return _serialize(db, goal)
 
 

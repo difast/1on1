@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import Meeting, Task, Team, TeamMember, User
 from app.utils.auth import get_current_user
 from app.services import mood_service
+from app.services import development_analytics
 
 router = APIRouter()
 
@@ -166,6 +167,8 @@ def get_lead_analytics(user_id: int, db: Session = Depends(get_db), current=Depe
                 "hour_distribution": dict(hour_dist),
                 "role_avg_meetings_90d": role_avg,
             },
+            # Развитие команды в аналитике (4.1/4.3): агрегаты, без выгрузки записей.
+            "development": development_analytics.team_summary(db, team.id, user_id),
         })
 
     return {"teams": teams_result}
@@ -254,4 +257,6 @@ def get_member_analytics(user_id: int, db: Session = Depends(get_db), current=De
             "meetings_30": meetings_30, "meetings_prev_30": meetings_prev_30,
             "mood_delta_15d": mood_delta,
         },
+        # Развитие участника в аналитике (4.1/4.2): только собственные данные.
+        "development": development_analytics.member_summary(db, user_id),
     }

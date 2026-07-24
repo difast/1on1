@@ -77,7 +77,7 @@ function StatusBadge({ status, colors }: { status: string; colors: AppColors }) 
   );
 }
 
-function Bar({ value, colors }: { value: number; colors: AppColors }) {
+export function Bar({ value, colors }: { value: number; colors: AppColors }) {
   const v = Math.max(0, Math.min(100, value || 0));
   const color = v >= 100 ? colors.success : v > 0 ? colors.accent : colors.border;
   return (
@@ -88,7 +88,7 @@ function Bar({ value, colors }: { value: number; colors: AppColors }) {
 }
 
 // ── обсуждение цели ─────────────────────────────────────────────────────────
-function Thread({
+export function Thread({
   comments, meId, colors, canFeedback, onSend,
 }: {
   comments: GoalComment[]; meId: number; colors: AppColors; canFeedback: boolean;
@@ -286,7 +286,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
 }
 
 // ── переиспользуемая форма создания цели (личная / командная) ────────────────
-function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCancel }: {
+export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCancel }: {
   colors: AppColors; submitLabel: string; titlePlaceholder: string;
   onCreate: (p: { title: string; description: string | null; period_label: string; period_start: string; period_end: string }) => Promise<void>;
   onCancel: () => void;

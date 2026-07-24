@@ -9,6 +9,8 @@ class GoalCreate(BaseModel):
     description: Optional[str] = None
     team_id: Optional[int] = None
     scope: str = "personal"      # personal | team (team ставит только тимлид)
+    goal_kind: str = "standard"  # standard | learning (учебная цель модуля «Развитие»)
+    skill_id: Optional[int] = None  # связь с навыком развития
     period_label: Optional[str] = None
     period_start: Optional[datetime] = None
     period_end: Optional[datetime] = None
@@ -23,6 +25,7 @@ class GoalUpdate(BaseModel):
     period_end: Optional[datetime] = None
     progress: Optional[int] = None
     status: Optional[str] = None
+    skill_id: Optional[int] = None
 
 
 class GoalCommentCreate(BaseModel):
@@ -51,6 +54,9 @@ class GoalOut(BaseModel):
     user_name: Optional[str] = None
     team_id: Optional[int] = None
     scope: str = "personal"
+    goal_kind: str = "standard"
+    skill_id: Optional[int] = None
+    skill_name: Optional[str] = None
     title: str
     description: Optional[str] = None
     period_label: Optional[str] = None

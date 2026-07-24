@@ -51,7 +51,7 @@ function ProgressBar({ value }) {
 
 // ── работа с кварталами (период цели) ────────────────────────────────────────
 const ROMAN = ['I', 'II', 'III', 'IV']
-function quarterOptions() {
+export function quarterOptions() {
   const now = new Date()
   const y = now.getFullYear()
   const curQ = Math.floor(now.getMonth() / 3) // 0..3
@@ -79,7 +79,7 @@ function periodText(g) {
 }
 
 // ── ветка обсуждения цели ────────────────────────────────────────────────────
-function CommentThread({ goal, meId, onSend, canFeedback }) {
+export function CommentThread({ goal, meId, onSend, canFeedback }) {
   const [text, setText] = useState('')
   const [kind, setKind] = useState('comment')
   const [rating, setRating] = useState('')
@@ -266,7 +266,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
 }
 
 // ── переиспользуемая форма создания цели (личная / командная) ───────────────
-function GoalForm({ onCreate, onCancel, submitLabel = 'Создать цель', placeholder }) {
+export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать цель', placeholder }) {
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const qOpts = useRef(quarterOptions()).current

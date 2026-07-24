@@ -35,6 +35,11 @@ class Goal(Base):
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     team_id = Column(Integer, ForeignKey("teams.id"), nullable=True)
     scope = Column(String(20), nullable=False, default="personal", server_default="personal")
+    # Подтип цели: standard — обычная (квартальная) цель; learning — учебная цель
+    # модуля «Развитие» (единая модель целей, без второго списка). skill_id
+    # связывает цель с навыком (двусторонняя навигация Цели <-> Развитие).
+    goal_kind = Column(String(20), nullable=False, default="standard", server_default="standard")
+    skill_id = Column(Integer, ForeignKey("skills.id"), nullable=True)
     title = Column(String(500), nullable=False)
     description = Column(Text, nullable=True)        # ожидаемый результат
     period_label = Column(String(50), nullable=True)  # напр. "Q3 2026"
@@ -64,7 +69,11 @@ class GoalComment(Base):
     __tablename__ = "goal_comments"
 
     id = Column(Integer, primary_key=True)
-    goal_id = Column(Integer, ForeignKey("goals.id", ondelete="CASCADE"), nullable=False, index=True)
+    # Комментарий привязан ЛИБО к цели (goal_id), ЛИБО к шагу плана развития
+    # (step_id). Единая модель комментариев переиспользуется в «Развитии» —
+    # тот же тред обсуждения и обратная связь, что и в «Целях».
+    goal_id = Column(Integer, ForeignKey("goals.id", ondelete="CASCADE"), nullable=True, index=True)
+    step_id = Column(Integer, ForeignKey("development_steps.id", ondelete="CASCADE"), nullable=True, index=True)
     author_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     body = Column(Text, nullable=False)
     kind = Column(String(20), nullable=False, default="comment", server_default="comment")

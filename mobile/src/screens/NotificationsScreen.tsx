@@ -88,6 +88,10 @@ export default function NotificationsScreen() {
       router.push('/goals' as any);
       return;
     }
+    if (['dev_direction_assigned', 'dev_feedback', 'dev_level_reached', 'dev_step_due'].includes(type)) {
+      router.push('/development' as any);
+      return;
+    }
     // broadcast / generic — no destination, just mark read
   };
 

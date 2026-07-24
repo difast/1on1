@@ -263,6 +263,27 @@ export default function MemberAnalytics({ user, teamId }) {
         </div>
       )}
 
+      {/* Развитие: собственные навыки, план, учебные цели, динамика по кварталу
+          (4.1/4.2) — только свои данные. Числа доступны и в Mini App. */}
+      {data.development && (
+        <div className="card" style={{ padding: '18px 20px' }}>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>Развитие</p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <StatCard value={data.development.avg_current_level ?? 0} label="Средний уровень" delay={0} />
+            <StatCard value={data.development.gaps} label="Навыков с разрывом" warning={data.development.gaps > 0} delay={80} />
+            <StatCard value={data.development.plan?.plan_progress ?? 0} suffix="%" label="Прогресс плана" accent delay={160} />
+            <StatCard value={data.development.plan?.overdue_steps ?? 0} label="Просрочено шагов" danger={(data.development.plan?.overdue_steps ?? 0) > 0} delay={240} />
+            <StatCard value={data.development.learning_goals?.achieved ?? 0} label="Учебных целей достигнуто" delay={320} />
+          </div>
+          {data.development.compare && (
+            <div style={{ marginTop: 12 }}>
+              <CompareRow label="Рост уровней (квартал)" cur={data.development.compare.levelups_quarter} prev={data.development.compare.levelups_prev_quarter} />
+              <CompareRow label="Шагов выполнено (квартал)" cur={data.development.compare.steps_done_quarter} prev={data.development.compare.steps_done_prev_quarter} />
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Графики ниже скрыты в Mini App — показываем только сводку/числа выше */}
       {!isTg && (<>
 

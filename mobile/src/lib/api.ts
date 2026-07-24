@@ -268,6 +268,69 @@ export const deleteGoal = (goalId: number, actorId: number) =>
 export const addGoalComment = (goalId: number, data: { actor_id: number; body: string; kind?: string; rating?: number }) =>
   req<Goal>(`/goals/${goalId}/comments`, { method: 'POST', body: JSON.stringify(data) });
 
+// Развитие (навыки, уровни, план развития, рекомендации). Права — на бэкенде.
+export type DevSkill = {
+  id: number; user_id: number; skill_id: number; skill_name?: string | null; category: string;
+  current_level: number; current_level_label?: string | null;
+  desired_level?: number | null; desired_level_label?: string | null;
+  target_date?: string | null; gap: number;
+  history?: { id: number; level: number; level_label?: string | null; note?: string | null; changed_at?: string | null }[];
+};
+export type DevStep = {
+  id: number; user_id: number; title: string; description?: string | null;
+  skill_id?: number | null; skill_name?: string | null; goal_id?: number | null; goal_title?: string | null;
+  due_date?: string | null; status: string; progress: number;
+  assigned_by?: number | null; assigned_by_name?: string | null; assigned_by_lead?: boolean; overdue?: boolean;
+  comments?: GoalComment[];
+};
+export type DevRecommendation = {
+  id: number; user_id: number; skill_id?: number | null; skill_name?: string | null;
+  source: string; source_label?: string | null; title: string; body?: string | null;
+  article_id?: number | null; target_level?: number | null; target_date?: string | null;
+  status: string; created_by?: number | null; created_by_name?: string | null; created_at?: string | null;
+};
+export type Development = {
+  user_id: number; skills: DevSkill[]; steps: DevStep[];
+  recommendations: DevRecommendation[]; learning_goals: Goal[]; plan_progress: number;
+};
+export type TeamDevelopment = {
+  team_id: number;
+  members: { user_id: number; user_name: string; skills: DevSkill[]; plan_progress: number;
+    active_steps: number; overdue_steps: number; gaps: number; has_active_plan: boolean }[];
+};
+export const getSkills = (teamId: number | undefined, actorId: number) =>
+  req<any[]>(`/development/skills?actor_id=${actorId}${teamId ? `&team_id=${teamId}` : ''}`);
+export const createSkill = (data: { actor_id: number; name: string; category?: string; team_id?: number | null }) =>
+  req<any>('/development/skills', { method: 'POST', body: JSON.stringify(data) });
+export const getDevelopment = (userId: number, actorId: number) =>
+  req<Development>(`/development/${userId}?actor_id=${actorId}`);
+export const addUserSkill = (data: { actor_id: number; user_id: number; skill_id?: number; skill_name?: string; category?: string; current_level?: number; desired_level?: number; target_date?: string | null }) =>
+  req<DevSkill>('/development/skills/user', { method: 'POST', body: JSON.stringify(data) });
+export const updateUserSkill = (usId: number, data: { actor_id: number; current_level?: number; desired_level?: number; target_date?: string | null; note?: string }) =>
+  req<DevSkill>(`/development/skills/user/${usId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteUserSkill = (usId: number, actorId: number) =>
+  req<any>(`/development/skills/user/${usId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const createDevStep = (data: { actor_id: number; user_id: number; title: string; description?: string | null; skill_id?: number; goal_id?: number; due_date?: string | null }) =>
+  req<DevStep>('/development/steps', { method: 'POST', body: JSON.stringify(data) });
+export const updateDevStep = (stepId: number, data: { actor_id: number; title?: string; description?: string | null; skill_id?: number; goal_id?: number; due_date?: string | null; status?: string; progress?: number }) =>
+  req<DevStep>(`/development/steps/${stepId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteDevStep = (stepId: number, actorId: number) =>
+  req<any>(`/development/steps/${stepId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const addDevStepComment = (stepId: number, data: { actor_id: number; body: string; kind?: string; rating?: number }) =>
+  req<DevStep>(`/development/steps/${stepId}/comments`, { method: 'POST', body: JSON.stringify(data) });
+export const createDevRecommendation = (data: { actor_id: number; user_id: number; skill_id?: number; title: string; body?: string | null; target_level?: number; target_date?: string | null }) =>
+  req<DevRecommendation>('/development/recommendations', { method: 'POST', body: JSON.stringify(data) });
+export const aiDevRecommendation = (userId: number, actorId: number) =>
+  req<DevRecommendation>(`/development/recommendations/ai?user_id=${userId}&actor_id=${actorId}`, { method: 'POST' });
+export const actOnDevRecommendation = (recId: number, data: { actor_id: number; action: string; note?: string }) =>
+  req<DevRecommendation>(`/development/recommendations/${recId}/action`, { method: 'POST', body: JSON.stringify(data) });
+export const getTeamDevelopment = (teamId: number, actorId: number) =>
+  req<TeamDevelopment>(`/development/team/${teamId}?actor_id=${actorId}`);
+export const getMemberDevAnalytics = (userId: number, actorId: number) =>
+  req<any>(`/development/analytics/member/${userId}?actor_id=${actorId}`);
+export const getTeamDevAnalytics = (teamId: number, actorId: number) =>
+  req<any>(`/development/analytics/team/${teamId}?actor_id=${actorId}`);
+
 // Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
 export const createInteraction = (data: any) =>
   req<any>('/interactions/', { method: 'POST', body: JSON.stringify(data) });

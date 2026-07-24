@@ -1070,6 +1070,31 @@ export default function LeadAnalytics({ user }) {
         )}
       </div>
 
+      {/* Развитие команды (4.1/4.3): агрегаты — активные планы, просрочки,
+          разрывы, рост уровней за квартал. Числа доступны и в Mini App. */}
+      {team.development && (
+        <div className="card" style={{ padding: '18px 20px' }}>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>Развитие команды</p>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <StatCard value={team.development.with_active_plan} label="С активным планом" delay={0} />
+            <StatCard value={team.development.without_plan} label="Без плана" warning={team.development.without_plan > 0} delay={80} />
+            <StatCard value={team.development.avg_plan_progress} suffix="%" label="Средний прогресс плана" accent delay={160} />
+            <StatCard value={team.development.overdue_steps} label="Просрочено шагов" danger={team.development.overdue_steps > 0} delay={240} />
+            <StatCard value={team.development.gap_total} label="Разрывов уровней" delay={320} />
+            <StatCard value={team.development.levelups_quarter} label="Рост уровней (квартал)" delay={400} />
+          </div>
+          {team.development.category_avg_level && Object.keys(team.development.category_avg_level).length > 0 && (
+            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {Object.entries(team.development.category_avg_level).map(([cat, lvl]) => (
+                <span key={cat} style={{ fontSize: 12, color: 'var(--color-text-secondary)', background: 'var(--gray-100)', borderRadius: 6, padding: '4px 10px' }}>
+                  {({ technical: 'Технические', product: 'Продуктовые', communication: 'Коммуникационные', management: 'Управленческие' }[cat] || cat)}: ср. {lvl}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Ниже — графики и подробные таблицы: в Mini App показываем только сводку
           из StatCards выше, всё остальное скрыто (таблица разделения). */}
       {!isTg && (<>
