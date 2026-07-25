@@ -493,16 +493,55 @@ button:active:not(:disabled) { transform: scale(0.96); }
 .head-icon-btn:hover { background: var(--blue-50); color: var(--color-accent); border-color: var(--blue-200); }
 .head-icon-btn.active { background: var(--blue-100); color: var(--color-accent); border-color: var(--blue-300); }
 
-/* Поповер управления командой / поиск-поле, раскрывающиеся из иконки. */
+/* Поповер управления командой. Иконки стоят у ЛЕВОГО края контента (сразу за
+   боковым меню), поэтому поповер раскрывается ВПРАВО (left:0), иначе он уходил
+   бы под левое меню. Ширина ограничена вьюпортом, чтобы не вылезал справа. */
 .head-pop {
-  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
-  min-width: 260px; background: var(--color-surface);
+  position: absolute; top: calc(100% + 8px); left: 0; right: auto; z-index: 60;
+  width: 260px; max-width: calc(100vw - 48px); background: var(--color-surface);
   border: 1px solid var(--color-border); border-radius: var(--radius-lg);
   box-shadow: var(--shadow-lg); padding: 14px; animation: popIn 0.2s var(--ease-spring);
 }
-.head-search-pop { min-width: 300px; padding: 10px; }
+
+/* Инлайн-поиск: строка динамически вырастает из иконки-лупы вправо. */
+.thc-search { display: inline-flex; align-items: center; }
+.thc-search-field {
+  display: inline-flex; align-items: center; gap: 6px; height: 34px;
+  padding: 0 6px 0 10px; border-radius: var(--radius-sm);
+  background: var(--color-surface); border: 1px solid var(--blue-300);
+  box-shadow: var(--shadow-xs); overflow: hidden;
+  animation: searchGrow 0.22s var(--ease-spring); transform-origin: left center;
+}
+.thc-search-loupe { display: inline-flex; color: var(--color-accent); flex-shrink: 0; }
+.thc-search-input {
+  width: 240px; max-width: 46vw; border: none; outline: none; background: transparent;
+  font-family: inherit; font-size: 14px; color: var(--color-text-primary); padding: 0;
+}
+.thc-search-input::placeholder { color: var(--color-text-muted); }
+.thc-search-clear {
+  width: 26px; height: 26px; flex-shrink: 0; border: none; background: transparent;
+  color: var(--color-text-muted); border-radius: var(--radius-sm); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.thc-search-clear:hover { color: var(--color-text-primary); background: var(--gray-100); }
+@keyframes searchGrow {
+  from { max-width: 40px; opacity: 0.4; }
+  to   { max-width: 360px; opacity: 1; }
+}
 @media (max-width: 640px) {
-  .head-pop { right: -8px; min-width: min(280px, calc(100vw - 32px)); }
+  .head-pop { min-width: 0; width: min(280px, calc(100vw - 32px)); }
+  .thc-search-input { width: 150px; max-width: 40vw; }
+}
+
+/* Полноэкранные экраны онбординга/опросника: центрируют карточку, когда она
+   помещается, и позволяют прокрутить, когда карточка выше экрана (иначе при
+   flex-центрировании низ карточки обрезается — баг «вылезает за нижние рамки»).
+   .onb-scroll — контейнер прокрутки (фикс. высота вьюпорта), .onb-center —
+   внутренняя обёртка min-height:100vh, которая растягивается под контент. */
+.onb-scroll { height: 100vh; height: 100dvh; overflow-y: auto; position: relative; }
+.onb-center {
+  min-height: 100vh; min-height: 100dvh; box-sizing: border-box;
+  display: flex; flex-direction: column; justify-content: center; align-items: center;
 }
 
 /* Invite banner */

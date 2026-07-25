@@ -117,51 +117,57 @@ export default function TeamHeaderControls({
           )}
         </div>
 
-        {/* ── Поиск участников ── */}
-        <div ref={searchRef} style={{ position: 'relative' }}>
-          <button
-            type="button"
-            className={`head-icon-btn icon-hover${searchOpen ? ' active' : ''}`}
-            onClick={toggleSearch}
-            aria-label="Поиск участников"
-            aria-expanded={searchOpen}
-            title="Поиск участников"
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <circle cx="11" cy="11" r="7" />
-              <line x1="21" y1="21" x2="16.65" y2="16.65" />
-            </svg>
-          </button>
-
-          {searchOpen && (
-            <div className="head-pop head-search-pop">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => onSearchChange(e.target.value)}
-                  onBlur={collapseSearchIfEmpty}
-                  placeholder="Поиск участников по имени или email..."
-                  className="input"
-                  style={{ flex: 1 }}
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    className="head-icon-btn icon-hover"
-                    onClick={() => { onSearchChange(''); searchInputRef.current?.focus() }}
-                    aria-label="Очистить поиск"
-                    title="Очистить"
-                  >
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
-                      <line x1="6" y1="6" x2="18" y2="18" />
-                      <line x1="18" y1="6" x2="6" y2="18" />
-                    </svg>
-                  </button>
-                )}
-              </div>
+        {/* ── Поиск участников: инлайн-раскрытие из иконки (не поповер) ──
+            При клике на лупу справа от неё динамически вырастает строка поиска
+            прямо в шапке; ввод фильтрует участников команды. Пустое поле при
+            потере фокуса/клике вне сворачивается обратно в иконку. */}
+        <div ref={searchRef} className="thc-search">
+          {searchOpen ? (
+            <div className="thc-search-field">
+              <span className="thc-search-loupe" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="7" />
+                  <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </span>
+              <input
+                ref={searchInputRef}
+                type="text"
+                value={searchQuery}
+                onChange={e => onSearchChange(e.target.value)}
+                onBlur={collapseSearchIfEmpty}
+                placeholder="Поиск участников по имени или email"
+                className="thc-search-input"
+                aria-label="Поиск участников"
+              />
+              <button
+                type="button"
+                className="thc-search-clear icon-hover"
+                onMouseDown={e => e.preventDefault()}
+                onClick={() => { onSearchChange(''); setSearchOpen(false) }}
+                aria-label="Закрыть поиск"
+                title="Закрыть"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                </svg>
+              </button>
             </div>
+          ) : (
+            <button
+              type="button"
+              className="head-icon-btn icon-hover"
+              onClick={toggleSearch}
+              aria-label="Поиск участников"
+              aria-expanded={searchOpen}
+              title="Поиск участников"
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+            </button>
           )}
         </div>
       </div>

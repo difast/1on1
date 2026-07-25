@@ -212,10 +212,9 @@ export default function Onboarding({ email, existingUser, onComplete }) {
   return (
     <>
       <style>{STYLES}</style>
-      <div style={{
-        minHeight:'100vh', position:'relative', overflowY:'auto',
+      <div className="onb-scroll" style={{
         background:'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
-        display:'flex', padding:'56px 20px', fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
+        fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
       }}>
         {/* Orbs */}
         <div style={{ position:'absolute',top:'8%',left:'5%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(37,84,212,0.22) 0%,transparent 70%)',animation:'obOrb1 9s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
@@ -223,7 +222,8 @@ export default function Onboarding({ email, existingUser, onComplete }) {
         <div style={{ position:'absolute',top:'50%',left:'68%',width:190,height:190,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,130,246,0.14) 0%,transparent 70%)',animation:'obOrb3 7s ease-in-out infinite',pointerEvents:'none' }} />
         <div style={{ position:'absolute',top:'72%',left:'12%',width:150,height:150,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(167,139,250,0.16) 0%,transparent 70%)',animation:'obOrb1 13s ease-in-out infinite reverse',pointerEvents:'none' }} />
 
-        <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1,margin:'auto' }}>
+        <div className="onb-center" style={{ padding:'48px 20px' }}>
+        <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1 }}>
           <div style={{ display:'flex',justifyContent:'center',marginBottom:16 }}><PitBig /></div>
 
           <div style={{ textAlign:'center',marginBottom:20 }}>
@@ -383,6 +383,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
               )}
             </div>
           )}
+        </div>
         </div>
       </div>
     </>

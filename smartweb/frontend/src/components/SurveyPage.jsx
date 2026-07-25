@@ -94,11 +94,12 @@ export default function SurveyPage({ user, onDone }) {
   const dots = Array.from({ length: total })
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
-      display: 'flex', padding: '48px 20px', fontFamily: 'var(--font-sans)',
+    <div className="onb-scroll" style={{
+      background: 'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
+      fontFamily: 'var(--font-sans)',
     }}>
-      <div style={{ width: '100%', maxWidth: 520, margin: 'auto' }}>
+      <div className="onb-center" style={{ padding: '48px 20px' }}>
+      <div style={{ width: '100%', maxWidth: 520 }}>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
             OneOn<span style={{ color: '#818cf8' }}>One</span>
@@ -202,6 +203,7 @@ export default function SurveyPage({ user, onDone }) {
             </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   )
