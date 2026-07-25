@@ -1,15 +1,16 @@
 import React, { useMemo, useRef, useState } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
-  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator,
+  KeyboardAvoidingView, Platform, ScrollView, ActivityIndicator, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
+import { mailProviderFor } from '../../src/lib/mailProviders';
 
-type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin';
+type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin' | 'confirm_sent';
 
 const ADMIN_CODE = '1on12026';
 
@@ -27,7 +28,7 @@ function passwordProblem(pw: string): string {
 export default function LoginScreen() {
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
-  const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut, signIn, signUp, forgotPassword } = useAuth();
+  const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut, signIn, signUp, forgotPassword, resendConfirmation } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -35,6 +36,10 @@ export default function LoginScreen() {
   const [adminCode, setAdminCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Блокировка входа до подтверждения почты (Задача 2.4): показываем кнопку
+  // повторной отправки письма прямо под ошибкой.
+  const [needConfirm, setNeedConfirm] = useState(false);
+  const [resendState, setResendState] = useState<'' | 'sending' | 'sent'>('');
   const submittingRef = useRef(false);
 
   // Reset submitting state if session disappears (e.g. sign-out while loading)
@@ -83,7 +88,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (submittingRef.current) return;
-    setError('');
+    setError(''); setNeedConfirm(false); setResendState('');
     if (!email.trim()) { setError('Введите email'); return; }
     submittingRef.current = true;
     setLoading(true);
@@ -91,10 +96,25 @@ export default function LoginScreen() {
       await signIn(email, password);
       // На успехе _layout уводит на нужный экран; спиннер держим до навигации.
     } catch (err: any) {
-      setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось войти'));
+      const detail = err?.response?.data?.detail ?? err?.response?.detail;
+      // Вход заблокирован до подтверждения почты (общий бэкенд): code
+      // 'email_unconfirmed'. Показываем понятное сообщение + повторная отправка.
+      if (detail && typeof detail === 'object' && detail.code === 'email_unconfirmed') {
+        setNeedConfirm(true);
+        setError(detail.message || 'Подтвердите почту, чтобы войти.');
+      } else {
+        setError(translateError(typeof detail === 'string' ? detail : 'Не удалось войти'));
+      }
       submittingRef.current = false;
       setLoading(false);
     }
+  };
+
+  const handleResend = async () => {
+    if (resendState === 'sending') return;
+    setResendState('sending');
+    try { await resendConfirmation(email); setResendState('sent'); }
+    catch { setResendState(''); }
   };
 
   const handleRegister = async () => {
@@ -107,14 +127,21 @@ export default function LoginScreen() {
     submittingRef.current = true;
     setLoading(true);
     try {
-      // Регистрация сразу авторизует; роль выбирается в онбординге, куда уведёт
-      // _layout. Письмо с подтверждением уходит, доступ не блокируется.
+      // Регистрация НЕ входит в кабинет: показываем экран подтверждения почты.
+      // Войти можно только после перехода по ссылке из письма.
       await signUp(email, password);
+      setMode('confirm_sent');
     } catch (err: any) {
       setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось зарегистрироваться'));
+    } finally {
       submittingRef.current = false;
       setLoading(false);
     }
+  };
+
+  const openMailApp = () => {
+    const p = mailProviderFor(email);
+    if (p.url) Linking.openURL(p.url).catch(() => {});
   };
 
   const handleForgot = async () => {
@@ -132,6 +159,42 @@ export default function LoginScreen() {
     if (adminCode.trim() !== ADMIN_CODE) { setError('Неверный код администратора'); return; }
     await enterAdmin();
   };
+
+  if (mode === 'confirm_sent') {
+    const provider = mailProviderFor(email);
+    return (
+      <SafeAreaView style={[styles.root, styles.center]}>
+        {/* Брендовый акцент экрана — крупная надпись заглавными буквами */}
+        <Text style={styles.brand}>ONEON<Text style={styles.logoAccent}>ONE</Text></Text>
+        <View style={styles.emailIconWrap}>
+          <Ionicons name="mail-outline" size={28} color={colors.accent} />
+        </View>
+        <Text style={styles.emailTitle}>Подтвердите почту</Text>
+        <Text style={styles.emailDesc}>
+          Регистрация завершена. Мы отправили письмо со ссылкой для подтверждения и активации аккаунта на адрес:
+        </Text>
+        <Text style={styles.emailAddress}>{email}</Text>
+        <Text style={styles.emailHint}>
+          Перейдите по ссылке из письма, чтобы продолжить. Вход в кабинет откроется после подтверждения.
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 10, width: '100%', maxWidth: 400 }}>
+          <TouchableOpacity
+            style={[styles.btn, styles.btnSecondary, { flex: 0 }]}
+            onPress={() => { setMode('login'); setError(''); setPassword(''); setConfirmPassword(''); setNeedConfirm(true); }}
+          >
+            <Text style={[styles.btnText, { color: colors.textPrimary }]}>Войти</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.btn, { flex: 1 }, !provider.url && styles.btnDisabled]}
+            onPress={openMailApp}
+            disabled={!provider.url}
+          >
+            <Text style={styles.btnText}>{provider.label}</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   if (mode === 'forgot_sent') {
     return (
@@ -311,11 +374,23 @@ export default function LoginScreen() {
               />
             </View>
 
-            {/* Ошибка входа/регистрации */}
+            {/* Ошибка входа/регистрации. При блокировке из-за неподтверждённой
+                почты — кнопка повторной отправки письма (Задача 2.4). */}
             {error ? (
-              <View style={styles.errorBox}>
-                <Text style={styles.errorText}>{error}</Text>
+              <View style={[styles.errorBox, needConfirm && styles.warnBox]}>
+                <Text style={[styles.errorText, needConfirm && styles.warnText]}>{error}</Text>
               </View>
+            ) : null}
+            {needConfirm ? (
+              resendState === 'sent' ? (
+                <Text style={[styles.warnText, { marginBottom: 12 }]}>Письмо отправлено повторно.</Text>
+              ) : (
+                <TouchableOpacity style={{ marginBottom: 12 }} onPress={handleResend} disabled={resendState === 'sending'}>
+                  <Text style={[styles.adminLinkText, { color: colors.accent, fontWeight: '600' }]}>
+                    {resendState === 'sending' ? 'Отправляем...' : 'Отправить письмо повторно'}
+                  </Text>
+                </TouchableOpacity>
+              )
             ) : null}
 
             {/* Backend/profile error (server down, 401, etc.) */}
@@ -369,6 +444,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   logo: { fontSize: 26, fontWeight: '700', color: c.textPrimary },
   logoAccent: { color: c.accent },
   logoSub: { fontSize: 14, color: c.textMuted, marginTop: 6 },
+  brand: { fontSize: 28, fontWeight: '800', letterSpacing: 1.5, color: c.textPrimary, marginBottom: 20 },
 
   card: {
     width: '100%', maxWidth: 400,
@@ -410,7 +486,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
     paddingVertical: 14, alignItems: 'center', marginTop: 4,
   },
   btnDisabled: { opacity: 0.6 },
+  btnSecondary: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border, paddingHorizontal: 22 },
   btnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
+  warnBox: { backgroundColor: '#fff8ed', borderColor: '#fcd9a5' },
+  warnText: { fontSize: 13, color: '#7c4a03' },
 
   adminLink: { alignItems: 'center', marginTop: 18 },
   adminLinkText: { fontSize: 12, color: c.textMuted },

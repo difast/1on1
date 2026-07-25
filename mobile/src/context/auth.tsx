@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, setToken, clearToken } from '../lib/authToken';
-import { authLogin, authRegister, authMe, authForgotPassword, joinTeam, createTeam } from '../lib/api';
+import { authLogin, authRegister, authMe, authForgotPassword, authResendConfirmationByEmail, joinTeam, createTeam } from '../lib/api';
 
 export interface AppUser {
   id: number;
@@ -41,8 +41,10 @@ interface AuthContextType {
   enterAdmin: () => Promise<void>;
   exitAdmin: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string) => Promise<void>;
+  // Регистрация не входит в кабинет: возвращает email для окна подтверждения.
+  signUp: (email: string, password: string) => Promise<{ email: string }>;
   forgotPassword: (email: string) => Promise<void>;
+  resendConfirmation: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
   retryProfile: () => Promise<void>;
 }
@@ -64,8 +66,9 @@ const AuthContext = createContext<AuthContextType>({
   enterAdmin: async () => {},
   exitAdmin: async () => {},
   signIn: async () => {},
-  signUp: async () => {},
+  signUp: async () => ({ email: '' }),
   forgotPassword: async () => {},
+  resendConfirmation: async () => {},
   signOut: async () => {},
   retryProfile: async () => {},
 });
@@ -177,17 +180,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signUp = async (email: string, password: string) => {
     setProfileError(null);
     const clean = email.trim();
-    // Имя по умолчанию — из email; роль выбирается в онбординге.
-    const { token, user: u } = await authRegister({ name: clean.split('@')[0], email: clean, password });
-    await setToken(token);
-    setSession({ token, email: u.email });
-    await AsyncStorage.setItem(PENDING_ONBOARDING_KEY, 'true');
-    setUserState(u);           // role === '' -> _layout уведёт в онбординг
-    setProfileError(null);
+    // Регистрация НЕ входит в кабинет: токен не выдаётся, доступ закрыт до
+    // подтверждения почты (общий бэкенд). Экран входа покажет окно
+    // подтверждения; войти можно только после перехода по ссылке из письма.
+    await authRegister({ name: clean.split('@')[0], email: clean, password });
+    return { email: clean };
   };
 
   const forgotPassword = async (email: string) => {
     await authForgotPassword(email.trim());
+  };
+
+  const resendConfirmation = async (email: string) => {
+    await authResendConfirmationByEmail(email.trim());
   };
 
   const setActiveRole = async (role: Role) => {
@@ -236,7 +241,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin,
-      signIn, signUp, forgotPassword, signOut, retryProfile,
+      signIn, signUp, forgotPassword, resendConfirmation, signOut, retryProfile,
     }}>
       {children}
     </AuthContext.Provider>

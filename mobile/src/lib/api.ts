@@ -366,8 +366,9 @@ export const addTaskComment = (taskId: number, authorId: number, body: string) =
 export const getTaskById = (taskId: number) => req<any>(`/tasks/${taskId}`);
 
 // Собственная аутентификация (email/пароль + JWT), замена Supabase
+// Регистрация БЕЗ токена: доступ закрыт до подтверждения почты (общий бэкенд).
 export const authRegister = (data: { name: string; email: string; password: string }) =>
-  req<{ token: string; user: any }>('/auth/register', { method: 'POST', body: JSON.stringify(data) });
+  req<{ user: any; email_sent: boolean }>('/auth/register', { method: 'POST', body: JSON.stringify(data) });
 export const authLogin = (data: { email: string; password: string }) =>
   req<{ token: string; user: any }>('/auth/login', { method: 'POST', body: JSON.stringify(data) });
 export const authMe = () => req<any>('/auth/me');
@@ -375,6 +376,8 @@ export const authForgotPassword = (email: string) =>
   req<any>('/auth/forgot-password', { method: 'POST', body: JSON.stringify({ email }) });
 export const authResendConfirmation = (user_id: number) =>
   req<any>('/auth/resend-confirmation', { method: 'POST', body: JSON.stringify({ user_id }) });
+export const authResendConfirmationByEmail = (email: string) =>
+  req<any>('/auth/resend-confirmation', { method: 'POST', body: JSON.stringify({ email }) });
 export const authChangePassword = (data: { user_id: number; current_password: string; new_password: string }) =>
   req<any>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) });
 
