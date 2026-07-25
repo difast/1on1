@@ -1,0 +1,1 @@
+redeploy 2026-07-25T16:23:37Z — tasks: team-screen icons, email-confirm modal, onboarding survey
