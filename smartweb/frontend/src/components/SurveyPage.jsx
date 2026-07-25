@@ -27,9 +27,13 @@ export default function SurveyPage({ user, onDone }) {
     return () => { alive = false }
   }, [])
 
-  // Не удалось загрузить конфиг — не держим пользователя, пропускаем опросник.
+  // Не удалось загрузить конфиг (пустой список) — не держим пользователя:
+  // фиксируем пропуск и идём дальше. Логика инлайн, без ссылки на handleSkip,
+  // т.к. этот эффект зарегистрирован до ранних return в теле компонента.
   useEffect(() => {
-    if (questions && questions.length === 0) { handleSkip() }
+    if (questions && questions.length === 0) {
+      skipSurvey(user.id).then(({ data }) => onDone(data)).catch(() => onDone(user))
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questions])
 
