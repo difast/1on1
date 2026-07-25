@@ -1,1 +1,1 @@
-redeploy 2 2026-07-25T16:36:57Z — force rebuild frontend+backend (team icons, email-confirm modal, survey)
+redeploy 2026-07-25T20:38:55Z — onboarding blue, no Pit face on step 2; backend rebuild

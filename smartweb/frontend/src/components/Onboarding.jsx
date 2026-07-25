@@ -18,8 +18,8 @@ const STYLES = `
   50%{box-shadow:0 16px 50px rgba(37,84,212,0.7),0 0 24px 6px rgba(37,84,212,0.25)}
 }
 @keyframes obAntenna {
-  0%,100%{box-shadow:0 0 6px 2px rgba(165,180,252,0.7)}
-  50%{box-shadow:0 0 14px 5px rgba(165,180,252,1)}
+  0%,100%{box-shadow:0 0 6px 2px rgba(147,180,253,0.7)}
+  50%{box-shadow:0 0 14px 5px rgba(147,180,253,1)}
 }
 @keyframes obOrb1 {
   0%,100%{transform:translate(0,0)scale(1)}33%{transform:translate(40px,-60px)scale(1.1)}66%{transform:translate(-30px,30px)scale(0.95)}
@@ -49,27 +49,27 @@ function PitBig() {
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
       <div style={{
         width: 90, height: 90, borderRadius: '50%', position: 'relative',
-        background: 'radial-gradient(ellipse at 36% 30%,#c7d2fe 0%,#2554D4 38%,#3730a3 68%,#1e1b4b 100%)',
+        background: 'radial-gradient(ellipse at 36% 30%,#C4D6FF 0%,#2554D4 38%,#1D3FAA 68%,#111F52 100%)',
         animation: 'obFloat 3.2s ease-in-out infinite,obGlow 3.2s ease-in-out infinite',
       }}>
         {/* Antenna */}
-        <div style={{ position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',width:4,height:16,background:'linear-gradient(to top,#2554D4,#a5b4fc)',borderRadius:4 }}>
-          <div style={{ position:'absolute',top:-7,left:'50%',transform:'translateX(-50%)',width:11,height:11,borderRadius:'50%',background:'#c7d2fe',animation:'obAntenna 2s ease-in-out infinite' }} />
+        <div style={{ position:'absolute',top:-18,left:'50%',transform:'translateX(-50%)',width:4,height:16,background:'linear-gradient(to top,#2554D4,#93B4FD)',borderRadius:4 }}>
+          <div style={{ position:'absolute',top:-7,left:'50%',transform:'translateX(-50%)',width:11,height:11,borderRadius:'50%',background:'#C4D6FF',animation:'obAntenna 2s ease-in-out infinite' }} />
         </div>
         {/* Highlight */}
         <div style={{ position:'absolute',top:'16%',left:'18%',width:'34%',height:'24%',background:'radial-gradient(ellipse,rgba(255,255,255,0.52) 0%,transparent 70%)',borderRadius:'50%',transform:'rotate(-30deg)',pointerEvents:'none' }} />
         {/* Eyes */}
         <div style={{ position:'absolute',top:'32%',left:'22%',width:16,height:16,borderRadius:'50%',background:'#fff',animation:'obBlink 4.5s ease-in-out infinite',boxShadow:'0 0 8px rgba(199,210,254,0.9)' }}>
-          <div style={{ position:'absolute',bottom:3,right:3,width:7,height:7,background:'#1e1b4b',borderRadius:'50%' }} />
+          <div style={{ position:'absolute',bottom:3,right:3,width:7,height:7,background:'#111F52',borderRadius:'50%' }} />
         </div>
         <div style={{ position:'absolute',top:'32%',right:'22%',width:16,height:16,borderRadius:'50%',background:'#fff',animation:'obBlink 4.5s ease-in-out infinite 0.18s',boxShadow:'0 0 8px rgba(199,210,254,0.9)' }}>
-          <div style={{ position:'absolute',bottom:3,right:3,width:7,height:7,background:'#1e1b4b',borderRadius:'50%' }} />
+          <div style={{ position:'absolute',bottom:3,right:3,width:7,height:7,background:'#111F52',borderRadius:'50%' }} />
         </div>
         {/* Smile */}
         <div style={{ position:'absolute',bottom:'22%',left:'50%',transform:'translateX(-50%)',width:28,height:12,borderBottom:'3px solid rgba(255,255,255,0.75)',borderRadius:'0 0 28px 28px' }} />
       </div>
-      <div style={{ width:72,height:12,borderRadius:'50%',margin:'4px auto 0',background:'rgba(79,70,229,0.4)',animation:'obShadow 3s ease-in-out infinite' }} />
-      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#a5b4fc',background:'rgba(37,84,212,0.15)',border:'1px solid rgba(165,180,252,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>Пит</div>
+      <div style={{ width:72,height:12,borderRadius:'50%',margin:'4px auto 0',background:'rgba(37,84,212,0.4)',animation:'obShadow 3s ease-in-out infinite' }} />
+      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#93B4FD',background:'rgba(37,84,212,0.15)',border:'1px solid rgba(147,180,253,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>Пит</div>
     </div>
   )
 }
@@ -213,22 +213,26 @@ export default function Onboarding({ email, existingUser, onComplete }) {
     <>
       <style>{STYLES}</style>
       <div className="onb-scroll" style={{
-        background:'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
+        background:'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#101d47 100%)',
         fontFamily:'-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif',
       }}>
         {/* Orbs */}
         <div style={{ position:'absolute',top:'8%',left:'5%',width:340,height:340,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(37,84,212,0.22) 0%,transparent 70%)',animation:'obOrb1 9s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
         <div style={{ position:'absolute',bottom:'10%',right:'4%',width:280,height:280,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,110,240,0.18) 0%,transparent 70%)',animation:'obOrb2 11s ease-in-out infinite',pointerEvents:'none',filter:'blur(2px)' }} />
         <div style={{ position:'absolute',top:'50%',left:'68%',width:190,height:190,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(59,130,246,0.14) 0%,transparent 70%)',animation:'obOrb3 7s ease-in-out infinite',pointerEvents:'none' }} />
-        <div style={{ position:'absolute',top:'72%',left:'12%',width:150,height:150,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(167,139,250,0.16) 0%,transparent 70%)',animation:'obOrb1 13s ease-in-out infinite reverse',pointerEvents:'none' }} />
+        <div style={{ position:'absolute',top:'72%',left:'12%',width:150,height:150,borderRadius:'50%',background:'radial-gradient(ellipse,rgba(91,142,248,0.16) 0%,transparent 70%)',animation:'obOrb1 13s ease-in-out infinite reverse',pointerEvents:'none' }} />
 
         <div className="onb-center" style={{ padding:'48px 20px' }}>
         <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1 }}>
-          <div style={{ display:'flex',justifyContent:'center',marginBottom:16 }}><PitBig /></div>
+          {/* Пит-аватар показываем на выборе роли и фото; на шаге профиля (2)
+              его убираем — форма длинная, аватар не нужен. */}
+          {step !== 2 && (
+            <div style={{ display:'flex',justifyContent:'center',marginBottom:16 }}><PitBig /></div>
+          )}
 
           <div style={{ textAlign:'center',marginBottom:20 }}>
             <span style={{ fontSize:24,fontWeight:800,color:'#fff',letterSpacing:'-0.02em' }}>
-              OneOn<span style={{ color:'#818cf8' }}>One</span>
+              OneOn<span style={{ color:'#5B8EF8' }}>One</span>
             </span>
           </div>
 
@@ -308,7 +312,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                 )}
                 <button type="submit" disabled={loading} style={{
                   width:'100%',padding:'13px 24px',fontSize:15,fontWeight:700,
-                  background:loading?'rgba(37,84,212,0.4)':'linear-gradient(135deg,#2554D4,#4f46e5)',
+                  background:loading?'rgba(37,84,212,0.4)':'linear-gradient(135deg,#2554D4,#3B6EF0)',
                   color:'#fff',border:'none',borderRadius:12,cursor:loading?'default':'pointer',
                   boxShadow:'0 4px 16px rgba(37,84,212,0.35)',transition:'all 0.2s',
                   display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,
@@ -332,7 +336,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                     onClick={() => setShowCropModal(true)}
                     style={{
                       width:100,height:100,borderRadius:'50%',margin:'0 auto 16px',cursor:'pointer',
-                      background:avatarPreview?'transparent':'linear-gradient(135deg,#2554D4,#4f46e5)',
+                      background:avatarPreview?'transparent':'linear-gradient(135deg,#2554D4,#3B6EF0)',
                       border:'3px solid rgba(37,84,212,0.5)',
                       display:'flex',alignItems:'center',justifyContent:'center',
                       fontSize:36,color:'#fff',fontWeight:700,overflow:'hidden',
@@ -364,7 +368,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                     }}>Пропустить</button>
                     {avatarPreview && (
                       <button onClick={handlePhotoSave} disabled={photoLoading} style={{
-                        flex:1,padding:'12px',background:'linear-gradient(135deg,#2554D4,#4f46e5)',
+                        flex:1,padding:'12px',background:'linear-gradient(135deg,#2554D4,#3B6EF0)',
                         border:'none',color:'#fff',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,
                         boxShadow:'0 4px 16px rgba(37,84,212,0.35)',
                       }}>{photoLoading ? 'Сохранение...' : 'Сохранить →'}</button>

@@ -95,14 +95,14 @@ export default function SurveyPage({ user, onDone }) {
 
   return (
     <div className="onb-scroll" style={{
-      background: 'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#172554 100%)',
+      background: 'linear-gradient(135deg,#0a1330 0%,#1e40af 55%,#101d47 100%)',
       fontFamily: 'var(--font-sans)',
     }}>
       <div className="onb-center" style={{ padding: '48px 20px' }}>
       <div style={{ width: '100%', maxWidth: 520 }}>
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
           <span style={{ fontSize: 24, fontWeight: 800, color: '#fff', letterSpacing: '-0.02em' }}>
-            OneOn<span style={{ color: '#818cf8' }}>One</span>
+            OneOn<span style={{ color: '#5B8EF8' }}>One</span>
           </span>
         </div>
 
@@ -123,7 +123,7 @@ export default function SurveyPage({ user, onDone }) {
           boxShadow: '0 24px 64px rgba(0,0,0,0.4)', padding: '26px 26px 22px',
           animation: 'fadeUp 0.35s var(--ease-spring) both',
         }}>
-          <p style={{ fontSize: 12, fontWeight: 700, color: '#a5b4fc', letterSpacing: '0.04em', marginBottom: 8 }}>
+          <p style={{ fontSize: 12, fontWeight: 700, color: '#93B4FD', letterSpacing: '0.04em', marginBottom: 8 }}>
             Вопрос {step + 1} из {total}
           </p>
           <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{q.title}</h2>
@@ -143,14 +143,14 @@ export default function SurveyPage({ user, onDone }) {
                     display: 'flex', alignItems: 'center', gap: 12, textAlign: 'left',
                     width: '100%', cursor: 'pointer', padding: '14px 16px', borderRadius: 12,
                     background: on ? 'rgba(37,84,212,0.22)' : 'rgba(255,255,255,0.05)',
-                    border: `1px solid ${on ? 'rgba(129,140,248,0.8)' : 'rgba(255,255,255,0.1)'}`,
+                    border: `1px solid ${on ? 'rgba(91,142,248,0.8)' : 'rgba(255,255,255,0.1)'}`,
                     color: '#fff', transition: 'all 0.18s var(--ease-smooth)',
                   }}
                 >
                   <span style={{
                     flexShrink: 0, width: 20, height: 20,
                     borderRadius: isMulti ? 6 : '50%',
-                    border: `2px solid ${on ? '#818cf8' : 'rgba(255,255,255,0.35)'}`,
+                    border: `2px solid ${on ? '#5B8EF8' : 'rgba(255,255,255,0.35)'}`,
                     background: on ? '#2554D4' : 'transparent',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
@@ -191,7 +191,7 @@ export default function SurveyPage({ user, onDone }) {
               disabled={!canContinue || !!busy}
               style={{
                 flex: 1, padding: '13px 20px', fontSize: 15, fontWeight: 700,
-                background: (!canContinue || busy) ? 'rgba(37,84,212,0.4)' : 'linear-gradient(135deg,#2554D4,#4f46e5)',
+                background: (!canContinue || busy) ? 'rgba(37,84,212,0.4)' : 'linear-gradient(135deg,#2554D4,#3B6EF0)',
                 color: '#fff', border: 'none', borderRadius: 12,
                 cursor: (!canContinue || busy) ? 'default' : 'pointer',
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,

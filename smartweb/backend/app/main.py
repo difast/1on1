@@ -304,7 +304,7 @@ async def lifespan(app: FastAPI):
     billing_task.cancel()
     tg_poll_task.cancel()
 
-app = FastAPI(title="Smart 1-on-1", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="Smart 1-on-1", version="0.1.1", lifespan=lifespan)
 
 # NOTE: Database migrations are run by start.sh (`alembic upgrade head`) BEFORE
 # uvicorn boots. Do NOT run them again in a startup event — a second in-process
