@@ -17,7 +17,10 @@ from datetime import datetime
 from sqlalchemy.orm import Session
 
 from app.models.plan import Plan, UsageCounter
-from app.services.plans import UNLIMITED_LIMITS, LOCKED_LIMITS, get_plan
+from app.services.plans import (
+    UNLIMITED_LIMITS, LOCKED_LIMITS, COMING_SOON_FEATURES, COMING_SOON_LABEL,
+    FEATURE_LABELS, LEGACY_PLAN_CODES, get_plan, min_plan_for_feature,
+)
 
 
 def entitlements_enforced() -> bool:
@@ -38,51 +41,70 @@ def resolve_plan_code(db: Session, user) -> str:
         from app.services.subscriptions import active_plan_code_for_user
         code = active_plan_code_for_user(db, user)
         if code:
-            return code
+            return LEGACY_PLAN_CODES.get(code, code)
     except Exception:
         pass
     return "free"
+
+
+def trial_restrictions(db: Session, user) -> list[str]:
+    """Функции, закрытые НА ВРЕМЯ пробного периода текущего тарифа.
+
+    Отдельного механизма для триала нет: ограничение выражается теми же
+    флагами фич, поэтому дальше работает обычный require_feature.
+    Сейчас это Team: ONE AI и Развитие на 14-дневном триале недоступны.
+    """
+    if user is None:
+        return []
+    try:
+        from app.services import subscriptions as subs
+        sub = subs.get_subscription(db, "user", user.id)
+    except Exception:
+        return []
+    if not sub or sub.status != "trialing":
+        return []
+    if sub.trial_end and sub.trial_end <= datetime.utcnow():
+        return []
+    plan = get_plan(db, sub.plan_code)
+    if plan is None:
+        return []
+    return list((plan.limits or {}).get("trial_restricted_features") or [])
 
 
 def effective_limits(db: Session, user) -> dict:
     code = resolve_plan_code(db, user)
     if code == "__unlimited__":
         return dict(UNLIMITED_LIMITS)
-    # Пробный период (14 дней полного доступа) истёк и enforcement включён —
-    # доступ заблокирован до выбора тарифа. Без enforcement лимиты обычные (Free).
+    # Пробный период (14 дней) истёк и enforcement включён — доступ заблокирован
+    # до выбора тарифа. Без enforcement лимиты обычные (Free).
     if code == "free" and entitlements_enforced():
         try:
-            from app.services.subscriptions import free_window
-            if free_window(db, user).get("free_expired"):
+            from app.services.subscriptions import access_window
+            if access_window(db, user).get("expired"):
                 return dict(LOCKED_LIMITS)
         except Exception:
             pass
     p = get_plan(db, code) or get_plan(db, "free")
-    return dict(p.limits) if p else {}
+    limits = dict(p.limits) if p else {}
+    if not limits:
+        return limits
+
+    restricted = trial_restrictions(db, user)
+    if restricted:
+        features = dict(limits.get("features") or {})
+        for f in restricted:
+            features[f] = False
+        limits["features"] = features
+        limits["trial_restricted_features"] = restricted
+    return limits
 
 
 def feature_enabled(limits: dict, feature: str) -> bool:
     return bool((limits.get("features") or {}).get(feature, False))
 
 
-# Человекочитаемые названия функций для мягких тарифных уведомлений (Задача 3).
-# Совпадают с формулировками на странице «Мой тариф» и лендинге.
-FEATURE_LABELS = {
-    "pit": "AI-ассистент Пит",
-    "ai_slots": "AI-подбор слотов для встреч",
-    "ru_queries": "Запросы на русском",
-    "ai_decomposition": "AI-декомпозиция задач",
-    "mood": "Настроение команды",
-    "analytics": "Аналитика",
-    "risk_alerts": "Оповещения о рисках",
-    "csv_export": "Экспорт данных (Excel)",
-    "video_calls": "Видеозвонки",
-    "transcripts": "Транскрипты встреч",
-    "time_tracking": "Учёт времени",
-    "sso": "SSO",
-    "on_premise": "On-premise",
-    "dedicated_manager": "Персональный менеджер",
-}
+# Человекочитаемые названия функций живут в каталоге тарифов (plans.py), чтобы
+# подпись в уведомлении, на экране «Мой тариф» и на лендинге была одна и та же.
 
 
 def feature_lock(db: Session, user, feature: str) -> dict | None:
@@ -91,6 +113,12 @@ def feature_lock(db: Session, user, feature: str) -> dict | None:
 
     Возвращаемая структура становится detail у HTTP 402 и распознаётся фронтом,
     чтобы показать понятное сообщение с ссылкой на тарифы, а не техническую ошибку.
+
+    Три причины недоступности, все — с одним и тем же кодом feature_locked,
+    чтобы UI не заводил отдельных веток:
+      1. функция временно не работает (COMING_SOON_FEATURES) — «Скоро»;
+      2. функция закрыта на время пробного периода (Team: ONE AI, Развитие);
+      3. функция доступна начиная с более старшего тарифа — называем его явно.
     """
     if user is None or not entitlements_enforced():
         return None
@@ -98,12 +126,38 @@ def feature_lock(db: Session, user, feature: str) -> dict | None:
     if feature_enabled(limits, feature):
         return None
     label = FEATURE_LABELS.get(feature, "Эта функция")
+
+    if feature in COMING_SOON_FEATURES:
+        return {
+            "code": "feature_locked", "feature": feature, "feature_label": label,
+            "coming_soon": True, "min_plan": None, "min_plan_name": None,
+            "message": f"Функция «{label}» пока недоступна — {COMING_SOON_LABEL.lower()}.",
+        }
+
+    if feature in (limits.get("trial_restricted_features") or []):
+        plan_code = resolve_plan_code(db, user)
+        plan = get_plan(db, plan_code)
+        plan_name = plan.name if plan else plan_code
+        return {
+            "code": "feature_locked", "feature": feature, "feature_label": label,
+            "trial_locked": True, "min_plan": plan_code, "min_plan_name": plan_name,
+            "message": f"Функция «{label}» недоступна во время пробного периода. "
+                       f"Оформите подписку {plan_name}, чтобы включить её.",
+        }
+
+    mp = min_plan_for_feature(feature)
+    if mp:
+        return {
+            "code": "feature_locked", "feature": feature, "feature_label": label,
+            "min_plan": mp["code"], "min_plan_name": mp["name"],
+            "message": f"Функция «{label}» доступна на тарифе {mp['name']}. "
+                       f"Повысьте тариф, чтобы использовать её.",
+        }
     return {
-        "code": "feature_locked",
-        "feature": feature,
-        "feature_label": label,
+        "code": "feature_locked", "feature": feature, "feature_label": label,
+        "min_plan": None, "min_plan_name": None,
         "message": f"Функция «{label}» доступна на другом тарифе. "
-                   f"Повысьте тариф, чтобы использовать {label.lower()}.",
+                   f"Повысьте тариф, чтобы использовать её.",
     }
 
 
@@ -137,21 +191,27 @@ def team_limit_error(db: Session, user) -> str | None:
 
 
 def member_limit_error(db: Session, team) -> str | None:
-    """team — объект Team; тариф берём у тимлида команды. Считаем участников
-    без самого тимлида (роль != 'lead')."""
+    """team — объект Team; тариф берём у тимлида команды.
+
+    Считаем ВСЕХ пользователей команды, включая тимлида: в новой сетке лимит
+    сформулирован как «до N пользователей» (Start — 5, Team — 30), а не «плюс
+    тимлид». Ключ max_users; max_members_per_team остаётся запасным для строк,
+    засеянных до смены сетки.
+    """
     if team is None or not entitlements_enforced():
         return None
     from app.models.user import User
     from app.models.team import TeamMember
     lead = db.query(User).filter(User.id == team.team_lead_id).first()
-    maxm = limit_value(effective_limits(db, lead), "max_members_per_team")
+    limits = effective_limits(db, lead)
+    maxm = limit_value(limits, "max_users")
+    if maxm is None:
+        maxm = limit_value(limits, "max_members_per_team")
     if maxm is None:
         return None
-    count = db.query(TeamMember).filter(
-        TeamMember.team_id == team.id, TeamMember.role != "lead"
-    ).count()
+    count = db.query(TeamMember).filter(TeamMember.team_id == team.id).count()
     if count >= maxm:
-        return f"Достигнут лимит участников команды для тарифа ({maxm})." + UPGRADE_HINT
+        return f"Достигнут лимит пользователей команды для тарифа ({maxm})." + UPGRADE_HINT
     return None
 
 

@@ -46,15 +46,25 @@ def _upsert(db: Session, subject_type: str, subject_id: int) -> Subscription:
     return sub
 
 
-# Бесплатный старт = тариф Free (только заявленные для Free функции), с
-# 14-дневным окном. Полного набора функций Free НЕ даёт.
-SIGNUP_FREE_DAYS = 14
+# Регистрация = 14-дневный пробный период тарифа Start с полным доступом к его
+# функциям (без карты). Так описан Start в тарифной сетке (plans.py).
+SIGNUP_TRIAL_DAYS = 14
+SIGNUP_TRIAL_PLAN = "start"
 
 
-def start_signup_free(db: Session, subject_type: str, subject_id: int, days: int = SIGNUP_FREE_DAYS) -> Subscription:
-    """При регистрации — тариф Free с 14-дневным окном (без карты).
-    Не трогаем уже существующую подписку (напр. заведён админом)."""
-    return start_free_window(db, subject_type, subject_id, days=days)
+def start_signup_trial(db: Session, subject_type: str, subject_id: int,
+                       days: int = SIGNUP_TRIAL_DAYS,
+                       plan_code: str = SIGNUP_TRIAL_PLAN) -> Subscription:
+    """При регистрации — пробный период тарифа Start на 14 дней (без карты).
+    Не трогаем уже существующую подписку (напр. заведена админом)."""
+    existing = get_subscription(db, subject_type, subject_id)
+    if existing:
+        return existing
+    return start_trial(db, subject_type, subject_id, plan_code, days=days)
+
+
+# Совместимость со старым именем (вызовы могли остаться в внешних скриптах).
+start_signup_free = start_signup_trial
 
 
 def start_free_window(db: Session, subject_type: str, subject_id: int, days: int | None = None) -> Subscription:
@@ -72,18 +82,36 @@ def start_free_window(db: Session, subject_type: str, subject_id: int, days: int
     return sub
 
 
-def free_window(db: Session, user) -> dict:
-    """Состояние 14-дневного окна Free. free_until=None — без ограничения."""
-    empty = {"free_until": None, "free_expired": False}
+def access_window(db: Session, user) -> dict:
+    """Состояние бесплатного окна доступа: пробный период тарифа Start (после
+    регистрации) либо старое Free-окно у аккаунтов, заведённых до смены сетки.
+
+    until=None — окна нет (платная подписка или бессрочная запись).
+    """
+    empty = {"until": None, "expired": False, "trial_plan": None}
     if user is None:
         return empty
     sub = get_subscription(db, "user", user.id)
-    if not sub or sub.status != "free" or not sub.current_period_end:
+    if not sub:
         return empty
-    return {
-        "free_until": sub.current_period_end.isoformat(),
-        "free_expired": sub.current_period_end < datetime.utcnow(),
-    }
+    if sub.status == "trialing":
+        end = sub.trial_end or sub.current_period_end
+        if not end:
+            return empty
+        return {"until": end.isoformat(), "expired": end < datetime.utcnow(),
+                "trial_plan": sub.plan_code}
+    if sub.status == "free" and sub.current_period_end:
+        return {"until": sub.current_period_end.isoformat(),
+                "expired": sub.current_period_end < datetime.utcnow(),
+                "trial_plan": None}
+    return empty
+
+
+def free_window(db: Session, user) -> dict:
+    """Старая форма ответа (free_until/free_expired) — оставлена, чтобы не
+    ломать уже написанные вызовы; данные берутся из access_window."""
+    w = access_window(db, user)
+    return {"free_until": w["until"], "free_expired": w["expired"]}
 
 
 def start_trial(db: Session, subject_type: str, subject_id: int, plan_code: str, days: int = 14) -> Subscription:

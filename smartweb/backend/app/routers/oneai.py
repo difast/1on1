@@ -30,6 +30,9 @@ def _enforce_actor(current, actor_id: int):
 def sections(actor_id: int = Query(...), db: Session = Depends(get_db), current=Depends(get_current_user)):
     """Доступные разделы ONE AI с учётом роли (тимлид/участник)."""
     _enforce_actor(current, actor_id)
+    # ONE AI — тариф Team и выше; на пробном периоде Team недоступен.
+    actor = db.query(User).filter(User.id == actor_id).first()
+    entitlements.require_feature(db, actor, "one_ai")
     return {"sections": ai_context.available_sections(db, actor_id)}
 
 
@@ -39,8 +42,9 @@ def query(data: OneAiQuery, db: Session = Depends(get_db), current=Depends(get_c
     в общем AI-слое (ai_context) ДО обращения к модели, тот же слой, что у Пита."""
     _enforce_actor(current, data.actor_id)
     actor = db.query(User).filter(User.id == data.actor_id).first()
-    # ONE AI — премиальный стратегический инструмент: мягкое тарифное уведомление.
-    entitlements.require_feature(db, actor, "pit")
+    # ONE AI — функция тарифа Team и выше (на пробном периоде Team недоступна):
+    # мягкое тарифное уведомление, а не техническая ошибка.
+    entitlements.require_feature(db, actor, "one_ai")
 
     # Сбор контекста + проверка прав (бросит 403/400 при нарушении).
     context, based_on = ai_context.build_oneai_context(

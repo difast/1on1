@@ -30,7 +30,15 @@ def get_plans(db: Session = Depends(get_db)):
             "code": p.code, "name": p.name,
             "price_month": p.price_month, "price_year": p.price_year,
             "currency": p.currency, "per_seat": p.per_seat,
+            # is_enterprise = договорной тариф (Business, Enterprise):
+            # самостоятельной оплаты нет, только «Связаться с нами».
             "is_enterprise": p.is_enterprise, "limits": p.limits,
+            # Дублируем ключевые поля витрины наверх, чтобы веб, приложение и
+            # Mini App брали одни и те же строки, а не собирали их сами.
+            "public": (p.limits or {}).get("public", True),
+            "billing_period": (p.limits or {}).get("billing_period"),
+            "price_label": (p.limits or {}).get("price_label"),
+            "users_label": (p.limits or {}).get("users_label"),
         }
         for p in plans
     ]
@@ -75,32 +83,41 @@ def billing_me(
                 "manager_contact": sub.manager_contact,
             }
 
-    free = subs.free_window(db, user) if user is not None else {"free_until": None, "free_expired": False}
+    window = subs.access_window(db, user) if user is not None else {"until": None, "expired": False, "trial_plan": None}
+    plan = get_plan(db, code) if code != "__unlimited__" else None
 
     return {
         "plan_code": code if code != "__unlimited__" else "unlimited",
+        "plan_name": plan.name if plan else ("Полный доступ" if code == "__unlimited__" else code),
+        "price_label": (plan.limits or {}).get("price_label") if plan else None,
+        "users_label": (plan.limits or {}).get("users_label") if plan else None,
+        "billing_period": (plan.limits or {}).get("billing_period") if plan else None,
         "full_access_override": bool(user and getattr(user, "billing_override", False)),
         "limits": limits,
         "usage": usage,
         "subscription": subscription,
-        # 14-дневное окно Free.
-        "free_until": free.get("free_until"),
-        "free_expired": free.get("free_expired"),
+        # Функции, закрытые на время пробного периода (Team: ONE AI, Развитие).
+        "trial_restricted_features": limits.get("trial_restricted_features") or [],
+        # 14-дневное окно бесплатного доступа (пробный период Start либо
+        # унаследованное Free-окно). Старые ключи сохранены для совместимости.
+        "trial_until": window.get("until"),
+        "trial_expired": window.get("expired"),
+        "trial_plan": window.get("trial_plan"),
+        "free_until": window.get("until"),
+        "free_expired": window.get("expired"),
     }
 
 
-def _amount_kopecks(plan, period: str, seats: int) -> int:
-    """Charge amount in kopecks. Year price on the page is the discounted
-    per-month figure → multiply by 12 for the annual charge."""
-    base = plan.price_year * 12 if period == "year" else plan.price_month
-    if plan.per_seat:
-        base = base * max(seats, 1)
-    return int(round(base * 100))
+def _amount_kopecks(plan) -> int:
+    """Сумма списания в копейках за расчётный период тарифа.
+    Start — 1 490 ₽ за месяц, Team — 49 990 ₽ за год ЕДИНОВРЕМЕННО
+    (рассрочки нет). Тариф сам определяет период — см. plan_change.plan_period."""
+    return int(round(plan_change.charge_amount(plan) * 100))
 
 
 class CheckoutReq(BaseModel):
     plan_code: str
-    period: str = "month"          # month | year
+    period: str = "month"          # игнорируется: период задаёт сам тариф
     seats: int = 1
     user_id: int | None = None
 
@@ -128,22 +145,33 @@ def checkout(data: CheckoutReq, db: Session = Depends(get_db), current=Depends(g
         })
 
     plan = get_plan(db, data.plan_code)
-    if plan is None or plan.is_enterprise:
-        raise HTTPException(400, "Plan not purchasable self-serve")
+    if plan is None:
+        raise HTTPException(400, "Unknown plan")
+    # Business и Enterprise — договорные: самостоятельной оплаты нет,
+    # оформление ручное через продажи (plan_change отдаёт contact_sales).
+    if plan.is_enterprise:
+        raise HTTPException(status_code=400, detail={
+            "code": "contract_plan",
+            "message": f"Тариф {plan.name} подключается индивидуально — напишите нам, "
+                       f"и мы подберём условия. Оплатить его картой в личном кабинете нельзя.",
+        })
 
-    amount = _amount_kopecks(plan, data.period, data.seats)
+    period = plan_change.plan_period(plan)          # month (Start) | year (Team)
+    amount = _amount_kopecks(plan)
+    period_ru = "год" if period == "year" else "месяц"
     pay = Payment(
         subject_type="user", subject_id=user.id, amount=amount, currency=plan.currency,
         status="pending", provider="cloudpayments",
-        payload={"plan_code": plan.code, "period": data.period, "seats": data.seats},
+        payload={"plan_code": plan.code, "period": period, "seats": data.seats},
     )
     db.add(pay); db.commit(); db.refresh(pay)
 
     provider = get_provider()
     cfg = provider.checkout_config(
         amount=amount, currency=plan.currency,
-        description=f"OneOnOne — тариф {plan.name} ({data.period})",
+        description=f"OneOnOne — тариф {plan.name}, {period_ru}",
         account_id=str(user.id), invoice_id=str(pay.id), recurrent=True,
+        period=period,
     )
     return {"payment_id": pay.id, "checkout": cfg}
 

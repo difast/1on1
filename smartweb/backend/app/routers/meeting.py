@@ -22,6 +22,9 @@ def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)
     """
     from app.services import entitlements
     lead = db.query(User).filter(User.id == data.team_lead_id).first()
+    # Групповые встречи — функция тарифа Team и выше (на Start только 1-на-1):
+    # мягкое тарифное уведомление, а не техническая ошибка.
+    entitlements.require_feature(db, lead, "group_meetings")
     # Лимит тарифа проверяем один раз на всю группу (это одно «событие встречи»).
     err = entitlements.meeting_limit_error(db, lead)
     if err:

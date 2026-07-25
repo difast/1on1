@@ -167,6 +167,13 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
     payload = data.model_dump()
     assignees_in = payload.pop("assignees", None) or []
 
+    # Совместная задача (несколько исполнителей, части, общий прогресс) — функция
+    # тарифа Team и выше. Обычная задача с одним ответственным доступна на Start.
+    if len({a["user_id"] for a in assignees_in}) > 1:
+        from app.services import entitlements
+        author = db.query(User).filter(User.id == payload.get("assigned_by")).first()
+        entitlements.require_feature(db, author, "collab_tasks")
+
     task = Task(**payload)
     db.add(task)
     db.flush()  # получить task.id в рамках той же транзакции
@@ -385,6 +392,10 @@ def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(g
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
     _require_lead(db, task, data.actor_id)
+    # Добавление второго исполнителя делает задачу совместной — тариф Team и выше.
+    from app.services import entitlements
+    actor = db.query(User).filter(User.id == data.actor_id).first()
+    entitlements.require_feature(db, actor, "collab_tasks")
     task_collab.add_assignee(db, task, data.user_id, data.actor_id, part=data.part_description)
     db.commit()
     db.refresh(task)

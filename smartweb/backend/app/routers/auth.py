@@ -139,10 +139,10 @@ def register(data: RegisterReq, background_tasks: BackgroundTasks, db: Session =
     db.commit()
     db.refresh(user)
 
-    # Бесплатный старт (тариф Free) — как и при обычном создании пользователя.
+    # Пробный период тарифа Start (14 дней) — как и при обычном создании пользователя.
     try:
         from app.services import subscriptions as subs
-        subs.start_signup_free(db, "user", user.id)
+        subs.start_signup_trial(db, "user", user.id)
     except Exception:
         db.rollback()
 

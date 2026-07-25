@@ -12,8 +12,11 @@ class PaymentProvider(ABC):
 
     @abstractmethod
     def checkout_config(self, *, amount: int, currency: str, description: str,
-                        account_id: str, invoice_id: str, recurrent: bool) -> dict:
-        """Return the data the frontend needs to open the payment UI."""
+                        account_id: str, invoice_id: str, recurrent: bool,
+                        period: str = "month") -> dict:
+        """Return the data the frontend needs to open the payment UI.
+        period — расчётный период тарифа ("month" | "year"); от него зависит
+        интервал рекуррентных списаний у провайдера."""
         ...
 
     @abstractmethod

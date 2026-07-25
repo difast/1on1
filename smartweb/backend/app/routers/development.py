@@ -28,7 +28,15 @@ from app.routers.goal import (
     _enforce_actor, _is_lead_of, _leads_of_user, _name, _apply_status_progress,
 )
 
-router = APIRouter()
+def _require_development(db: Session = Depends(get_db), current=Depends(get_current_user)):
+    """Тарифный гейт всего модуля «Развитие»: функция тарифа Team и выше, а на
+    пробном периоде Team недоступна (см. plans.trial_restricted_features).
+    Отдельного механизма для триала нет — тот же require_feature, тот же мягкий
+    ответ 402 feature_locked, который UI показывает как тарифное уведомление."""
+    entitlements.require_feature(db, current, "development")
+
+
+router = APIRouter(dependencies=[Depends(_require_development)])
 
 SOURCE_LABEL = {"rule": "Правило", "lead": "Тимлид", "knowledge": "База знаний", "ai": "Ассистент Пит"}
 
@@ -519,7 +527,7 @@ def ai_recommendation(user_id: int = Query(...), actor_id: int = Query(...),
     if actor_id != user_id:
         raise HTTPException(status_code=403, detail="AI-рекомендации доступны только по своему развитию")
     user = db.query(User).filter(User.id == user_id).first()
-    entitlements.require_feature(db, user, "pit")  # мягкое 402, не техническая ошибка
+    entitlements.require_feature(db, user, "pit")  # мягкое 402, не техническая ошибка (модуль уже под гейтом development)
 
     gaps = [us for us in db.query(UserSkill).filter(UserSkill.user_id == user_id).all()
             if us.desired_level and us.desired_level > us.current_level]

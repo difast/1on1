@@ -149,10 +149,10 @@ def create_from_telegram(db: Session, tg: dict) -> User:
         avatar=tg.get("photo_url"),
     )
     db.add(user); db.commit(); db.refresh(user)
-    # Бесплатный старт как и при обычной регистрации.
+    # Пробный период тарифа Start (14 дней) — как и при обычной регистрации.
     try:
         from app.services import subscriptions as subs
-        subs.start_signup_free(db, "user", user.id)
+        subs.start_signup_trial(db, "user", user.id)
     except Exception:
         db.rollback()
     return user

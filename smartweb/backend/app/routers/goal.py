@@ -11,7 +11,14 @@ from app.schemas.goal import GoalCreate, GoalUpdate, GoalCommentCreate, GoalOut
 from app.utils.auth import get_current_user
 from app.services.notification_service import NotificationService
 
-router = APIRouter()
+def _require_goals(db: Session = Depends(get_db), current=Depends(get_current_user)):
+    """Тарифный гейт модуля целей/OKR: функция тарифа Team и выше.
+    Мягкое 402 feature_locked, а не техническая ошибка."""
+    from app.services import entitlements
+    entitlements.require_feature(db, current, "goals")
+
+
+router = APIRouter(dependencies=[Depends(_require_goals)])
 
 STAGNATION_DAYS = 14
 
