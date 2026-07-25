@@ -4,24 +4,34 @@ import { confirmDialog } from '../lib/ui'
 import useEscapeKey from '../lib/useEscapeKey'
 
 // "Мой тариф" — sales-oriented plan screen + CloudPayments checkout.
+// Сетка, цены и состав функций приходят из каталога бэкенда (plans.py) —
+// здесь только оформление, никаких зашитых цен.
 const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
 
 const DESC = {
-  free: 'Базовый бесплатный доступ, 14 дней. Без карты.',
-  start: 'Одна команда с AI-ассистентом Пит.',
-  team: 'Растущим командам: аналитика и AI целиком.',
-  company: 'Крупным командам: видео, транскрипты, учёт времени.',
-  enterprise: 'Организациям: On-premise, SSO и SLA.',
+  free: 'Без подписки: доступ к платным функциям закрыт.',
+  start: 'Одна команда до 5 человек: встречи 1-на-1, задачи, заметки, базовый Пит.',
+  team: 'Команде до 30 человек: групповые встречи, аналитика, Цели, Развитие, ONE AI.',
+  business: 'Организации: несколько команд, кросс-командный ONE AI, HR-аналитика.',
+  enterprise: 'Индивидуально: интеграции, SSO/SAML, SLA, условия договора.',
 }
 const POPULAR = 'team'
+// Что показываем в карточке тарифа. Порядок — от главного к второстепенному.
 const FEATURE_LABELS = [
-  ['pit', 'AI-ассистент Пит'],
-  ['analytics', 'Аналитика команды'],
-  ['risk_alerts', 'Зоны риска и алерты'],
-  ['video_calls', 'Встроенные видеозвонки'],
-  ['transcripts', 'Транскрипты встреч (по записи)'],
+  ['group_meetings', 'Групповые встречи'],
+  ['collab_tasks', 'Совместные задачи'],
+  ['analytics', 'Командная аналитика'],
+  ['goals', 'Цели и OKR'],
+  ['development', 'Развитие'],
+  ['one_ai', 'ONE AI'],
   ['csv_export', 'Экспорт данных (Excel)'],
+  ['multi_team', 'Несколько команд'],
+  ['hr_analytics', 'HR-аналитика организации'],
+  ['sso', 'SSO / SAML'],
 ]
+// Функция есть в описании тарифов, но пока не работает — помечаем «Скоро»
+// и не показываем как активную ни на одном тарифе.
+const COMING_SOON = [['transcripts', 'Автотранскрипция встреч']]
 
 function loadCpWidget() {
   return new Promise((resolve, reject) => {
@@ -36,18 +46,16 @@ const Check = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.5 3.5l-6 6L2.5 6.8" stroke="var(--color-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
 )
 
-const fmt = (v) => (v === null || v === undefined || v < 0) ? '∞' : v
+const fmt = (v) => (v === null || v === undefined || v < 0) ? 'без ограничений' : v
 
 function planBullets(p) {
   const l = p.limits || {}, f = l.features || {}
   const out = []
-  if (l.max_members_per_team != null) out.push(`До ${fmt(l.max_members_per_team)} участников`)
-  else out.push('Участников без лимита')
-  out.push(`Команд: ${fmt(l.max_teams)}`)
-  out.push(`Встреч/мес: ${fmt(l.max_meetings_per_month)}`)
+  out.push(l.users_label || (l.max_users != null ? `До ${l.max_users} пользователей` : 'Пользователей без лимита'))
+  out.push(l.max_teams === 1 ? '1 команда' : `Команд: ${fmt(l.max_teams)}`)
   for (const [key, label] of FEATURE_LABELS) {
     if (f[key]) out.push(label)
-    if (out.length >= 6) break
+    if (out.length >= 7) break
   }
   return out
 }
@@ -55,7 +63,6 @@ function planBullets(p) {
 export default function Billing({ open, currentUser, initialPlan, onClose }) {
   const [me, setMe] = useState(null)
   const [plans, setPlans] = useState([])
-  const [period, setPeriod] = useState('month')
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
 
@@ -73,10 +80,12 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
 
   // Открыть виджет оплаты CloudPayments (первый платёж / обновление карты).
   // Карточные данные идут только в виджет, на наш сервер не попадают.
+  // Период оплаты определяет сам тариф (Start — месяц, Team — год полной
+  // суммой, без рассрочки), поэтому с клиента его не передаём.
   const openWidget = async (p) => {
     setBusy(p.code)
     try {
-      const { data } = await checkoutPlan({ plan_code: p.code, period, user_id: currentUser.id })
+      const { data } = await checkoutPlan({ plan_code: p.code, user_id: currentUser.id })
       const cfg = data.checkout
       if (!cfg?.configured || !cfg.public_id) { setMsg('Платёжная система ещё не подключена администратором.'); setBusy(''); return }
       const cp = await loadCpWidget()
@@ -98,16 +107,18 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
   // (/billing/change/preview) — та же логика, что и для входа с лендинга.
   const handleBuy = async (p) => {
     setMsg('')
-    if (p.is_enterprise) { window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return }
+    // Business и Enterprise — договорные: автоматической оплаты нет,
+    // только обращение в продажи (тот же путь, что был у Enterprise).
+    if (p.is_enterprise) { window.location.href = `mailto:oneonone.io@yandex.com?subject=Тариф ${p.name} OneOnOne`; return }
     let d
     try {
-      const res = await changePlanPreview({ plan_code: p.code, period, user_id: currentUser.id })
+      const res = await changePlanPreview({ plan_code: p.code, user_id: currentUser.id })
       d = res.data
     } catch { setMsg('Не удалось проверить тариф. Попробуйте позже.'); return }
 
     switch (d.action) {
       case 'contact_sales':
-        window.location.href = 'mailto:oneonone.io@yandex.com?subject=Enterprise OneOnOne'; return
+        window.location.href = `mailto:oneonone.io@yandex.com?subject=Тариф ${p.name} OneOnOne`; return
       case 'already_on_plan':
       case 'fix_payment_first':
         setMsg(d.message); return
@@ -118,8 +129,9 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
         // Оформление платной подписки во время пробного периода.
         return openWidget(p)
       case 'upgrade': {
-        const extra = d.diff_month > 0 ? ` Доплата за текущий период — около ${d.diff_month}₽.` : ''
-        if (await confirmDialog({ title: `Перейти на тариф «${p.name}»?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
+        // Годовой тариф оплачивается ЦЕЛИКОМ и сразу — рассрочки нет.
+        const extra = d.amount ? ` К оплате сейчас: ${d.amount.toLocaleString('ru-RU')} ₽${d.period === 'year' ? ' за год, единовременно' : ' за месяц'}.` : ''
+        if (await confirmDialog({ title: `Перейти на тариф ${p.name}?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
           return openWidget(p)
         return
       }
@@ -133,7 +145,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
       case 'downgrade': {
         const warn = (d.over_limit || []).map(v => v.message).join(' ')
         const full = d.message + (warn ? `\n\nВнимание: ${warn}` : '')
-        if (await confirmDialog({ title: `Понизить тариф до «${p.name}»?`, message: full, confirmText: 'Запланировать понижение' })) {
+        if (await confirmDialog({ title: `Понизить тариф до ${p.name}?`, message: full, confirmText: 'Запланировать понижение' })) {
           // Планируемый переход на более дешёвый ПЛАТНЫЙ тариф применяется со
           // следующего периода. Серверное применение требует хранения
           // отложенного плана — см. отчёт; пока оформляется через поддержку.
@@ -151,6 +163,9 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
   const meetUsed = me?.usage?.meetings_this_month ?? 0
   const currentCode = me?.full_access_override ? 'unlimited' : (me?.plan_code || 'free')
   const currentIsPaid = currentCode !== 'free' && currentCode !== 'unlimited'
+  const currentName = me?.full_access_override ? 'Полный доступ' : (me?.plan_name || currentCode)
+  const inTrial = me?.subscription?.status === 'trialing'
+  const trialLocked = me?.trial_restricted_features || []
 
   return (
     <div className="bill-overlay" data-pit-hide onClick={onClose}>
@@ -161,12 +176,12 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
         </div>
 
         <div className="bill-body">
-          <p className="bill-hero">Выберите тариф под размер команды. Оплата картой или СБП, годовая подписка — на 20% выгоднее. Повышение действует сразу.</p>
+          <p className="bill-hero">Выберите тариф под размер команды. Start — 1 490 ₽ в месяц, Team — 49 990 ₽ в год единовременно. Business и Enterprise подключаются индивидуально. Повышение действует сразу.</p>
 
           {/* Current plan + usage */}
           <div className="bill-current">
             <span className="lbl">Текущий тариф</span>
-            <span className="bill-chip">{me?.full_access_override ? 'Полный доступ' : (me?.plan_code || 'free')}{me?.subscription?.status === 'trialing' ? ' · пробный' : ''}</span>
+            <span className="bill-chip">{currentName}{inTrial ? ' · пробный период' : ''}</span>
             {meetLimit != null && meetLimit >= 0 && (
               <div className="bill-usage">
                 <div className="cap">Встречи в этом месяце: {meetUsed} / {meetLimit}</div>
@@ -188,19 +203,20 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                 Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
               </div>
             )}
-            {/* 14-дневное окно Free */}
-            {currentCode === 'free' && me?.free_until && !me?.free_expired && (() => {
-              const end = new Date(me.free_until)
+            {/* 14-дневный пробный период */}
+            {inTrial && me?.trial_until && !me?.trial_expired && (() => {
+              const end = new Date(me.trial_until)
               const daysLeft = Math.max(Math.ceil((end - new Date()) / 86400000), 0)
               return (
                 <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
-                  Бесплатный период до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
+                  Пробный период до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
+                  {trialLocked.length > 0 && ' На пробном периоде тарифа Team недоступны ONE AI и Развитие — они включаются после оплаты.'}
                 </div>
               )
             })()}
-            {currentCode === 'free' && me?.free_expired && (
+            {me?.trial_expired && !currentIsPaid && (
               <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
-                Бесплатный период (14 дней) истёк. Выберите тариф, чтобы продолжить.
+                Пробный период (14 дней) истёк. Выберите тариф, чтобы продолжить.
               </div>
             )}
           </div>
@@ -216,40 +232,41 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
             </div>
           )}
 
-          {/* Period toggle */}
-          <div className="bill-toggle">
-            <button className={period === 'month' ? 'on' : ''} onClick={() => setPeriod('month')}>Ежемесячно</button>
-            <button className={period === 'year' ? 'on' : ''} onClick={() => setPeriod('year')}>Годовая <span className="bill-save">−20%</span></button>
-          </div>
-
-          {/* Plans */}
+          {/* Plans. Периода-переключателя нет: у каждого тарифа один период
+              оплаты (Start — месяц, Team — год), договорные тарифы — по запросу. */}
           <div className="bill-grid">
             {plans.map(p => {
               const isCurrent = currentCode === p.code
               const popular = p.code === POPULAR
-              const price = period === 'year' ? p.price_year : p.price_month
+              const l = p.limits || {}
+              const isFreeState = p.code === 'free'
               return (
                 <div key={p.code} className={`bill-card${popular ? ' popular' : ''}${isCurrent ? ' current' : ''}`}>
                   {popular && <span className="bill-ribbon">Популярный</span>}
                   <span className="bill-name">{p.name}</span>
                   <div className={`bill-price${p.is_enterprise ? ' ent' : ''}`}>
-                    {p.is_enterprise ? 'По запросу' : <>{price}₽<small>{p.per_seat ? ' /чел·мес' : ' /мес'}</small>{period === 'year' && !p.is_enterprise && price > 0 && <span className="old">{p.price_month}₽</span>}</>}
+                    {p.is_enterprise || isFreeState
+                      ? (l.price_label || 'По запросу')
+                      : <>{(p.price_year || p.price_month).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? ' /год' : ' /мес'}</small></>}
                   </div>
                   <div className="bill-desc">{DESC[p.code] || ''}</div>
                   <ul className="bill-feats">
                     {planBullets(p).map((b, i) => (<li key={i}><Check />{b}</li>))}
+                    {!isFreeState && COMING_SOON.map(([k, label]) => (
+                      <li key={k} style={{ opacity: .55 }}><Check />{label} — скоро</li>
+                    ))}
                   </ul>
                   {isCurrent ? (
                     <button className="bill-cta muted" disabled>Текущий тариф</button>
-                  ) : p.code === 'free' ? (
+                  ) : isFreeState ? (
                     currentIsPaid ? (
-                      <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>Перейти на Free</button>
+                      <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>Отказаться от подписки</button>
                     ) : (
-                      <button className="bill-cta ghost" disabled>Базовый</button>
+                      <button className="bill-cta ghost" disabled>Без подписки</button>
                     )
                   ) : (
                     <button className="bill-cta" disabled={busy === p.code} onClick={() => handleBuy(p)}>
-                      {busy === p.code ? '...' : p.is_enterprise ? 'Связаться' : 'Выбрать'}
+                      {busy === p.code ? '...' : p.is_enterprise ? 'Связаться с нами' : 'Выбрать'}
                     </button>
                   )}
                 </div>
@@ -258,7 +275,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
           </div>
 
           {msg && <p className="bill-msg">{msg}</p>}
-          <p className="bill-foot">Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
+          <p className="bill-foot">Start списывается раз в месяц, Team — раз в год полной суммой (рассрочки нет). Business и Enterprise оформляются по договору, без автоматического списания. Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
         </div>
       </div>
     </div>

@@ -579,12 +579,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   // Этап 5: мягкая рекомендация тарифа один раз, по размеру компании.
-  // 11-24 -> Команда, 25+ -> Компания. Меньше 11 или уже показано — ничего.
+  // Границы — из тарифной сетки: Start до 5 человек, Team до 30, дальше
+  // Business (договорной). До 6 человек или уже показано — ничего.
   const maybeShowPricingHint = (size) => {
     const n = Number(size)
     if (!n || user?.pricing_hint_shown) return
-    if (n >= 25) setPricingHint({ plan: 'company', label: 'Компания' })
-    else if (n >= 11) setPricingHint({ plan: 'team', label: 'Команда' })
+    if (n > 30) setPricingHint({ plan: 'business', label: 'Business' })
+    else if (n > 5) setPricingHint({ plan: 'team', label: 'Team' })
   }
 
   const dismissPricingHint = async () => {
@@ -2133,7 +2134,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       {pricingHint && (
         <Modal title="Рекомендация тарифа" onClose={dismissPricingHint}>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 16px', lineHeight: 1.5 }}>
-            Судя по размеру вашей компании, вам может подойти тариф «{pricingHint.label}». Это лишь
+            Судя по размеру вашей компании, вам может подойти тариф {pricingHint.label}. Это лишь
             подсказка — посмотрите условия и решите сами.
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
@@ -2318,7 +2319,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5 }}>
                 {slotsLocked.message}
               </p>
-              <button onClick={() => openPricing('team')} className="btn btn-accent btn-sm">Посмотреть тарифы</button>
+              <button onClick={() => openPricing(slotsLocked.min_plan || 'team')} className="btn btn-accent btn-sm">Посмотреть тарифы</button>
             </div>
           ) : aiSlots.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

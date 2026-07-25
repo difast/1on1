@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat, getMyMoodSeries } from '../api/client'
+import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat, getMyMoodSeries, getBillingMe } from '../api/client'
+import { openPricing } from '../lib/featureLock'
 import { useIsTelegram } from '../lib/surface'
 import XLSXStyle from 'xlsx-js-style'
 
@@ -286,6 +287,10 @@ function RiskCard({ s, delay }) {
 export default function LeadAnalytics({ user }) {
   // Mini App: только сводка (StatCards), без графиков и экспорта (таблица).
   const isTg = useIsTelegram()
+  // Экспорт Excel — функция тарифа Team и выше: спрашиваем свои лимиты, чтобы
+  // на Start показать мягкое тарифное уведомление, а не молча отдать файл.
+  const [exportAllowed, setExportAllowed] = useState(true)
+  const [exportMinPlan, setExportMinPlan] = useState('team')
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [selectedTeamIdx, setSelectedTeamIdx] = useState(0)
@@ -318,6 +323,18 @@ export default function LeadAnalytics({ user }) {
           }
         }
         setAgendaByTeam(map)
+      })
+      .catch(() => {})
+  }, [user.id])
+
+  // Тарифная доступность экспорта. Ошибку запроса трактуем в пользу
+  // пользователя (кнопка остаётся): жёсткая проверка всё равно на сервере.
+  useEffect(() => {
+    getBillingMe(user.id)
+      .then(r => {
+        const f = r.data?.limits?.features || {}
+        setExportAllowed(f.csv_export !== false)
+        setExportMinPlan('team')
       })
       .catch(() => {})
   }, [user.id])
@@ -1061,8 +1078,16 @@ export default function LeadAnalytics({ user }) {
         <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
         <StatCard value={agendaPct} suffix="%" label="Встреч с повесткой" accent={agendaPct !== null && agendaPct >= 70} warning={agendaPct !== null && agendaPct < 40} delay={350} />
-        {/* Экспорт Excel недоступен в Mini App (таблица) */}
-        {!isTg && (
+        {/* Экспорт Excel недоступен в Mini App (таблица). На тарифе Start —
+            мягкое тарифное уведомление вместо выгрузки. */}
+        {!isTg && !exportAllowed && (
+          <button
+            onClick={() => openPricing(exportMinPlan)}
+            title="Экспорт данных (Excel) доступен на тарифе Team"
+            style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+          >Экспорт Excel — на тарифе Team</button>
+        )}
+        {!isTg && exportAllowed && (
           <button
             onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
             style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}

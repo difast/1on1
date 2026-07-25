@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { getTaskAIAdvice, createSubtasks } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
-import { parseFeatureLock, openPricing } from '../lib/featureLock'
+import { parseFeatureLock, openPricing, featureLockMessage } from '../lib/featureLock'
 
 export default function TaskAIHelper({ task, role = 'member', userId = null, onSubtasksAdded }) {
   const [open, setOpen] = useState(false)
@@ -141,9 +141,9 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M6 10V8a6 6 0 1112 0v2" stroke="#4f46e5" strokeWidth="1.7" strokeLinecap="round"/><rect x="4.5" y="10" width="15" height="10" rx="2.2" stroke="#4f46e5" strokeWidth="1.7"/></svg>
                 </span>
                 <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5, maxWidth: 320 }}>
-                  {locked.message || `Функция «${locked.feature_label}» доступна на другом тарифе. Повысьте тариф, чтобы использовать ${locked.feature_label.toLowerCase()}.`}
+                  {locked.message || featureLockMessage(locked.feature_label, locked.min_plan_name)}
                 </p>
-                <button onClick={() => openPricing('team')} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, padding: '9px 20px', cursor: 'pointer' }}>Посмотреть тарифы</button>
+                <button onClick={() => openPricing(locked.min_plan || 'team')} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, padding: '9px 20px', cursor: 'pointer' }}>Посмотреть тарифы</button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0' }}>

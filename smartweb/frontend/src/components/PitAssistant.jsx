@@ -163,7 +163,9 @@ export default function PitAssistant() {
       // Недоступно по тарифу (Задача 3) -> мягкое сообщение, а не техошибка.
       const fl = parseFeatureLock(err)
       if (fl) {
-        setMessages(prev => [...prev, { role: 'assistant', content: fl.message, locked: true }])
+        // locked хранит сам разбор, чтобы кнопка вела на МИНИМАЛЬНЫЙ тариф
+        // с этой функцией (Start / Team / Business), а не на общий экран.
+        setMessages(prev => [...prev, { role: 'assistant', content: fl.message, locked: fl }])
       } else {
         const detail = err?.response?.data?.detail
         const text = (detail && typeof detail === 'string') ? detail : (err?.message || 'неизвестная ошибка')
@@ -275,7 +277,7 @@ export default function PitAssistant() {
                 }}>
                   {m.content}
                   {m.locked && (
-                    <button onClick={() => openPricing('start')} style={{ display: 'block', marginTop: 8, background: 'linear-gradient(135deg, #2554D4, #4f46e5)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, padding: '6px 12px', cursor: 'pointer' }}>
+                    <button onClick={() => openPricing(m.locked?.min_plan || 'start')} style={{ display: 'block', marginTop: 8, background: 'linear-gradient(135deg, #2554D4, #4f46e5)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, padding: '6px 12px', cursor: 'pointer' }}>
                       Посмотреть тарифы
                     </button>
                   )}
