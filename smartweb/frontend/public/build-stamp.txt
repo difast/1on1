@@ -1,1 +1,1 @@
-redeploy 2026-07-25T20:59:44Z — remove Pit avatar from onboarding, center card
+redeploy 2026-07-25T21:20:59Z — integrations tab (calendars, webhooks, coming-soon)

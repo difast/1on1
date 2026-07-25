@@ -1,4 +1,4 @@
-# build: 0.1.1
+# build: 0.1.2
 FROM python:3.12-slim
 
 WORKDIR /app

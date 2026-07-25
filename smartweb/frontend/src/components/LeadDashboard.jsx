@@ -21,6 +21,7 @@ import LeadAnalytics from './LeadAnalytics'
 import { GoalsLead } from './Goals'
 import { DevelopmentLead } from './Development'
 import OneAI from './OneAI'
+import Integrations from './Integrations'
 import { notificationSection } from '../lib/notify'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
@@ -878,7 +879,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
-              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'development' ? 'Развитие команды' : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? 'Заметки' : 'Аналитика'}
+              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'development' ? 'Развитие команды' : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? 'Заметки' : activeView === 'integrations' ? 'Интеграции' : 'Аналитика'}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
@@ -909,6 +910,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'oneai', label: 'ONE AI' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
+            // Интеграции — рядом с настройками команды/организации (управление
+            // календарями и исходящими вебхуками команды).
+            { key: 'integrations', label: 'Интеграции' },
           ].map(tab => (
             <button
               key={tab.key}
@@ -942,6 +946,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* ONE AI — стратегический AI-центр */}
         {activeView === 'oneai' && <OneAI user={user} />}
+
+        {/* Интеграции — календари (Google/Яндекс) и исходящие вебхуки команды */}
+        {activeView === 'integrations' && <Integrations user={user} teamId={selectedTeamId} />}
 
         {/* Analytics view */}
         {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}

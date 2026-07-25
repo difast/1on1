@@ -275,6 +275,17 @@ export const getSurveyConfig = () => api.get('/survey/config')
 export const submitSurvey = (userId, answers) => api.post('/survey/submit', { user_id: userId, answers })
 export const skipSurvey = (userId) => api.post('/survey/skip', { user_id: userId })
 
+// Интеграции: календари (OAuth) и исходящие вебхуки
+export const getIntegrationsStatus = (userId, teamId) => api.get('/integrations/status', { params: { user_id: userId, team_id: teamId } })
+export const getIntegrationAuthUrl = (provider, userId) => api.get(`/integrations/${provider}/authorize`, { params: { user_id: userId } })
+export const completeIntegrationOAuth = (provider, code, state) => api.post(`/integrations/${provider}/callback`, { code, state })
+export const disconnectIntegration = (provider, userId) => api.post(`/integrations/${provider}/disconnect`, null, { params: { user_id: userId } })
+export const listWebhooks = (teamId) => api.get('/integrations/webhooks', { params: { team_id: teamId } })
+export const createWebhook = (data) => api.post('/integrations/webhooks', data)
+export const deleteWebhook = (id, userId) => api.delete(`/integrations/webhooks/${id}`, { params: { user_id: userId } })
+export const testWebhook = (id, userId) => api.post(`/integrations/webhooks/${id}/test`, null, { params: { user_id: userId } })
+export const getWebhookDeliveries = (id) => api.get(`/integrations/webhooks/${id}/deliveries`)
+
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })
