@@ -25,3 +25,6 @@ from app.models.manager import Manager
 from app.models.company import CompanyProfile
 from app.models.telegram import TelegramLinkRequest, TelegramBotState
 from app.models.onboarding_survey import OnboardingSurveyResponse
+from app.models.integration import (
+    CalendarIntegration, CalendarEventLink, WebhookSubscription, WebhookDelivery,
+)

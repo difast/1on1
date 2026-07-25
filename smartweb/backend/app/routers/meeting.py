@@ -70,6 +70,7 @@ def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)
     for meeting in created:
         db.refresh(meeting)
         NotificationService(db).meeting_scheduled(meeting.member_id, meeting.id, lead_name, when)
+        _emit_meeting_event(db, meeting, "meeting.created")
 
     return created
 
@@ -118,7 +119,36 @@ def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
     when = meeting.scheduled_date.strftime("%d.%m %H:%M") if meeting.scheduled_date else ""
     NotificationService(db).meeting_scheduled(data.member_id, meeting.id, lead_name, when)
 
+    # Интеграции: синхронизация с внешними календарями (фон) + исходящий вебхук.
+    _emit_meeting_event(db, meeting, "meeting.created")
+
     return meeting
+
+
+def _emit_meeting_event(db, meeting, webhook_event: str | None) -> None:
+    """Единая точка интеграций для встречи: всегда синхронизируем внешние
+    календари участников (фон), а исходящий вебхук шлём только для значимых
+    событий (webhook_event != None: created/completed/cancelled). Обе операции
+    не блокируют ответ и не ломают работу со встречей при ошибке интеграции."""
+    try:
+        from app.services import calendar_sync
+        calendar_sync.sync_meeting_async(meeting.id)
+    except Exception:
+        pass
+    if not webhook_event:
+        return
+    try:
+        from app.services import webhooks
+        webhooks.dispatch(db, meeting.team_id, webhook_event, {
+            "meeting_id": meeting.id,
+            "team_id": meeting.team_id,
+            "team_lead_id": meeting.team_lead_id,
+            "member_id": meeting.member_id,
+            "scheduled_date": meeting.scheduled_date.isoformat() if meeting.scheduled_date else None,
+            "status": meeting.status,
+        })
+    except Exception:
+        pass
 
 @router.get("/", response_model=List[MeetingOut])
 def list_meetings(
@@ -171,6 +201,13 @@ def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(g
 
     db.commit()
     db.refresh(meeting)
+
+    # Синхронизация календаря на любое изменение встречи; вебхук — только на
+    # значимые переходы статуса (завершена/отменена), иначе только календарь.
+    _emit_meeting_event(db, meeting,
+                        "meeting.completed" if meeting.status == "completed"
+                        else "meeting.cancelled" if meeting.status in ("cancelled", "declined")
+                        else None)
     return meeting
 
 @router.post("/request", response_model=MeetingOut)
@@ -213,6 +250,7 @@ def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
     when = meeting.scheduled_date.strftime("%d.%m %H:%M") if meeting.scheduled_date else ""
     NotificationService(db).meeting_confirmed(meeting.member_id, lead_name, meeting.id, when)
 
+    _emit_meeting_event(db, meeting, None)  # обновить событие в календарях участников
     return meeting
 
 @router.post("/{meeting_id}/end-call", response_model=MeetingOut)
@@ -226,6 +264,7 @@ def end_call(meeting_id: int, db: Session = Depends(get_db)):
         meeting.status = "completed"
         db.commit()
         db.refresh(meeting)
+        _emit_meeting_event(db, meeting, "meeting.completed")
     return meeting
 
 @router.post("/{meeting_id}/start-call")
@@ -289,6 +328,7 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
     lead_name = lead.name if lead else "Тимлид"
     NotificationService(db).meeting_declined(meeting.member_id, lead_name, meeting.id)
 
+    _emit_meeting_event(db, meeting, "meeting.cancelled")  # удалить событие из календарей
     return meeting
 
 import os

@@ -226,7 +226,24 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db)):
             except Exception:
                 pass
 
+    _emit_task_webhook(db, task, "task.created")
     return _serialize(task)
+
+
+def _emit_task_webhook(db, task, event_type: str) -> None:
+    """Исходящий вебхук по событию задачи (не блокирует ответ, ошибки глушим)."""
+    try:
+        from app.services import webhooks
+        webhooks.dispatch(db, task.team_id, event_type, {
+            "task_id": task.id,
+            "team_id": task.team_id,
+            "title": task.title,
+            "status": task.status,
+            "assigned_to": task.assigned_to,
+            "assigned_by": task.assigned_by,
+        })
+    except Exception:
+        pass
 
 
 @router.get("/", response_model=List[TaskOut])
@@ -317,18 +334,26 @@ def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Task not found")
 
     updates = data.model_dump(exclude_unset=True)
+    prev_status = task.status
 
     # Прямое изменение статуса задачи (обычные задачи с одним ответственным).
+    status_touched = False
     if 'status' in updates:
         _apply_status(task, updates.pop('status'))
+        status_touched = True
     elif 'completed' in updates:
         completed = updates.pop('completed')
         _apply_status(task, DONE if completed else "in_progress")
+        status_touched = True
 
     for key, value in updates.items():
         setattr(task, key, value)
     db.commit()
     db.refresh(task)
+
+    # Вебхук по смене статуса: отдельное событие завершения + общее изменение.
+    if status_touched and task.status != prev_status:
+        _emit_task_webhook(db, task, "task.completed" if task.status == DONE else "task.status_changed")
     return _serialize(task)
 
 

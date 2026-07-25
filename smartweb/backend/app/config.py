@@ -60,6 +60,19 @@ class Settings(BaseSettings):
     # и границы суток считаются в этом поясе, а не в поясе сервера.
     default_timezone: str = "Europe/Moscow"
 
+    # --- Интеграции: календари (OAuth) и исходящие вебхуки. ---
+    # Все секреты — только из окружения. Без ключей соответствующая интеграция
+    # показывается как «недоступна» (кнопка подключения не запускает OAuth).
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    google_redirect_uri: str = ""
+    yandex_client_id: str = ""
+    yandex_client_secret: str = ""
+    yandex_redirect_uri: str = ""
+    # Куда вернуть пользователя после OAuth-колбэка (страница «Интеграции»).
+    # По умолчанию — app_web_url + /?integrations=1.
+    integrations_return_url: str = ""
+
     class Config:
         env_file = ".env"
         extra = "ignore"
