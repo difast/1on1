@@ -127,7 +127,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                 <span style={meta}>task_id:{t.id} · {statusOf(t)}</span>
               </div>)}
 
-            {/* Биллинг пользователя (Task 2): тариф, Free-окно, менеджер, платежи */}
+            {/* Биллинг пользователя (Task 2): тариф, пробный период, менеджер, платежи */}
             <p style={sect}>Биллинг</p>
             {!billing ? (
               <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Загрузка…</p>
@@ -141,7 +141,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                 </div>
                 {billing.free_window?.free_until && (
                   <div style={row}>
-                    <span>Free-окно (14 дней)</span>
+                    <span>Пробный период (14 дней)</span>
                     <span style={meta}>{billing.free_window.free_expired ? 'истекло' : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
                   </div>
                 )}
