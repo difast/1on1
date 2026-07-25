@@ -224,11 +224,8 @@ export default function Onboarding({ email, existingUser, onComplete }) {
 
         <div className="onb-center" style={{ padding:'48px 20px' }}>
         <div style={{ width:'100%',maxWidth:460,position:'relative',zIndex:1 }}>
-          {/* Пит-аватар показываем на выборе роли и фото; на шаге профиля (2)
-              его убираем — форма длинная, аватар не нужен. */}
-          {step !== 2 && (
-            <div style={{ display:'flex',justifyContent:'center',marginBottom:16 }}><PitBig /></div>
-          )}
+          {/* Аватар Пита с лицом убран со всех шагов онбординга; карточка
+              центрируется по странице через .onb-center. Бренд остаётся текстом. */}
 
           <div style={{ textAlign:'center',marginBottom:20 }}>
             <span style={{ fontSize:24,fontWeight:800,color:'#fff',letterSpacing:'-0.02em' }}>
