@@ -7,7 +7,7 @@ import { confirmDialog } from '../lib/ui'
 
 /*
  * Вкладка «Интеграции»: подключение календарей (Google, Яндекс) с двусторонней
- * синхронизацией встреч, управление исходящими вебхуками и честный список
+ * синхронизацией встреч, управление исходящими Webhook и честный список
  * «Скоро». Токены хранит бэкенд в шифрованном виде — клиент их не видит.
  */
 
@@ -47,24 +47,26 @@ function CalendarCard({ item, userId, onChange }) {
   const reauth = item.status === 'reauth_required'
   const badgeColor = item.connected ? 'var(--color-success, #16a34a)' : reauth ? 'var(--color-danger)' : 'var(--color-text-muted)'
 
+  // Карточки календарей одинаковой высоты, кнопка действия прижата к низу
+  // (marginTop:auto) — чтобы Google и Яндекс были ровно выровнены в ряду.
   return (
-    <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="card" style={{ padding: 18, height: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>{meta.name}</span>
-        <span style={{ fontSize: 12, fontWeight: 600, color: badgeColor }}>
+        <span style={{ fontSize: 12, fontWeight: 600, color: badgeColor, whiteSpace: 'nowrap' }}>
           {reauth ? STATUS_LABEL.reauth_required : item.connected ? STATUS_LABEL.connected : STATUS_LABEL.not_connected}
         </span>
       </div>
       <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>{meta.desc}</p>
-      {item.connected && item.account_email && (
-        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Подключён как {item.account_email}</p>
-      )}
+      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, minHeight: 16 }}>
+        {item.connected && item.account_email ? `Подключён как ${item.account_email}` : ''}
+      </p>
       {!item.configured ? (
-        <button className="btn btn-secondary btn-sm" disabled title="Интеграция ещё не настроена администратором">Недоступно</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled title="Интеграция ещё не настроена администратором">Недоступно</button>
       ) : item.connected && !reauth ? (
-        <button className="btn btn-secondary btn-sm" disabled={busy} onClick={disconnect}>Отключить</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={disconnect}>Отключить</button>
       ) : (
-        <button className="btn btn-accent btn-sm" disabled={busy} onClick={connect}>
+        <button className="btn btn-accent btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={connect}>
           {busy ? '...' : reauth ? 'Переподключить' : `Подключить ${meta.name}`}
         </button>
       )}
@@ -82,12 +84,12 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
     if (!/^https?:\/\//.test(u)) { notify?.('URL должен начинаться с http:// или https://'); return }
     setAdding(true)
     try { await createWebhook({ team_id: teamId, user_id: userId, url: u, events: null }); setUrl(''); onChange?.() }
-    catch (e) { notify?.(e?.response?.data?.detail || 'Не удалось добавить вебхук.') }
+    catch (e) { notify?.(e?.response?.data?.detail || 'Не удалось добавить Webhook.') }
     finally { setAdding(false) }
   }
 
   const remove = async (id) => {
-    if (!(await confirmDialog({ title: 'Удалить вебхук?', message: 'Доставка событий на этот URL прекратится.', confirmText: 'Удалить', danger: true }))) return
+    if (!(await confirmDialog({ title: 'Удалить Webhook?', message: 'Доставка событий на этот URL прекратится.', confirmText: 'Удалить', danger: true }))) return
     try { await deleteWebhook(id, userId); onChange?.() } catch { notify?.('Не удалось удалить.') }
   }
 
@@ -99,7 +101,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
   return (
     <div className="card" style={{ padding: 18 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>Вебхуки</span>
+        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>Webhook</span>
       </div>
       <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
         На указанные URL отправляется HTTP POST с JSON при событиях: {events.join(', ')}. Запрос подписан заголовком X-OneOnOne-Signature (HMAC-SHA256).
@@ -112,7 +114,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
       </div>
 
       {webhooks.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Пока нет добавленных вебхуков.</p>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Пока нет добавленных Webhook.</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {webhooks.map(w => (
@@ -198,8 +200,8 @@ export default function Integrations({ user, teamId }) {
         <WebhookCard teamId={teamId} userId={user.id} webhooks={webhooks} events={events} onChange={load} notify={notify} />
       ) : (
         <div className="card" style={{ padding: 18 }}>
-          <span style={{ fontWeight: 700, fontSize: 15 }}>Вебхуки</span>
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Выберите команду на вкладке «Команды», чтобы настроить исходящие вебхуки.</p>
+          <span style={{ fontWeight: 700, fontSize: 15 }}>Webhook</span>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Выберите команду на вкладке «Команды», чтобы настроить исходящие Webhook.</p>
         </div>
       )}
 

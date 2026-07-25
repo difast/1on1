@@ -200,7 +200,7 @@ def _require_team_lead(db: Session, team_id: int, user_id: int) -> Team:
     if not team:
         raise HTTPException(404, "Команда не найдена")
     if team.team_lead_id != user_id:
-        raise HTTPException(403, "Управлять вебхуками может только тимлид команды")
+        raise HTTPException(403, "Управлять Webhook может только тимлид команды")
     return team
 
 
@@ -253,7 +253,7 @@ def test_webhook(webhook_id: int, user_id: int = Query(...),
     """Отправить тестовое событие, чтобы получатель проверил приём и подпись."""
     sub = db.query(WebhookSubscription).filter(WebhookSubscription.id == webhook_id).first()
     if not sub:
-        raise HTTPException(404, "Вебхук не найден")
+        raise HTTPException(404, "Webhook не найден")
     _require_team_lead(db, sub.team_id, user_id)
     webhook_service.dispatch(db, sub.team_id, "webhook.test",
                              {"message": "Тестовое событие OneOnOne", "team_id": sub.team_id})
