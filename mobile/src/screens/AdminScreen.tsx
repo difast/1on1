@@ -18,12 +18,14 @@ import { Avatar } from '../components/Avatar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { UserDetailModal } from '../components/admin/UserDetailModal';
 import { EntityPicker } from '../components/admin/EntityPicker';
+import { EmployeesTab } from '../components/admin/EmployeesTab';
 import type { AppColors } from '../constants/colors';
 
-type Tab = 'users' | 'tickets' | 'broadcast' | 'manage' | 'health' | 'monetize';
+type Tab = 'users' | 'employees' | 'tickets' | 'broadcast' | 'manage' | 'health' | 'monetize';
 
 const TABS: { id: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
   { id: 'users', label: 'Пользователи', icon: 'people-outline' },
+  { id: 'employees', label: 'Сотрудники', icon: 'id-card-outline' },
   { id: 'tickets', label: 'Обращения', icon: 'chatbubbles-outline' },
   { id: 'broadcast', label: 'Рассылка', icon: 'megaphone-outline' },
   { id: 'manage', label: 'Управление', icon: 'construct-outline' },
@@ -237,6 +239,9 @@ export default function AdminScreen() {
         <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
       ) : (
         <>
+          {/* СОТРУДНИКИ (задача 2) */}
+          {tab === 'employees' && <EmployeesTab />}
+
           {/* USERS */}
           {tab === 'users' && statsError && (
             <View style={styles.emptyWrap}>

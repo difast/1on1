@@ -12,7 +12,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
 from app.models.subscription import Subscription, Payment, Invoice
-from app.models.manager import Manager
+from app.models.manager import Manager, STAFF_ROLES
 from app.utils.auth import require_admin
 from app.services import subscriptions as subs
 from app.services import metrics as metrics_service
@@ -156,7 +156,18 @@ def user_billing(user_id: int, db: Session = Depends(get_db), _admin=Depends(req
 # ── Реестр менеджеров (заводятся вручную, назначаются из списка) ──────────────
 
 def _mgr_dict(m: Manager):
-    return {"id": m.id, "name": m.name, "contact": m.contact}
+    return {
+        "id": m.id, "name": m.name, "contact": m.contact,
+        "email": getattr(m, "email", None),
+        "role": getattr(m, "role", None) or "manager",
+        "responsibility": getattr(m, "responsibility", None),
+        "created_at": m.created_at.isoformat() if getattr(m, "created_at", None) else None,
+    }
+
+
+def _norm_role(role: str | None) -> str:
+    r = (role or "manager").strip().lower()
+    return r if r in STAFF_ROLES else "manager"
 
 
 @router.get("/managers")
@@ -167,6 +178,9 @@ def list_managers(db: Session = Depends(get_db), _admin=Depends(require_admin)):
 class ManagerCreate(BaseModel):
     name: str
     contact: str | None = None
+    email: str | None = None
+    role: str | None = None
+    responsibility: str | None = None
 
 
 @router.post("/managers")
@@ -174,8 +188,50 @@ def create_manager(data: ManagerCreate, db: Session = Depends(get_db), _admin=De
     name = (data.name or "").strip()
     if not name:
         raise HTTPException(400, "Name required")
-    m = Manager(name=name, contact=(data.contact or "").strip() or None)
+    m = Manager(
+        name=name,
+        contact=(data.contact or "").strip() or None,
+        email=(data.email or "").strip() or None,
+        role=_norm_role(data.role),
+        responsibility=(data.responsibility or "").strip() or None,
+    )
     db.add(m); db.commit(); db.refresh(m)
+    return _mgr_dict(m)
+
+
+class ManagerUpdate(BaseModel):
+    name: str | None = None
+    contact: str | None = None
+    email: str | None = None
+    role: str | None = None
+    responsibility: str | None = None
+
+
+@router.patch("/managers/{manager_id}")
+def update_manager(manager_id: int, data: ManagerUpdate, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Изменение сотрудника (задача 2). Синхронизируем имя/контакт в подписках,
+    где сотрудник назначен, чтобы карточки пользователей не разъезжались."""
+    m = db.query(Manager).filter(Manager.id == manager_id).first()
+    if not m:
+        raise HTTPException(404, "Manager not found")
+    if data.name is not None:
+        name = data.name.strip()
+        if not name:
+            raise HTTPException(400, "Name required")
+        m.name = name
+    if data.contact is not None:
+        m.contact = data.contact.strip() or None
+    if data.email is not None:
+        m.email = data.email.strip() or None
+    if data.role is not None:
+        m.role = _norm_role(data.role)
+    if data.responsibility is not None:
+        m.responsibility = data.responsibility.strip() or None
+    # Отражаем имя/контакт в назначениях (денормализованные поля подписки).
+    for s in db.query(Subscription).filter(Subscription.manager_id == manager_id).all():
+        s.manager_name = m.name
+        s.manager_contact = m.contact
+    db.commit(); db.refresh(m)
     return _mgr_dict(m)
 
 

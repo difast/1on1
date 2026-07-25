@@ -46,11 +46,11 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Бесплатный старт = тариф Free (только заявленные для Free функции),
-    # 14-дневное окно, без карты. Ошибка не должна ломать регистрацию.
+    # Пробный период тарифа Start: 14 дней полного доступа к функциям Start,
+    # без карты. Ошибка не должна ломать регистрацию.
     try:
         from app.services import subscriptions as subs
-        subs.start_signup_free(db, "user", user.id)
+        subs.start_signup_trial(db, "user", user.id)
     except Exception:
         db.rollback()
     return user
@@ -62,10 +62,39 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
     ago14 = now - timedelta(days=14)
     ago7 = now - timedelta(days=7)
 
-    users = db.query(User).order_by(User.created_at.desc()).all()
-    teams = db.query(Team).all()
-    meetings = db.query(Meeting).all()
-    tasks = db.query(Task).all()
+    # Устойчивость к рассинхрону схемы (задача: «Ошибка загрузки»). Если код
+    # временно опережает миграции (напр. teams.timezone из 032 или meetings.group_id
+    # из 030 ещё не в БД), ORM-запрос по всей модели падает и роняет ВЕСЬ ответ —
+    # админ-панель показывает «Ошибка загрузки». Поэтому каждый верхнеуровневый
+    # запрос обёрнут: ключевые вкладки (пользователи, команды) сохраняем через
+    # выборку только заведомо старых колонок, остальное деградирует до пустого.
+    def _safe(fetch, fallback=None):
+        try:
+            return fetch()
+        except Exception:
+            db.rollback()
+            if fallback is None:
+                return []
+            try:
+                return fallback()
+            except Exception:
+                db.rollback()
+                return []
+
+    teams = _safe(
+        lambda: db.query(Team).all(),
+        lambda: db.query(Team.id, Team.name, Team.created_at).all(),
+    )
+    meetings = _safe(lambda: db.query(Meeting).all())
+    tasks = _safe(lambda: db.query(Task).all())
+    users = _safe(
+        lambda: db.query(User).order_by(User.created_at.desc()).all(),
+        lambda: db.query(
+            User.id, User.name, User.email, User.role, User.title,
+            User.is_blocked, User.billing_override, User.created_at, User.last_active_at,
+            User.avatar,
+        ).order_by(User.created_at.desc()).all(),
+    )
 
     leads = [u for u in users if u.role == 'team_lead']
     members = [u for u in users if u.role == 'member']
@@ -104,18 +133,36 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
         if tid not in team_last_meeting or (m.scheduled_date and m.scheduled_date > team_last_meeting[tid]):
             team_last_meeting[tid] = m.scheduled_date
 
-    # Mood stats
-    mood_entries = db.query(MoodEntry).all()
-    mood_7d = [e for e in mood_entries if e.created_at and e.created_at >= ago7]
-    mood_avg = round(sum(e.score for e in mood_entries) / len(mood_entries), 2) if mood_entries else None
-    mood_avg_7d = round(sum(e.score for e in mood_7d) / len(mood_7d), 2) if mood_7d else None
+    # Mood stats. Обёрнуто в защиту: если схема mood_entries на короткое время
+    # отстаёт от кода (окно фонового применения миграций), сбой одной таблицы не
+    # должен «терять» всю статистику админ-панели — деградируем мягко.
+    try:
+        mood_entries = db.query(MoodEntry).all()
+        mood_7d = [e for e in mood_entries if e.created_at and e.created_at >= ago7]
+        mood_avg = round(sum(e.score for e in mood_entries) / len(mood_entries), 2) if mood_entries else None
+        mood_avg_7d = round(sum(e.score for e in mood_7d) / len(mood_7d), 2) if mood_7d else None
 
-    # Weekly mood trend (last 7 days, daily avg)
-    daily_mood = {}
-    for e in mood_7d:
-        day = e.created_at.date().isoformat()
-        daily_mood.setdefault(day, []).append(e.score)
-    mood_daily = [{"date": d, "avg": round(sum(v)/len(v), 2)} for d, v in sorted(daily_mood.items())]
+        # Weekly mood trend (last 7 days, daily avg)
+        daily_mood = {}
+        for e in mood_7d:
+            day = e.created_at.date().isoformat()
+            daily_mood.setdefault(day, []).append(e.score)
+        mood_daily = [{"date": d, "avg": round(sum(v)/len(v), 2)} for d, v in sorted(daily_mood.items())]
+        mood_total = len(mood_entries)
+    except Exception:
+        db.rollback()
+        mood_entries = []
+        mood_avg = mood_avg_7d = None
+        mood_7d = []
+        mood_daily = []
+        mood_total = 0
+
+    def _safe_count(model):
+        try:
+            return db.query(model).count()
+        except Exception:
+            db.rollback()
+            return 0
 
     # System table counts
     system_counts = {
@@ -123,10 +170,10 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
         "teams": len(teams),
         "meetings": len(meetings),
         "tasks": len(tasks),
-        "notes": db.query(Note).count(),
-        "notifications": db.query(Notification).count(),
-        "mood_entries": len(mood_entries),
-        "knowledge_articles": db.query(KnowledgeArticle).count(),
+        "notes": _safe_count(Note),
+        "notifications": _safe_count(Notification),
+        "mood_entries": mood_total,
+        "knowledge_articles": _safe_count(KnowledgeArticle),
     }
 
     return {
@@ -148,13 +195,21 @@ def get_admin_stats(db: Session = Depends(get_db), _admin=Depends(require_admin)
                 "email": u.email,
                 "role": u.role,
                 "title": u.title or "",
+                "avatar": getattr(u, "avatar", None),
                 "is_blocked": bool(getattr(u, "is_blocked", False)),
                 "billing_override": bool(getattr(u, "billing_override", False)),
                 "created_at": u.created_at.isoformat() if u.created_at else None,
                 "meetings_count": user_meeting_counts.get(u.id, 0),
                 "tasks_count": user_task_counts.get(u.id, 0),
                 "last_meeting": user_last_meeting[u.id].isoformat() if user_last_meeting.get(u.id) else None,
-                "inactive": (user_last_meeting.get(u.id) is None or user_last_meeting[u.id] < ago14),
+                # Реальная активность аккаунта (вход/использование), а не только
+                # встречи — обновляется heartbeat-эндпоинтом (задача 5).
+                "last_active_at": u.last_active_at.isoformat() if u.last_active_at else None,
+                # «Неактивен» = нет ни активности аккаунта, ни встреч за 14 дней.
+                "inactive": (
+                    (u.last_active_at is None or u.last_active_at < ago14)
+                    and (user_last_meeting.get(u.id) is None or user_last_meeting[u.id] < ago14)
+                ),
             }
             for u in users
         ],
@@ -189,8 +244,26 @@ def get_admin_analytics(db: Session = Depends(get_db), _admin=Depends(require_ad
     from app.models.team import TeamMember
     now = datetime.utcnow()
 
-    users = db.query(User).order_by(User.created_at).all()
-    meetings = db.query(Meeting).all()
+    # Устойчивость к рассинхрону схемы (как в /admin/stats): не роняем аналитику,
+    # если код опережает миграции.
+    def _safe(fetch, fallback=None):
+        try:
+            return fetch()
+        except Exception:
+            db.rollback()
+            if fallback is None:
+                return []
+            try:
+                return fallback()
+            except Exception:
+                db.rollback()
+                return []
+
+    users = _safe(
+        lambda: db.query(User).order_by(User.created_at).all(),
+        lambda: db.query(User.id, User.created_at).order_by(User.created_at).all(),
+    )
+    meetings = _safe(lambda: db.query(Meeting).all())
 
     # Funnel
     registered = len(users)
@@ -272,14 +345,90 @@ def get_user(user_id: int, db: Session = Depends(get_db)):
 
 @router.get("/{user_id}/stats")
 def get_user_stats(user_id: int, db: Session = Depends(get_db)):
-    from app.models.team import TeamMember
+    from datetime import datetime
+    from app.models.team import TeamMember, Team
     meetings = db.query(Meeting).filter(
         (Meeting.member_id == user_id) | (Meeting.team_lead_id == user_id),
         Meeting.status.notin_(["cancelled"]),
     ).count()
     tasks_done = db.query(Task).filter(Task.assigned_to == user_id, Task.completed == True).count()
     teams = db.query(TeamMember).filter(TeamMember.user_id == user_id).count()
-    return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams}
+
+    # Закрыто СЕГОДНЯ (Задача 2), с учётом роли:
+    #   участник — свои; тимлид — суммарно по участникам его команд.
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    user = db.query(User).filter(User.id == user_id).first()
+    if user and user.role == "team_lead":
+        team_ids = [t.id for t in db.query(Team).filter(Team.team_lead_id == user_id).all()]
+        member_ids = set()
+        if team_ids:
+            for tm in db.query(TeamMember).filter(TeamMember.team_id.in_(team_ids)).all():
+                member_ids.add(tm.user_id)
+        member_ids.discard(user_id)
+        closed_today = (
+            db.query(Task).filter(
+                Task.assigned_to.in_(member_ids),
+                Task.completed == True,
+                Task.completed_at >= today,
+            ).count() if member_ids else 0
+        )
+    else:
+        closed_today = db.query(Task).filter(
+            Task.assigned_to == user_id,
+            Task.completed == True,
+            Task.completed_at >= today,
+        ).count()
+
+    return {"meetings": meetings, "tasks_done": tasks_done, "teams": teams, "closed_today": closed_today}
+
+
+@router.get("/{user_id}/card")
+def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depends(get_db)):
+    """Публичная карточка участника для просмотра коллегами по команде.
+
+    Модель видимости: внутри продукта участники команды видят профили друг друга
+    (имя, должность, роль, фото, контакты-соцсети, организацию) — это инструмент
+    для 1-на-1 и командной работы, где нужно знать коллег и как с ними связаться.
+    НЕ отдаём приватные учётные данные (email, регион и т.п.) — email является
+    логином и управляется только в собственном профиле. Так видимость логична и
+    последовательна на любой карточке, кем бы она ни просматривалась.
+    """
+    from app.models.team import Team, TeamMember
+    from app.models.company import CompanyProfile
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    # Организация = компания рабочего пространства (одна на команду). Берём
+    # компанию команды-контекста (откуда открыли карточку) либо первой команды
+    # пользователя — где он лид, иначе где он участник.
+    tid = team_id
+    if tid is None:
+        led = db.query(Team).filter(Team.team_lead_id == user_id).first()
+        if led:
+            tid = led.id
+        else:
+            tm = db.query(TeamMember).filter(TeamMember.user_id == user_id).first()
+            tid = tm.team_id if tm else None
+    org = None
+    if tid is not None:
+        comp = db.query(CompanyProfile).filter(CompanyProfile.team_id == tid).first()
+        if comp and comp.name:
+            org = {"name": comp.name, "industry": comp.industry or None}
+
+    return {
+        "id": user.id,
+        "name": user.name,
+        "title": user.title,
+        "role": user.role,
+        "avatar": user.avatar,
+        "telegram": user.telegram,
+        "telegram_id": user.telegram_id,
+        "linkedin": user.linkedin,
+        "github": user.github,
+        "organization": org,
+    }
+
 
 @router.patch("/{user_id}", response_model=UserOut)
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):

@@ -24,28 +24,46 @@ class StartCallBody(BaseModel):
 @router.post("/start-call")
 def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db)):
     from datetime import datetime
+    from app.models.team import Team
+    # Права (быстрое действие «Инициировать звонок» из карточки): спонтанный
+    # созвон инициирует только тимлид команды — консистентно с текущей моделью
+    # (у участников нет точки входа в спонтанный созвон).
+    team = db.query(Team).filter(Team.id == body.team_id).first()
+    if team and team.team_lead_id and body.lead_id != team.team_lead_id:
+        raise HTTPException(status_code=403, detail="Спонтанный созвон может инициировать только тимлид команды")
     room_name = f"1on1-{body.team_id}-{uuid.uuid4().hex[:8]}"
     room_url = f"https://meet.jit.si/{room_name}"
 
     lead = db.query(User).filter(User.id == body.lead_id).first()
     caller_name = lead.name if lead else "Тимлид"
 
+    # 39.8: спонтанный созвон фиксируется в истории встреч как состоявшийся
+    # (status in_progress -> completed после завершения). Для нескольких участников
+    # создаём групповые строки с общим group_id и общей комнатой, чтобы статус
+    # корректно закрывался у всех (update_meeting распространяет статус по группе).
     meeting_id = None
-    if not body.is_group and len(body.member_ids) == 1:
-        meeting = Meeting(
-            team_id=body.team_id,
-            team_lead_id=body.lead_id,
-            member_id=body.member_ids[0],
-            scheduled_date=datetime.utcnow(),
-            status="in_progress",
-            agenda="Быстрый созвон",
-            jitsi_room_url=room_url,
-            jitsi_room_name=room_name,
-        )
-        db.add(meeting)
+    is_group = body.is_group or len(body.member_ids) > 1
+    if len(body.member_ids) >= 1:
+        group_id = uuid.uuid4().hex if is_group else None
+        created = []
+        for mid in body.member_ids:
+            m = Meeting(
+                team_id=body.team_id,
+                team_lead_id=body.lead_id,
+                member_id=mid,
+                scheduled_date=datetime.utcnow(),
+                status="in_progress",
+                agenda="Быстрый созвон",
+                jitsi_room_url=room_url,
+                jitsi_room_name=room_name,
+                group_id=group_id,
+            )
+            db.add(m)
+            created.append(m)
         db.commit()
-        db.refresh(meeting)
-        meeting_id = meeting.id
+        for m in created:
+            db.refresh(m)
+        meeting_id = created[0].id if created else None
 
     notif_service = NotificationService(db)
     for member_id in body.member_ids:

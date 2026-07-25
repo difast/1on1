@@ -69,7 +69,9 @@ export default function MeetingDetailScreen() {
       const m = await getMeeting(Number(params.id));
       setMeeting(m);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось загрузить встречу');
+      // Встреча могла быть удалена или стать недоступной (устаревшее
+      // уведомление) — понятное сообщение вместо пустого экрана.
+      Alert.alert('Встреча недоступна', 'Эта встреча удалена или у вас нет к ней доступа.');
       router.back();
     } finally { setLoading(false); }
   }, [params.id]);

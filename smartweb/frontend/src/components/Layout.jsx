@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getTeamMoodSummary, getMeetings, endCall, telegramLink, getTelegramConfig, authChangePassword, authResendConfirmation, authAddEmail } from '../api/client'
+import { getUnreadCount, getNotifications, markRead, markAllRead, updateUser, heartbeat, getUserStats, getClosedTodayTasks, getTeamMoodSummary, getMeetings, endCall, telegramLink, getTelegramConfig, authChangePassword, authResendConfirmation, authAddEmail } from '../api/client'
 import NotificationBell from './NotificationBell'
 import PitAssistant from './PitAssistant'
 import SupportPage from './SupportPage'
@@ -7,7 +7,9 @@ import KnowledgeBasePage from './KnowledgeBasePage'
 import LegalModal from './LegalModal'
 import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
+import AvatarCropModal from './AvatarCropModal'
 import { coachingEnabled, setCoaching } from '../lib/coaching'
+import { useExclusiveOverlay } from '../lib/overlay'
 import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGS } from '../i18n'
@@ -121,6 +123,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   // Profile sidebar edit state
   const [editing, setEditing] = useState(false)
   const [sidebarStats, setSidebarStats] = useState(null)
+  // Закрытые сегодня задачи (Задача 2): модалка со списком по клику на счётчик.
+  const [showClosedToday, setShowClosedToday] = useState(false)
+  const [closedTasks, setClosedTasks] = useState(null)
   const [profileForm, setProfileForm] = useState({
     title: currentUser?.title || '',
     telegram: currentUser?.telegram || '',
@@ -129,6 +134,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   })
   const [savingProfile, setSavingProfile] = useState(false)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [showAvatarModal, setShowAvatarModal] = useState(false)
 
   // Переключатель встроенного AI-коучинга. Живёт в меню настроек рядом с темой —
   // не в отдельном разделе, — потому что это тумблер поведения продукта, а не
@@ -278,10 +284,30 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     else document.documentElement.classList.remove('dark')
   }, [isDark])
 
+  // Статистика сайдбара, включая «Закрыто сегодня» (Задача 2). Обновляется в
+  // реальном времени: (1) по событию 'tasks-updated' — когда пользователь сам
+  // меняет статус задачи (мгновенно, без refresh); (2) фоновым поллингом —
+  // чтобы тимлид видел закрытия других участников команды в течение дня.
   useEffect(() => {
     if (!currentUser?.id) return
-    getUserStats(currentUser.id).then(r => setSidebarStats(r.data)).catch(() => {})
+    const refreshStats = () => getUserStats(currentUser.id).then(r => setSidebarStats(r.data)).catch(() => {})
+    refreshStats()
+    const onTasksUpdated = () => refreshStats()
+    window.addEventListener('tasks-updated', onTasksUpdated)
+    const poll = setInterval(refreshStats, 30000)
+    return () => {
+      window.removeEventListener('tasks-updated', onTasksUpdated)
+      clearInterval(poll)
+    }
   }, [currentUser?.id])
+
+  // Если открыта модалка «Закрыто сегодня» — держим список в актуальном виде.
+  const loadClosedToday = () => {
+    if (!currentUser?.id) return
+    setClosedTasks(null)
+    getClosedTodayTasks(currentUser.id).then(r => setClosedTasks(r.data || [])).catch(() => setClosedTasks([]))
+  }
+  const openClosedToday = () => { setShowClosedToday(true); loadClosedToday() }
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -295,6 +321,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
+
+  // Взаимное исключение оверлеев (Задача 1): открытие одного закрывает остальные.
+  // Механизм общий (lib/overlay) — новые оверлеи подключаются одной строкой.
+  useExclusiveOverlay('user-menu', showUserMenu, () => setShowUserMenu(false))
+  useExclusiveOverlay('notifications', showNotifications, () => setShowNotifications(false))
+  useExclusiveOverlay('lang-menu', showLangMenu, () => setShowLangMenu(false))
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -434,6 +466,29 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     }
   }
 
+  // Сохранение уже кадрированного (в модалке) фото. Обновляем сразу везде через
+  // onUserUpdate + localStorage — та же логика моментального обновления, что и в
+  // остальном профиле; отдельная страница не перезагружается.
+  const handleAvatarSave = async (base64) => {
+    if (!base64 || !currentUser?.id) return
+    setUploadingAvatar(true)
+    try {
+      await updateUser(currentUser.id, { avatar: base64 })
+      const stored = localStorage.getItem('smart_user')
+      const u = stored ? JSON.parse(stored) : {}
+      const merged = { ...u, avatar: base64 }
+      localStorage.setItem('smart_user', JSON.stringify(merged))
+      if (onUserUpdate) onUserUpdate(merged)
+      try { window.dispatchEvent(new Event('profile-updated')) } catch {}
+      setShowAvatarModal(false)
+      toast('Фото профиля обновлено', 'success')
+    } catch {
+      toast('Не удалось обновить фото', 'error')
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
+
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0]
     if (!file || !currentUser?.id) return
@@ -544,7 +599,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                           setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
                         }
                         setShowNotifications(false)
-                        if (onNavigate) onNavigate(n.type)
+                        if (onNavigate) onNavigate(n.type, n.data)
                       }
                       return (
                         <div
@@ -616,8 +671,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* My plan — team lead only. В Mini App биллинг недоступен (таблица). */}
-          {user?.role === 'team_lead' && !isTg && (
+          {/* My plan — team lead only. В Mini App это ПРОСМОТР тарифа: оплата и
+              смена тарифа там запрещены таблицей, экран открывается read-only. */}
+          {user?.role === 'team_lead' && (
             <button
               onClick={() => setShowBilling(true)}
               style={{
@@ -1051,7 +1107,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   setUnreadCount(c => Math.max(0, c - 1))
                   setToasts(prev => prev.filter(x => x.id !== t.id))
                   setNotifications(prev => prev.map(n => n.id === t.id ? { ...n, read: true } : n))
-                  if (onNavigate) onNavigate(t.type)
+                  if (onNavigate) onNavigate(t.type, t.data)
                 }}
               >
                 <span style={{ fontSize: 20, flexShrink: 0, marginTop: 1 }}>{meta.icon}</span>
@@ -1098,7 +1154,16 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center',
             borderBottom: '1px solid var(--color-border)',
           }}>
-            <label style={{ position: 'relative', cursor: 'pointer', marginBottom: 12 }} className="group">
+            {/* Клик по аватару открывает ОТДЕЛЬНОЕ окно замены фото (загрузка +
+                кадрирование/позиция), а не встроенный выбор файла. */}
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              style={{ position: 'relative', cursor: 'pointer', marginBottom: 8, background: 'none', border: 'none', padding: 0 }}
+              className="group"
+              title="Изменить фото"
+              aria-label="Изменить фото профиля"
+            >
               <div className={`avatar avatar-xl avatar-circle ${user?.avatar ? '' : 'avatar-accent'}`}
                 style={{ width: 64, height: 64, borderRadius: '50%' }}>
                 {user?.avatar
@@ -1121,8 +1186,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                     }
                   </svg>
               </div>
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleAvatarChange} />
-            </label>
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowAvatarModal(true)}
+              style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginBottom: 10 }}
+            >
+              Изменить фото
+            </button>
 
             <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
               {user?.name || '—'}
@@ -1166,6 +1237,34 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                     </div>
                   ))}
                 </div>
+
+                {/* Закрыто сегодня (Задача 2): кликабельный счётчик со списком.
+                    Участник — свои закрытые сегодня; тимлид — по всей команде. */}
+                <button
+                  onClick={openClosedToday}
+                  title="Показать закрытые сегодня задачи"
+                  style={{
+                    marginTop: 6, width: '100%', display: 'flex', alignItems: 'center',
+                    justifyContent: 'space-between', gap: 10, cursor: 'pointer',
+                    background: 'linear-gradient(135deg, #ecfdf5, #d1fae5)',
+                    border: '1px solid #a7f3d0', borderRadius: 10, padding: '10px 12px',
+                    textAlign: 'left',
+                  }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+                    <span style={{ width: 30, height: 30, borderRadius: 8, flexShrink: 0, background: 'radial-gradient(ellipse at 35% 28%, #86efac, #22c55e 55%, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 2px 6px rgba(21,128,61,0.35)' }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6,12.5 10,16.5 18,7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </span>
+                    <span>
+                      <span style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#065f46', lineHeight: 1.1 }}>Закрыто сегодня</span>
+                      <span style={{ display: 'block', fontSize: 10, color: '#047857', opacity: 0.85 }}>
+                        {user?.role === 'team_lead' ? 'по команде' : 'мои задачи'}
+                      </span>
+                    </span>
+                  </span>
+                  <span style={{ fontSize: 20, fontWeight: 800, color: '#15803d', lineHeight: 1 }}>
+                    {sidebarStats ? (sidebarStats.closed_today ?? 0) : '—'}
+                  </span>
+                </button>
               </div>
             </div>
           )}
@@ -1259,8 +1358,56 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       <PitAssistant />
       {showKnowledge && <KnowledgeBasePage onClose={() => setShowKnowledge(false)} />}
       {showSupport && <SupportPage currentUser={currentUser} onClose={() => setShowSupport(false)} />}
+      <AvatarCropModal
+        open={showAvatarModal}
+        saving={uploadingAvatar}
+        onSave={handleAvatarSave}
+        onClose={() => setShowAvatarModal(false)}
+      />
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
-      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
+      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} readOnly={isTg} onClose={() => setShowBilling(false)} />
+
+      {/* Закрыто сегодня (Задача 2): список закрытых сегодня задач по роли. */}
+      {showClosedToday && (
+        <div className="overlay-center" onClick={() => setShowClosedToday(false)} style={{ zIndex: 9700 }}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460, width: '92vw' }}>
+            <div className="modal-header" style={{ paddingBottom: 12 }}>
+              <div>
+                <span className="modal-title">Закрыто сегодня</span>
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
+                  {currentUser?.role === 'team_lead' ? 'Задачи, закрытые сегодня всеми участниками команды' : 'Ваши задачи, закрытые сегодня'}
+                </p>
+              </div>
+              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowClosedToday(false)}>✕</button>
+            </div>
+            {closedTasks === null ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
+            ) : closedTasks.length === 0 ? (
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px 0' }}>
+                Сегодня ещё нет закрытых задач
+              </p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '60vh', overflowY: 'auto' }}>
+                {closedTasks.map(t => (
+                  <div key={t.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '10px 12px', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 10 }}>
+                    <span style={{ width: 22, height: 22, borderRadius: '50%', flexShrink: 0, marginTop: 1, background: 'radial-gradient(ellipse at 35% 28%, #86efac, #22c55e 55%, #15803d)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><polyline points="6,12.5 10,16.5 18,7.5" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.35 }}>{t.title}</p>
+                      <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
+                        {t.completed_at ? new Date(t.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
+                        {t.is_multi && t.progress ? ` · ${t.progress.done}/${t.progress.total} участников` : ''}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* First-run product tour — self-gates via localStorage, shown once */}
       <WelcomeTour currentUser={currentUser} />
     </div>

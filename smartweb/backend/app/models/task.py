@@ -21,3 +21,9 @@ class Task(Base):
     meeting = relationship("Meeting")
     assignee = relationship("User", foreign_keys=[assigned_to])
     assigner = relationship("User", foreign_keys=[assigned_by])
+    # Совместная задача (Задача 4): несколько назначений с собственными статусами.
+    # Пусто у обычных задач с одним ответственным (обратная совместимость).
+    assignees = relationship(
+        "TaskAssignee", back_populates="task",
+        cascade="all, delete-orphan", order_by="TaskAssignee.id",
+    )

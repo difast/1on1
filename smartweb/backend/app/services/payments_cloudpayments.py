@@ -28,7 +28,12 @@ class CloudPaymentsProvider(PaymentProvider):
         return os.getenv("CLOUDPAYMENTS_WEBHOOK_HMAC") or os.getenv("CLOUDPAYMENTS_API_SECRET", "")
 
     def checkout_config(self, *, amount: int, currency: str, description: str,
-                        account_id: str, invoice_id: str, recurrent: bool) -> dict:
+                        account_id: str, invoice_id: str, recurrent: bool,
+                        period: str = "month") -> dict:
+        """period — расчётный период тарифа: "month" (Start, 1 490 ₽) либо
+        "year" (Team, 49 990 ₽ единовременно). Интервал подписки CloudPayments
+        задаётся по нему: Month/1 или Year/1. Рассрочка не используется:
+        по годовому тарифу списывается вся сумма сразу."""
         cfg = {
             "provider": "cloudpayments",
             "public_id": self.public_id,
@@ -37,11 +42,14 @@ class CloudPaymentsProvider(PaymentProvider):
             "description": description,
             "account_id": account_id,
             "invoice_id": invoice_id,
+            "period": period,
             "configured": bool(self.public_id),
         }
         if recurrent:
-            # Monthly subscription by default; period adjusted by caller via amount.
-            cfg["recurrent"] = {"interval": "Month", "period": 1}
+            cfg["recurrent"] = {
+                "interval": "Year" if period == "year" else "Month",
+                "period": 1,
+            }
         return cfg
 
     def verify_webhook(self, raw_body: bytes, signature: str | None) -> bool:

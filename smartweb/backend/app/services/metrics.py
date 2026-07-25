@@ -16,7 +16,9 @@ from app.models.meeting import Meeting
 from app.models.subscription import Subscription
 from app.services.plans import get_plan
 
-PAID_PLANS = ("start", "team", "company", "enterprise")
+# company — снятый тариф, оставлен для исторических подписок (миграция 038
+# переводит их на business, но метрики читают и старые строки).
+PAID_PLANS = ("start", "team", "business", "company", "enterprise")
 
 
 def _mrr_kopecks(db: Session) -> int:
@@ -30,9 +32,10 @@ def _mrr_kopecks(db: Session) -> int:
         plan = get_plan(db, s.plan_code)
         if not plan or plan.is_enterprise:
             continue
-        per_month = plan.price_month
-        if plan.per_seat:
-            per_month *= max(s.seats, 1)
+        # MRR в новой сетке: Start платит помесячно, Team — раз в год, поэтому
+        # годовую сумму приводим к месяцу (делим на 12), а не считаем за места.
+        from app.services.plan_change import _charge_month
+        per_month = _charge_month(plan)
         total += int(per_month * 100)
     return total
 

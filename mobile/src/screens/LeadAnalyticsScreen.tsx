@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
-import { getLeadAnalytics, assistantChat, getMeetings } from '../lib/api';
+import { getLeadAnalytics, assistantChat, getMeetings, getTeamMoodSummary } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
@@ -183,6 +183,10 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
         </View>
       )}
 
+      {/* Анонимная командная сводка настроения (13.5) — только цифры, без графика.
+          При недостатке заполнивших статистика скрывается (порог анонимности). */}
+      <AnonTeamMood teamId={team.team_id} />
+
       {/* Последние темы повесток (Задача 10) */}
       {topics.length > 0 && (
         <View style={styles.section}>
@@ -248,7 +252,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* Mood drop alerts */}
       {signals.filter((s: any) => s.type === 'mood_declining').length > 0 && (
         <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>⚠️ Снижение настроения</Text>
+          <Text style={styles.alertTitle}>Снижение настроения</Text>
           {signals.filter((s: any) => s.type === 'mood_declining').map((s: any, i: number) => (
             <Text key={i} style={styles.alertText}>• {s.member_name} — негативный тренд</Text>
           ))}
@@ -271,6 +275,63 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* По таблице разделения функционала приложение показывает только сводку
           (цифры), без графиков. Полные графики — в веб-версии. */}
     </>
+  );
+}
+
+function AnonTeamMood({ teamId }: { teamId: number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const [mood, setMood] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+    setLoading(true);
+    getTeamMoodSummary(teamId)
+      .then((m: any) => { if (alive) setMood(m); })
+      .catch(() => { if (alive) setMood(null); })
+      .finally(() => { if (alive) setLoading(false); });
+    return () => { alive = false; };
+  }, [teamId]);
+
+  if (loading) return (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoLabel}>Настроение команды · анонимно</Text>
+      <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 8 }} />
+    </View>
+  );
+  if (!mood) return null;
+
+  return (
+    <View style={styles.infoCard}>
+      <Text style={styles.infoLabel}>Настроение команды · анонимно</Text>
+      {mood.insufficient ? (
+        <Text style={styles.moodInsufficient}>
+          {mood.message || `Недостаточно данных для анонимной статистики (нужно от ${mood.threshold} ответов).`}
+        </Text>
+      ) : (
+        <View style={styles.moodStatsRow}>
+          <View style={styles.moodStatItem}>
+            <Text style={styles.moodStatValue}>{mood.avg}/5</Text>
+            <Text style={styles.moodStatLabel}>средний</Text>
+          </View>
+          {mood.delta_prev != null && (
+            <View style={styles.moodStatItem}>
+              <Text style={[styles.moodStatValue, {
+                color: mood.delta_prev > 0 ? colors.success : mood.delta_prev < 0 ? colors.danger : colors.textMuted,
+              }]}>{mood.delta_prev > 0 ? '+' : ''}{mood.delta_prev}</Text>
+              <Text style={styles.moodStatLabel}>к вчера</Text>
+            </View>
+          )}
+          {mood.share_pct != null && (
+            <View style={styles.moodStatItem}>
+              <Text style={styles.moodStatValue}>{mood.share_pct}%</Text>
+              <Text style={styles.moodStatLabel}>заполнили</Text>
+            </View>
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 
@@ -360,6 +421,11 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   infoLabel: { fontSize: 11, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 },
   infoValue: { fontSize: 18, fontWeight: '600', color: c.textPrimary },
+  moodInsufficient: { fontSize: 13, color: c.textSecondary, lineHeight: 19, marginTop: 4 },
+  moodStatsRow: { flexDirection: 'row', gap: 20, marginTop: 8 },
+  moodStatItem: { alignItems: 'flex-start' },
+  moodStatValue: { fontSize: 20, fontWeight: '800', color: c.textPrimary },
+  moodStatLabel: { fontSize: 10, color: c.textMuted, marginTop: 2 },
 
   section: { gap: 10 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },

@@ -1,7 +1,7 @@
 import { getToken } from './authToken';
 
 const BASE =
-  (process.env.EXPO_PUBLIC_API_URL || 'https://difast-1on1-1320.twc1.net') + '/api';
+  (process.env.EXPO_PUBLIC_API_URL || 'https://api.oneononehq.com') + '/api';
 
 async function req<T>(path: string, options?: RequestInit & { timeoutMs?: number }): Promise<T> {
   const token = await getToken();
@@ -67,6 +67,11 @@ export const regenerateInviteCode = (teamId: number) =>
 // Meetings
 export const createMeeting = (data: unknown) =>
   req('/meetings/', { method: 'POST', body: JSON.stringify(data) });
+// Групповой созвон: несколько участников / вся команда.
+export const createGroupMeeting = (data: {
+  team_id: number; team_lead_id: number; scheduled_date: string; agenda?: string | null;
+  member_ids?: number[] | null; whole_team?: boolean;
+}) => req<any[]>('/meetings/group', { method: 'POST', body: JSON.stringify(data) });
 export const getMeetings = (params: Record<string, string | number>) => {
   const qs = Object.entries(params)
     .map(([k, v]) => `${k}=${v}`)
@@ -89,6 +94,11 @@ export const startCall = (meetingId: number, userId: number) =>
     `/meetings/${meetingId}/start-call?user_id=${userId}`,
     { method: 'POST' },
   );
+// Спонтанный созвон (39.8): всем / нескольким / индивидуально. Сам звонок
+// открывается внешним клиентом по ссылке (согласно таблице).
+export const startSpontaneousCall = (data: { lead_id: number; team_id: number; member_ids: number[]; is_group?: boolean }) =>
+  req<{ room_url: string; room_name: string; meeting_id: number | null }>(
+    '/video/start-call', { method: 'POST', body: JSON.stringify(data) });
 
 // Tasks
 export const createTask = (data: unknown) =>
@@ -103,6 +113,11 @@ export const updateTask = (id: number, data: unknown) =>
   req(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteTask = (id: number) =>
   req(`/tasks/${id}`, { method: 'DELETE' });
+// Совместные задачи: статус части одного участника + закрытые сегодня.
+export const updateTaskAssignee = (assigneeId: number, data: { status?: string; part_description?: string }) =>
+  req<any>(`/tasks/assignee/${assigneeId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const getClosedTodayTasks = (userId: number) =>
+  req<any[]>(`/tasks/closed-today/${userId}`);
 
 // Notifications
 export const getNotifications = (userId: number) =>
@@ -157,18 +172,198 @@ export const updateSubtask = (subtaskId: number, data: { completed?: boolean; ti
   req<any>(`/subtasks/${subtaskId}`, { method: 'PATCH', body: JSON.stringify(data) });
 export const deleteSubtask = (subtaskId: number) =>
   req<any>(`/subtasks/${subtaskId}`, { method: 'DELETE' });
-export const getTaskAiAdvice = (title: string, status?: string, due_date?: string, role?: string) =>
-  req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member' }) });
+export const getTaskAiAdvice = (title: string, status?: string, due_date?: string, role?: string, user_id?: number) =>
+  req<{ steps: string[] }>('/tasks/ai-advice', { method: 'POST', body: JSON.stringify({ title, status, due_date, role: role ?? 'member', user_id }) });
 
 // Mood
-export const submitMood = (team_id: number, answers: string[]) =>
-  req<any>('/mood/', { method: 'POST', body: JSON.stringify({ team_id, answers }) });
+export const submitMood = (team_id: number, answers: string[], user_id?: number) =>
+  req<any>('/mood/', { method: 'POST', body: JSON.stringify({ team_id, user_id, answers }) });
 export const getTeamMoodSummary = (teamId: number) =>
   req<any>(`/mood/team/${teamId}/summary`);
+export const getMoodToday = (userId: number, teamId: number) =>
+  req<any>(`/mood/today/${userId}?team_id=${teamId}`);
+export const getMyMoodSeries = (
+  userId: number,
+  opts: { period?: string; start?: string; end?: string; teamId?: number } = {},
+) => {
+  const p = new URLSearchParams();
+  if (opts.period) p.set('period', opts.period);
+  if (opts.start) p.set('start', opts.start);
+  if (opts.end) p.set('end', opts.end);
+  if (opts.teamId != null) p.set('team_id', String(opts.teamId));
+  return req<any>(`/mood/me/${userId}/series?${p.toString()}`);
+};
 
 // AI Assistant
-export const assistantChat = (messages: { role: string; content: string }[], context = '') =>
-  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context }) });
+export const assistantChat = (messages: { role: string; content: string }[], context = '', user_id?: number) =>
+  req<{ reply: string }>('/assistant/chat', { method: 'POST', body: JSON.stringify({ messages, context, user_id }) });
+
+// ONE AI (стратегический AI-центр; общий AI-слой с Питом, права на бэкенде)
+export type OneAiSection = { key: string; title: string; scope: string };
+export const getOneAiSections = (actorId: number) =>
+  req<{ sections: OneAiSection[] }>(`/oneai/sections?actor_id=${actorId}`);
+export const oneAiQuery = (data: { actor_id: number; section: string; target_user_id?: number; team_id?: number; message?: string }) =>
+  req<{ reply: string; based_on: any }>('/oneai/query', { method: 'POST', body: JSON.stringify(data) });
+
+// Per-user summary stats (включает closed_today — закрытые сегодня, по роли)
+export const getUserStats = (userId: number) =>
+  req<{ meetings: number; tasks_done: number; teams: number; closed_today: number }>(`/users/${userId}/stats`);
+
+// Предложения встреч (переговоры о встрече с подтверждением)
+export const createProposal = (data: { from_user_id: number; to_user_id: number; proposed_time: string; topic?: string | null; team_id?: number | null }) =>
+  req<any>('/proposals/', { method: 'POST', body: JSON.stringify(data) });
+export const getProposals = (userId: number) =>
+  req<any[]>(`/proposals/?user_id=${userId}`);
+export const acceptProposal = (id: number, userId: number) =>
+  req<any>(`/proposals/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineProposal = (id: number, userId: number) =>
+  req<any>(`/proposals/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const counterProposal = (id: number, userId: number, proposed_time: string, topic?: string) =>
+  req<any>(`/proposals/${id}/counter`, { method: 'POST', body: JSON.stringify({ user_id: userId, proposed_time, topic }) });
+
+// Предложения задач (отдельная сущность от предложения встречи и от задачи).
+export const createTaskProposal = (data: { from_user_id: number; to_user_id: number; title: string; description?: string | null; due_date?: string | null; team_id?: number | null }) =>
+  req<any>('/task-proposals/', { method: 'POST', body: JSON.stringify(data) });
+export const getTaskProposals = (userId: number) =>
+  req<any[]>(`/task-proposals/?user_id=${userId}`);
+export const acceptTaskProposal = (id: number, userId: number) =>
+  req<any>(`/task-proposals/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineTaskProposal = (id: number, userId: number) =>
+  req<any>(`/task-proposals/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const commentTaskProposal = (id: number, userId: number, note: string) =>
+  req<any>(`/task-proposals/${id}/comment`, { method: 'POST', body: JSON.stringify({ user_id: userId, note }) });
+
+// Цели (постановка и отслеживание). Права проверяются на бэкенде: цель редактирует
+// только владелец; тимлид видит цели команды и оставляет комментарии/итоговую оценку.
+export type GoalComment = {
+  id: number; author_id: number; author_name?: string | null;
+  body: string; kind: string; rating?: number | null; created_at?: string | null;
+};
+export type Goal = {
+  id: number; user_id: number; user_name?: string | null; team_id?: number | null;
+  scope?: string;
+  title: string; description?: string | null;
+  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+  progress: number; status: string;
+  created_at?: string | null; updated_at?: string | null; progress_updated_at?: string | null;
+  suggested_status?: string | null; stagnant?: boolean; days_since_progress?: number | null;
+  comments?: GoalComment[];
+};
+export type TeamGoals = {
+  team_id: number;
+  members: { user_id: number; user_name: string; user_avatar_url?: string | null; goals: Goal[] }[];
+};
+export const createGoal = (data: {
+  user_id: number; title: string; description?: string | null; team_id?: number | null;
+  scope?: string; period_label?: string | null; period_start?: string | null; period_end?: string | null;
+}) => req<Goal>('/goals/', { method: 'POST', body: JSON.stringify(data) });
+export const getGoals = (userId: number, actorId: number) =>
+  req<Goal[]>(`/goals/?user_id=${userId}&actor_id=${actorId}`);
+export const getTeamGoals = (teamId: number, actorId: number) =>
+  req<TeamGoals>(`/goals/team/${teamId}?actor_id=${actorId}`);
+export const getTeamSharedGoals = (teamId: number, actorId: number) =>
+  req<Goal[]>(`/goals/team/${teamId}/goals?actor_id=${actorId}`);
+export const getGoal = (goalId: number, actorId: number) =>
+  req<Goal>(`/goals/${goalId}?actor_id=${actorId}`);
+export const updateGoal = (goalId: number, data: {
+  actor_id: number; title?: string; description?: string | null;
+  period_label?: string | null; period_start?: string | null; period_end?: string | null;
+  progress?: number; status?: string;
+}) => req<Goal>(`/goals/${goalId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteGoal = (goalId: number, actorId: number) =>
+  req<any>(`/goals/${goalId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const addGoalComment = (goalId: number, data: { actor_id: number; body: string; kind?: string; rating?: number }) =>
+  req<Goal>(`/goals/${goalId}/comments`, { method: 'POST', body: JSON.stringify(data) });
+
+// Развитие (навыки, уровни, план развития, рекомендации). Права — на бэкенде.
+export type DevSkill = {
+  id: number; user_id: number; skill_id: number; skill_name?: string | null; category: string;
+  current_level: number; current_level_label?: string | null;
+  desired_level?: number | null; desired_level_label?: string | null;
+  target_date?: string | null; gap: number;
+  history?: { id: number; level: number; level_label?: string | null; note?: string | null; changed_at?: string | null }[];
+};
+export type DevStep = {
+  id: number; user_id: number; title: string; description?: string | null;
+  skill_id?: number | null; skill_name?: string | null; goal_id?: number | null; goal_title?: string | null;
+  due_date?: string | null; status: string; progress: number;
+  assigned_by?: number | null; assigned_by_name?: string | null; assigned_by_lead?: boolean; overdue?: boolean;
+  comments?: GoalComment[];
+};
+export type DevRecommendation = {
+  id: number; user_id: number; skill_id?: number | null; skill_name?: string | null;
+  source: string; source_label?: string | null; title: string; body?: string | null;
+  article_id?: number | null; target_level?: number | null; target_date?: string | null;
+  status: string; created_by?: number | null; created_by_name?: string | null; created_at?: string | null;
+};
+export type Development = {
+  user_id: number; skills: DevSkill[]; steps: DevStep[];
+  recommendations: DevRecommendation[]; learning_goals: Goal[]; plan_progress: number;
+};
+export type TeamDevelopment = {
+  team_id: number;
+  members: { user_id: number; user_name: string; skills: DevSkill[]; plan_progress: number;
+    active_steps: number; overdue_steps: number; gaps: number; has_active_plan: boolean }[];
+};
+export const getSkills = (teamId: number | undefined, actorId: number) =>
+  req<any[]>(`/development/skills?actor_id=${actorId}${teamId ? `&team_id=${teamId}` : ''}`);
+export const createSkill = (data: { actor_id: number; name: string; category?: string; team_id?: number | null }) =>
+  req<any>('/development/skills', { method: 'POST', body: JSON.stringify(data) });
+export const getDevelopment = (userId: number, actorId: number) =>
+  req<Development>(`/development/${userId}?actor_id=${actorId}`);
+export const addUserSkill = (data: { actor_id: number; user_id: number; skill_id?: number; skill_name?: string; category?: string; current_level?: number; desired_level?: number; target_date?: string | null }) =>
+  req<DevSkill>('/development/skills/user', { method: 'POST', body: JSON.stringify(data) });
+export const updateUserSkill = (usId: number, data: { actor_id: number; current_level?: number; desired_level?: number; target_date?: string | null; note?: string }) =>
+  req<DevSkill>(`/development/skills/user/${usId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteUserSkill = (usId: number, actorId: number) =>
+  req<any>(`/development/skills/user/${usId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const createDevStep = (data: { actor_id: number; user_id: number; title: string; description?: string | null; skill_id?: number; goal_id?: number; due_date?: string | null }) =>
+  req<DevStep>('/development/steps', { method: 'POST', body: JSON.stringify(data) });
+export const updateDevStep = (stepId: number, data: { actor_id: number; title?: string; description?: string | null; skill_id?: number; goal_id?: number; due_date?: string | null; status?: string; progress?: number }) =>
+  req<DevStep>(`/development/steps/${stepId}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteDevStep = (stepId: number, actorId: number) =>
+  req<any>(`/development/steps/${stepId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const addDevStepComment = (stepId: number, data: { actor_id: number; body: string; kind?: string; rating?: number }) =>
+  req<DevStep>(`/development/steps/${stepId}/comments`, { method: 'POST', body: JSON.stringify(data) });
+export const createDevRecommendation = (data: { actor_id: number; user_id: number; skill_id?: number; title: string; body?: string | null; target_level?: number; target_date?: string | null }) =>
+  req<DevRecommendation>('/development/recommendations', { method: 'POST', body: JSON.stringify(data) });
+export const aiDevRecommendation = (userId: number, actorId: number) =>
+  req<DevRecommendation>(`/development/recommendations/ai?user_id=${userId}&actor_id=${actorId}`, { method: 'POST' });
+export const actOnDevRecommendation = (recId: number, data: { actor_id: number; action: string; note?: string }) =>
+  req<DevRecommendation>(`/development/recommendations/${recId}/action`, { method: 'POST', body: JSON.stringify(data) });
+export const getTeamDevelopment = (teamId: number, actorId: number) =>
+  req<TeamDevelopment>(`/development/team/${teamId}?actor_id=${actorId}`);
+export const getMemberDevAnalytics = (userId: number, actorId: number) =>
+  req<any>(`/development/analytics/member/${userId}?actor_id=${actorId}`);
+export const getTeamDevAnalytics = (teamId: number, actorId: number) =>
+  req<any>(`/development/analytics/team/${teamId}?actor_id=${actorId}`);
+
+// Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
+export const createInteraction = (data: any) =>
+  req<any>('/interactions/', { method: 'POST', body: JSON.stringify(data) });
+export const getInteractions = (userId: number) =>
+  req<any[]>(`/interactions/?user_id=${userId}`);
+export const acceptInteraction = (id: number, userId: number) =>
+  req<any>(`/interactions/${id}/accept`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const declineInteraction = (id: number, userId: number) =>
+  req<any>(`/interactions/${id}/decline`, { method: 'POST', body: JSON.stringify({ user_id: userId }) });
+export const replyInteraction = (id: number, userId: number, body: string) =>
+  req<any>(`/interactions/${id}/reply`, { method: 'POST', body: JSON.stringify({ user_id: userId, body }) });
+export const closeInteraction = (id: number, userId: number, outcome?: string) =>
+  req<any>(`/interactions/${id}/close`, { method: 'POST', body: JSON.stringify({ user_id: userId, outcome }) });
+export const getUserRecommendations = (userId: number) =>
+  req<any[]>(`/interactions/recommendations/${userId}`);
+
+// Совместная работа над задачей (39.2/39.3)
+export const addTaskAssignee = (taskId: number, data: { user_id: number; actor_id: number; part_description?: string | null }) =>
+  req<any>(`/tasks/${taskId}/assignees`, { method: 'POST', body: JSON.stringify(data) });
+export const removeTaskAssigneeById = (taskId: number, assigneeId: number, actorId: number) =>
+  req<any>(`/tasks/${taskId}/assignees/${assigneeId}?actor_id=${actorId}`, { method: 'DELETE' });
+export const getTaskActivity = (taskId: number) => req<any[]>(`/tasks/${taskId}/activity`);
+export const getTaskComments = (taskId: number) => req<any[]>(`/tasks/${taskId}/comments`);
+export const addTaskComment = (taskId: number, authorId: number, body: string) =>
+  req<any>(`/tasks/${taskId}/comments`, { method: 'POST', body: JSON.stringify({ author_id: authorId, body }) });
+export const getTaskById = (taskId: number) => req<any>(`/tasks/${taskId}`);
 
 // Собственная аутентификация (email/пароль + JWT), замена Supabase
 export const authRegister = (data: { name: string; email: string; password: string }) =>
@@ -215,3 +410,16 @@ export const broadcastNotification = (data: { title: string; body?: string; targ
 export const getSupportTickets = () => req<any[]>('/support/');
 export const adminReplyTicket = (ticketId: number, body: string) =>
   req<any>(`/support/${ticketId}/reply`, { method: 'POST', body: JSON.stringify({ body }) });
+
+// Сотрудники (реестр менеджеров) — тот же backend, что и в вебе (задача 2).
+export interface StaffMember {
+  id: number; name: string; contact?: string | null; email?: string | null;
+  role?: string | null; responsibility?: string | null;
+}
+export const getManagers = () => req<StaffMember[]>('/admin/billing/managers');
+export const createManager = (data: Partial<StaffMember>) =>
+  req<StaffMember>('/admin/billing/managers', { method: 'POST', body: JSON.stringify(data) });
+export const updateManager = (id: number, data: Partial<StaffMember>) =>
+  req<StaffMember>(`/admin/billing/managers/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+export const deleteManager = (id: number) =>
+  req<any>(`/admin/billing/managers/${id}`, { method: 'DELETE' });

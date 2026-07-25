@@ -10,6 +10,16 @@ class MeetingCreate(BaseModel):
     scheduled_date: datetime
     agenda: Optional[str] = None
 
+
+class GroupMeetingCreate(BaseModel):
+    """Групповой созвон (Задача 4): несколько участников или вся команда."""
+    team_id: int
+    team_lead_id: int
+    scheduled_date: datetime
+    agenda: Optional[str] = None
+    member_ids: Optional[List[int]] = None   # конкретные участники
+    whole_team: bool = False                 # вся команда (кроме тимлида)
+
 class MeetingOut(BaseModel):
     id: int
     team_id: int
@@ -28,6 +38,7 @@ class MeetingOut(BaseModel):
     call_duration_seconds: Optional[int] = None
     call_analytics: Optional[str] = None
     is_rescheduled: bool = False
+    group_id: Optional[str] = None
     created_at: datetime
 
     class Config:

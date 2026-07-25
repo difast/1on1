@@ -2,22 +2,18 @@ import { useState, useEffect } from 'react'
 import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
+import Spinner from '../lib/Spinner'
 import {
   getTelegramConfig, telegramCallback,
-  authLogin, authRegister, authForgotPassword,
+  authLogin, authRegister, authForgotPassword, adminLogin,
 } from '../api/client'
 
 const ADMIN_PASSWORD = '1on12026'
 
 // Небольшой крутящийся индикатор для кнопок — показываем при долгой загрузке
-// (холодный старт бэкенда). Использует глобальный keyframe spin.
-const BtnSpinner = () => (
-  <span style={{
-    display: 'inline-block', width: 16, height: 16,
-    border: '2px solid rgba(255,255,255,0.45)', borderTopColor: '#fff',
-    borderRadius: '50%', animation: 'spin 0.7s linear infinite',
-  }} />
-)
+// (холодный старт бэкенда). Общий компонент Spinner переиспользуется всем
+// приложением (веб и админка), чтобы индикатор был единым.
+const BtnSpinner = () => <Spinner />
 
 const Logo = () => (
   <div style={{ textAlign: 'center', marginBottom: 32 }}>
@@ -109,11 +105,19 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     } finally { setLoading(false) }
   }
 
-  const handleAdminLogin = (e) => {
+  const handleAdminLogin = async (e) => {
     e.preventDefault()
-    if (adminPwd === ADMIN_PASSWORD) {
+    // Получаем серверный админ-JWT: с ним запросы админки проходят гейт
+    // AUTH_ENFORCE и require_admin. При недоступности эндпоинта (старый бэкенд)
+    // откатываемся на локальную проверку пароля, чтобы вход не ломался.
+    try {
+      const { data } = await adminLogin(adminPwd)
+      if (data?.token) setToken(data.token)
       onAdminLogin?.()
-    } else {
+      return
+    } catch (err) {
+      if (err?.response?.status === 401) { setError('Неверный пароль администратора'); return }
+      if (adminPwd === ADMIN_PASSWORD) { onAdminLogin?.(); return }
       setError('Неверный пароль администратора')
     }
   }

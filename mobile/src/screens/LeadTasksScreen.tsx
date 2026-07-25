@@ -12,6 +12,11 @@ import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { StatusPicker } from '../components/StatusPicker';
+import { Status3DIcon } from '../components/Status3DIcon';
+import { TaskAssignees } from '../components/TaskAssignees';
+import { ClosedTodayCard } from '../components/ClosedTodayCard';
+import { ActivityIndicator } from 'react-native';
+import { parseFeatureLock, openPricing } from '../lib/featureLock';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
@@ -44,6 +49,7 @@ export default function LeadTasksScreen() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statsKey, setStatsKey] = useState(0);  // bump -> обновить счётчик «Закрыто сегодня»
   const [showForm, setShowForm] = useState(false);
   const [formTitle, setFormTitle] = useState('');
   const [formDue, setFormDue] = useState('');
@@ -78,7 +84,21 @@ export default function LeadTasksScreen() {
   }, [user, teamsLoaded]);
 
   useEffect(() => { loadMyTasks(); }, [user?.id]);
+  // Грузим состав команд и на монтировании — чтобы список «добавить исполнителя»
+  // в совместной работе был доступен на обеих вкладках (39.3).
+  useEffect(() => { loadTeamsWithMembers(); }, [user?.id]);
   useEffect(() => { if (tab === 'members') loadTeamsWithMembers(); }, [tab]);
+
+  // Плоский список участников команд (кроме тимлида) для добавления в задачу.
+  const teamContacts = useMemo(() => {
+    const map = new Map<number, { user_id: number; name: string }>();
+    for (const t of teams) {
+      for (const m of (t.members || [])) {
+        if (m.user_id !== user!.id) map.set(m.user_id, { user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` });
+      }
+    }
+    return Array.from(map.values());
+  }, [teams, user]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -93,6 +113,7 @@ export default function LeadTasksScreen() {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
     try {
       await updateTask(task.id, { status: next, completed });
+      setStatsKey(k => k + 1);
     } catch {
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: getStatus(task), completed: task.completed } : t));
     }
@@ -109,20 +130,32 @@ export default function LeadTasksScreen() {
     }));
     try {
       await updateTask(task.id, { status: next, completed });
+      setStatsKey(k => k + 1);
     } catch {}
   };
 
   const handleCreate = async () => {
-    if (!formTitle.trim()) return;
+    const title = formTitle.trim();
+    if (!title) return;
+    const due_date = formDue.trim() || null;
+    // Оптимистичное добавление: задача появляется сразу, форма закрывается.
+    const tempId = `temp-${Date.now()}` as any;
+    const optimistic = {
+      id: tempId, _optimistic: true, title, due_date,
+      assigned_to: user!.id, assigned_by: user!.id, team_id: null,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+    };
+    setTasks(prev => [optimistic, ...prev]);
+    setFormTitle(''); setFormDue(''); setShowForm(false);
     setFormLoading(true);
     try {
-      const task = await createTask({
-        title: formTitle.trim(), due_date: formDue.trim() || null,
-        assigned_to: user!.id, assigned_by: user!.id, team_id: null,
-      }) as any;
-      setTasks(prev => [task, ...prev]);
-      setFormTitle(''); setFormDue(''); setShowForm(false);
-    } catch { Alert.alert('Ошибка', 'Не удалось создать задачу'); }
+      const task = await createTask({ title, due_date, assigned_to: user!.id, assigned_by: user!.id, team_id: null }) as any;
+      setTasks(prev => prev.map(t => t.id === tempId ? task : t));
+    } catch {
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      setFormTitle(title); setFormDue(due_date || ''); setShowForm(true);
+      Alert.alert('Ошибка', 'Не удалось создать задачу');
+    }
     finally { setFormLoading(false); }
   };
 
@@ -149,8 +182,8 @@ export default function LeadTasksScreen() {
     }
   };
 
-  const renderTask = (task: any, onSetStatus: (s: TaskStatus) => void, onDel?: () => void) => (
-    <TaskRow key={task.id} task={task} onSetStatus={onSetStatus} onDel={onDel} />
+  const renderTask = (task: any, onSetStatus: (s: TaskStatus) => void, onDel?: () => void, onUpdated?: (u: any) => void, role: string = 'lead') => (
+    <TaskRow key={task.id} task={task} onSetStatus={onSetStatus} onDel={onDel} onTaskUpdated={onUpdated} role={role} contacts={teamContacts} />
   );
 
   if (loading && tab === 'mine') return <Spinner />;
@@ -199,6 +232,8 @@ export default function LeadTasksScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        <ClosedTodayCard userId={user!.id} role={user?.role} refreshKey={statsKey} />
+
         {tab === 'mine' && (
           <>
             {showForm && (
@@ -216,9 +251,10 @@ export default function LeadTasksScreen() {
                     onPress={() => { setShowForm(false); setFormTitle(''); setFormDue(''); }}>
                     <Text style={styles.formBtnSecondaryText}>Отмена</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.formBtnPrimary, formLoading && styles.btnDisabled]}
+                  <TouchableOpacity style={[styles.formBtnPrimary, formLoading && styles.btnDisabled, { flexDirection: 'row', gap: 8 }]}
                     onPress={handleCreate} disabled={formLoading}>
-                    <Text style={styles.formBtnPrimaryText}>{formLoading ? '...' : 'Добавить'}</Text>
+                    {formLoading && <ActivityIndicator size="small" color="#fff" />}
+                    <Text style={styles.formBtnPrimaryText}>Добавить</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -229,13 +265,13 @@ export default function LeadTasksScreen() {
             {active.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Активные</Text>
-                {active.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id)))}
+                {active.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id), (u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))))}
               </View>
             )}
             {done.length > 0 && (
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Выполненные</Text>
-                {done.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id)))}
+                {done.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id), (u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))))}
               </View>
             )}
           </>
@@ -287,7 +323,12 @@ export default function LeadTasksScreen() {
                               <Text style={styles.emptyText}>Нет задач</Text>
                             )}
                             {mTasks !== undefined && mTasks.map((t: any) =>
-                              renderTask(t, (s) => setMemberTaskStatus(t, member.user_id, s))
+                              renderTask(
+                                t,
+                                (s) => setMemberTaskStatus(t, member.user_id, s),
+                                undefined,
+                                (u) => setMemberTasks(prev => ({ ...prev, [member.user_id]: (prev[member.user_id] || []).map(x => x.id === u.id ? u : x) })),
+                              )
                             )}
                           </View>
                         )}
@@ -362,8 +403,9 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   subtaskText: { fontSize: 12, flex: 1 },
 });
 
-function TaskRow({ task, onSetStatus, onDel }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void }) {
+function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', contacts = [] }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void; onTaskUpdated?: (u: any) => void; role?: string; contacts?: { user_id: number; name: string }[] }) {
   const { colors } = useTheme();
+  const { user } = useAuth();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const [subtasks, setSubtasks] = useState<any[]>([]);
@@ -395,14 +437,25 @@ function TaskRow({ task, onSetStatus, onDel }: { task: any; onSetStatus: (s: Tas
     if (aiSteps.length > 0) { setAiSteps([]); return; }
     setAiLoading(true);
     try {
-      const res = await getTaskAiAdvice(task.title || task.description, st, task.due_date) as any;
+      const res = await getTaskAiAdvice(task.title || task.description, st, task.due_date, role, user?.id) as any;
       const steps: string[] = res.steps ?? [];
       setAiSteps(steps);
       if (steps.length > 0) {
         const created = await createSubtasks(task.id, steps) as any[];
         setSubtasks(created);
       }
-    } catch { Alert.alert('Ошибка', 'Не удалось получить AI советы'); }
+    } catch (err) {
+      // Недоступно по тарифу -> понятное сообщение вместо технической ошибки.
+      const fl = parseFeatureLock(err);
+      if (fl) {
+        Alert.alert('Функция недоступна', fl.message, [
+          { text: 'Закрыть', style: 'cancel' },
+          { text: 'Тарифы', onPress: openPricing },
+        ]);
+      } else {
+        Alert.alert('Ошибка', 'Не удалось получить AI советы');
+      }
+    }
     finally { setAiLoading(false); }
   };
 
@@ -443,18 +496,39 @@ function TaskRow({ task, onSetStatus, onDel }: { task: any; onSetStatus: (s: Tas
                 </Text>
               </TouchableOpacity>
             ))}
-            <TouchableOpacity style={[styles.aiBtn, { borderColor: aiLoading ? colors.border : colors.accent, backgroundColor: colors.accentLight }]} onPress={onAI} disabled={aiLoading}>
-              <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
-              <Text style={[styles.aiBtnText, { color: colors.accent }]}>
-                {aiLoading ? 'AI генерирует...' : aiSteps.length > 0 ? 'Сбросить AI шаги' : 'AI-советы (4 шага)'}
-              </Text>
-            </TouchableOpacity>
+            {!task.is_multi && (
+              <TouchableOpacity style={[styles.aiBtn, { borderColor: aiLoading ? colors.border : colors.accent, backgroundColor: colors.accentLight }]} onPress={onAI} disabled={aiLoading}>
+                <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
+                <Text style={[styles.aiBtnText, { color: colors.accent }]}>
+                  {aiLoading ? 'AI генерирует...' : aiSteps.length > 0 ? 'Сбросить AI шаги' : 'AI-советы (4 шага)'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
+        {/* Совместная задача: участники, их части и статусы + прогресс */}
+        {task.is_multi && (
+          <TaskAssignees
+            task={task}
+            currentUserId={user?.id ?? 0}
+            canManageAll={role === 'lead'}
+            onChanged={(u) => onTaskUpdated?.(u)}
+            contacts={contacts}
+          />
+        )}
       </View>
-      <TouchableOpacity style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]} onPress={() => setPickerOpen(true)} activeOpacity={0.7}>
-        <Text style={[styles.statusText, { color: sc.text }]}>{STATUS_CONFIG[st].short}</Text>
-      </TouchableOpacity>
+      {task.is_multi ? (
+        <View style={[styles.statusBadge, { backgroundColor: colors.surface2, borderColor: colors.border }]}>
+          <Text style={[styles.statusText, { color: colors.textSecondary }]}>
+            {task.progress ? `${task.progress.done}/${task.progress.total}` : '—'}
+          </Text>
+        </View>
+      ) : (
+        <TouchableOpacity style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border, flexDirection: 'row', alignItems: 'center', gap: 6 }]} onPress={() => setPickerOpen(true)} activeOpacity={0.7}>
+          <Status3DIcon status={st} size={16} />
+          <Text style={[styles.statusText, { color: sc.text }]}>{STATUS_CONFIG[st].short}</Text>
+        </TouchableOpacity>
+      )}
       {onDel && (
         <TouchableOpacity onPress={onDel} style={styles.deleteBtn}>
           <Text style={styles.deleteBtnText}>✕</Text>

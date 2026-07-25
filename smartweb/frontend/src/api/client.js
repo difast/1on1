@@ -38,6 +38,8 @@ export const regenerateInviteCode = (teamId) =>
 
 // Meetings
 export const createMeeting = (data) => api.post('/meetings/', data)
+// Групповой созвон (Задача 4): несколько участников / вся команда.
+export const createGroupMeeting = (data) => api.post('/meetings/group', data)
 export const getMeetings = (params) => api.get('/meetings/', { params })
 export const getMeeting = (id) => api.get(`/meetings/${id}`)
 export const updateMeeting = (id, data) => api.patch(`/meetings/${id}`, data)
@@ -54,16 +56,90 @@ export const uploadRecording = (meetingId, formData) =>
 export const getTranscript = (meetingId) =>
   api.get(`/video/meetings/${meetingId}/transcript`)
 
+// Предложения встреч (Задача 5): переговоры о встрече с подтверждением.
+export const createProposal = (data) => api.post('/proposals/', data)
+export const getProposals = (userId) => api.get('/proposals/', { params: { user_id: userId } })
+export const acceptProposal = (id, userId) => api.post(`/proposals/${id}/accept`, { user_id: userId })
+export const declineProposal = (id, userId) => api.post(`/proposals/${id}/decline`, { user_id: userId })
+export const counterProposal = (id, userId, proposedTime, topic) =>
+  api.post(`/proposals/${id}/counter`, { user_id: userId, proposed_time: proposedTime, topic })
+
+// Предложения задач (отдельная сущность от предложения встречи и от задачи).
+export const createTaskProposal = (data) => api.post('/task-proposals/', data)
+export const getTaskProposals = (userId) => api.get('/task-proposals/', { params: { user_id: userId } })
+export const acceptTaskProposal = (id, userId) => api.post(`/task-proposals/${id}/accept`, { user_id: userId })
+export const declineTaskProposal = (id, userId) => api.post(`/task-proposals/${id}/decline`, { user_id: userId })
+export const commentTaskProposal = (id, userId, note) => api.post(`/task-proposals/${id}/comment`, { user_id: userId, note })
+
+// Цели (модуль постановки и отслеживания целей)
+export const createGoal = (data) => api.post('/goals/', data)
+export const getGoals = (userId, actorId) => api.get('/goals/', { params: { user_id: userId, actor_id: actorId } })
+export const getTeamGoals = (teamId, actorId) => api.get(`/goals/team/${teamId}`, { params: { actor_id: actorId } })
+export const getTeamSharedGoals = (teamId, actorId) => api.get(`/goals/team/${teamId}/goals`, { params: { actor_id: actorId } })
+export const getGoal = (goalId, actorId) => api.get(`/goals/${goalId}`, { params: { actor_id: actorId } })
+export const updateGoal = (goalId, data) => api.patch(`/goals/${goalId}`, data)
+export const deleteGoal = (goalId, actorId) => api.delete(`/goals/${goalId}`, { params: { actor_id: actorId } })
+export const addGoalComment = (goalId, data) => api.post(`/goals/${goalId}/comments`, data)
+
+// Развитие (навыки, уровни, план развития, рекомендации)
+export const getSkills = (teamId, actorId) => api.get('/development/skills', { params: { team_id: teamId, actor_id: actorId } })
+export const createSkill = (data) => api.post('/development/skills', data)
+export const getDevelopment = (userId, actorId) => api.get(`/development/${userId}`, { params: { actor_id: actorId } })
+export const addUserSkill = (data) => api.post('/development/skills/user', data)
+export const updateUserSkill = (usId, data) => api.patch(`/development/skills/user/${usId}`, data)
+export const deleteUserSkill = (usId, actorId) => api.delete(`/development/skills/user/${usId}`, { params: { actor_id: actorId } })
+export const createDevStep = (data) => api.post('/development/steps', data)
+export const updateDevStep = (stepId, data) => api.patch(`/development/steps/${stepId}`, data)
+export const deleteDevStep = (stepId, actorId) => api.delete(`/development/steps/${stepId}`, { params: { actor_id: actorId } })
+export const addDevStepComment = (stepId, data) => api.post(`/development/steps/${stepId}/comments`, data)
+export const createDevRecommendation = (data) => api.post('/development/recommendations', data)
+export const aiDevRecommendation = (userId, actorId) => api.post('/development/recommendations/ai', null, { params: { user_id: userId, actor_id: actorId } })
+export const actOnDevRecommendation = (recId, data) => api.post(`/development/recommendations/${recId}/action`, data)
+export const getTeamDevelopment = (teamId, actorId) => api.get(`/development/team/${teamId}`, { params: { actor_id: actorId } })
+export const getMemberDevAnalytics = (userId, actorId) => api.get(`/development/analytics/member/${userId}`, { params: { actor_id: actorId } })
+export const getTeamDevAnalytics = (teamId, actorId) => api.get(`/development/analytics/team/${teamId}`, { params: { actor_id: actorId } })
+
+// ONE AI (стратегический AI-центр; общий AI-слой с Питом)
+export const getOneAiSections = (actorId) => api.get('/oneai/sections', { params: { actor_id: actorId } })
+export const oneAiQuery = (data) => api.post('/oneai/query', data)
+
+// Взаимодействия (блок 39): единая лента предложений/обсуждений/рекомендаций
+export const createInteraction = (data) => api.post('/interactions/', data)
+export const getInteractions = (userId) => api.get('/interactions/', { params: { user_id: userId } })
+export const acceptInteraction = (id, userId) => api.post(`/interactions/${id}/accept`, { user_id: userId })
+export const declineInteraction = (id, userId) => api.post(`/interactions/${id}/decline`, { user_id: userId })
+export const replyInteraction = (id, userId, body) => api.post(`/interactions/${id}/reply`, { user_id: userId, body })
+export const closeInteraction = (id, userId, outcome) => api.post(`/interactions/${id}/close`, { user_id: userId, outcome })
+export const getUserRecommendations = (userId) => api.get(`/interactions/recommendations/${userId}`)
+
+// Совместная работа над задачей (39.2/39.3): состав, лента активности, комментарии
+export const addTaskAssignee = (taskId, data) => api.post(`/tasks/${taskId}/assignees`, data)
+export const removeTaskAssigneeById = (taskId, assigneeId, actorId) =>
+  api.delete(`/tasks/${taskId}/assignees/${assigneeId}`, { params: { actor_id: actorId } })
+export const getTask = (taskId) => api.get(`/tasks/${taskId}`)
+export const getTaskActivity = (taskId) => api.get(`/tasks/${taskId}/activity`)
+export const getTaskComments = (taskId) => api.get(`/tasks/${taskId}/comments`)
+export const addTaskComment = (taskId, authorId, body) => api.post(`/tasks/${taskId}/comments`, { author_id: authorId, body })
+
 // Scheduling
 export const getAvailableSlots = (data) => api.post('/scheduling/slots', data)
 
 // Tasks
-export const createTask = (data) => api.post('/tasks/', data)
+// После любой мутации задачи оповещаем интерфейс событием 'tasks-updated',
+// чтобы счётчик «Закрыто сегодня» (Задача 2) обновлялся мгновенно, без refresh.
+const notifyTasksUpdated = (r) => {
+  try { window.dispatchEvent(new Event('tasks-updated')) } catch {}
+  return r
+}
+export const createTask = (data) => api.post('/tasks/', data).then(notifyTasksUpdated)
 export const getTasks = (params) => api.get('/tasks/', { params })
 export const getMyLeadTasks = (userId) => api.get('/tasks/', { params: { assigned_to: userId, assigned_by: userId } })
-export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data)
-export const deleteTask = (id) => api.delete(`/tasks/${id}`)
+export const updateTask = (id, data) => api.patch(`/tasks/${id}`, data).then(notifyTasksUpdated)
+export const deleteTask = (id) => api.delete(`/tasks/${id}`).then(notifyTasksUpdated)
 export const getTaskAIAdvice = (data) => api.post('/tasks/ai-advice', data)
+// Совместные задачи (Задача 4): статус части одного участника + закрытые сегодня.
+export const updateTaskAssignee = (assigneeId, data) => api.patch(`/tasks/assignee/${assigneeId}`, data).then(notifyTasksUpdated)
+export const getClosedTodayTasks = (userId) => api.get(`/tasks/closed-today/${userId}`)
 
 // Notifications
 export const getNotifications = (userId, unreadOnly = false) =>
@@ -86,14 +162,19 @@ export const deleteNote = (id) => api.delete(`/notes/${id}`)
 
 export const heartbeat = (userId) => api.post(`/users/${userId}/heartbeat`)
 export const getUserStats = (userId) => api.get(`/users/${userId}/stats`)
+// Публичная карточка участника (контакты/соцсети/фото/организация) — по правилам
+// видимости для коллег по команде. team_id даёт контекст организации.
+export const getUserCard = (userId, teamId) =>
+  api.get(`/users/${userId}/card`, { params: teamId ? { team_id: teamId } : {} })
 
 // Admin
+export const adminLogin = (password) => api.post('/auth/admin-login', { password })
 export const getAdminStats = () => api.get('/users/admin/stats')
 export const broadcastNotification = (data) => api.post('/notifications/broadcast', data)
 export const getServiceHealth = () => api.get('/health/detailed')
 
 // Assistant (Пит)
-export const pitChat = (messages, context = '') => api.post('/assistant/chat', { messages, context })
+export const pitChat = (messages, context = '', userId = null) => api.post('/assistant/chat', { messages, context, user_id: userId })
 
 // Knowledge Base
 export const getKnowledgeArticles = (teamId) => api.get(`/knowledge/team/${teamId}`)
@@ -102,8 +183,16 @@ export const updateKnowledgeArticle = (id, data) => api.patch(`/knowledge/${id}`
 export const deleteKnowledgeArticle = (id) => api.delete(`/knowledge/${id}`)
 
 // Mood
-export const submitMood = (data) => api.post('/mood/', data)
+// После сохранения чек-ина оповещаем интерфейс, чтобы аналитика/график
+// обновились реактивно, без ручного refresh.
+export const submitMood = (data) => api.post('/mood/', data).then(r => {
+  try { window.dispatchEvent(new Event('mood-updated')) } catch {}
+  return r
+})
 export const getTeamMoodSummary = (teamId) => api.get(`/mood/team/${teamId}/summary`)
+export const getMoodToday = (userId, teamId) => api.get(`/mood/today/${userId}`, { params: { team_id: teamId } })
+export const getMyMoodSeries = (userId, { period = 'month', start, end, teamId } = {}) =>
+  api.get(`/mood/me/${userId}/series`, { params: { period, start, end, team_id: teamId } })
 
 // Subtasks
 export const createSubtasks = (taskId, titles) => api.post('/subtasks/bulk', { task_id: taskId, titles })
@@ -154,6 +243,7 @@ export const getUserBilling = (userId) => api.get(`/admin/billing/user/${userId}
 // Реестр менеджеров + назначение из списка (manager_id, null = снять).
 export const getManagers = () => api.get('/admin/billing/managers')
 export const createManager = (data) => api.post('/admin/billing/managers', data)
+export const updateManager = (id, data) => api.patch(`/admin/billing/managers/${id}`, data)
 export const deleteManager = (id) => api.delete(`/admin/billing/managers/${id}`)
 export const assignManager = (userId, managerId) => api.post(`/admin/billing/users/${userId}/manager`, { manager_id: managerId })
 // Компания рабочего пространства (Этапы 2-4) + регион по IP (Этап 5)

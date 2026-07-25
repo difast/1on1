@@ -11,7 +11,7 @@ from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai
 
 
 def _seed_billing():
@@ -40,40 +40,66 @@ async def _keep_alive():
             await asyncio.sleep(240)  # 4 minutes
 
 def _send_mood_reminders():
-    """Create + push the daily 'fill the mood survey' reminder (once/day, deduped)."""
+    """Ежедневный опрос настроения участникам (задача 7). Для КАЖДОЙ команды в её
+    ЧАСОВОМ ПОЯСЕ, начиная с 20:00, рассылаем участникам приглашение заполнить
+    опрос — один раз в локальные сутки, по всем каналам (веб-уведомление, push,
+    Telegram). Отдельная рассылка от сводки лиду в 10:00. Защита от дублей и от
+    пропуска: дедуп по команде за локальные сутки; если время уже >= 20:00, а
+    сегодня ещё не рассылали — догоняем после простоя сервера."""
+    from zoneinfo import ZoneInfo
     from app.database import SessionLocal
     from app.models.user import User
+    from app.models.team import Team, TeamMember
     from app.models.notification import Notification
     from app.utils.push import send_push_bulk
+    from app.services import mood_service
     db = SessionLocal()
     try:
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
-        already = db.query(Notification).filter(
-            Notification.type == "mood_reminder",
-            Notification.created_at >= today,
-        ).first()
-        if already:
-            return
-        members = db.query(User).filter(User.is_blocked == False, User.role == "member").all()
+        utc = ZoneInfo("UTC")
         title = "Как прошёл ваш день?"
         body = "Пройдите короткий опрос настроения в приложении"
-        msgs = []
-        for u in members:
-            db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
-            if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
-                msgs.append({
-                    "to": u.push_token, "title": title, "body": body,
-                    "sound": "default", "priority": "high", "data": {"type": "mood_reminder"},
-                })
-        db.commit()
-        if msgs:
-            send_push_bulk(msgs)
-        # Чек-ин настроения в Telegram — основной канал (Этап 3). Тот же mood-API.
-        try:
-            from app.services.telegram_bot import send_mood_checkins
-            send_mood_checkins(db)
-        except Exception:
-            pass
+        pushes = []
+        for team in db.query(Team).all():
+            try:
+                tz = mood_service.team_tz(db, team.id)
+                local_now = datetime.now(utc).astimezone(tz)
+                if local_now.hour < 20:
+                    continue  # опрос уходит в 20:00 локального времени команды (с догоном до конца суток)
+                local_midnight_utc = local_now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(utc).replace(tzinfo=None)
+                # Участники команды (кроме лида) — им адресован опрос.
+                member_ids = [tm.user_id for tm in db.query(TeamMember).filter(TeamMember.team_id == team.id).all()
+                              if tm.user_id != team.team_lead_id]
+                if not member_ids:
+                    continue
+                # Дедуп на уровне команды за локальные сутки: если сегодня уже
+                # рассылали хотя бы одному участнику — пропускаем всю команду.
+                already = db.query(Notification).filter(
+                    Notification.type == "mood_reminder",
+                    Notification.user_id.in_(member_ids),
+                    Notification.created_at >= local_midnight_utc,
+                ).first()
+                if already:
+                    continue
+                users = db.query(User).filter(User.id.in_(member_ids), User.is_blocked == False).all()  # noqa: E712
+                for u in users:
+                    db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
+                    if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
+                        pushes.append({
+                            "to": u.push_token, "title": title, "body": body,
+                            "sound": "default", "priority": "high", "data": {"type": "mood_reminder"},
+                        })
+                    # Telegram-канал: тот же вопрос настроения кнопками 1..5.
+                    if getattr(u, "telegram_id", None):
+                        try:
+                            from app.services.telegram_bot import _send_mood_question
+                            _send_mood_question(u.telegram_id, team.id)
+                        except Exception:
+                            pass
+                db.commit()
+            except Exception:
+                db.rollback()
+        if pushes:
+            send_push_bulk(pushes)
     except Exception:
         pass
     finally:
@@ -81,14 +107,13 @@ def _send_mood_reminders():
 
 
 async def _mood_reminder_loop():
-    """Fire the mood-survey reminder daily at 20:00 МСК (17:00 UTC). In-process
-    scheduler since Celery beat is not running on this deployment."""
+    """Проверяем раз в минуту — срабатывание в 20:00 по поясу каждой команды, с
+    дедупом и догоном после простоя (см. _send_mood_reminders). In-process
+    планировщик, поскольку Celery beat здесь не запущен."""
     await asyncio.sleep(90)
     while True:
         try:
-            now = datetime.utcnow()
-            if now.hour == 17 and now.minute < 5:  # 20:00 Moscow time
-                await asyncio.to_thread(_send_mood_reminders)
+            await asyncio.to_thread(_send_mood_reminders)
         except Exception:
             pass
         await asyncio.sleep(60)
@@ -143,6 +168,72 @@ async def _billing_sweep_loop():
         except Exception:
             pass
         await asyncio.sleep(6 * 3600)  # every 6 hours
+
+
+def _send_mood_summaries():
+    """Ежедневная сводка настроения (задача 13). Для каждой команды в её ЧАСОВОМ
+    ПОЯСЕ, начиная с 10:00, отправляем тимлиду анонимную сводку за день — один раз
+    в сутки. Защита от дублей и от пропуска: если сводка за локальные сутки ещё
+    не отправлена и локальное время уже >= 10:00 — отправляем (догоняем после
+    простоя сервера, но не раньше 10:00). Анонимность: при недостатке данных
+    отдаём сообщение о недостаточности вместо статистики (13.5)."""
+    from zoneinfo import ZoneInfo
+    from app.database import SessionLocal
+    from app.models.team import Team
+    from app.models.notification import Notification
+    from app.services import mood_service
+    from app.services.notification_service import NotificationService
+    db = SessionLocal()
+    try:
+        utc = ZoneInfo("UTC")
+        for team in db.query(Team).all():
+            try:
+                tz = mood_service.team_tz(db, team.id)
+                local_now = datetime.now(utc).astimezone(tz)
+                if local_now.hour < 10:
+                    continue  # сбор опросов ещё идёт — сводку не шлём до 10:00
+                # Локальная полночь -> UTC (naive) для сравнения с created_at.
+                local_midnight_utc = local_now.replace(hour=0, minute=0, second=0, microsecond=0).astimezone(utc).replace(tzinfo=None)
+                already = db.query(Notification).filter(
+                    Notification.user_id == team.team_lead_id,
+                    Notification.type == "mood_summary",
+                    Notification.created_at >= local_midnight_utc,
+                ).first()
+                if already:
+                    continue
+                s = mood_service.team_summary(db, team.id, ref=local_now.date())
+                if s.get("insufficient"):
+                    body = f"Недостаточно данных для анонимной статистики за сегодня (заполнили {s['filled']} из {s['team_size']}, нужно от {s['threshold']})."
+                else:
+                    delta = s.get("delta_prev")
+                    delta_txt = "" if delta is None else f" Динамика к вчера: {'+' if delta > 0 else ''}{delta}."
+                    body = (f"Средний уровень: {s['avg']} из 5. "
+                            f"Заполнили: {s['filled']} из {s['team_size']}"
+                            + (f" ({s['share_pct']}%)." if s.get('share_pct') is not None else ".")
+                            + delta_txt)
+                NotificationService(db).create_notification(
+                    user_id=team.team_lead_id, type="mood_summary",
+                    title="Сводка настроения команды", body=body,
+                    data={"team_id": team.id, "summary": s},
+                )
+            except Exception:
+                db.rollback()
+    except Exception:
+        pass
+    finally:
+        db.close()
+
+
+async def _mood_summary_loop():
+    """Проверяем раз в минуту — точное срабатывание в 10:00 по поясу каждой
+    команды, с дедупом и догоном после простоя (см. _send_mood_summaries)."""
+    await asyncio.sleep(100)
+    while True:
+        try:
+            await asyncio.to_thread(_send_mood_summaries)
+        except Exception:
+            pass
+        await asyncio.sleep(60)
 
 
 async def _telegram_polling_loop():
@@ -201,6 +292,7 @@ async def lifespan(app: FastAPI):
     _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())
+    mood_summary_task = asyncio.create_task(_mood_summary_loop())
     billing_task = asyncio.create_task(_billing_sweep_loop())
     # Polling запускается сам, только если TELEGRAM_MODE=polling (иначе выходит
     # сразу и остаётся штатный режим вебхука).
@@ -208,6 +300,7 @@ async def lifespan(app: FastAPI):
     yield
     task.cancel()
     mood_task.cancel()
+    mood_summary_task.cancel()
     billing_task.cancel()
     tg_poll_task.cancel()
 
@@ -243,7 +336,7 @@ import jwt as _jwt
 
 _AUTH_PUBLIC_EXACT = {
     "/", "/healthz",
-    "/api/auth/register", "/api/auth/login",
+    "/api/auth/register", "/api/auth/login", "/api/auth/admin-login",
     "/api/auth/forgot-password", "/api/auth/reset-password",
     "/api/auth/confirm-email", "/api/auth/resend-confirmation",
     "/api/telegram/config", "/api/telegram/webhook",
@@ -302,6 +395,12 @@ app.include_router(admin_billing.router, prefix="/api/admin/billing", tags=["adm
 app.include_router(company.router, prefix="/api/companies", tags=["companies"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(proposal.router, prefix="/api/proposals", tags=["proposals"])
+app.include_router(task_proposal.router, prefix="/api/task-proposals", tags=["task-proposals"])
+app.include_router(goal.router, prefix="/api/goals", tags=["goals"])
+app.include_router(development.router, prefix="/api/development", tags=["development"])
+app.include_router(oneai.router, prefix="/api/oneai", tags=["oneai"])
+app.include_router(interaction.router, prefix="/api/interactions", tags=["interactions"])
 
 @app.api_route("/", methods=["GET", "HEAD"])
 @app.api_route("/healthz", methods=["GET", "HEAD"])

@@ -1,14 +1,23 @@
 import { useState, useEffect, useCallback } from 'react'
+import Spinner from '../lib/Spinner'
 import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
 import AiSummary from './AiSummary'
 import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
-import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin } from '../api/client'
+import { getTeams, getTeam, joinTeam, getMeetings, requestMeeting, getTasks, createTask, updateTask, deleteTask, getNotes, createNote, updateNote, deleteNote, startCall, uploadRecording, getTranscript, updateMeeting, checkInArrive, checkInLeave, getTodayCheckin, getMoodToday } from '../api/client'
 import Layout from './Layout'
 import MemberAnalytics from './MemberAnalytics'
+import { GoalsMember } from './Goals'
+import { DevelopmentMember } from './Development'
+import OneAI from './OneAI'
+import { notificationSection } from '../lib/notify'
 import MeetingCalendar from './MeetingCalendar'
 import TaskStatusSelect from './TaskStatusSelect'
+import TaskAssignees from './TaskAssignees'
+import MeetingProposals from './MeetingProposals'
+import TaskProposals from './TaskProposals'
+import InteractionsPanel from './InteractionsPanel'
 import QuickWidget from './QuickWidget'
 import { toast } from '../lib/ui'
 import JitsiCall from './JitsiCall'
@@ -39,6 +48,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const [meetings, setMeetings] = useState([])
   const [showRequestMeeting, setShowRequestMeeting] = useState(false)
+  const [showProposals, setShowProposals] = useState(false)  // предложения встреч (Задача 5)
+  const [meetingPreset, setMeetingPreset] = useState(null)   // предвыбранный получатель для предложения встречи
+  const [showTaskProposals, setShowTaskProposals] = useState(false)  // предложения задач
+  const [taskProposalPreset, setTaskProposalPreset] = useState(null) // предвыбранный получатель
+  const [showInteractions, setShowInteractions] = useState(false)  // взаимодействия (блок 39)
   const [meetingDate, setMeetingDate] = useState('')
   const [meetingTopic, setMeetingTopic] = useState('')
   const [meetingLoading, setMeetingLoading] = useState(false)
@@ -61,10 +75,24 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
   const [uploadLoading, setUploadLoading] = useState({})
   const [uploadDone, setUploadDone] = useState({})
   const [activeCall, setActiveCall] = useState(null)
+  // Настроение можно заполнять раз в сутки (по локальному дню команды). Держим
+  // признак «уже отмечено сегодня», чтобы кнопка «Настроение» не давала дублей.
+  const [moodFilledToday, setMoodFilledToday] = useState(false)
 
   useEffect(() => {
     getTodayCheckin(user.id).then(r => setCheckin(r.data)).catch(() => {})
   }, [user.id])
+
+  useEffect(() => {
+    if (!teamId) return
+    const refresh = () => getMoodToday(user.id, teamId)
+      .then(r => setMoodFilledToday(!!r.data?.filled))
+      .catch(() => {})
+    refresh()
+    // После заполнения (событие mood-updated) сразу закрываем возможность повторного.
+    window.addEventListener('mood-updated', refresh)
+    return () => window.removeEventListener('mood-updated', refresh)
+  }, [user.id, teamId])
 
   const handleArrive = async () => {
     setCheckinLoading(true)
@@ -213,19 +241,28 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
   const handleCreateSelfTask = async (e) => {
     e.preventDefault()
-    if (!selfTaskForm.title.trim()) return
-    setSelfTaskForm(f => ({ ...f, loading: true }))
+    const title = selfTaskForm.title.trim()
+    if (!title) return
+    const due_date = selfTaskForm.due_date || null
+    // Оптимистичное добавление: задача видна сразу, до ответа сервера.
+    const tempId = `temp-${Date.now()}`
+    const optimistic = {
+      id: tempId, _optimistic: true, title, due_date,
+      team_id: null, assigned_to: user.id, assigned_by: user.id,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+    }
+    setTasks(prev => [optimistic, ...prev])
+    setSelfTaskForm({ title: '', due_date: '', open: false, loading: false })
     try {
       const { data } = await createTask({
-        title: selfTaskForm.title.trim(),
-        due_date: selfTaskForm.due_date || null,
-        team_id: null,
-        assigned_to: user.id,
-        assigned_by: user.id,
+        title, due_date, team_id: null, assigned_to: user.id, assigned_by: user.id,
       })
-      setTasks(prev => [data, ...prev])
-      setSelfTaskForm({ title: '', due_date: '', open: false, loading: false })
-    } catch { setSelfTaskForm(f => ({ ...f, loading: false })) }
+      setTasks(prev => prev.map(t => t.id === tempId ? data : t))
+    } catch {
+      setTasks(prev => prev.filter(t => t.id !== tempId))
+      setSelfTaskForm({ title, due_date: selfTaskForm.due_date || '', open: true, loading: false })
+      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+    }
   }
 
   const handleDeleteTask = async (taskId) => {
@@ -353,8 +390,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   {joinError}
                 </div>
               )}
-              <button type="submit" disabled={joinLoading} className="btn btn-accent" style={{ width: '100%' }}>
-                {joinLoading ? 'Присоединение...' : 'Присоединиться'}
+              <button type="submit" disabled={joinLoading} className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {joinLoading ? <><Spinner size={15} /> Присоединение...</> : 'Присоединиться'}
               </button>
             </form>
           </div>
@@ -368,9 +405,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     <Layout currentUser={user} onLogout={onLogout} onUserUpdate={onUserUpdate} onJoinCall={(info) => setActiveCall(info)}
       bannerTasks={tasks}
       bannerTeamId={team?.id}
-      onNavigate={type => {
-        if (type === 'new_task' || type === 'tasks') setActiveTab('tasks')
-        else if (type === 'meetings' || ['meeting_scheduled','meeting_confirmed','meeting_requested','meeting_declined'].includes(type)) setActiveTab('meetings')
+      onNavigate={(type) => {
+        // Единая карта маршрутизации (Задача 2): тип -> раздел, затем в свою вкладку.
+        const sec = notificationSection(type)
+        if (sec === 'tasks') setActiveTab('tasks')
+        else if (sec === 'task_proposal') { setTaskProposalPreset(null); setShowTaskProposals(true) }
+        else if (sec === 'meeting_proposal') setShowProposals(true)
+        else if (sec === 'meetings') setActiveTab('meetings')
+        else if (sec === 'goals') setActiveTab('goals')
+        else if (sec === 'development') setActiveTab('development')
+        else if (sec === 'mood') { try { window.dispatchEvent(new Event('mood-open')) } catch {} }
+        else if (sec === 'analytics') setActiveTab('analytics')
       }}
 >
       <div style={{ maxWidth: 900, width: '100%' }}>
@@ -380,6 +425,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
           <div className="page-toolbar" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Самостоятельное заполнение настроения (задача 6): открываем тот же
+                опросник чек-ина, что и по уведомлению в 20:00 — та же логика
+                (дедуп/часовой пояс/права), не отдельная система. Раз в сутки:
+                после отметки за сегодня кнопка блокируется до следующего дня. */}
+            <button
+              onClick={() => { if (!moodFilledToday) { try { window.dispatchEvent(new Event('mood-open')) } catch {} } }}
+              className="btn btn-secondary btn-sm"
+              disabled={moodFilledToday}
+              style={moodFilledToday ? { opacity: 0.6, cursor: 'default' } : undefined}
+              title={moodFilledToday ? 'Настроение уже отмечено сегодня' : 'Заполнить опрос настроения'}
+            >
+              {moodFilledToday ? 'Настроение отмечено' : 'Настроение'}
+            </button>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
                 Пришёл: {fmtTime(checkin.arrived_at)}
@@ -405,6 +463,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'overview', label: 'Обзор' },
             { key: 'meetings', label: 'Встречи' },
             { key: 'tasks', label: 'Задачи' },
+            { key: 'goals', label: 'Цели' },
+            { key: 'development', label: 'Развитие' },
+            { key: 'oneai', label: 'ONE AI' },
             { key: 'notes', label: 'Заметки' },
             { key: 'analytics', label: 'Аналитика' },
           ].map(tab => (
@@ -427,7 +488,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   <div
                     className={`avatar avatar-xl ${lead?.user_avatar_url ? '' : 'avatar-accent'}`}
                     style={{ cursor: 'pointer' }}
-                    onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                    onClick={() => setViewUserCard(lead ? { ...lead, role: 'team_lead' } : { user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title })}
                   >
                     {lead?.user_avatar_url
                       ? <img src={lead.user_avatar_url} alt="lead" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -437,7 +498,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
                     <p
                       style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)', cursor: 'pointer' }}
-                      onClick={() => setViewUserCard({ name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title, user_avatar_url: lead?.user_avatar_url })}
+                      onClick={() => setViewUserCard(lead ? { ...lead, role: 'team_lead' } : { user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title })}
                     >
                       {team.team_lead_name || 'Тимлид'}
                     </p>
@@ -548,7 +609,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     if (!b.last_meeting_date) return 1
                     return new Date(a.last_meeting_date) - new Date(b.last_meeting_date)
                   }).map(m => (
-                    <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                      onClick={() => setViewUserCard(m)} title="Открыть карточку">
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <div className={`avatar avatar-sm ${m.user_avatar_url ? '' : 'avatar-accent'}`}>
                           {m.user_avatar_url
@@ -582,7 +644,17 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         {/* Tab: Meetings — calendar view */}
         {activeTab === 'meetings' && (
           <div style={{ maxWidth: 700, width: '100%' }}>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
+              {/* Предложить встречу другому участнику (Задача 5) */}
+              <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">
+                Предложения встреч
+              </button>
+              <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">
+                Предложения задач
+              </button>
+              <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">
+                Взаимодействия
+              </button>
               <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
                 + Запросить встречу
               </button>
@@ -775,7 +847,15 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               )
                             })()}
                           </div>
-                          <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
+                          {/* Совместная задача (Задача 4): статус на уровне задачи сводится из
+                              частей участников; здесь показываем прогресс, статус — по частям ниже. */}
+                          {task.is_multi ? (
+                            <span style={{ fontSize: 12, fontWeight: 700, color: task.completed ? '#15803d' : 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
+                              {task.progress ? `${task.progress.done}/${task.progress.total}` : ''}
+                            </span>
+                          ) : (
+                            <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
+                          )}
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           {isSelf && (
@@ -785,14 +865,19 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                               title="Удалить">✕</button>
                           )}
-                          {!task.completed && (
+                          {!task.completed && !task.is_multi && (
                             <TaskAIHelper
                               task={task}
                               role="member"
+                              userId={user.id}
                               onSubtasksAdded={() => setSubtaskRefresh(p => ({ ...p, [task.id]: (p[task.id] || 0) + 1 }))}
                             />
                           )}
                         </div>
+                      )}
+                      {task.is_multi && (
+                        <TaskAssignees task={task} currentUserId={user.id} canManageAll={false}
+                          onChanged={(updated) => setTasks(prev => prev.map(t => t.id === updated.id ? updated : t))} />
                       )}
                       <SubtaskList
                         taskId={task.id}
@@ -831,9 +916,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   onClick={handleCreateNote}
                   disabled={noteLoading || !newNoteText.trim()}
                   className="btn btn-accent btn-sm"
-                  style={{ marginTop: 10 }}
+                  style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+                  {noteLoading ? <><Spinner size={14} /> Сохранение...</> : '+ Добавить заметку'}
                 </button>
               </div>
               {freeNotes.length > 0 ? (
@@ -905,7 +990,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         )}
 
         {/* Tab: Analytics */}
-        {activeTab === 'analytics' && <MemberAnalytics user={user} />}
+        {activeTab === 'goals' && <GoalsMember user={user} teamId={team?.id} />}
+
+        {activeTab === 'development' && <DevelopmentMember user={user} />}
+
+        {activeTab === 'oneai' && <OneAI user={user} />}
+
+        {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
 
       </div>
 
@@ -940,8 +1031,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
               <button type="button" onClick={() => setShowRequestMeeting(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={meetingLoading} className="btn btn-accent" style={{ flex: 1 }}>
-                {meetingLoading ? 'Отправка...' : 'Запросить'}
+              <button type="submit" disabled={meetingLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                {meetingLoading ? <><Spinner size={15} /> Отправка...</> : 'Запросить'}
               </button>
             </div>
           </form>
@@ -957,8 +1048,49 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         onClose={() => setActiveCall(null)}
       />
     )}
-    <MoodPrompt teamId={teamId} />
-    {viewUserCard && <UserCard user={viewUserCard} onClose={() => setViewUserCard(null)} />}
+    <MoodPrompt teamId={teamId} user={user} />
+    {viewUserCard && <UserCard user={viewUserCard} teamId={teamId} organization={team?.organization}
+      onClose={() => setViewUserCard(null)}
+      /* Участник: встречу с другим участником — через предложение (с согласием);
+         задачу — через предложение задачи. Спонтанный созвон участнику недоступен
+         (нет такой возможности в его роли), поэтому onStartCall не передаём. */
+      onCreateMeeting={(u) => { setMeetingPreset(u.id); setShowProposals(true) }}
+      onProposeTask={(u) => { setTaskProposalPreset(u.id); setShowTaskProposals(true) }}
+    />}
+
+    {/* Предложения встреч (Задача 5) — участник может предложить встречу другому */}
+    {showProposals && (
+      <MeetingProposals
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        teamId={teamId}
+        presetToUserId={meetingPreset}
+        onClose={() => { setShowProposals(false); setMeetingPreset(null) }}
+        onChanged={() => loadMeetings()}
+      />
+    )}
+
+    {/* Предложения задач — участник может предложить задачу другому (с согласием) */}
+    {showTaskProposals && (
+      <TaskProposals
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        teamId={teamId}
+        presetToUserId={taskProposalPreset}
+        onClose={() => { setShowTaskProposals(false); setTaskProposalPreset(null) }}
+      />
+    )}
+
+    {/* Взаимодействия (блок 39) */}
+    {showInteractions && (
+      <InteractionsPanel
+        currentUser={user}
+        contacts={(team?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+        tasks={tasks}
+        teamId={teamId}
+        onClose={() => setShowInteractions(false)}
+      />
+    )}
     </>
   )
 }

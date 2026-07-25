@@ -124,6 +124,13 @@ html, body, #root {
   max-width: 100%;
   margin: 0;
 }
+/* Плавная прокрутка по всему приложению (якорные переходы, программный скролл
+   к элементам). Отключается для пользователей, которым важна минимизация
+   анимаций. Прокручиваемые области (чаты, модалки) наследуют это поведение. */
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+}
 /* Horizontal overflow is clipped on #root only. Putting overflow-x:hidden on
    html/body breaks `position: fixed` in Chrome (fixed elements scroll with the
    page) — that's what made the left profile card drift on long pages (Analytics). */

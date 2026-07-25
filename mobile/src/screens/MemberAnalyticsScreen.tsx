@@ -104,6 +104,42 @@ export default function MemberAnalyticsScreen() {
               </View>
             </View>
 
+            {/* Моё настроение по чек-инам (27.1) — только свои данные, сводкой в
+                цифрах (без графика: график доступен в веб-версии). */}
+            {(data.mood_checkin_avg != null || (data.mood_checkin_series?.length ?? 0) > 0) && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>Моё настроение (чек-ины)</Text>
+                <View style={styles.progressRow}>
+                  <Text style={styles.infoValue}>
+                    {data.mood_checkin_avg != null ? `${data.mood_checkin_avg}/5` : '—'}
+                  </Text>
+                  <Text style={styles.infoSub}>
+                    {data.mood_checkin_series?.length ?? 0} отметок за 30 дн.
+                  </Text>
+                </View>
+              </View>
+            )}
+
+            {/* Сравнение с собственным прошлым периодом (31.3) — только свои данные. */}
+            {data.compare && (
+              <View style={styles.infoCard}>
+                <Text style={styles.infoLabel}>Динамика к прошлому периоду</Text>
+                <CompareRow label="Закрыто задач" cur={data.compare.closed_tasks_30} prev={data.compare.closed_tasks_prev_30} />
+                <CompareRow label="Встреч" cur={data.compare.meetings_30} prev={data.compare.meetings_prev_30} />
+                <View style={styles.compareRow}>
+                  <Text style={styles.compareLabel}>Настроение (15 дн.)</Text>
+                  <Text style={[styles.compareDelta, {
+                    color: data.compare.mood_delta_15d == null ? colors.textMuted
+                      : data.compare.mood_delta_15d > 0 ? colors.success
+                      : data.compare.mood_delta_15d < 0 ? colors.danger : colors.textMuted,
+                  }]}>
+                    {data.compare.mood_delta_15d == null ? 'нет данных'
+                      : `${data.compare.mood_delta_15d > 0 ? '+' : ''}${data.compare.mood_delta_15d}`}
+                  </Text>
+                </View>
+              </View>
+            )}
+
             {/* По таблице разделения функционала приложение показывает только
                 сводку (цифры), без графиков (тренд настроения и недельный
                 график). Полные графики доступны в веб-версии. */}
@@ -121,6 +157,24 @@ function StatCard({ label, value, accent }: any) {
     <View style={styles.statCard}>
       <Text style={[styles.statValue, accent && { color: colors.accent }]}>{value}</Text>
       <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  );
+}
+
+function CompareRow({ label, cur, prev }: { label: string; cur?: number; prev?: number }) {
+  const { colors } = useTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
+  const delta = (cur ?? 0) - (prev ?? 0);
+  const color = delta === 0 ? colors.textMuted : delta > 0 ? colors.success : colors.danger;
+  const sign = delta > 0 ? '+' : '';
+  return (
+    <View style={styles.compareRow}>
+      <Text style={styles.compareLabel}>{label}</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+        <Text style={styles.compareCur}>{cur ?? 0}</Text>
+        <Text style={styles.compareWas}>было {prev ?? 0}</Text>
+        <Text style={[styles.compareDelta, { color }]}>{delta === 0 ? 'без изм.' : `${sign}${delta}`}</Text>
+      </View>
     </View>
   );
 }
@@ -161,6 +215,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   meetingNum: { fontSize: 18, fontWeight: '700', color: c.textPrimary },
   meetingLabel: { fontSize: 10, color: c.textMuted, textAlign: 'center' },
   divider: { width: 1, height: 32, backgroundColor: c.border },
+  compareRow: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingVertical: 6, borderTopWidth: 1, borderTopColor: c.border,
+  },
+  compareLabel: { fontSize: 13, color: c.textSecondary },
+  compareCur: { fontSize: 14, fontWeight: '700', color: c.textPrimary },
+  compareWas: { fontSize: 11, color: c.textMuted },
+  compareDelta: { fontSize: 12, fontWeight: '700', minWidth: 44, textAlign: 'right' },
   section: { gap: 10 },
   sectionTitle: { fontSize: 12, fontWeight: '700', color: c.textMuted, textTransform: 'uppercase', letterSpacing: 0.6 },
   moodRow: {

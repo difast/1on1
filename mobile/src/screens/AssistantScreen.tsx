@@ -10,6 +10,7 @@ import { useRouter } from 'expo-router';
 import { useTheme } from '../context/theme';
 import { useAuth } from '../context/auth';
 import { assistantChat } from '../lib/api';
+import { parseFeatureLock } from '../lib/featureLock';
 import { buildPitContext, parsePitActions, executePitAction, type PitContext } from '../lib/pit';
 import type { AppColors } from '../constants/colors';
 
@@ -51,7 +52,7 @@ export default function AssistantScreen() {
         pitCtxRef.current = await buildPitContext(user, isLead);
       }
       const context = pitCtxRef.current?.text ?? '';
-      const res = await assistantChat(newMessages, context) as any;
+      const res = await assistantChat(newMessages, context, user?.id) as any;
       const rawReply: string = res.reply ?? 'Нет ответа';
 
       const { clean, actions } = parsePitActions(rawReply);
@@ -64,8 +65,14 @@ export default function AssistantScreen() {
       }
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Ошибка соединения. Попробуйте ещё раз.' }]);
+    } catch (err) {
+      // Недоступно по тарифу -> мягкое сообщение, а не техническая ошибка.
+      const fl = parseFeatureLock(err);
+      const content = fl
+        ? `${fl.message} Тарифы можно посмотреть в веб-версии.`
+        : 'Не удалось получить ответ. Попробуйте ещё раз.';
+      setMessages(prev => [...prev, { role: 'assistant', content }]);
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } finally {
       setLoading(false);
     }

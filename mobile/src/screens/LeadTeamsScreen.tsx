@@ -75,6 +75,8 @@ export default function LeadTeamsScreen() {
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDue, setNewTaskDue] = useState('');
   const [formLoading, setFormLoading] = useState(false);
+  // Совместная задача: соисполнители (кроме основного участника) + их части.
+  const [coAssignees, setCoAssignees] = useState<Record<number, string>>({});
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
 
@@ -89,6 +91,7 @@ export default function LeadTeamsScreen() {
   const closeSheet = () => {
     bottomSheetRef.current?.close();
     setSheetType(null);
+    setCoAssignees({});
   };
 
   const loadTeams = useCallback(async () => {
@@ -251,24 +254,43 @@ export default function LeadTeamsScreen() {
   };
 
   const handleCreateTask = async () => {
-    if (!newTaskTitle.trim() || !taskMember) return;
+    const title = newTaskTitle.trim();
+    if (!title || !taskMember) return;
+    const due_date = newTaskDue || null;
+    const coIds = Object.keys(coAssignees).map(Number);
+    // Совместная задача, если выбраны соисполнители: основной участник первым.
+    const assignees = coIds.length > 0
+      ? [
+          { user_id: taskMember.user_id, part_description: null },
+          ...coIds.map(uid => ({ user_id: uid, part_description: (coAssignees[uid] || '').trim() || null })),
+        ]
+      : undefined;
+
+    // Оптимистичное добавление (Задача 1): задача видна сразу.
+    const tempId = `temp-${Date.now()}` as any;
+    const optimistic: any = {
+      id: tempId, _optimistic: true, title, due_date,
+      team_id: selectedTeamId, assigned_to: taskMember.user_id, assigned_by: user!.id,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+      is_multi: !!assignees,
+      assignees: assignees ? assignees.map((a, i) => ({ id: -i - 1, user_id: a.user_id, part_description: a.part_description, status: 'in_progress', completed: false })) : [],
+      progress: assignees ? { done: 0, total: assignees.length, percent: 0 } : null,
+    };
+    const primaryId = taskMember.user_id;
+    setMemberTasks(prev => ({ ...prev, [primaryId]: [optimistic, ...(prev[primaryId] || [])] }));
+    setNewTaskTitle(''); setNewTaskDue(''); setCoAssignees({});
+    closeSheet();
     setFormLoading(true);
     try {
       const task = await createTask({
-        title: newTaskTitle.trim(),
-        due_date: newTaskDue || null,
-        team_id: selectedTeamId,
-        assigned_to: taskMember.user_id,
-        assigned_by: user!.id,
-        meeting_id: null,
+        title, due_date, team_id: selectedTeamId,
+        assigned_to: primaryId, assigned_by: user!.id, meeting_id: null,
+        ...(assignees ? { assignees } : {}),
       }) as any;
-      setMemberTasks(prev => ({
-        ...prev,
-        [taskMember.user_id]: [...(prev[taskMember.user_id] || []), task],
-      }));
-      setNewTaskTitle(''); setNewTaskDue('');
-      closeSheet();
-    } catch {} finally { setFormLoading(false); }
+      setMemberTasks(prev => ({ ...prev, [primaryId]: (prev[primaryId] || []).map(t => t.id === tempId ? task : t) }));
+    } catch {
+      setMemberTasks(prev => ({ ...prev, [primaryId]: (prev[primaryId] || []).filter(t => t.id !== tempId) }));
+    } finally { setFormLoading(false); }
   };
 
   const allMembers = (teamDetail?.members || []).filter((m: any) => m.user_id !== user?.id);
@@ -465,7 +487,12 @@ export default function LeadTeamsScreen() {
                     </View>
 
                     <Text style={styles.lastMeeting}>
-                      Последняя встреча:{' '}
+                      {/* Будущая назначенная встреча — «Ближайшая», прошедшая — «Последняя».
+                          Бэкенд теперь возвращает last_meeting_date включая будущие,
+                          поэтому назначенная встреча больше не показывается как «Не было». */}
+                      {member.last_meeting_date && new Date(member.last_meeting_date) >= new Date()
+                        ? 'Ближайшая встреча: '
+                        : 'Последняя встреча: '}
                       <Text style={{ fontWeight: '500', color: colors.textPrimary }}>
                         {member.last_meeting_date
                           ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
@@ -654,6 +681,41 @@ export default function LeadTeamsScreen() {
                 placeholder="2025-12-31"
                 placeholderTextColor={colors.textMuted}
               />
+
+              {/* Совместная задача: добавить соисполнителей с их частями работы */}
+              {allMembers.filter((m: any) => m.user_id !== taskMember.user_id).length > 0 && (
+                <>
+                  <Text style={styles.sheetLabel}>Соисполнители (совместная задача, необязательно)</Text>
+                  {allMembers.filter((m: any) => m.user_id !== taskMember.user_id).map((m: any) => {
+                    const on = coAssignees[m.user_id] !== undefined;
+                    return (
+                      <View key={m.user_id} style={{ marginBottom: 6 }}>
+                        <TouchableOpacity
+                          style={[styles.sheetInput, { flexDirection: 'row', alignItems: 'center', gap: 10 }]}
+                          onPress={() => setCoAssignees(prev => {
+                            const next = { ...prev };
+                            if (on) delete next[m.user_id]; else next[m.user_id] = '';
+                            return next;
+                          })}
+                        >
+                          <Ionicons name={on ? 'checkbox' : 'square-outline'} size={20} color={on ? colors.accent : colors.textMuted} />
+                          <Text style={{ color: colors.textPrimary, fontSize: 14 }}>{m.user_name}</Text>
+                        </TouchableOpacity>
+                        {on && (
+                          <BottomSheetTextInput
+                            style={[styles.sheetInput, { marginTop: 4 }]}
+                            value={coAssignees[m.user_id]}
+                            onChangeText={(txt) => setCoAssignees(prev => ({ ...prev, [m.user_id]: txt }))}
+                            placeholder={`Часть работы (${m.user_name})`}
+                            placeholderTextColor={colors.textMuted}
+                          />
+                        )}
+                      </View>
+                    );
+                  })}
+                </>
+              )}
+
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
                   <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>

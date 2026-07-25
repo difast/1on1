@@ -38,6 +38,9 @@ class TeamMemberOut(BaseModel):
 
 class TeamDetailOut(TeamOut):
     members: List[TeamMemberOut] = []
+    # Организация рабочего пространства (одна на команду) — чтобы карточка
+    # участника показывала её мгновенно, без отдельного запроса.
+    organization: Optional[dict] = None
 
 class JoinByCode(BaseModel):
     invite_code: str

@@ -388,7 +388,10 @@ def _handle_callback(db, cq):
         elif data.startswith("mood:"):
             _, team_id, score = data.split(":", 2)
             from app.routers.mood import submit_mood, MoodCreate
-            submit_mood(MoodCreate(team_id=int(team_id), score=int(score)), db)
+            # Автора берём из привязанного Telegram-пользователя: с user_id запись
+            # участвует в дедупе за день и в личном ряду настроения. current=None
+            # — вызов идёт напрямую, минуя зависимость токена.
+            submit_mood(MoodCreate(team_id=int(team_id), score=int(score), user_id=user.id), db, current=None)
             tg.edit_message_text(chat_id, message_id, f"Спасибо, оценка {score} сохранена.")
             tg.answer_callback(cq_id, "Сохранено")
 

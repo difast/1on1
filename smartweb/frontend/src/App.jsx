@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { getToken, setToken, clearToken } from './lib/auth'
+import { getToken, setToken, clearToken, getAdminSession, setAdminSession } from './lib/auth'
 import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
 import LeadDashboard from './components/LeadDashboard'
@@ -22,7 +22,9 @@ function App() {
 
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+  // Восстанавливаем сессию администратора из localStorage сразу при инициализации,
+  // чтобы F5 не выбрасывал из админки (задача 3).
+  const [isAdmin, setIsAdmin] = useState(() => getAdminSession())
   // Вход через Telegram живёт параллельно с email/пароль-сессией и ведёт в тот
   // же users-аккаунт по telegram_id. Здесь — признак такой сессии.
   const [tgAuthed, setTgAuthed] = useState(false)
@@ -74,6 +76,9 @@ function App() {
   // отсутствии/невалидности — Telegram-сессия.
   useEffect(() => {
     if (isTelegramRoute || isConfirmRoute || isResetRoute) { setLoading(false); return }
+    // Активная сессия администратора — показываем админку сразу, без ожидания
+    // восстановления пользовательской сессии (задача 3).
+    if (getAdminSession()) { setLoading(false); return }
     ;(async () => {
       if (getToken()) {
         try {
@@ -138,6 +143,26 @@ function App() {
     localStorage.setItem('smart_user', JSON.stringify(updatedUser))
   }
 
+  // Подтверждение email происходит по ссылке в отдельной вкладке. Чтобы статус
+  // (и другие поля профиля) отражались без ручного обновления, при возврате на
+  // вкладку тихо перечитываем профиль и обновляем состояние тем же механизмом.
+  useEffect(() => {
+    if (!appUser?.id) return
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible') return
+      try {
+        const { data } = getToken() ? await authMe() : await getUser(appUser.id)
+        if (data) handleUserUpdate(data)
+      } catch { /* тихо */ }
+    }
+    document.addEventListener('visibilitychange', refresh)
+    window.addEventListener('focus', refresh)
+    return () => {
+      document.removeEventListener('visibilitychange', refresh)
+      window.removeEventListener('focus', refresh)
+    }
+  }, [appUser?.id])
+
   // Mini App и отдельные страницы писем — не ждём сессию.
   if (isTelegramRoute) return <TelegramApp />
   if (isConfirmRoute) return <ConfirmEmailPage />
@@ -152,12 +177,12 @@ function App() {
     </div>
   )
 
-  if (isAdmin) return <AdminDashboard onLogout={() => setIsAdmin(false)} />
+  if (isAdmin) return <AdminDashboard onLogout={() => { clearToken(); setAdminSession(false); setIsAdmin(false) }} />
 
   if (!appUser && !tgAuthed) {
     return (
       <AuthPage
-        onAdminLogin={() => setIsAdmin(true)}
+        onAdminLogin={() => { setAdminSession(true); setIsAdmin(true) }}
         onTelegramAuth={handleTelegramAuth}
         onAuthSuccess={handleAuthSuccess}
       />

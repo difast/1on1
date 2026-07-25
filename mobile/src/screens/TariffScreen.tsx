@@ -12,12 +12,19 @@ import { getBillingMe } from '../lib/api';
 
 type Status = 'loading' | 'error' | 'ready';
 
+// Запасные подписи: обычно название и цену тарифа отдаёт бэкенд
+// (/billing/me -> plan_name, price_label, users_label), это тот же каталог,
+// что у веба и лендинга. Локальная карта нужна только на случай старого ответа.
 const PLAN_NAMES: Record<string, string> = {
-  free: 'Free', start: 'Старт', team: 'Команда', company: 'Компания',
-  enterprise: 'Enterprise', unlimited: 'Полный доступ',
+  free: 'Без подписки', start: 'Start', team: 'Team', business: 'Business',
+  company: 'Business', enterprise: 'Enterprise', unlimited: 'Полный доступ',
+};
+const PLAN_PRICES: Record<string, string> = {
+  start: '1 490 ₽/мес', team: '49 990 ₽/год',
+  business: 'Цена договорная', enterprise: 'от 1 000 000 ₽/год, цена договорная',
 };
 const SUB_STATUS: Record<string, string> = {
-  free: 'Бесплатный', trialing: 'Пробный период', active: 'Активна',
+  free: 'Без подписки', trialing: 'Пробный период', active: 'Активна',
   past_due: 'Ожидает оплаты', canceled: 'Отменена',
 };
 
@@ -54,11 +61,15 @@ export default function TariffScreen() {
 
   const limits = data?.limits || {};
   const sub = data?.subscription;
-  const planName = PLAN_NAMES[data?.plan_code] ?? (data?.plan_code || '');
+  const planName = data?.plan_name || PLAN_NAMES[data?.plan_code] || (data?.plan_code || '');
+  const priceLabel = data?.price_label || PLAN_PRICES[data?.plan_code] || '';
+  // ONE AI и Развитие закрыты на пробном периоде Team — показываем это прямо
+  // на экране тарифа, чтобы отсутствие разделов не выглядело сбоем.
+  const trialLocked: string[] = data?.trial_restricted_features || [];
 
   const limitRows: { label: string; value: string }[] = [
+    { label: 'Пользователей', value: data?.users_label || limitValue(limits.max_users ?? limits.max_members_per_team) },
     { label: 'Команды', value: limitValue(limits.max_teams) },
-    { label: 'Участников в команде', value: limitValue(limits.max_members_per_team) },
     { label: 'Встреч в месяц', value: limitValue(limits.max_meetings_per_month) },
     { label: 'История, дней', value: limitValue(limits.history_days) },
   ];
@@ -85,6 +96,9 @@ export default function TariffScreen() {
           <View style={styles.planCard}>
             <Text style={styles.planLabel}>Текущий тариф</Text>
             <Text style={styles.planName}>{planName}</Text>
+            {priceLabel && !data?.full_access_override ? (
+              <Text style={styles.planPrice}>{priceLabel}</Text>
+            ) : null}
             {data?.full_access_override ? (
               <Text style={styles.planSub}>Полный доступ предоставлен</Text>
             ) : sub ? (
@@ -92,12 +106,20 @@ export default function TariffScreen() {
                 {SUB_STATUS[sub.status] ?? sub.status}
                 {sub.current_period_end ? ` · до ${fmtDate(sub.current_period_end)}` : ''}
               </Text>
-            ) : data?.free_until ? (
+            ) : data?.trial_until ? (
               <Text style={styles.planSub}>
-                {data?.free_expired ? 'Пробный период истёк' : `Пробный период до ${fmtDate(data.free_until)}`}
+                {data?.trial_expired ? 'Пробный период истёк' : `Пробный период до ${fmtDate(data.trial_until)}`}
               </Text>
             ) : null}
           </View>
+
+          {trialLocked.length > 0 && (
+            <View style={styles.noticeCard}>
+              <Text style={styles.noticeText}>
+                На пробном периоде тарифа Team недоступны ONE AI и Развитие. Они включатся после оплаты подписки.
+              </Text>
+            </View>
+          )}
 
           <Text style={styles.sectionLabel}>Лимиты тарифа</Text>
           <View style={styles.card}>
@@ -133,7 +155,27 @@ export default function TariffScreen() {
             </>
           ) : null}
 
-          <Text style={styles.note}>Сменить тариф и оплатить можно в веб-версии.</Text>
+          <Text style={styles.sectionLabel}>Тарифы</Text>
+          <View style={styles.card}>
+            {[
+              { name: 'Start', price: '1 490 ₽/мес', users: 'до 5 пользователей, 1 команда' },
+              { name: 'Team', price: '49 990 ₽/год', users: 'до 30 пользователей, 1 команда' },
+              { name: 'Business', price: 'Цена договорная', users: '30–100+ пользователей, несколько команд' },
+              { name: 'Enterprise', price: 'от 1 000 000 ₽/год', users: 'без ограничений' },
+            ].map((p, i) => (
+              <View key={p.name} style={[styles.row, i > 0 && styles.rowBorder]}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.rowLabel}>{p.name}</Text>
+                  <Text style={styles.rowHint}>{p.users}</Text>
+                </View>
+                <Text style={styles.rowValue}>{p.price}</Text>
+              </View>
+            ))}
+          </View>
+
+          <Text style={styles.note}>
+            Автотранскрипция встреч пока недоступна — скоро. Сменить тариф и оплатить можно в веб-версии.
+          </Text>
         </ScrollView>
       )}
     </SafeAreaView>
@@ -156,7 +198,14 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   planLabel: { fontSize: 12, fontWeight: '600', color: 'rgba(255,255,255,0.8)', marginBottom: 6 },
   planName: { fontSize: 26, fontWeight: '800', color: '#fff' },
+  planPrice: { fontSize: 15, fontWeight: '600', color: 'rgba(255,255,255,0.95)', marginTop: 6 },
   planSub: { fontSize: 13, color: 'rgba(255,255,255,0.9)', marginTop: 6 },
+  noticeCard: {
+    backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border,
+    padding: 14, marginBottom: 18,
+  },
+  noticeText: { fontSize: 13, lineHeight: 19, color: c.textSecondary },
+  rowHint: { fontSize: 12, color: c.textMuted, marginTop: 2 },
   sectionLabel: {
     fontSize: 12, fontWeight: '700', color: c.textMuted,
     textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8, marginTop: 4,

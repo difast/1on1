@@ -1,5 +1,6 @@
 import { confirmDialog } from '../lib/ui'
 import EmptyState from './EmptyState'
+import Spinner from '../lib/Spinner'
 import { useState, useEffect } from 'react'
 import { getKnowledgeArticles, createKnowledgeArticle, updateKnowledgeArticle, deleteKnowledgeArticle } from '../api/client'
 
@@ -144,8 +145,8 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={() => setEditing(null)} className="btn btn-secondary">Отмена</button>
-          <button onClick={handleSave} disabled={!form.title.trim() || saving} className="btn btn-accent">
-            {saving ? 'Сохраняем...' : 'Сохранить'}
+          <button onClick={handleSave} disabled={!form.title.trim() || saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            {saving ? <><Spinner size={15} /> Сохраняем...</> : 'Сохранить'}
           </button>
         </div>
       </div>

@@ -89,11 +89,16 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
           }
         }
       } else {
-        // Call too short — cancel so it doesn't clutter analytics
+        // Call happened but was too short for analytics/recording — still mark it
+        // COMPLETED (the meeting took place). Previously this set 'cancelled',
+        // which mislabeled every sub-10-minute call as отменённую у обоих участников.
         try {
-          await updateMeeting(meetingId, { status: 'cancelled' })
+          await updateMeeting(meetingId, {
+            status: 'completed',
+            call_duration_seconds: duration,
+          })
         } catch (e) {
-          console.error('[jitsi] status cancel failed', e)
+          console.error('[jitsi] status complete failed', e)
         }
       }
     }

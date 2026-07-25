@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  RefreshControl, TextInput, Alert,
+  RefreshControl, TextInput, Alert, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,10 @@ import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { StatusPicker } from '../components/StatusPicker';
+import { Status3DIcon } from '../components/Status3DIcon';
+import { TaskAssignees } from '../components/TaskAssignees';
+import { ClosedTodayCard } from '../components/ClosedTodayCard';
+import { parseFeatureLock, openPricing } from '../lib/featureLock';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
@@ -44,6 +48,7 @@ export default function MemberTasksScreen() {
   const [tasks, setTasks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [statsKey, setStatsKey] = useState(0);  // bump -> обновить счётчик «Закрыто сегодня»
 
   // Self-task form
   const [showForm, setShowForm] = useState(false);
@@ -74,6 +79,7 @@ export default function MemberTasksScreen() {
     setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: next, completed } : t));
     try {
       await updateTask(task.id, { status: next, completed });
+      setStatsKey(k => k + 1);  // реактивно обновляем счётчик «Закрыто сегодня»
     } catch {
       // Revert on failure
       setTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: getTaskStatus(task), completed: task.completed } : t));
@@ -81,21 +87,25 @@ export default function MemberTasksScreen() {
   };
 
   const handleCreateTask = async () => {
-    if (!formTitle.trim()) return;
+    const title = formTitle.trim();
+    if (!title) return;
+    const due_date = formDue.trim() || null;
+    // Оптимистичное добавление: задача видна сразу, форма закрывается.
+    const tempId = `temp-${Date.now()}` as any;
+    const optimistic = {
+      id: tempId, _optimistic: true, title, due_date,
+      assigned_to: user!.id, assigned_by: user!.id, team_id: null,
+      status: 'in_progress', completed: false, created_at: new Date().toISOString(),
+    };
+    setTasks(prev => [optimistic, ...prev]);
+    setFormTitle(''); setFormDue(''); setShowForm(false);
     setFormLoading(true);
     try {
-      const task = await createTask({
-        title: formTitle.trim(),
-        due_date: formDue.trim() || null,
-        assigned_to: user!.id,
-        assigned_by: user!.id,
-        team_id: null,
-      }) as any;
-      setTasks(prev => [task, ...prev]);
-      setFormTitle('');
-      setFormDue('');
-      setShowForm(false);
+      const task = await createTask({ title, due_date, assigned_to: user!.id, assigned_by: user!.id, team_id: null }) as any;
+      setTasks(prev => prev.map(t => t.id === tempId ? task : t));
     } catch {
+      setTasks(prev => prev.filter(t => t.id !== tempId));
+      setFormTitle(title); setFormDue(due_date || ''); setShowForm(true);
       Alert.alert('Ошибка', 'Не удалось создать задачу');
     } finally { setFormLoading(false); }
   };
@@ -162,6 +172,8 @@ export default function MemberTasksScreen() {
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
+        <ClosedTodayCard userId={user!.id} role={user?.role} refreshKey={statsKey} />
+
         {/* Self-task creation form */}
         {showForm && (
           <View style={styles.formCard}>
@@ -188,11 +200,12 @@ export default function MemberTasksScreen() {
                 <Text style={styles.formBtnSecondaryText}>Отмена</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.formBtnPrimary, formLoading && styles.btnDisabled]}
+                style={[styles.formBtnPrimary, formLoading && styles.btnDisabled, { flexDirection: 'row', gap: 8 }]}
                 onPress={handleCreateTask}
                 disabled={formLoading}
               >
-                <Text style={styles.formBtnPrimaryText}>{formLoading ? '...' : 'Добавить'}</Text>
+                {formLoading && <ActivityIndicator size="small" color="#fff" />}
+                <Text style={styles.formBtnPrimaryText}>Добавить</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -212,6 +225,8 @@ export default function MemberTasksScreen() {
                 onSetStatus={(s) => setStatus(task, s)}
                 onDelete={task.assigned_by === user!.id ? () => handleDelete(task.id) : undefined}
                 colors={colors}
+                currentUserId={user!.id}
+                onUpdated={(u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))}
               />
             ))}
           </View>
@@ -226,6 +241,8 @@ export default function MemberTasksScreen() {
                 task={task}
                 onSetStatus={(s) => setStatus(task, s)}
                 colors={colors}
+                currentUserId={user!.id}
+                onUpdated={(u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))}
               />
             ))}
           </View>
@@ -236,12 +253,14 @@ export default function MemberTasksScreen() {
 }
 
 function TaskRow({
-  task, onSetStatus, onDelete, colors,
+  task, onSetStatus, onDelete, colors, currentUserId, onUpdated,
 }: {
   task: any;
   onSetStatus: (status: TaskStatus) => void;
   onDelete?: () => void;
   colors: AppColors;
+  currentUserId?: number;
+  onUpdated?: (u: any) => void;
 }) {
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const status = getTaskStatus(task);
@@ -277,15 +296,23 @@ function TaskRow({
     if (aiSteps.length > 0) { setAiSteps([]); return; }
     setAiLoading(true);
     try {
-      const res = await getTaskAiAdvice(task.title || task.description, status, task.due_date) as any;
+      const res = await getTaskAiAdvice(task.title || task.description, status, task.due_date, 'member', currentUserId) as any;
       const steps: string[] = res.steps || [];
       setAiSteps(steps);
       if (steps.length > 0) {
         const data = await createSubtasks(task.id, steps) as any[];
         setSubtasks(data || []);
       }
-    } catch {
-      Alert.alert('Ошибка', 'Не удалось получить AI советы');
+    } catch (err) {
+      const fl = parseFeatureLock(err);
+      if (fl) {
+        Alert.alert('Функция недоступна', fl.message, [
+          { text: 'Закрыть', style: 'cancel' },
+          { text: 'Тарифы', onPress: openPricing },
+        ]);
+      } else {
+        Alert.alert('Ошибка', 'Не удалось получить AI советы');
+      }
     } finally { setAiLoading(false); }
   };
 
@@ -324,14 +351,33 @@ function TaskRow({
               {subtasks.filter(s => s.completed).length}/{subtasks.length} шагов
             </Text>
           )}
+          {/* Совместная задача: участники со своими частями и статусами. Участник
+              может менять статус только своей части (canManageAll=false). */}
+          {task.is_multi && (
+            <TaskAssignees
+              task={task}
+              currentUserId={currentUserId ?? 0}
+              canManageAll={false}
+              onChanged={(u) => onUpdated?.(u)}
+            />
+          )}
         </View>
-        <TouchableOpacity
-          style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border }]}
-          onPress={() => setPickerOpen(true)}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
-        </TouchableOpacity>
+        {task.is_multi ? (
+          <View style={[styles.statusBadge, { backgroundColor: colors.surface2, borderColor: colors.border }]}>
+            <Text style={[styles.statusBadgeText, { color: colors.textSecondary }]}>
+              {task.progress ? `${task.progress.done}/${task.progress.total}` : '—'}
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border, flexDirection: 'row', alignItems: 'center', gap: 6 }]}
+            onPress={() => setPickerOpen(true)}
+            activeOpacity={0.7}
+          >
+            <Status3DIcon status={status} size={16} />
+            <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
+          </TouchableOpacity>
+        )}
         {onDelete && (
           <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
             <Text style={styles.deleteBtnText}>✕</Text>
@@ -354,7 +400,7 @@ function TaskRow({
           ))}
 
           {/* AI advice button */}
-          {status !== 'done' && (
+          {status !== 'done' && !task.is_multi && (
             <TouchableOpacity
               style={[styles.aiBtn, aiLoading && { opacity: 0.6 }]}
               onPress={handleAiAdvice}
