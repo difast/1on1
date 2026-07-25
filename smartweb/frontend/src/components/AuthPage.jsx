@@ -3,9 +3,10 @@ import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
 import Spinner from '../lib/Spinner'
+import ConfirmEmailModal from './ConfirmEmailModal'
 import {
   getTelegramConfig, telegramCallback,
-  authLogin, authRegister, authForgotPassword, adminLogin,
+  authLogin, authRegister, authForgotPassword, adminLogin, authResendConfirmation,
 } from '../api/client'
 
 const ADMIN_PASSWORD = '1on12026'
@@ -37,6 +38,13 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const [adminPwd, setAdminPwd] = useState('')
   const [tgConfig, setTgConfig] = useState(null)  // { bot_username, enabled }
   const [tgLoading, setTgLoading] = useState(false)
+  // Модальное окно подтверждения почты после успешной регистрации (Задача 2).
+  // Пока оно открыто, пользователь НЕ в кабинете: токен не выдан.
+  const [confirmEmail, setConfirmEmail] = useState('')
+  // Признак блокировки входа из-за неподтверждённой почты — показываем
+  // сообщение с кнопкой повторной отправки письма (Задача 2.4).
+  const [needConfirm, setNeedConfirm] = useState(false)
+  const [resendState, setResendState] = useState('')  // '' | 'sending' | 'sent'
 
   useEffect(() => {
     getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
@@ -63,15 +71,33 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
   const handleLogin = async (e) => {
     e.preventDefault()
-    setError('')
+    setError(''); setNeedConfirm(false); setResendState('')
     setLoading(true)
     try {
       const { data } = await authLogin({ email, password })
       setToken(data.token)
       onAuthSuccess?.(data.user)  // App поставит пользователя и решит про онбординг
     } catch (err) {
-      setError(translateError(err?.response?.data?.detail || 'Не удалось войти'))
+      const detail = err?.response?.data?.detail
+      // Вход заблокирован до подтверждения почты (Задача 2.4): бэкенд отдаёт
+      // структурированный detail с code='email_unconfirmed'. Показываем понятное
+      // сообщение и кнопку повторной отправки письма, а не текст ошибки.
+      if (err?.response?.status === 403 && detail && typeof detail === 'object' && detail.code === 'email_unconfirmed') {
+        setNeedConfirm(true)
+        setError(detail.message || 'Подтвердите почту, чтобы войти.')
+      } else {
+        setError(translateError((detail && typeof detail === 'string' ? detail : null) || 'Не удалось войти'))
+      }
     } finally { setLoading(false) }
+  }
+
+  const handleResend = async () => {
+    if (resendState === 'sending') return
+    setResendState('sending')
+    try {
+      await authResendConfirmation({ email })
+      setResendState('sent')
+    } catch { setResendState('') }
   }
 
   const handleRegister = async (e) => {
@@ -83,11 +109,10 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     setLoading(true)
     try {
       // Регистрация без выбора роли — роль/профиль выбираются в онбординге.
-      // Пользователь сразу авторизуется, доступ не блокируется; письмо с
-      // подтверждением уходит, баннер о подтверждении покажется внутри продукта.
-      const { data } = await authRegister({ name: email.split('@')[0], email, password })
-      setToken(data.token)
-      onAuthSuccess?.(data.user)
+      // Токен НЕ приходит: доступ в кабинет закрыт до подтверждения почты.
+      // Вместо входа показываем модальное окно подтверждения (Задача 2.1).
+      await authRegister({ name: email.split('@')[0], email, password })
+      setConfirmEmail(email)
     } catch (err) {
       setError(translateError(err?.response?.data?.detail || 'Не удалось зарегистрироваться'))
     } finally { setLoading(false) }
@@ -295,11 +320,24 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
               {error && (
                 <div style={{
-                  background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5',
-                  color: 'var(--color-danger)', borderRadius: 'var(--radius-md)',
-                  padding: '11px 14px', fontSize: 14, marginBottom: 14,
+                  background: needConfirm ? '#fff8ed' : 'var(--color-danger-bg)',
+                  border: `1px solid ${needConfirm ? '#fcd9a5' : '#FCA5A5'}`,
+                  color: needConfirm ? '#7c4a03' : 'var(--color-danger)',
+                  borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14,
                 }}>
                   {error}
+                  {needConfirm && (
+                    <div style={{ marginTop: 8 }}>
+                      {resendState === 'sent' ? (
+                        <span style={{ fontSize: 13, fontWeight: 600 }}>Письмо отправлено повторно.</span>
+                      ) : (
+                        <button type="button" onClick={handleResend} disabled={resendState === 'sending'}
+                          style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
+                          {resendState === 'sending' ? 'Отправляем...' : 'Отправить письмо повторно'}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -366,6 +404,22 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
         )}
       </div>
       <LegalModal open={showConsent} initialKey="privacy" onClose={() => setShowConsent(false)} />
+
+      {/* Модальное окно подтверждения почты после регистрации (Задача 2).
+          "Войти" переключает на вкладку входа (вход остаётся заблокированным до
+          подтверждения). Кнопка почтового сервиса открывает нужный веб-клиент. */}
+      <ConfirmEmailModal
+        open={!!confirmEmail}
+        email={confirmEmail}
+        onGoLogin={() => {
+          setConfirmEmail('')
+          setMode('login')
+          setPassword(''); setConfirmPassword('')
+          setNeedConfirm(true)
+          setError('Подтвердите почту, чтобы войти. Мы отправили ссылку на ' + confirmEmail + '.')
+        }}
+        onClose={() => setConfirmEmail('')}
+      />
     </div>
   )
 }

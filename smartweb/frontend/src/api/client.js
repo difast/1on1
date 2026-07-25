@@ -270,6 +270,11 @@ export const authResetPassword = (token, new_password) => api.post('/auth/reset-
 export const authChangePassword = (data) => api.post('/auth/change-password', data)
 export const authAddEmail = (userId, email) => api.post('/auth/add-email', { user_id: userId, email })
 
+// Онбординг-опросник (после подтверждения почты, до выбора роли)
+export const getSurveyConfig = () => api.get('/survey/config')
+export const submitSurvey = (userId, answers) => api.post('/survey/submit', { user_id: userId, answers })
+export const skipSurvey = (userId) => api.post('/survey/skip', { user_id: userId })
+
 // Admin knowledge base
 export const getAdminArticles = () => api.get('/knowledge/admin/all')
 export const createAdminArticle = (data) => api.post('/knowledge/', { ...data, is_admin: true })

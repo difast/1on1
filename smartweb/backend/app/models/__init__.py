@@ -24,3 +24,4 @@ from app.models.subscription import Subscription, Payment, Invoice
 from app.models.manager import Manager
 from app.models.company import CompanyProfile
 from app.models.telegram import TelegramLinkRequest, TelegramBotState
+from app.models.onboarding_survey import OnboardingSurveyResponse

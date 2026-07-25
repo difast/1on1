@@ -459,6 +459,52 @@ button:active:not(:disabled) { transform: scale(0.96); }
 .toast-success { background: #065F46; color: #fff; }
 .toast-error   { background: #991B1B; color: #fff; }
 
+/* Единый hover для иконок-кнопок в вебе (Задача 1.4/1.5).
+   Общий класс вместо точечных стилей: подсветка фона + лёгкое увеличение +
+   смена цвета, с общим временем и кривой перехода. Наведение заметное, но
+   мягкое, и не мешает клику (:active слегка утапливает). Применяется к новым
+   иконкам управления командой и поиска, к .btn-icon и к триггеру Пита. */
+.icon-hover {
+  transition:
+    background    var(--dur-normal) var(--ease-smooth),
+    color         var(--dur-normal) var(--ease-smooth),
+    border-color  var(--dur-normal) var(--ease-smooth),
+    box-shadow    var(--dur-normal) var(--ease-smooth),
+    transform     var(--dur-fast)   var(--ease-spring);
+}
+.icon-hover:hover { transform: translateY(-1px) scale(1.06); }
+.icon-hover:active { transform: scale(0.94); }
+@media (prefers-reduced-motion: reduce) {
+  .icon-hover:hover, .icon-hover:active { transform: none; }
+}
+/* .btn-icon получает то же увеличение при наведении (раньше двигался только
+   :active). Цвет/фон у .btn-icon уже описаны выше — здесь только трансформа. */
+.btn-icon:hover { transform: translateY(-1px) scale(1.06); }
+
+/* Компактная иконка-кнопка в шапке экрана (управление командой, поиск).
+   Размер и радиус согласованы с .btn-icon и высотой кнопок btn-sm. */
+.head-icon-btn {
+  width: 34px; height: 34px; padding: 0; border-radius: var(--radius-sm);
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  color: var(--color-text-secondary); display: inline-flex;
+  align-items: center; justify-content: center; cursor: pointer;
+  box-shadow: var(--shadow-xs);
+}
+.head-icon-btn:hover { background: var(--blue-50); color: var(--color-accent); border-color: var(--blue-200); }
+.head-icon-btn.active { background: var(--blue-100); color: var(--color-accent); border-color: var(--blue-300); }
+
+/* Поповер управления командой / поиск-поле, раскрывающиеся из иконки. */
+.head-pop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60;
+  min-width: 260px; background: var(--color-surface);
+  border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg); padding: 14px; animation: popIn 0.2s var(--ease-spring);
+}
+.head-search-pop { min-width: 300px; padding: 10px; }
+@media (max-width: 640px) {
+  .head-pop { right: -8px; min-width: min(280px, calc(100vw - 32px)); }
+}
+
 /* Invite banner */
 .invite-banner { width: 100%; padding: 16px 18px; border-radius: var(--radius-lg); border: 1.5px dashed var(--blue-200); background: linear-gradient(135deg, var(--blue-50), rgba(224,234,255,0.5)); cursor: pointer; display: flex; align-items: center; gap: 14px; text-align: left; font-family: inherit; transition: all var(--dur-normal) var(--ease-smooth); animation: borderPulse 3s ease infinite; }
 .invite-banner:hover { border-color: var(--blue-400); background: linear-gradient(135deg, var(--blue-100), var(--blue-50)); transform: translateY(-1px); box-shadow: var(--shadow-blue); animation: none; }

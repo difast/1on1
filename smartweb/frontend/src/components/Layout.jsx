@@ -1330,28 +1330,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
         {/* Main content */}
         <main className="app-main" style={{ marginLeft: 240, flex: 1, minWidth: 0, padding: '32px 28px', minHeight: 'calc(100vh - 58px)' }}>
-          {/* Баннер подтверждения почты. Не блокирует действия, закрывается.
-              Показывается ТОЛЬКО тем, у кого есть email и он не подтверждён —
-              пользователи без email (только Telegram) его не видят. */}
-          {currentUser?.email && !currentUser?.email_confirmed && !emailBannerHidden && (
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-              background: '#fff8ed', border: '1px solid #fcd9a5', borderRadius: 10,
-              padding: '10px 14px', marginBottom: 20,
-            }}>
-              <span style={{ fontSize: 13, color: '#7c4a03', flex: 1, minWidth: 200 }}>
-                Подтвердите почту — это нужно для оформления платной подписки. Мы отправили ссылку на {currentUser.email}.
-              </span>
-              <button onClick={handleResendConfirmation} disabled={resendLoading}
-                style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '6px 12px', cursor: 'pointer' }}>
-                {resendLoading ? 'Отправляем...' : 'Отправить повторно'}
-              </button>
-              <button onClick={() => setEmailBannerHidden(true)} aria-label="Скрыть"
-                style={{ background: 'none', border: 'none', color: '#b7791f', cursor: 'pointer', fontSize: 13 }}>
-                Скрыть
-              </button>
-            </div>
-          )}
+          {/* Баннер «подтвердите почту» убран (Задача 2.5): подтверждение теперь
+              запрашивается модальным окном сразу после регистрации, а вход в
+              кабинет заблокирован до подтверждения — внутри кабинета оказываются
+              только подтверждённые пользователи, поэтому баннер дублировал логику. */}
           {children}
         </main>
       </div>

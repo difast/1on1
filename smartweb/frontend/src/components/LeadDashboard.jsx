@@ -7,6 +7,7 @@ import { meetingStatusBadge, meetingStatusLabel } from '../lib/meetingStatus'
 import EmptyState from './EmptyState'
 import { coachingEnabled, buildAgendaSuggestions, buildMeetingFeedback } from '../lib/coaching'
 import { createTeam, getTeams, getTeam, createMeeting, createUser, addMember, getTasks, createTask, updateTask, deleteTask, getMeetings, confirmMeeting, declineMeeting, getUsers, regenerateInviteCode, updateMeeting, getNotes, createNote, deleteNote, getMyLeadTasks, startCall, uploadRecording, getTranscript, startSpontaneousCall, getMeetingAISlots, getTeamCompany, saveTeamCompany, deleteTeamCompany, updateUser } from '../api/client'
+import TeamHeaderControls from './TeamHeaderControls'
 import { useTranslation } from 'react-i18next'
 import { useIsTelegram } from '../lib/surface'
 import CompanySearch from './CompanySearch'
@@ -1485,70 +1486,23 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               ) : teamDetail ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                  {/* Invite banner */}
-                  <div className="invite-banner" onClick={handleCopyInvite}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 'var(--radius-md)',
-                      background: 'var(--color-surface)', display: 'flex', alignItems: 'center',
-                      justifyContent: 'center', fontSize: 20, flexShrink: 0,
-                      boxShadow: 'var(--shadow-sm)', border: '1px solid var(--blue-200)',
-                    }}>
-                      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                        <path d="M7.5 10.5a3.75 3.75 0 0 0 5.304.046l2.25-2.25a3.75 3.75 0 0 0-5.304-5.304L8.5 4.24" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M10.5 7.5a3.75 3.75 0 0 0-5.304-.046L2.946 9.704a3.75 3.75 0 0 0 5.304 5.304l1.246-1.247" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: 11, fontWeight: 600, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 2 }}>
-                        Код приглашения
-                      </p>
-                      <p style={{ fontFamily: 'var(--font-mono)', fontSize: 18, fontWeight: 700, color: 'var(--blue-700)' }}>
-                        {teamDetail.invite_code}
-                      </p>
-                    </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', flexShrink: 0 }}>
-                      <button
-                        onClick={e => { e.stopPropagation(); handleCopyInvite() }}
-                        className="btn btn-accent btn-sm"
-                      >
-                        {copied ? '✓ Скопировано!' : 'Скопировать ссылку'}
-                      </button>
-                      <button
-                        onClick={handleRegenerateCode}
-                        className="btn btn-secondary btn-sm"
-                        disabled={regenerating}
-                        title="Сгенерировать новый код"
-                      >
-                        {regenerating ? '...' : 'Новый код'}
-                      </button>
-                      <button
-                        onClick={e => { e.stopPropagation(); setShowAddMember(true) }}
-                        className="btn btn-accent-ghost btn-sm"
-                      >
-                        + Участника
-                      </button>
-                      {/* Этап 4: доступ к реквизитам компании пространства. */}
-                      <button
-                        onClick={e => { e.stopPropagation(); openOrg(selectedTeamId) }}
-                        className="btn btn-secondary btn-sm"
-                        title={t('company.sectionTitle')}
-                      >
-                        {t('company.sectionTitle')}
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Search */}
-                  {teamDetail.members && teamDetail.members.filter(m => m.user_id !== user.id).length > 0 && (
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={e => setSearchQuery(e.target.value)}
-                      placeholder="Поиск участников по имени или email..."
-                      className="input"
-                      style={{ maxWidth: 360 }}
-                    />
-                  )}
+                  {/* Заголовок команды + компактные иконки управления и поиска
+                      (Задача 1). Крупный блок кода приглашения и широкая строка
+                      поиска свёрнуты в две иконки справа от названия команды;
+                      весь функционал сохранён внутри их поповеров. */}
+                  <TeamHeaderControls
+                    teamName={teamDetail.name || teams.find(x => x.id === selectedTeamId)?.name || ''}
+                    inviteCode={teamDetail.invite_code}
+                    copied={copied}
+                    onCopyInvite={handleCopyInvite}
+                    regenerating={regenerating}
+                    onRegenerate={handleRegenerateCode}
+                    onAddMember={() => setShowAddMember(true)}
+                    onOpenOrg={() => openOrg(selectedTeamId)}
+                    orgLabel={t('company.sectionTitle')}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                  />
 
                   {/* Members grid */}
                   {filteredMembers.length > 0 ? (

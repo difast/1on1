@@ -33,6 +33,7 @@ class UserOut(BaseModel):
     preferred_language: Optional[str] = None
     pricing_hint_shown: bool = False
     onboarding_tour_done: bool = False
+    onboarding_survey_done: bool = False
     created_at: datetime
 
     class Config:
@@ -52,3 +53,4 @@ class UserUpdate(BaseModel):
     preferred_language: Optional[str] = None
     pricing_hint_shown: Optional[bool] = None  # флаг показанной рекомендации тарифа
     onboarding_tour_done: Optional[bool] = None  # флаг прохождения онбординг-гида
+    onboarding_survey_done: Optional[bool] = None  # флаг прохождения/пропуска опросника

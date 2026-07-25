@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { getToken, setToken, clearToken, getAdminSession, setAdminSession } from './lib/auth'
 import AuthPage from './components/AuthPage'
 import Onboarding from './components/Onboarding'
+import SurveyPage from './components/SurveyPage'
 import LeadDashboard from './components/LeadDashboard'
 import MemberDashboard from './components/MemberDashboard'
 import AdminDashboard from './components/AdminDashboard'
@@ -187,6 +188,14 @@ function App() {
         onAuthSuccess={handleAuthSuccess}
       />
     )
+  }
+
+  // Онбординг-опросник (Задача 3) — между подтверждением почты и выбором роли.
+  // Вход в кабинет заблокирован до подтверждения почты, поэтому сюда попадают
+  // только подтверждённые пользователи. Показывается один раз: после
+  // прохождения или пропуска onboarding_survey_done=true, и мы идём дальше.
+  if (appUser && !appUser.onboarding_survey_done) {
+    return <SurveyPage user={appUser} onDone={handleUserUpdate} />
   }
 
   if (!appUser || !appUser.role) {

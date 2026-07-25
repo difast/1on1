@@ -39,6 +39,10 @@ class User(Base):
     pricing_hint_shown = Column(Boolean, nullable=False, default=False, server_default="false")
     # Онбординг-гид пройден — общий флаг аккаунта (веб и Telegram Mini App).
     onboarding_tour_done = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Онбординг-опросник (после подтверждения почты) пройден ИЛИ пропущен —
+    # в обоих случаях повторно не показываем. Сами ответы — в отдельной таблице
+    # onboarding_survey_responses. Флаг здесь для быстрой проверки без join.
+    onboarding_survey_done = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())
 
     @property

@@ -25,6 +25,14 @@ class TokenOut(BaseModel):
     user: UserOut
 
 
+class RegisterOut(BaseModel):
+    """Ответ регистрации — БЕЗ токена: доступ закрыт до подтверждения почты
+    (Задача 2.4). Клиент показывает модальное окно «подтвердите почту» и не
+    пускает в кабинет, пока пользователь не подтвердит адрес и не войдёт."""
+    user: UserOut
+    email_sent: bool = True
+
+
 class ConfirmReq(BaseModel):
     token: str
 

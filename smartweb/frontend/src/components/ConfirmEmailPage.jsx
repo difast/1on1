@@ -26,9 +26,9 @@ export default function ConfirmEmailPage() {
             <>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>Почта подтверждена</h2>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>
-                Теперь доступно оформление платной подписки.
+                Аккаунт активирован. Войдите, чтобы продолжить настройку.
               </p>
-              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>Продолжить</button>
+              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>Войти</button>
             </>
           )}
           {status === 'error' && (

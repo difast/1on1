@@ -342,6 +342,7 @@ export default function PitAssistant() {
       {isTg && !covered && (
         <button
           data-tour="pit"
+          className="icon-hover"
           onClick={() => setOpen(o => !o)}
           title="Пит — AI-ассистент"
           style={{
@@ -367,6 +368,7 @@ export function PitTriggerButton() {
   return (
     <button
       data-tour="pit"
+      className="icon-hover"
       onClick={() => { try { window.dispatchEvent(new Event('pit-toggle')) } catch {} }}
       title="Пит — AI-ассистент"
       style={{

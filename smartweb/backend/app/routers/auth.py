@@ -18,7 +18,7 @@ from app.database import get_db
 from app.models.user import User
 from app.models.auth_token import AuthToken
 from app.schemas.auth import (
-    RegisterReq, LoginReq, TokenOut, ConfirmReq, ResendReq,
+    RegisterReq, LoginReq, TokenOut, RegisterOut, ConfirmReq, ResendReq,
     ForgotReq, ResetReq, ChangePasswordReq, AddEmailReq,
 )
 from app.schemas.user import UserOut
@@ -120,7 +120,7 @@ def _send_confirmation(bg: BackgroundTasks, db: Session, user: User) -> None:
 
 # ── регистрация / вход ───────────────────────────────────────────────────────
 
-@router.post("/register", response_model=TokenOut)
+@router.post("/register", response_model=RegisterOut)
 def register(data: RegisterReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     email = _validate_email(data.email)
     _validate_password(data.password)
@@ -147,18 +147,38 @@ def register(data: RegisterReq, background_tasks: BackgroundTasks, db: Session =
         db.rollback()
 
     _send_confirmation(background_tasks, db, user)
-    # Пользователь сразу авторизован — доступ не блокируется до подтверждения.
-    return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
+    # Токен НЕ выдаём: доступ в кабинет закрыт до подтверждения почты (2.4).
+    # Клиент показывает модальное окно подтверждения; войти можно только после
+    # перехода по ссылке из письма (login тогда пропустит).
+    return {"user": UserOut.model_validate(user), "email_sent": bool(user.email)}
+
+
+# Мягкая ошибка блокировки входа: фронт по code='email_unconfirmed' показывает
+# понятное сообщение и кнопку повторной отправки письма (2.4), а не текст ошибки.
+def _email_unconfirmed_detail(email: str) -> dict:
+    return {
+        "code": "email_unconfirmed",
+        "email": email,
+        "message": "Подтвердите почту, чтобы войти. Мы отправили ссылку на "
+                   f"{email}. Перейдите по ней, затем войдите снова.",
+    }
 
 
 @router.post("/login", response_model=TokenOut)
-def login(data: LoginReq, db: Session = Depends(get_db)):
+def login(data: LoginReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
     email = _norm_email(data.email)
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(data.password, user.password_hash):
         raise HTTPException(401, "Неверный email или пароль")
     if user.is_blocked:
         raise HTTPException(403, "Аккаунт заблокирован")
+    # Жёсткая блокировка входа до подтверждения почты (Задача 2.4). Проверка —
+    # на бэкенде, обойти скрытием элементов UI нельзя. Пользователи без email
+    # (вход только через Telegram) этой проверке не подлежат. Заодно повторно
+    # отправляем письмо, чтобы кнопка «войти» после регистрации была полезной.
+    if user.email and not user.email_confirmed:
+        _send_confirmation(background_tasks, db, user)
+        raise HTTPException(status_code=403, detail=_email_unconfirmed_detail(user.email))
     return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
 
 
