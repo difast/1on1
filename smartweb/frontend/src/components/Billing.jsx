@@ -60,7 +60,9 @@ function planBullets(p) {
   return out
 }
 
-export default function Billing({ open, currentUser, initialPlan, onClose }) {
+// readOnly — режим Mini App: тариф можно посмотреть, но оплатить и сменить
+// нельзя (по таблице разделения функционала оплата только в веб-версии).
+export default function Billing({ open, currentUser, initialPlan, readOnly = false, onClose }) {
   const [me, setMe] = useState(null)
   const [plans, setPlans] = useState([])
   const [busy, setBusy] = useState('')
@@ -136,8 +138,8 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
         return
       }
       case 'downgrade_free': {
-        if (await confirmDialog({ title: 'Перейти на Free?', message: d.message, confirmText: 'Перейти на Free', danger: true })) {
-          try { await cancelMySubscription(currentUser.id); setMsg('Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.'); setTimeout(refresh, 1200) }
+        if (await confirmDialog({ title: 'Отказаться от подписки?', message: d.message, confirmText: 'Отказаться от подписки', danger: true })) {
+          try { await cancelMySubscription(currentUser.id); setMsg('Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт останется без подписки.'); setTimeout(refresh, 1200) }
           catch { setMsg('Не удалось выполнить действие.') }
         }
         return
@@ -176,6 +178,11 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
         </div>
 
         <div className="bill-body">
+          {readOnly && (
+            <p className="bill-msg" style={{ marginTop: 0 }}>
+              Здесь можно посмотреть тариф и лимиты. Оплата и смена тарифа доступны в веб-версии.
+            </p>
+          )}
           <p className="bill-hero">Выберите тариф под размер команды. Start — 1 490 ₽ в месяц, Team — 49 990 ₽ в год единовременно. Business и Enterprise подключаются индивидуально. Повышение действует сразу.</p>
 
           {/* Current plan + usage */}
@@ -192,7 +199,7 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
             {me?.subscription?.in_grace && (
               <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
                 Последний платёж не прошёл. Обновите карту, чтобы сохранить доступ.
-                <button className="bill-cta" style={{ marginTop: 8 }} disabled={busy}
+                <button className="bill-cta" style={{ marginTop: 8 }} disabled={busy || readOnly}
                   onClick={() => { const cp = plans.find(x => x.code === (me?.subscription?.plan_code || currentCode)); if (cp) openWidget(cp) }}>
                   Обновить карту
                 </button>
@@ -258,6 +265,8 @@ export default function Billing({ open, currentUser, initialPlan, onClose }) {
                   </ul>
                   {isCurrent ? (
                     <button className="bill-cta muted" disabled>Текущий тариф</button>
+                  ) : readOnly ? (
+                    <button className="bill-cta muted" disabled>Оформление в веб-версии</button>
                   ) : isFreeState ? (
                     currentIsPaid ? (
                       <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>Отказаться от подписки</button>

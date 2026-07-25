@@ -671,8 +671,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               </div>
             )}
           </div>
-          {/* My plan — team lead only. В Mini App биллинг недоступен (таблица). */}
-          {user?.role === 'team_lead' && !isTg && (
+          {/* My plan — team lead only. В Mini App это ПРОСМОТР тарифа: оплата и
+              смена тарифа там запрещены таблицей, экран открывается read-only. */}
+          {user?.role === 'team_lead' && (
             <button
               onClick={() => setShowBilling(true)}
               style={{
@@ -1364,7 +1365,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         onClose={() => setShowAvatarModal(false)}
       />
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
-      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} onClose={() => setShowBilling(false)} />
+      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} readOnly={isTg} onClose={() => setShowBilling(false)} />
 
       {/* Закрыто сегодня (Задача 2): список закрытых сегодня задач по роли. */}
       {showClosedToday && (

@@ -142,7 +142,7 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
     if in_trial:
         if target.code == "free":
             return {"action": "downgrade_free", "plan": "free", "effective": "now",
-                    "message": "Прекратить пробный период и перейти на Free? Платные функции станут недоступны сразу."}
+                    "message": "Прекратить пробный период и остаться без подписки? Платные функции станут недоступны сразу."}
         return {"action": "subscribe", "plan": target.code, "period": period, "seats": seats,
                 "amount": charge_amount(target),
                 "message": f"Оформить платную подписку сейчас: {(target.limits or {}).get('price_label') or ''}. "
@@ -177,8 +177,8 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
         return {"action": "downgrade_free", "plan": "free",
                 "effective": "period_end",
                 "period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,
-                "message": "Переход на Free отменит автосписания. Платные функции сохранятся до конца "
-                           "оплаченного периода, затем аккаунт перейдёт на Free."}
+                "message": "Отказ от подписки отменит автосписания. Платные функции сохранятся до конца "
+                           "оплаченного периода, затем аккаунт останется без подписки."}
 
     if tgt_rank > cur_rank:
         # Апгрейд — новые лимиты сразу, доплата разницы (5.3).
