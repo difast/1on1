@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from datetime import datetime, timedelta
-import uuid, httpx, json
+import uuid, json
 from pydantic import BaseModel as PydanticBase
 from app.database import get_db
 from app.models.meeting import Meeting
@@ -331,8 +331,7 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
     _emit_meeting_event(db, meeting, "meeting.cancelled")  # удалить событие из календарей
     return meeting
 
-import os
-AITUNNEL_KEY = os.getenv("AITUNNEL_KEY", "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku")
+from app.services import ai_service
 
 class SlotRequest(PydanticBase):
     meeting_id: int
@@ -362,14 +361,9 @@ def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db)):
         f"Ответ ТОЛЬКО JSON: {{\"slots\": [\"2025-06-02T10:00\", \"2025-06-03T14:00\", \"2025-06-04T11:00\"]}}"
     )
     try:
-        resp = httpx.post(
-            "https://api.aitunnel.ru/v1/chat/completions",
-            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3.5-haiku", "max_tokens": 150,
-                  "messages": [{"role": "user", "content": prompt}]},
-            timeout=15,
-        )
-        text = resp.json()["choices"][0]["message"]["content"].strip()
+        text = ai_service.complete(
+            [{"role": "user", "content": prompt}], max_tokens=150, timeout=15,
+        ).strip()
         if "```" in text:
             text = text.split("```")[1].lstrip("json").strip()
         result = json.loads(text)

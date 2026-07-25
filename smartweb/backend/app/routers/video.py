@@ -213,41 +213,29 @@ async def _transcribe_async(audio_data: bytes, content_type: str, api_key: str) 
 
 
 async def _analyze_and_create_tasks(meeting: Meeting, transcript: str, db: Session):
-    api_key = os.getenv("ANTHROPIC_API_KEY")
-    ai_base = os.getenv("ANTHROPIC_BASE_URL", "https://api.aitunnel.ru")
-    if not api_key:
-        print("[video] ANTHROPIC_API_KEY not set")
+    from app.services import ai_service
+    prompt = (
+        "Ты анализируешь транскрипцию встречи 1-on-1 между руководителем и сотрудником.\n"
+        "Верни ТОЛЬКО валидный JSON без пояснений:\n"
+        "{\n"
+        '  "summary": "краткое резюме встречи (2-4 предложения)",\n'
+        '  "tasks": [{"title": "название задачи", "assigned_to": "member"}]\n'
+        "}\n"
+        "assigned_to = 'member' (сотрудник) или 'lead' (руководитель).\n\n"
+        f"Транскрипция:\n{transcript[:5000]}"
+    )
+    # complete() синхронный — выносим в поток, чтобы не блокировать event loop.
+    try:
+        content = await asyncio.to_thread(
+            ai_service.complete,
+            [{"role": "user", "content": prompt}], 1500, None, 90.0,
+        )
+    except ai_service.AIError as e:
+        print(f"[video] AI Gateway unavailable: {type(e).__name__}")
         return
 
-    async with httpx.AsyncClient(timeout=90) as client:
-        r = await client.post(
-            f"{ai_base}/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-haiku-4-5-20251001",
-                "max_tokens": 1500,
-                "messages": [{
-                    "role": "user",
-                    "content": (
-                        "Ты анализируешь транскрипцию встречи 1-on-1 между руководителем и сотрудником.\n"
-                        "Верни ТОЛЬКО валидный JSON без пояснений:\n"
-                        "{\n"
-                        '  "summary": "краткое резюме встречи (2-4 предложения)",\n'
-                        '  "tasks": [{"title": "название задачи", "assigned_to": "member"}]\n'
-                        "}\n"
-                        "assigned_to = 'member' (сотрудник) или 'lead' (руководитель).\n\n"
-                        f"Транскрипция:\n{transcript[:5000]}"
-                    ),
-                }],
-            },
-        )
-
     try:
-        content = r.json()["content"][0]["text"].strip()
+        content = content.strip()
         # Extract JSON if wrapped in markdown
         if "```" in content:
             content = content.split("```")[1]

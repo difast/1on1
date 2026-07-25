@@ -2,11 +2,10 @@ from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel as PydanticBase
 from typing import List, Optional
-import httpx
 from app.database import get_db
 from app.models.user import User
 from app.services import entitlements
-from app.prompts import AITUNNEL_KEY, PIT_SYSTEM_PROMPT
+from app.prompts import PIT_SYSTEM_PROMPT
 
 router = APIRouter()
 
@@ -24,21 +23,28 @@ class ChatRequest(PydanticBase):
 
 @router.get("/diagnose")
 def diagnose():
-    """Test endpoint: returns raw aitunnel response for debugging."""
-    results = {}
-    for model in ["claude-3-5-haiku-20241022", "claude-3-haiku-20240307", "gpt-4o-mini"]:
-        try:
-            resp = httpx.post(
-                "https://api.aitunnel.ru/v1/chat/completions",
-                headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-                json={"model": model, "max_tokens": 10,
-                      "messages": [{"role": "user", "content": "ping"}]},
-                timeout=15,
-            )
-            results[model] = {"status": resp.status_code, "body": resp.json()}
-        except Exception as e:
-            results[model] = {"error": str(e)}
-    return results
+    """Диагностика AI Gateway: делает минимальный запрос через общий AI-слой и
+    сообщает результат. Ключ не выводится — только статус и имя модели."""
+    from app.config import settings
+    from app.services import ai_service
+    info = {
+        "provider": "ai_gateway",
+        "base_url": settings.ai_gateway_base_url,
+        "model": settings.ai_gateway_model,
+        "key_configured": bool(settings.ai_gateway_key),
+    }
+    try:
+        reply = ai_service.complete(
+            [{"role": "user", "content": "ping"}], max_tokens=10, timeout=15,
+        )
+        info["status"] = "ok"
+        info["sample"] = (reply or "")[:80]
+    except ai_service.AIConfigError:
+        info["status"] = "not_configured"
+    except ai_service.AIServiceError as e:
+        info["status"] = "error"
+        info["error_type"] = type(e).__name__
+    return info
 
 
 @router.post("/chat")

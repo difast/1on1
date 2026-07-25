@@ -1,4 +1,4 @@
-import httpx, json
+import json
 from datetime import datetime, timedelta, date, time
 from typing import List, Optional
 from zoneinfo import ZoneInfo
@@ -12,11 +12,9 @@ from app.models.mood import MoodEntry
 from app.models.team import Team, TeamMember
 from app.utils.auth import get_current_user
 from app.services import mood_service
+from app.services import ai_service
 
 router = APIRouter()
-
-import os
-AITUNNEL_KEY = os.getenv("AITUNNEL_KEY", "sk-aitunnel-3A8F25Qme3Mnnbw8Tgg3vIWzcYxUTcku")
 
 
 def _analyze_survey(answers: List[str]) -> dict:
@@ -30,14 +28,9 @@ def _analyze_survey(answers: List[str]) -> dict:
         "Answers:\n" + "\n".join(f"- {a}" for a in filled)
     )
     try:
-        resp = httpx.post(
-            "https://api.aitunnel.ru/v1/chat/completions",
-            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3.5-haiku", "max_tokens": 120,
-                  "messages": [{"role": "user", "content": prompt}]},
-            timeout=20,
-        )
-        text = resp.json()["choices"][0]["message"]["content"].strip()
+        text = ai_service.complete(
+            [{"role": "user", "content": prompt}], max_tokens=120, timeout=20,
+        ).strip()
         if "```" in text:
             text = text.split("```")[1].lstrip("json").strip()
         result = json.loads(text)

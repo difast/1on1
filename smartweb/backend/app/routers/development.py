@@ -549,20 +549,14 @@ def _pit_advice(skill_name: str, cur: Optional[str], des: Optional[str]) -> str:
     """Персональный совет ассистента Пит. Best-effort вызов; при недоступности сети
     — короткая структурированная подсказка (эндпоинт остаётся рабочим)."""
     try:
-        import httpx
-        from app.prompts import AITUNNEL_KEY, PIT_SYSTEM_PROMPT
+        from app.prompts import PIT_SYSTEM_PROMPT
+        from app.services import ai_service
         prompt = (f"Дай короткий план развития навыка «{skill_name}» с уровня «{cur}» до «{des}». "
                   f"3-4 конкретных шага, без воды, без эмодзи.")
-        resp = httpx.post(
-            "https://api.aitunnel.ru/v1/chat/completions",
-            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3.5-haiku", "max_tokens": 400,
-                  "messages": [{"role": "system", "content": PIT_SYSTEM_PROMPT},
-                               {"role": "user", "content": prompt}]},
-            timeout=20,
-        )
-        body = resp.json()
-        return body["choices"][0]["message"]["content"]
+        reply = ai_service.call_llm(PIT_SYSTEM_PROMPT, [{"role": "user", "content": prompt}], max_tokens=400)
+        if reply:
+            return reply
+        raise RuntimeError("ai unavailable")
     except Exception:
         return (f"Шаги для роста навыка «{skill_name}»: 1) изучите базовый материал и разберите пример; "
                 f"2) примените на реальной задаче; 3) запросите обратную связь у тимлида; "

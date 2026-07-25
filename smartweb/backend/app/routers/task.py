@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
 from datetime import datetime
-import httpx, json
+import json
 from pydantic import BaseModel as PydanticBaseModel
 from app.database import get_db
 from app.models.task import Task
@@ -13,8 +13,9 @@ from app.schemas.task import (
     TaskCreate, TaskOut, TaskUpdate, AssigneeStatusUpdate,
 )
 from app.tasks.reminders import send_new_task_notification
-from app.prompts import AITUNNEL_KEY, task_ai_prompt
+from app.prompts import task_ai_prompt
 from app.services import entitlements
+from app.services import ai_service
 from app.services import task_collab
 from app.models.task_activity import TaskActivity, TaskComment
 
@@ -118,17 +119,9 @@ def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db)):
     status_label = status_map.get(data.status or "in_progress", "в работе")
     prompt = task_ai_prompt(data.title, role_ctx, status_label, due_ctx)
     try:
-        resp = httpx.post(
-            "https://api.aitunnel.ru/v1/chat/completions",
-            headers={"Authorization": f"Bearer {AITUNNEL_KEY}"},
-            json={"model": "claude-3.5-haiku", "max_tokens": 500,
-                  "messages": [{"role": "user", "content": prompt}]},
-            timeout=25,
+        raw = ai_service.complete(
+            [{"role": "user", "content": prompt}], max_tokens=500, timeout=25,
         )
-        raw_body = resp.json()
-        if "choices" not in raw_body:
-            raise ValueError(f"no choices: {raw_body}")
-        raw = raw_body["choices"][0]["message"]["content"]
 
         # Strategy 1: find balanced JSON object
         start = raw.find('{')
@@ -156,8 +149,12 @@ def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db)):
         raise ValueError("could not extract steps")
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=503, detail=f"AI error: {e}")
+    except ai_service.AIConfigError:
+        raise HTTPException(status_code=503, detail="AI не настроен: не задан ключ AI Gateway")
+    except ai_service.AIServiceError:
+        raise HTTPException(status_code=503, detail="AI временно недоступен, попробуйте ещё раз")
+    except Exception:
+        raise HTTPException(status_code=503, detail="Не удалось разобрать ответ AI, попробуйте ещё раз")
 
 
 # ── CRUD ─────────────────────────────────────────────────────────────────────
