@@ -1,0 +1,75 @@
+# robots.txt — oneononehq.com (публичный лендинг)
+#
+# Лендинг открыт для индексации целиком: приватных разделов здесь нет,
+# личный кабинет живёт на отдельном домене app.oneononehq.com и закрыт
+# собственным robots.txt.
+#
+# AI-краулеры перечислены явно, чтобы доступ не зависел от шаблонных
+# настроек хостинга и от того, как бот трактует общее правило.
+
+# ── Поисковые роботы ────────────────────────────────────────────────────────
+User-agent: Googlebot
+Allow: /
+
+User-agent: YandexBot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# ── AI-краулеры: обучение, ответы в чате, поиск ─────────────────────────────
+# OpenAI: GPTBot — сбор данных, OAI-SearchBot — поисковый индекс,
+# ChatGPT-User — переход по ссылке из диалога пользователя.
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic: ClaudeBot — сбор данных, Claude-User — переход по ссылке
+# из диалога, Claude-SearchBot — поиск.
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: anthropic-ai
+Allow: /
+
+# Google: отдельный токен для Gemini и AI-ответов, независимый от Googlebot.
+User-agent: Google-Extended
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
+
+User-agent: Amazonbot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+# ── Все остальные ───────────────────────────────────────────────────────────
+User-agent: *
+Allow: /
+
+Sitemap: https://oneononehq.com/sitemap.xml
