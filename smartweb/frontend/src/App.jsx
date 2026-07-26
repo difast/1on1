@@ -12,7 +12,7 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import IntegrationCallbackPage from './components/IntegrationCallbackPage'
 import YandexAuthCallbackPage from './components/YandexAuthCallbackPage'
 import { authMe, getUser, detectRegion } from './api/client'
-import i18n from './i18n'
+import i18n, { setExplicitLang } from './i18n'
 
 const TG_SESSION_KEY = 'tg_session'
 
@@ -134,9 +134,13 @@ function App() {
   // и сохраняем как предполагаемый (Этап 5) — на UI это ничего не меняет.
   useEffect(() => {
     if (!appUser?.id) return
+    // Язык из профиля — это явный выбор, сделанный пользователем на любом
+    // клиенте (веб, приложение, Mini App, бот). Применяем его и запоминаем как
+    // явный, чтобы автоопределение по браузеру больше не вмешивалось.
     if (appUser.preferred_language &&
         appUser.preferred_language !== (i18n.resolvedLanguage || i18n.language)) {
       i18n.changeLanguage(appUser.preferred_language)
+      setExplicitLang(appUser.preferred_language)
     }
     detectRegion(appUser.id).catch(() => {})
   }, [appUser?.id])

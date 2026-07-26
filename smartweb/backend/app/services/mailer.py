@@ -13,6 +13,7 @@ from email.mime.multipart import MIMEMultipart
 from email.utils import formataddr
 
 from app.config import settings
+from app.services import i18n
 
 logger = logging.getLogger(__name__)
 
@@ -84,17 +85,18 @@ def _web_base() -> str:
     return (settings.app_web_url or "").rstrip("/")
 
 
-def _html_email(intro: str, button_text: str, link: str, note: str) -> str:
-    """Простой адаптивный HTML-шаблон с кнопкой (инлайн-стили, без эмодзи)."""
+def _html_email(intro: str, button_text: str, link: str, note: str, lang: str = "ru") -> str:
+    """Простой адаптивный HTML-шаблон с кнопкой (инлайн-стили, без эмодзи).
+    Приветствие, подпись и запасная ссылка — на языке письма."""
     return (
-        "<!doctype html><html lang='ru'><body style='margin:0;padding:0;"
+        f"<!doctype html><html lang='{lang}'><body style='margin:0;padding:0;"
         "background:#f4f5f7;font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;'>"
         "<table role='presentation' width='100%' cellpadding='0' cellspacing='0' style='background:#f4f5f7;padding:24px 0;'>"
         "<tr><td align='center'>"
         "<table role='presentation' width='100%' cellpadding='0' cellspacing='0' "
         "style='max-width:460px;background:#ffffff;border-radius:12px;padding:32px;'>"
         "<tr><td style='font-size:20px;font-weight:700;color:#13389E;padding-bottom:20px;'>OneOnOne</td></tr>"
-        "<tr><td style='font-size:16px;color:#1a1a2e;padding-bottom:4px;'>Здравствуйте!</td></tr>"
+        f"<tr><td style='font-size:16px;color:#1a1a2e;padding-bottom:4px;'>{i18n.t('email.greeting', lang)}</td></tr>"
         f"<tr><td style='font-size:15px;color:#3a3a4a;line-height:1.5;padding:8px 0 24px;'>{intro}</td></tr>"
         "<tr><td style='padding-bottom:24px;'>"
         f"<a href='{link}' style='display:inline-block;background:#2554D4;color:#ffffff;"
@@ -102,44 +104,40 @@ def _html_email(intro: str, button_text: str, link: str, note: str) -> str:
         f"{button_text}</a></td></tr>"
         f"<tr><td style='font-size:13px;color:#8a8a99;line-height:1.5;'>{note}</td></tr>"
         f"<tr><td style='font-size:12px;color:#b0b0bb;padding-top:16px;word-break:break-all;'>"
-        f"Если кнопка не работает, откройте ссылку: {link}</td></tr>"
+        f"{i18n.t('email.fallbackLink', lang, link=link)}</td></tr>"
         "</table></td></tr></table></body></html>"
     )
 
 
-def send_confirmation_email(to_email: str, name: str, token: str) -> bool:
+def send_confirmation_email(to_email: str, name: str, token: str, lang: str | None = None) -> bool:
+    """Письмо подтверждения почты на языке пользователя (ru/en/kz)."""
+    lang = i18n.normalize_lang(lang)
     link = f"{_web_base()}/confirm-email?token={token}"
+    intro = i18n.t("email.confirm.intro", lang)
+    button = i18n.t("email.confirm.button", lang)
+    note = i18n.t("email.confirm.note", lang)
     body = (
-        "Здравствуйте!\n\n"
-        "Чтобы завершить регистрацию в OneOnOne, подтвердите свою почту — "
-        "нажмите на кнопку ниже.\n\n"
-        f"Подтвердить почту: {link}\n\n"
-        "Ссылка действительна 24 часа. Если вы не регистрировались в OneOnOne, "
-        "просто проигнорируйте это письмо."
+        f"{i18n.t('email.greeting', lang)}\n\n"
+        f"{intro}\n\n"
+        f"{button}: {link}\n\n"
+        f"{note}"
     )
-    html = _html_email(
-        "Чтобы завершить регистрацию в OneOnOne, подтвердите свою почту — нажмите на кнопку ниже.",
-        "Подтвердить почту", link,
-        "Ссылка действительна 24 часа. Если вы не регистрировались в OneOnOne, просто проигнорируйте это письмо.",
-    )
-    return _try_send(to_email, "Подтвердите почту для OneOnOne", body, html) is None
+    html = _html_email(intro, button, link, note, lang)
+    return _try_send(to_email, i18n.t("email.confirm.subject", lang), body, html) is None
 
 
-def send_reset_email(to_email: str, name: str, token: str) -> bool:
+def send_reset_email(to_email: str, name: str, token: str, lang: str | None = None) -> bool:
+    """Письмо сброса пароля на языке пользователя (ru/en/kz)."""
+    lang = i18n.normalize_lang(lang)
     link = f"{_web_base()}/reset-password?token={token}"
+    intro = i18n.t("email.reset.intro", lang)
+    button = i18n.t("email.reset.button", lang)
+    note = i18n.t("email.reset.note", lang)
     body = (
-        "Здравствуйте!\n\n"
-        "Мы получили запрос на сброс пароля для вашего аккаунта в OneOnOne. "
-        "Чтобы задать новый пароль, нажмите на кнопку ниже.\n\n"
-        f"Сбросить пароль: {link}\n\n"
-        "Ссылка действительна 3 часа. Если вы запрашивали сброс несколько раз, "
-        "работает только ссылка из самого последнего письма. Если вы не "
-        "запрашивали сброс пароля, просто проигнорируйте это письмо — ваш "
-        "текущий пароль останется без изменений."
+        f"{i18n.t('email.greeting', lang)}\n\n"
+        f"{intro}\n\n"
+        f"{button}: {link}\n\n"
+        f"{note}"
     )
-    html = _html_email(
-        "Мы получили запрос на сброс пароля для вашего аккаунта в OneOnOne. Чтобы задать новый пароль, нажмите на кнопку ниже.",
-        "Сбросить пароль", link,
-        "Ссылка действительна 3 часа. Если вы запрашивали сброс несколько раз, работает только ссылка из самого последнего письма. Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо — ваш текущий пароль останется без изменений.",
-    )
-    return _try_send(to_email, "Восстановление пароля OneOnOne", body, html) is None
+    html = _html_email(intro, button, link, note, lang)
+    return _try_send(to_email, i18n.t("email.reset.subject", lang), body, html) is None

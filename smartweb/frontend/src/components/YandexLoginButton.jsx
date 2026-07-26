@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import { getYandexAuthUrl } from '../api/client'
 
@@ -22,6 +23,7 @@ const VARIANT_CLASS = {
 }
 
 export default function YandexLoginButton({ variant = 'red', onError, disabled = false }) {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
 
   const start = async () => {
@@ -34,7 +36,7 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
     } catch (err) {
       setLoading(false)
       const detail = err?.response?.data?.detail
-      onError?.(detail?.message || (typeof detail === 'string' ? detail : 'Не удалось открыть вход через Яндекс ID'))
+      onError?.(detail?.message || (typeof detail === 'string' ? detail : t('auth.yandexOpenFailed')))
     }
   }
 
@@ -43,7 +45,7 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
       type="button"
       onClick={start}
       disabled={loading || disabled}
-      aria-label="Войти с Яндекс ID"
+      aria-label={t('auth.yandex')}
       aria-busy={loading || undefined}
       className={`btn btn-yandex ${VARIANT_CLASS[variant] || ''}`.trim()}
       style={{
@@ -58,7 +60,7 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
       }}
     >
       <span className="btn-yandex-badge" aria-hidden="true">Я</span>
-      {loading ? (<><Spinner /> Открываем Яндекс ID...</>) : 'Войти с Яндекс ID'}
+      {loading ? (<><Spinner /> {t('auth.yandexOpening')}</>) : t('auth.yandex')}
     </button>
   )
 }

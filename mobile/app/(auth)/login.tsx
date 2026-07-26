@@ -9,6 +9,7 @@ import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 import { mailProviderFor } from '../../src/lib/mailProviders';
+import { useI18n, translate } from '../../src/lib/i18n';
 import YandexLoginButton from '../../src/components/YandexLoginButton';
 import { yandexAuthConfig } from '../../src/lib/api';
 
@@ -22,13 +23,14 @@ function translateError(msg: any): string {
 }
 
 function passwordProblem(pw: string): string {
-  if ((pw || '').length < 8) return 'Пароль должен быть не короче 8 символов';
-  if (!/[A-Za-zА-Яа-я]/.test(pw) || !/\d/.test(pw)) return 'Пароль должен содержать буквы и цифры';
+  if ((pw || '').length < 8) return translate('validation.passwordShort');
+  if (!/[A-Za-zА-Яа-я]/.test(pw) || !/\d/.test(pw)) return translate('validation.passwordWeak');
   return '';
 }
 
 export default function LoginScreen() {
   const { colors } = useTheme();
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { session, user, loading: authLoading, enterAdmin, profileError, retryProfile, signOut, signIn, signUp, forgotPassword, resendConfirmation } = useAuth();
   const [mode, setMode] = useState<Mode>('login');
@@ -65,7 +67,7 @@ export default function LoginScreen() {
       <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center', padding: 32 }}>
         <Ionicons name="cloud-offline-outline" size={48} color={colors.textMuted} />
         <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary, marginTop: 16, textAlign: 'center' }}>
-          Сервер недоступен
+          {t('auth.serverUnavailable')}
         </Text>
         <Text style={{ fontSize: 14, color: colors.textSecondary, marginTop: 8, textAlign: 'center' }}>
           {profileError}
@@ -76,11 +78,11 @@ export default function LoginScreen() {
           disabled={authLoading}
         >
           <Text style={{ fontSize: 15, fontWeight: '600', color: '#fff' }}>
-            {authLoading ? 'Загрузка...' : 'Повторить'}
+            {authLoading ? t('common.loading') : t('common.retry')}
           </Text>
         </TouchableOpacity>
         <TouchableOpacity style={{ marginTop: 16 }} onPress={signOut}>
-          <Text style={{ fontSize: 14, color: colors.textMuted }}>Выйти из аккаунта</Text>
+          <Text style={{ fontSize: 14, color: colors.textMuted }}>{t('menu.logout')}</Text>
         </TouchableOpacity>
       </View>
     );
@@ -110,7 +112,7 @@ export default function LoginScreen() {
       // 'email_unconfirmed'. Показываем понятное сообщение + повторная отправка.
       if (detail && typeof detail === 'object' && detail.code === 'email_unconfirmed') {
         setNeedConfirm(true);
-        setError(detail.message || 'Подтвердите почту, чтобы войти.');
+        setError(detail.message || t('validation.emailUnconfirmed'));
       } else {
         setError(translateError(typeof detail === 'string' ? detail : 'Не удалось войти'));
       }
@@ -130,7 +132,7 @@ export default function LoginScreen() {
     if (submittingRef.current) return;
     setError('');
     if (!email.trim()) { setError('Введите email'); return; }
-    if (password !== confirmPassword) { setError('Пароли не совпадают'); return; }
+    if (password !== confirmPassword) { setError(t('validation.passwordMismatch')); return; }
     const pw = passwordProblem(password);
     if (pw) { setError(pw); return; }
     submittingRef.current = true;
@@ -178,7 +180,7 @@ export default function LoginScreen() {
         <View style={styles.emailIconWrap}>
           <Ionicons name="mail-outline" size={28} color={colors.accent} />
         </View>
-        <Text style={styles.emailTitle}>Подтвердите почту</Text>
+        <Text style={styles.emailTitle}>{t('auth.confirmTitle')}</Text>
         <Text style={styles.emailDesc}>
           Регистрация завершена. Мы отправили письмо со ссылкой для подтверждения и активации аккаунта на адрес:
         </Text>
@@ -211,14 +213,14 @@ export default function LoginScreen() {
         <View style={styles.emailIconWrap}>
           <Ionicons name="mail-outline" size={28} color={colors.accent} />
         </View>
-        <Text style={styles.emailTitle}>Проверьте почту</Text>
+        <Text style={styles.emailTitle}>{t('auth.checkEmailTitle')}</Text>
         <Text style={styles.emailDesc}>Если для этого адреса есть аккаунт с паролем, мы отправили ссылку на</Text>
         <Text style={styles.emailAddress}>{email}</Text>
         <Text style={styles.emailHint}>
           Откройте ссылку из письма и задайте новый пароль. Ссылка действует 1 час.
         </Text>
         <TouchableOpacity style={styles.btn} onPress={() => { setMode('login'); setError(''); }}>
-          <Text style={styles.btnText}>Вернуться ко входу</Text>
+          <Text style={styles.btnText}>{t('auth.backToLogin')}</Text>
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -231,19 +233,19 @@ export default function LoginScreen() {
           <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
             <View style={styles.logoWrap}>
               <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
-              <Text style={styles.logoSub}>Сброс пароля</Text>
+              <Text style={styles.logoSub}>{t('auth.resetTitle')}</Text>
             </View>
             <View style={styles.card}>
               <Text style={[styles.label, { marginBottom: 12 }]}>
-                Укажите email — пришлём ссылку для смены пароля.
+                {t('auth.resetHint')}
               </Text>
               <View style={styles.field}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>{t('auth.email')}</Text>
                 <TextInput
                   style={styles.input}
                   value={email}
                   onChangeText={v => { setEmail(v); setError(''); }}
-                  placeholder="ivan@company.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   placeholderTextColor={colors.textMuted}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -255,10 +257,10 @@ export default function LoginScreen() {
                 <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
               ) : null}
               <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleForgot} disabled={loading}>
-                {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnText}>Отправить ссылку</Text>}
+                {loading ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnText}>{t('auth.resetSubmit')}</Text>}
               </TouchableOpacity>
               <TouchableOpacity style={styles.backLink} onPress={() => { setMode('login'); setError(''); }}>
-                <Text style={styles.backLinkText}>Назад ко входу</Text>
+                <Text style={styles.backLinkText}>{t('auth.resetBack')}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -281,7 +283,7 @@ export default function LoginScreen() {
                 <View style={styles.adminIconWrap}>
                   <Ionicons name="shield-checkmark-outline" size={18} color={colors.accent} />
                 </View>
-                <Text style={styles.adminTitle}>Вход для администратора</Text>
+                <Text style={styles.adminTitle}>{t('auth.adminLogin')}</Text>
               </View>
               <View style={styles.field}>
                 <Text style={styles.label}>Код администратора</Text>
@@ -323,7 +325,7 @@ export default function LoginScreen() {
         <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
           <View style={styles.logoWrap}>
             <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
-            <Text style={styles.logoSub}>Эффективные 1-on-1 встречи с командой</Text>
+            <Text style={styles.logoSub}>{t('auth.tagline')}</Text>
           </View>
 
           <View style={styles.card}>
@@ -335,7 +337,7 @@ export default function LoginScreen() {
                   onPress={() => { setMode(tab); setError(''); }}
                 >
                   <Text style={[styles.tabText, mode === tab && styles.tabTextActive]}>
-                    {tab === 'login' ? 'Войти' : 'Зарегистрироваться'}
+                    {tab === 'login' ? t('auth.tabLogin') : t('auth.tabRegister')}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -357,7 +359,7 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Пароль</Text>
+              <Text style={styles.label}>{t('auth.password')}</Text>
               <TextInput
                 style={styles.input}
                 value={password}
@@ -371,7 +373,7 @@ export default function LoginScreen() {
 
             <View style={[styles.field, mode !== 'register' && styles.fieldHidden]}
               pointerEvents={mode !== 'register' ? 'none' : 'auto'}>
-              <Text style={styles.label}>Повторите пароль</Text>
+              <Text style={styles.label}>{t('auth.repeatPassword')}</Text>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
@@ -392,11 +394,11 @@ export default function LoginScreen() {
             ) : null}
             {needConfirm ? (
               resendState === 'sent' ? (
-                <Text style={[styles.warnText, { marginBottom: 12 }]}>Письмо отправлено повторно.</Text>
+                <Text style={[styles.warnText, { marginBottom: 12 }]}>{t('auth.resendSent')}</Text>
               ) : (
                 <TouchableOpacity style={{ marginBottom: 12 }} onPress={handleResend} disabled={resendState === 'sending'}>
                   <Text style={[styles.adminLinkText, { color: colors.accent, fontWeight: '600' }]}>
-                    {resendState === 'sending' ? 'Отправляем...' : 'Отправить письмо повторно'}
+                    {resendState === 'sending' ? t('common.sending') : t('auth.resendEmail')}
                   </Text>
                 </TouchableOpacity>
               )
@@ -418,7 +420,7 @@ export default function LoginScreen() {
             >
               {loading
                 ? <ActivityIndicator size="small" color="#fff" />
-                : <Text style={styles.btnText}>{mode === 'login' ? 'Войти →' : 'Зарегистрироваться →'}</Text>}
+                : <Text style={styles.btnText}>{mode === 'login' ? `${t('auth.submitLogin')} →` : `${t('auth.submitRegister')} →`}</Text>}
             </TouchableOpacity>
 
             {/* Соц-вход: Яндекс ID — сразу под кнопкой обычного входа.
@@ -427,7 +429,7 @@ export default function LoginScreen() {
               <View style={{ marginTop: 16 }}>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>или</Text>
+                  <Text style={styles.dividerText}>{t('auth.or')}</Text>
                   <View style={styles.dividerLine} />
                 </View>
                 <YandexLoginButton onError={setError} />
@@ -440,7 +442,7 @@ export default function LoginScreen() {
                 style={{ alignItems: 'center', marginTop: 16 }}
                 onPress={() => { setMode('forgot'); setError(''); }}
               >
-                <Text style={styles.adminLinkText}>Забыли пароль?</Text>
+                <Text style={styles.adminLinkText}>{t('auth.forgotPassword')}</Text>
               </TouchableOpacity>
             )}
 
@@ -448,7 +450,7 @@ export default function LoginScreen() {
               style={styles.adminLink}
               onPress={() => { setMode('admin'); setError(''); }}
             >
-              <Text style={styles.adminLinkText}>Вход для администратора</Text>
+              <Text style={styles.adminLinkText}>{t('auth.adminLogin')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

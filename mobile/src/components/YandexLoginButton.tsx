@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Text, Pressable, StyleSheet, View, Linking, ActivityIndicator } from 'react-native';
 import { yandexAuthUrl } from '../lib/api';
+import { useI18n } from '../lib/i18n';
 
 /*
  * Кнопка «Войти с Яндекс ID» для мобильного приложения (официальная
@@ -30,6 +31,7 @@ const BRAND: Record<Variant, {
 export default function YandexLoginButton({
   variant = 'red', onError, disabled = false,
 }: { variant?: Variant; onError?: (msg: string) => void; disabled?: boolean }) {
+  const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const c = BRAND[variant];
 
@@ -42,7 +44,7 @@ export default function YandexLoginButton({
       await Linking.openURL(url);
     } catch (err: any) {
       const detail = err?.response?.data?.detail ?? err?.response?.detail;
-      onError?.(detail?.message || (typeof detail === 'string' ? detail : 'Не удалось открыть вход через Яндекс ID'));
+      onError?.(detail?.message || (typeof detail === 'string' ? detail : t('auth.yandexOpenFailed')));
     } finally {
       // Кнопку разблокируем сразу: пользователь ушёл в браузер и может вернуться.
       setLoading(false);
@@ -52,7 +54,7 @@ export default function YandexLoginButton({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Войти с Яндекс ID"
+      accessibilityLabel={t('auth.yandex')}
       accessibilityState={{ disabled: loading || disabled, busy: loading }}
       onPress={start}
       disabled={loading || disabled}
@@ -67,7 +69,7 @@ export default function YandexLoginButton({
       </View>
       {loading
         ? <ActivityIndicator size="small" color={c.text} />
-        : <Text style={[styles.label, { color: c.text }]}>Войти с Яндекс ID</Text>}
+        : <Text style={[styles.label, { color: c.text }]}>{t('auth.yandex')}</Text>}
     </Pressable>
   );
 }

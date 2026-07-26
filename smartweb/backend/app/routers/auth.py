@@ -115,7 +115,8 @@ def _send_confirmation(bg: BackgroundTasks, db: Session, user: User) -> None:
     if not user.email:
         return
     tok = _issue_token(db, user.id, "confirm", CONFIRM_TTL)
-    bg.add_task(mailer.send_confirmation_email, user.email, user.name or "", tok)
+    bg.add_task(mailer.send_confirmation_email, user.email, user.name or "", tok,
+                user.preferred_language)
 
 
 # ── регистрация / вход ───────────────────────────────────────────────────────
@@ -271,7 +272,8 @@ def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, db: Sess
         logger.info("forgot-password: у аккаунта нет email (id=%s) — письмо не отправляется", user.id)
     else:
         tok = _issue_token(db, user.id, "reset", RESET_TTL)
-        background_tasks.add_task(mailer.send_reset_email, user.email, user.name or "", tok)
+        background_tasks.add_task(mailer.send_reset_email, user.email, user.name or "", tok,
+                                  user.preferred_language)
         logger.info("forgot-password: письмо сброса поставлено в очередь (%s)", email)
     return {"ok": True}
 
