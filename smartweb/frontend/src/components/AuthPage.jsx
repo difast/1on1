@@ -346,9 +346,11 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                 </div>
               )}
 
+              {/* Высота задана явно: кнопка входа, кнопка Яндекс ID и виджет
+                  Telegram должны быть одного размера, а не вразнобой. */}
               <button
                 type="submit" disabled={loading} className="btn btn-accent"
-                style={{ width: '100%', padding: '13px 24px', fontSize: 15, marginTop: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+                style={{ width: '100%', minHeight: 44, padding: '0 24px', fontSize: 15, marginTop: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
               >
                 {loading
                   ? (<><BtnSpinner /> {mode === 'login' ? 'Входим...' : 'Регистрируемся...'}</>)
