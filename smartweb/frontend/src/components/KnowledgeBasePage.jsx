@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getAdminArticles } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 
@@ -39,6 +40,7 @@ const BookIcon = ({ size = 22 }) => (
 )
 
 export default function KnowledgeBasePage({ onClose }) {
+  const { t } = useTranslation()
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
@@ -77,7 +79,7 @@ export default function KnowledgeBasePage({ onClose }) {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
           {selected && (
-            <button onClick={() => setSelected(null)} aria-label="Назад к списку"
+            <button onClick={() => setSelected(null)} aria-label={t('ui.nazad_k_spisku')}
               style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center' }}>
               <svg width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
             </button>
@@ -87,7 +89,7 @@ export default function KnowledgeBasePage({ onClose }) {
             {selected ? `/ ${selected.title}` : '/ База знаний'}
           </span>
         </div>
-        <button onClick={onClose} className="btn btn-secondary btn-sm">✕ Закрыть</button>
+        <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt_2')}</button>
       </div>
 
       {/* Body */}
@@ -96,9 +98,7 @@ export default function KnowledgeBasePage({ onClose }) {
           /* ── Читалка статьи ── */
           <article style={{ maxWidth: 760, width: '100%', margin: '0 auto', padding: '40px 24px 80px' }}>
             <button onClick={() => setSelected(null)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, padding: 0, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}>
-              ← Все статьи
-            </button>
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, padding: 0, marginBottom: 20, display: 'flex', alignItems: 'center', gap: 4 }}>{t('ui.vse_stati')}</button>
             <h1 style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.25, color: 'var(--color-text-primary)', letterSpacing: '-0.02em', margin: '0 0 12px' }}>
               {selected.title}
             </h1>
@@ -107,7 +107,7 @@ export default function KnowledgeBasePage({ onClose }) {
             </p>
             {selected.content
               ? <div style={{ fontSize: 15.5, color: 'var(--color-text-primary)', lineHeight: 1.75, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selected.content}</div>
-              : <p style={{ fontSize: 15, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Содержимое ещё не добавлено.</p>}
+              : <p style={{ fontSize: 15, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('ui.soderzhimoe_esche_ne_dobavleno')}</p>}
           </article>
         ) : (
           /* ── Список + поиск ── */
@@ -118,8 +118,8 @@ export default function KnowledgeBasePage({ onClose }) {
                 <BookIcon />
               </div>
               <div>
-                <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: 0 }}>База знаний</h1>
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Инструкции, процессы и ответы о работе с OneOnOne</p>
+                <h1 style={{ fontSize: 26, fontWeight: 800, letterSpacing: '-0.02em', color: 'var(--color-text-primary)', margin: 0 }}>{t('ui.baza_znaniy')}</h1>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{t('ui.instrukcii_processy_i_otvety_o_rabote')}</p>
               </div>
             </div>
 
@@ -132,10 +132,10 @@ export default function KnowledgeBasePage({ onClose }) {
               <input
                 className="input"
                 style={{ paddingLeft: 40, fontSize: 15, height: 46 }}
-                placeholder="Поиск по базе знаний…"
+                placeholder={t('ui.poisk_po_baze_znaniy_2')}
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                aria-label="Поиск по базе знаний"
+                aria-label={t('ui.poisk_po_baze_znaniy')}
               />
             </div>
 
@@ -144,19 +144,19 @@ export default function KnowledgeBasePage({ onClose }) {
               <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
             ) : error ? (
               <div className="empty-state">
-                <p className="empty-title">Не удалось загрузить</p>
-                <p className="empty-desc">Проверьте соединение и попробуйте позже</p>
+                <p className="empty-title">{t('ui.ne_udalos_zagruzit')}</p>
+                <p className="empty-desc">{t('ui.proverte_soedinenie_i_poprobuyte_pozzhe')}</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon" aria-hidden="true" style={{ color: 'var(--color-accent)' }}><BookIcon size={30} /></div>
-                <p className="empty-title">{search ? 'Ничего не найдено' : 'База знаний пока пуста'}</p>
-                <p className="empty-desc">{search ? 'Попробуйте другой запрос' : 'Статьи появятся здесь, как только их добавят'}</p>
+                <p className="empty-title">{search ? t('common.notFound') : t('ui.baza_znaniy_poka_pusta')}</p>
+                <p className="empty-desc">{search ? t('ui.poprobuyte_drugoy_zapros') : t('ui.stati_poyavyatsya_zdes_kak_tolko_ih')}</p>
               </div>
             ) : (
               <>
                 <p style={{ fontSize: 12, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
-                  {filtered.length} {filtered.length === 1 ? 'статья' : 'статей'}
+                  {filtered.length} {filtered.length === 1 ? t('ui.statya') : t('ui.statey')}
                 </p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {filtered.map(a => (

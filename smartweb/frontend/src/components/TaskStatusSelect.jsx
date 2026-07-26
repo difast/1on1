@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useId, useLayoutEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createPortal } from 'react-dom'
 
 /*
@@ -97,6 +98,7 @@ const DROPDOWN_W = 230
 const MARGIN = 8
 
 export default function TaskStatusSelect({ status, onChange, canMarkDone = true, allowDone }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [pos, setPos] = useState(null)  // { left, top/bottom, placement, width, maxHeight }
   const ref = useRef(null)
@@ -183,9 +185,7 @@ export default function TaskStatusSelect({ status, onChange, canMarkDone = true,
         padding: 6,
         animation: 'popIn 0.15s ease',
       }}>
-      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 10px 6px' }}>
-        Сменить статус
-      </p>
+      <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '4px 10px 6px' }}>{t('ui.smenit_status')}</p>
       {options.map(o => {
         const c = STATUS_CONFIG[o]
         const active = o === (status || 'in_progress')

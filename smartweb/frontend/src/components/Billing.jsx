@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription } from '../api/client'
 import { confirmDialog } from '../lib/ui'
 import useEscapeKey from '../lib/useEscapeKey'
@@ -63,6 +64,7 @@ function planBullets(p) {
 // readOnly — режим Mini App: тариф можно посмотреть, но оплатить и сменить
 // нельзя (по таблице разделения функционала оплата только в веб-версии).
 export default function Billing({ open, currentUser, initialPlan, readOnly = false, onClose }) {
+  const { t } = useTranslation()
   const [me, setMe] = useState(null)
   const [plans, setPlans] = useState([])
   const [busy, setBusy] = useState('')
@@ -132,13 +134,13 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
         return openWidget(p)
       case 'upgrade': {
         // Годовой тариф оплачивается ЦЕЛИКОМ и сразу — рассрочки нет.
-        const extra = d.amount ? ` К оплате сейчас: ${d.amount.toLocaleString('ru-RU')} ₽${d.period === 'year' ? ' за год, единовременно' : ' за месяц'}.` : ''
+        const extra = d.amount ? ` К оплате сейчас: ${d.amount.toLocaleString('ru-RU')} ₽${d.period === 'year' ? t('ui.za_god_edinovremenno') : t('ui.za_mesyac')}.` : ''
         if (await confirmDialog({ title: `Перейти на тариф ${p.name}?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
           return openWidget(p)
         return
       }
       case 'downgrade_free': {
-        if (await confirmDialog({ title: 'Отказаться от подписки?', message: d.message, confirmText: 'Отказаться от подписки', danger: true })) {
+        if (await confirmDialog({ title: t('ui.otkazatsya_ot_podpiski_2'), message: d.message, confirmText: 'Отказаться от подписки', danger: true })) {
           try { await cancelMySubscription(currentUser.id); setMsg('Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт останется без подписки.'); setTimeout(refresh, 1200) }
           catch { setMsg('Не удалось выполнить действие.') }
         }
@@ -173,8 +175,8 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
     <div className="bill-overlay" data-pit-hide onClick={onClose}>
       <div className="bill-modal" onClick={e => e.stopPropagation()}>
         <div className="bill-head">
-          <h2>Мой тариф</h2>
-          <button className="bill-x" aria-label="Закрыть" onClick={onClose}>✕</button>
+          <h2>{t('ui.moy_tarif')}</h2>
+          <button className="bill-x" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
         </div>
 
         <div className="bill-body">
@@ -187,7 +189,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
 
           {/* Current plan + usage */}
           <div className="bill-current">
-            <span className="lbl">Текущий тариф</span>
+            <span className="lbl">{t('ui.tekuschiy_tarif')}</span>
             <span className="bill-chip">{currentName}{inTrial ? ' · пробный период' : ''}</span>
             {meetLimit != null && meetLimit >= 0 && (
               <div className="bill-usage">
@@ -197,12 +199,8 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
             )}
             {/* Grace-период (не прошёл платёж) — предлагаем обновить карту (5.8) */}
             {me?.subscription?.in_grace && (
-              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
-                Последний платёж не прошёл. Обновите карту, чтобы сохранить доступ.
-                <button className="bill-cta" style={{ marginTop: 8 }} disabled={busy || readOnly}
-                  onClick={() => { const cp = plans.find(x => x.code === (me?.subscription?.plan_code || currentCode)); if (cp) openWidget(cp) }}>
-                  Обновить карту
-                </button>
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>{t('ui.posledniy_platezh_ne_proshel_obnovite_kartu')}<button className="bill-cta" style={{ marginTop: 8 }} disabled={busy || readOnly}
+                  onClick={() => { const cp = plans.find(x => x.code === (me?.subscription?.plan_code || currentCode)); if (cp) openWidget(cp) }}>{t('ui.obnovit_kartu')}</button>
               </div>
             )}
             {me?.subscription?.cancel_at_period_end && !me?.subscription?.in_grace && (
@@ -222,16 +220,14 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
               )
             })()}
             {me?.trial_expired && !currentIsPaid && (
-              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>
-                Пробный период (14 дней) истёк. Выберите тариф, чтобы продолжить.
-              </div>
+              <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: 'var(--color-danger-bg, #fdecec)', border: '1px solid var(--color-danger, #dc2626)33', color: 'var(--color-danger, #dc2626)', fontSize: 13 }}>{t('ui.probnyy_period_14_dney_istek_vyberite')}</div>
             )}
           </div>
 
           {/* Персональный менеджер (если назначен админом) */}
           {me?.subscription?.manager_name && (
             <div style={{ margin: '0 0 14px', padding: '12px 14px', borderRadius: 12, background: 'var(--blue-50)', border: '1px solid var(--blue-200)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)', marginBottom: 4 }}>Персональный менеджер</div>
+              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)', marginBottom: 4 }}>{t('ui.personalnyy_menedzher')}</div>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)' }}>{me.subscription.manager_name}</div>
               {me.subscription.manager_contact && (
                 <div style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>Связь: {me.subscription.manager_contact}</div>
@@ -249,12 +245,12 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
               const isFreeState = p.code === 'free'
               return (
                 <div key={p.code} className={`bill-card${popular ? ' popular' : ''}${isCurrent ? ' current' : ''}`}>
-                  {popular && <span className="bill-ribbon">Популярный</span>}
+                  {popular && <span className="bill-ribbon">{t('ui.populyarnyy')}</span>}
                   <span className="bill-name">{p.name}</span>
                   <div className={`bill-price${p.is_enterprise ? ' ent' : ''}`}>
                     {p.is_enterprise || isFreeState
                       ? (l.price_label || 'По запросу')
-                      : <>{(p.price_year || p.price_month).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? ' /год' : ' /мес'}</small></>}
+                      : <>{(p.price_year || p.price_month).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? t('ui.god') : t('ui.mes')}</small></>}
                   </div>
                   <div className="bill-desc">{DESC[p.code] || ''}</div>
                   <ul className="bill-feats">
@@ -264,18 +260,18 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
                     ))}
                   </ul>
                   {isCurrent ? (
-                    <button className="bill-cta muted" disabled>Текущий тариф</button>
+                    <button className="bill-cta muted" disabled>{t('ui.tekuschiy_tarif')}</button>
                   ) : readOnly ? (
-                    <button className="bill-cta muted" disabled>Оформление в веб-версии</button>
+                    <button className="bill-cta muted" disabled>{t('ui.oformlenie_v_veb_versii')}</button>
                   ) : isFreeState ? (
                     currentIsPaid ? (
-                      <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>Отказаться от подписки</button>
+                      <button className="bill-cta ghost" disabled={busy === p.code} onClick={() => handleBuy(p)}>{t('ui.otkazatsya_ot_podpiski')}</button>
                     ) : (
-                      <button className="bill-cta ghost" disabled>Без подписки</button>
+                      <button className="bill-cta ghost" disabled>{t('ui.bez_podpiski')}</button>
                     )
                   ) : (
                     <button className="bill-cta" disabled={busy === p.code} onClick={() => handleBuy(p)}>
-                      {busy === p.code ? '...' : p.is_enterprise ? 'Связаться с нами' : 'Выбрать'}
+                      {busy === p.code ? '...' : p.is_enterprise ? t('ui.svyazatsya_s_nami') : t('ui.vybrat')}
                     </button>
                   )}
                 </div>

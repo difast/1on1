@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
@@ -32,6 +33,7 @@ export function InteractionsModal({
   teamId?: number | null;
   onChanged?: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [items, setItems] = useState<any[] | null>(null);
@@ -61,7 +63,7 @@ export function InteractionsModal({
   const act = async (fn: (id: number, uid: number, ...a: any[]) => Promise<any>, id: number, ...args: any[]) => {
     setBusyId(id);
     try { await fn(id, currentUser.id, ...args); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
     finally { setBusyId(null); }
   };
 
@@ -69,7 +71,7 @@ export function InteractionsModal({
     if (!replyText.trim()) return;
     setBusyId(id);
     try { await replyInteraction(id, currentUser.id, replyText.trim()); setReplyFor(null); setReplyText(''); load(); onChanged?.(); }
-    catch { Alert.alert('Ошибка', 'Не удалось отправить'); }
+    catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить'); }
     finally { setBusyId(null); }
   };
 
@@ -77,10 +79,10 @@ export function InteractionsModal({
     (it.from_user_id === currentUser.id || it.to_user_id === currentUser.id || (it.participants || []).some((p: any) => p.user_id === currentUser.id));
 
   const submitNew = async () => {
-    if (ntype === 'recommendation' && !subjectUser) { Alert.alert('Выберите, кого рекомендуете'); return; }
-    if (ntype === 'discussion' && participants.length === 0) { Alert.alert('Выберите участников'); return; }
-    if (['collab_proposal', 'help_offer', 'consultation'].includes(ntype) && !toUser) { Alert.alert('Выберите получателя'); return; }
-    if (!topic.trim()) { Alert.alert('Укажите тему'); return; }
+    if (ntype === 'recommendation' && !subjectUser) { Alert.alert(t('ui.vyberite_kogo_rekomenduete')); return; }
+    if (ntype === 'discussion' && participants.length === 0) { Alert.alert(t('ui.vyberite_uchastnikov')); return; }
+    if (['collab_proposal', 'help_offer', 'consultation'].includes(ntype) && !toUser) { Alert.alert(t('ui.vyberite_poluchatelya')); return; }
+    if (!topic.trim()) { Alert.alert(t('ui.ukazhite_temu')); return; }
     setCreating(true);
     try {
       await createInteraction({
@@ -94,7 +96,7 @@ export function InteractionsModal({
       });
       setTopic(''); setContext(''); setToUser(null); setParticipants([]); setSubjectUser(null); setTaskId(null);
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось создать'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось создать'); }
     finally { setCreating(false); }
   };
 
@@ -108,7 +110,7 @@ export function InteractionsModal({
             {it.from_user_id === currentUser.id ? `Вы -> ${it.to_user_name || it.subject_user_name || 'обсуждение'}` : `${it.from_user_name || 'Участник'} -> вам`}
           </Text>
           {!!it.context && <Text style={styles.cardContext}>{it.context}</Text>}
-          {!!it.desired_format && <Text style={styles.cardMeta}>Формат: {it.desired_format === 'call' ? 'созвон' : 'письменный ответ'}</Text>}
+          {!!it.desired_format && <Text style={styles.cardMeta}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</Text>}
           {!!it.outcome && <Text style={[styles.cardMeta, { color: colors.success }]}>Итог: {it.outcome}</Text>}
         </View>
         <Text style={styles.badge}>{awaitingMe(it) ? 'Ваш ход' : (STATUS_LABEL[it.status] || it.status)}</Text>
@@ -129,30 +131,30 @@ export function InteractionsModal({
       {awaitingMe(it) && it.type !== 'discussion' && (
         <View style={styles.actions}>
           <TouchableOpacity style={styles.btnPrimary} disabled={busyId === it.id} onPress={() => act(acceptInteraction, it.id)}>
-            <Text style={styles.btnPrimaryText}>Принять</Text>
+            <Text style={styles.btnPrimaryText}>{t('ui.prinyat')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnDanger} disabled={busyId === it.id} onPress={() => act(declineInteraction, it.id)}>
-            <Text style={styles.btnDangerText}>Отклонить</Text>
+            <Text style={styles.btnDangerText}>{t('ui.otklonit')}</Text>
           </TouchableOpacity>
         </View>
       )}
 
       {canReply(it) && it.status !== 'declined' && (replyFor === it.id ? (
         <View style={{ gap: 8, marginTop: 8 }}>
-          <TextInput style={styles.input} value={replyText} onChangeText={setReplyText} placeholder="Ваш ответ..." placeholderTextColor={colors.textMuted} multiline />
+          <TextInput style={styles.input} value={replyText} onChangeText={setReplyText} placeholder={t('ui.vash_otvet')} placeholderTextColor={colors.textMuted} multiline />
           <View style={styles.actions}>
-            <TouchableOpacity style={styles.btnSecondary} onPress={() => { setReplyFor(null); setReplyText(''); }}><Text style={styles.btnSecondaryText}>Отмена</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.btnSecondary} onPress={() => { setReplyFor(null); setReplyText(''); }}><Text style={styles.btnSecondaryText}>{t('ui.otmena')}</Text></TouchableOpacity>
             <TouchableOpacity style={styles.btnPrimary} disabled={busyId === it.id} onPress={() => doReply(it.id)}>
-              {busyId === it.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Ответить</Text>}
+              {busyId === it.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.otvetit')}</Text>}
             </TouchableOpacity>
           </View>
         </View>
       ) : (
         <View style={styles.actions}>
-          <TouchableOpacity style={styles.btnSecondary} onPress={() => { setReplyFor(it.id); setReplyText(''); }}><Text style={styles.btnSecondaryText}>Ответить</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.btnSecondary} onPress={() => { setReplyFor(it.id); setReplyText(''); }}><Text style={styles.btnSecondaryText}>{t('ui.otvetit')}</Text></TouchableOpacity>
           {it.type === 'discussion' && it.from_user_id === currentUser.id && it.status !== 'completed' && (
             <TouchableOpacity style={styles.btnPrimary} disabled={busyId === it.id} onPress={() => act(closeInteraction, it.id, 'decision')}>
-              <Text style={styles.btnPrimaryText}>Решение принято</Text>
+              <Text style={styles.btnPrimaryText}>{t('ui.reshenie_prinyato')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -166,7 +168,7 @@ export function InteractionsModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Взаимодействия</Text>
+          <Text style={styles.headerTitle}>{t('ui.vzaimodeystviya')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
         </View>
         <View style={styles.tabs}>
@@ -180,7 +182,7 @@ export function InteractionsModal({
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {tab === 'new' ? (
             <View style={{ gap: 12 }}>
-              <Text style={styles.label}>Тип</Text>
+              <Text style={styles.label}>{t('ui.tip')}</Text>
               <View style={{ gap: 6 }}>
                 {Object.entries(TYPE_LABEL).map(([k, v]) => (
                   <TouchableOpacity key={k} style={[styles.pick, ntype === k && styles.pickActive]} onPress={() => setNtype(k)}>
@@ -192,7 +194,7 @@ export function InteractionsModal({
 
               {needsRecipient && (
                 <>
-                  <Text style={styles.label}>Получатель</Text>
+                  <Text style={styles.label}>{t('ui.poluchatel')}</Text>
                   {contacts.map(c => (
                     <TouchableOpacity key={c.user_id} style={[styles.pick, toUser === c.user_id && styles.pickActive]} onPress={() => setToUser(c.user_id)}>
                       <Text style={styles.pickName}>{c.name}</Text>{toUser === c.user_id && <Ionicons name="checkmark-circle" size={18} color={colors.accent} />}
@@ -202,7 +204,7 @@ export function InteractionsModal({
               )}
               {ntype === 'recommendation' && (
                 <>
-                  <Text style={styles.label}>Кого рекомендуете (эксперт)</Text>
+                  <Text style={styles.label}>{t('ui.kogo_rekomenduete_ekspert')}</Text>
                   {contacts.map(c => (
                     <TouchableOpacity key={c.user_id} style={[styles.pick, subjectUser === c.user_id && styles.pickActive]} onPress={() => setSubjectUser(c.user_id)}>
                       <Text style={styles.pickName}>{c.name}</Text>{subjectUser === c.user_id && <Ionicons name="checkmark-circle" size={18} color={colors.accent} />}
@@ -212,7 +214,7 @@ export function InteractionsModal({
               )}
               {ntype === 'discussion' && (
                 <>
-                  <Text style={styles.label}>Участники обсуждения</Text>
+                  <Text style={styles.label}>{t('ui.uchastniki_obsuzhdeniya')}</Text>
                   {contacts.map(c => {
                     const on = participants.includes(c.user_id);
                     return (
@@ -226,7 +228,7 @@ export function InteractionsModal({
               )}
               {['collab_proposal', 'help_offer'].includes(ntype) && (tasks || []).length > 0 && (
                 <>
-                  <Text style={styles.label}>Связать с задачей</Text>
+                  <Text style={styles.label}>{t('ui.svyazat_s_zadachey')}</Text>
                   {(tasks || []).map(t => (
                     <TouchableOpacity key={t.id} style={[styles.pick, taskId === t.id && styles.pickActive]} onPress={() => setTaskId(taskId === t.id ? null : t.id)}>
                       <Text style={styles.pickName}>{t.title}</Text>{taskId === t.id && <Ionicons name="checkmark-circle" size={18} color={colors.accent} />}
@@ -236,28 +238,28 @@ export function InteractionsModal({
               )}
               {ntype === 'consultation' && (
                 <>
-                  <Text style={styles.label}>Формат</Text>
+                  <Text style={styles.label}>{t('ui.format')}</Text>
                   <View style={{ flexDirection: 'row', gap: 8 }}>
-                    <TouchableOpacity style={[styles.pick, { flex: 1 }, format === 'text' && styles.pickActive]} onPress={() => setFormat('text')}><Text style={styles.pickName}>Письменно</Text></TouchableOpacity>
-                    <TouchableOpacity style={[styles.pick, { flex: 1 }, format === 'call' && styles.pickActive]} onPress={() => setFormat('call')}><Text style={styles.pickName}>Созвон</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.pick, { flex: 1 }, format === 'text' && styles.pickActive]} onPress={() => setFormat('text')}><Text style={styles.pickName}>{t('ui.pismenno')}</Text></TouchableOpacity>
+                    <TouchableOpacity style={[styles.pick, { flex: 1 }, format === 'call' && styles.pickActive]} onPress={() => setFormat('call')}><Text style={styles.pickName}>{t('ui.sozvon')}</Text></TouchableOpacity>
                   </View>
                 </>
               )}
 
-              <Text style={styles.label}>Тема</Text>
-              <TextInput style={styles.input} value={topic} onChangeText={setTopic} placeholder="Кратко о сути" placeholderTextColor={colors.textMuted} />
-              <Text style={styles.label}>Контекст (необязательно)</Text>
-              <TextInput style={[styles.input, { minHeight: 70 }]} value={context} onChangeText={setContext} placeholder="Подробности" placeholderTextColor={colors.textMuted} multiline />
+              <Text style={styles.label}>{t('ui.tema')}</Text>
+              <TextInput style={styles.input} value={topic} onChangeText={setTopic} placeholder={t('ui.kratko_o_suti')} placeholderTextColor={colors.textMuted} />
+              <Text style={styles.label}>{t('ui.kontekst_neobyazatelno')}</Text>
+              <TextInput style={[styles.input, { minHeight: 70 }]} value={context} onChangeText={setContext} placeholder={t('ui.podrobnosti')} placeholderTextColor={colors.textMuted} multiline />
 
               <TouchableOpacity style={styles.btnPrimaryWide} disabled={creating} onPress={submitNew}>
-                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Создать</Text>}
+                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.sozdat_2')}</Text>}
               </TouchableOpacity>
             </View>
           ) : items === null ? (
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : (() => {
             const list = tab === 'inbox' ? incoming : all;
-            if (list.length === 0) return <Text style={styles.empty}>{tab === 'inbox' ? 'Нет входящих, ожидающих ответа' : 'Взаимодействий пока нет'}</Text>;
+            if (list.length === 0) return <Text style={styles.empty}>{tab === 'inbox' ? t('ui.net_vhodyaschih_ozhidayuschih_otveta') : t('ui.vzaimodeystviy_poka_net')}</Text>;
             return list.map(renderCard);
           })()}
         </ScrollView>

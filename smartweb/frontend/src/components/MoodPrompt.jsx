@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { submitMood, getMoodToday } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 
@@ -12,6 +13,7 @@ const QUESTIONS = [
 const todayKey = () => `mood_submitted_${new Date().toDateString()}`
 
 export default function MoodPrompt({ teamId, user }) {
+  const { t } = useTranslation()
   const [visible, setVisible] = useState(false)
   const [open, setOpen] = useState(false)
   useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
@@ -110,8 +112,8 @@ export default function MoodPrompt({ teamId, user }) {
               <path d="M19 12.5A8 8 0 1 1 9.5 3a6 6 0 0 0 9.5 9.5z" fill="#3B6EF0" opacity="0.9"/>
             </svg>
           <div style={{ flex: 1 }}>
-            <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>Как прошёл день?</p>
-            <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>Мини-опрос · 1 минута · анонимно</p>
+            <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--color-text-primary)' }}>{t('ui.kak_proshel_den')}</p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2 }}>{t('ui.mini_opros_1_minuta_anonimno')}</p>
           </div>
           <button
             onClick={e => { e.stopPropagation(); setVisible(false) }}
@@ -147,9 +149,7 @@ export default function MoodPrompt({ teamId, user }) {
                     </svg>
                   )}
                 </div>
-                <p style={{ fontWeight: 700, fontSize: 17, color: 'var(--color-text-primary)', marginBottom: 8 }}>
-                  Спасибо за честный ответ!
-                </p>
+                <p style={{ fontWeight: 700, fontSize: 17, color: 'var(--color-text-primary)', marginBottom: 8 }}>{t('ui.spasibo_za_chestnyy_otvet')}</p>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
                   Ваш отзыв анонимно обработан ИИ и добавлен в аналитику команды.
                   Тимлид видит только обобщённые тренды, не ваши слова.
@@ -159,12 +159,10 @@ export default function MoodPrompt({ teamId, user }) {
               <>
                 <div className="modal-header" style={{ paddingBottom: 12 }}>
                   <div>
-                    <span className="modal-title">Опрос по итогам дня</span>
-                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
-                      Анонимно · ответы анализирует ИИ
-                    </p>
+                    <span className="modal-title">{t('ui.opros_po_itogam_dnya')}</span>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.anonimno_otvety_analiziruet_ii')}</p>
                   </div>
-                  <button className="modal-close" aria-label="Закрыть" onClick={() => setOpen(false)}>✕</button>
+                  <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}>✕</button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0 8px' }}>
@@ -186,16 +184,14 @@ export default function MoodPrompt({ teamId, user }) {
                 </div>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 8 }}>
-                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flex: 1 }}>
-                    Имя не сохраняется
-                  </span>
+                  <span style={{ fontSize: 11, color: 'var(--color-text-muted)', flex: 1 }}>{t('ui.imya_ne_sohranyaetsya')}</span>
                   <button
                     onClick={handleSubmit}
                     disabled={!canSubmit || submitting}
                     className="btn btn-accent"
                     style={{ minWidth: 120, opacity: canSubmit ? 1 : 0.5 }}
                   >
-                    {submitting ? 'Анализ ИИ...' : 'Отправить'}
+                    {submitting ? t('ui.analiz_ii') : t('common.send')}
                   </button>
                 </div>
               </>

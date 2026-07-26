@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
 } from 'react-native';
@@ -12,6 +13,7 @@ export function LegalDocsModal({ visible, initialKey, onClose }: {
   initialKey?: string;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [active, setActive] = useState(initialKey || LEGAL_DOCS[0].key);
@@ -51,7 +53,7 @@ export function LegalDocsModal({ visible, initialKey, onClose }: {
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={styles.root}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Документы</Text>
+          <Text style={styles.headerTitle}>{t('ui.dokumenty')}</Text>
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Ionicons name="close" size={22} color={colors.textPrimary} />
           </TouchableOpacity>

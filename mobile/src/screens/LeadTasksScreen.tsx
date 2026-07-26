@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, TextInput, Alert,
@@ -40,6 +41,7 @@ function isOverdue(task: any): boolean {
 }
 
 export default function LeadTasksScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -154,15 +156,15 @@ export default function LeadTasksScreen() {
     } catch {
       setTasks(prev => prev.filter(t => t.id !== tempId));
       setFormTitle(title); setFormDue(due_date || ''); setShowForm(true);
-      Alert.alert('Ошибка', 'Не удалось создать задачу');
+      Alert.alert(t('ui.oshibka'), 'Не удалось создать задачу');
     }
     finally { setFormLoading(false); }
   };
 
   const handleDelete = (taskId: number) => {
-    Alert.alert('Удалить задачу?', undefined, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('ui.udalit_zadachu'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try { await deleteTask(taskId); setTasks(prev => prev.filter(t => t.id !== taskId)); } catch {}
       }},
     ]);
@@ -195,7 +197,7 @@ export default function LeadTasksScreen() {
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Задачи</Text>
+          <Text style={styles.headerTitle}>{t('ui.zadachi')}</Text>
           {tab === 'mine' && tasks.length > 0 && (
             <Text style={styles.headerSub}>{done.length} из {tasks.length} готово</Text>
           )}
@@ -218,13 +220,13 @@ export default function LeadTasksScreen() {
           style={[styles.subTab, tab === 'mine' && styles.subTabActive]}
           onPress={() => setTab('mine')}
         >
-          <Text style={[styles.subTabText, tab === 'mine' && styles.subTabTextActive]}>Мои задачи</Text>
+          <Text style={[styles.subTabText, tab === 'mine' && styles.subTabTextActive]}>{t('ui.moi_zadachi')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.subTab, tab === 'members' && styles.subTabActive]}
           onPress={() => setTab('members')}
         >
-          <Text style={[styles.subTabText, tab === 'members' && styles.subTabTextActive]}>Участников</Text>
+          <Text style={[styles.subTabText, tab === 'members' && styles.subTabTextActive]}>{t('ui.uchastnikov')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -240,37 +242,37 @@ export default function LeadTasksScreen() {
               <View style={styles.formCard}>
                 <TextInput
                   style={styles.formInput} value={formTitle} onChangeText={setFormTitle}
-                  placeholder="Название задачи" placeholderTextColor={colors.textMuted} autoFocus
+                  placeholder={t('ui.nazvanie_zadachi')} placeholderTextColor={colors.textMuted} autoFocus
                 />
                 <TextInput
                   style={styles.formInput} value={formDue} onChangeText={setFormDue}
-                  placeholder="Срок: ГГГГ-ММ-ДД (необязательно)" placeholderTextColor={colors.textMuted}
+                  placeholder={t('ui.srok_gggg_mm_dd_neobyazatelno')} placeholderTextColor={colors.textMuted}
                 />
                 <View style={styles.formRow}>
                   <TouchableOpacity style={styles.formBtnSecondary}
                     onPress={() => { setShowForm(false); setFormTitle(''); setFormDue(''); }}>
-                    <Text style={styles.formBtnSecondaryText}>Отмена</Text>
+                    <Text style={styles.formBtnSecondaryText}>{t('ui.otmena')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={[styles.formBtnPrimary, formLoading && styles.btnDisabled, { flexDirection: 'row', gap: 8 }]}
                     onPress={handleCreate} disabled={formLoading}>
                     {formLoading && <ActivityIndicator size="small" color="#fff" />}
-                    <Text style={styles.formBtnPrimaryText}>Добавить</Text>
+                    <Text style={styles.formBtnPrimaryText}>{t('ui.dobavit')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             )}
             {tasks.length === 0 && !showForm && (
-              <EmptyState icon="document-text-outline" title="Нет личных задач" description="Добавьте задачи для себя" />
+              <EmptyState icon="document-text-outline" title={t('ui.net_lichnyh_zadach')} description="Добавьте задачи для себя" />
             )}
             {active.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Активные</Text>
+                <Text style={styles.sectionTitle}>{t('ui.aktivnye')}</Text>
                 {active.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id), (u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))))}
               </View>
             )}
             {done.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Выполненные</Text>
+                <Text style={styles.sectionTitle}>{t('ui.vypolnennye')}</Text>
                 {done.map(t => renderTask(t, (s) => setTaskStatus(t, s), () => handleDelete(t.id), (u) => setTasks(prev => prev.map(x => x.id === u.id ? u : x))))}
               </View>
             )}
@@ -281,7 +283,7 @@ export default function LeadTasksScreen() {
           <>
             {teamsLoading && <Spinner />}
             {!teamsLoading && teams.length === 0 && (
-              <EmptyState icon="people-outline" title="Нет команд" description="Создайте команду чтобы добавлять участников" />
+              <EmptyState icon="people-outline" title={t('ui.net_komand')} description="Создайте команду чтобы добавлять участников" />
             )}
             {teams.map((team: any) => {
               const members = (team.members || []).filter((m: any) => m.user_id !== user!.id);
@@ -317,10 +319,10 @@ export default function LeadTasksScreen() {
                         {isExpanded && (
                           <View style={styles.memberTasksList}>
                             {mTasks === undefined && (
-                              <Text style={styles.loadingText}>Загрузка...</Text>
+                              <Text style={styles.loadingText}>{t('ui.zagruzka')}</Text>
                             )}
                             {mTasks !== undefined && mTasks.length === 0 && (
-                              <Text style={styles.emptyText}>Нет задач</Text>
+                              <Text style={styles.emptyText}>{t('ui.net_zadach')}</Text>
                             )}
                             {mTasks !== undefined && mTasks.map((t: any) =>
                               renderTask(
@@ -404,6 +406,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 });
 
 function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', contacts = [] }: { task: any; onSetStatus: (s: TaskStatus) => void; onDel?: () => void; onTaskUpdated?: (u: any) => void; role?: string; contacts?: { user_id: number; name: string }[] }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const { user } = useAuth();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -448,12 +451,12 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
       // Недоступно по тарифу -> понятное сообщение вместо технической ошибки.
       const fl = parseFeatureLock(err);
       if (fl) {
-        Alert.alert('Функция недоступна', fl.message, [
-          { text: 'Закрыть', style: 'cancel' },
-          { text: 'Тарифы', onPress: openPricing },
+        Alert.alert(t('ui.funkciya_nedostupna'), fl.message, [
+          { text: t('common.close'), style: 'cancel' },
+          { text: t('ui.tarify'), onPress: openPricing },
         ]);
       } else {
-        Alert.alert('Ошибка', 'Не удалось получить AI советы');
+        Alert.alert(t('ui.oshibka'), 'Не удалось получить AI советы');
       }
     }
     finally { setAiLoading(false); }
@@ -476,7 +479,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
         <Text style={[styles.taskTitle, st === 'done' && styles.taskDone]}>{task.title || task.description}</Text>
         {task.due_date && (
           <Text style={[styles.taskDue, overdue && styles.taskOverdue]}>
-            {overdue ? '⚠ Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+            {overdue ? t('ui.prosrocheno_2') : t('ui.do')}{new Date(task.due_date).toLocaleDateString('ru-RU')}
           </Text>
         )}
         {subtasks.length > 0 && (
@@ -500,7 +503,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
               <TouchableOpacity style={[styles.aiBtn, { borderColor: aiLoading ? colors.border : colors.accent, backgroundColor: colors.accentLight }]} onPress={onAI} disabled={aiLoading}>
                 <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
                 <Text style={[styles.aiBtnText, { color: colors.accent }]}>
-                  {aiLoading ? 'AI генерирует...' : aiSteps.length > 0 ? 'Сбросить AI шаги' : 'AI-советы (4 шага)'}
+                  {aiLoading ? 'AI генерирует...' : aiSteps.length > 0 ? t('ui.sbrosit_ai_shagi') : t('ui.ai_sovety_4_shaga')}
                 </Text>
               </TouchableOpacity>
             )}

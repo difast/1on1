@@ -440,7 +440,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
           setMode('login')
           setPassword(''); setConfirmPassword('')
           setNeedConfirm(true)
-          setError('Подтвердите почту, чтобы войти. Мы отправили ссылку на ' + confirmEmail + '.')
+          setError(t('ui.podtverdite_pochtu_chtoby_voyti_my_otpravili') + confirmEmail + '.')
         }}
         onClose={() => setConfirmEmail('')}
       />

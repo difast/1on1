@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl, ActivityIndicator, Alert,
@@ -34,6 +35,7 @@ const TABS: { id: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[] =
 ];
 
 export default function AdminScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { exitAdmin } = useAuth();
@@ -165,7 +167,7 @@ export default function AdminScreen() {
         ...prev,
         users: prev.users.map((x: any) => x.id === u.id ? { ...x, is_blocked: !u.is_blocked } : x),
       }));
-    } catch { Alert.alert('Ошибка', 'Не удалось изменить статус'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось изменить статус'); }
   };
 
   const openTicket = (t: any) => {
@@ -182,7 +184,7 @@ export default function AdminScreen() {
       setTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
       setReplyText('');
       setTimeout(() => ticketScrollRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch { Alert.alert('Ошибка', 'Не удалось отправить ответ'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить ответ'); }
     finally { setReplying(false); }
   };
 
@@ -200,9 +202,9 @@ export default function AdminScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Выйти из админ-панели', 'Вернуться к обычному входу?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: () => exitAdmin() },
+    Alert.alert(t('ui.vyyti_iz_admin_paneli'), 'Вернуться к обычному входу?', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('menu.logout'), style: 'destructive', onPress: () => exitAdmin() },
     ]);
   };
 
@@ -211,8 +213,8 @@ export default function AdminScreen() {
       {/* Header */}
       <View style={styles.header}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.headerTitle}>Админ-панель</Text>
-          <Text style={styles.headerSub}>Управление платформой OneOnOne</Text>
+          <Text style={styles.headerTitle}>{t('ui.admin_panel')}</Text>
+          <Text style={styles.headerSub}>{t('ui.upravlenie_platformoy_oneonone')}</Text>
         </View>
         <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout}>
           <Ionicons name="exit-outline" size={18} color={colors.danger} />
@@ -246,13 +248,13 @@ export default function AdminScreen() {
           {tab === 'users' && statsError && (
             <View style={styles.emptyWrap}>
               <Ionicons name="cloud-offline-outline" size={40} color={colors.textMuted} />
-              <Text style={styles.emptyText}>Не удалось загрузить данные</Text>
-              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 4 }]}>Сервер недоступен или запрос завис</Text>
+              <Text style={styles.emptyText}>{t('ui.ne_udalos_zagruzit_dannye')}</Text>
+              <Text style={[styles.emptyText, { fontSize: 13, marginTop: 4 }]}>{t('ui.server_nedostupen_ili_zapros_zavis')}</Text>
               <TouchableOpacity
                 style={styles.retryBtn}
                 onPress={() => { setLoading(true); loadStats(); }}
               >
-                <Text style={styles.retryBtnText}>Повторить</Text>
+                <Text style={styles.retryBtnText}>{t('ui.povtorit')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -274,12 +276,12 @@ export default function AdminScreen() {
             >
               <View style={styles.statsGrid}>
                 {[
-                  { label: 'Пользователей', value: stats.total_users },
-                  { label: 'Тимлидов', value: stats.total_leads },
-                  { label: 'Участников', value: stats.total_members },
-                  { label: 'Команд', value: stats.total_teams },
-                  { label: 'Встреч', value: stats.total_meetings },
-                  { label: 'Звонков', value: stats.total_calls },
+                  { label: t('ui.polzovateley'), value: stats.total_users },
+                  { label: t('ui.timlidov'), value: stats.total_leads },
+                  { label: t('ui.uchastnikov'), value: stats.total_members },
+                  { label: t('ui.komand'), value: stats.total_teams },
+                  { label: t('ui.vstrech'), value: stats.total_meetings },
+                  { label: t('ui.zvonkov'), value: stats.total_calls },
                 ].map(s => (
                   <View key={s.label} style={styles.statCard}>
                     <Text style={styles.statValue}>{s.value ?? 0}</Text>
@@ -294,7 +296,7 @@ export default function AdminScreen() {
                   style={styles.searchInput}
                   value={search}
                   onChangeText={setSearch}
-                  placeholder="Поиск по имени, email, должности или ID"
+                  placeholder={t('ui.poisk_po_imeni_email_dolzhnosti_ili')}
                   placeholderTextColor={colors.textMuted}
                   autoCapitalize="none"
                 />
@@ -330,7 +332,7 @@ export default function AdminScreen() {
                     </View>
                   </View>
                   <View style={styles.manageHintPill}>
-                    <Text style={styles.manageHintPillText}>Управление</Text>
+                    <Text style={styles.manageHintPillText}>{t('ui.upravlenie')}</Text>
                     <Ionicons name="chevron-forward" size={14} color={colors.accent} />
                   </View>
                 </TouchableOpacity>
@@ -348,7 +350,7 @@ export default function AdminScreen() {
               {tickets.length === 0 ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="chatbubbles-outline" size={40} color={colors.textMuted} />
-                  <Text style={styles.emptyText}>Обращений пока нет</Text>
+                  <Text style={styles.emptyText}>{t('ui.obrascheniy_poka_net')}</Text>
                 </View>
               ) : tickets.map(t => (
                 <TouchableOpacity key={t.id} style={styles.ticketCard} onPress={() => openTicket(t)}>
@@ -378,11 +380,11 @@ export default function AdminScreen() {
               <ScrollView ref={ticketScrollRef} contentContainerStyle={styles.threadContent}>
                 {/* Full user info for the admin */}
                 <View style={styles.userInfoCard}>
-                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Пользователь</Text><Text style={styles.userInfoV}>{activeTicket.user_name}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.polzovatel')}</Text><Text style={styles.userInfoV}>{activeTicket.user_name}</Text></View>
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>ID</Text><Text style={styles.userInfoV}>{activeTicket.user_id}</Text></View>
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Email</Text><Text style={styles.userInfoV} numberOfLines={1}>{activeTicket.user_email}</Text></View>
-                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Роль</Text><Text style={styles.userInfoV}>{activeTicket.user_role === 'team_lead' ? 'Тимлид' : activeTicket.user_role === 'member' ? 'Участник' : activeTicket.user_role}</Text></View>
-                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Обращение</Text><Text style={styles.userInfoV}>#{activeTicket.id}{activeTicket.created_at ? ` · ${new Date(activeTicket.created_at).toLocaleDateString('ru-RU')}` : ''}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.rol')}</Text><Text style={styles.userInfoV}>{activeTicket.user_role === 'team_lead' ? 'Тимлид' : activeTicket.user_role === 'member' ? 'Участник' : activeTicket.user_role}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.obraschenie')}</Text><Text style={styles.userInfoV}>#{activeTicket.id}{activeTicket.created_at ? ` · ${new Date(activeTicket.created_at).toLocaleDateString('ru-RU')}` : ''}</Text></View>
                 </View>
                 <View style={[styles.bubble, styles.bubbleUser]}>
                   <Text style={styles.bubbleBody}>{activeTicket.body}</Text>
@@ -398,7 +400,7 @@ export default function AdminScreen() {
                   style={styles.replyInput}
                   value={replyText}
                   onChangeText={setReplyText}
-                  placeholder="Ответить пользователю..."
+                  placeholder={t('ui.otvetit_polzovatelyu')}
                   placeholderTextColor={colors.textMuted}
                   multiline
                 />
@@ -419,25 +421,25 @@ export default function AdminScreen() {
               <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="megaphone-outline" size={18} color={colors.accent} />
-                  <Text style={styles.infoBannerText}>Сообщение придёт всем пользователям как уведомление с красной плашкой</Text>
+                  <Text style={styles.infoBannerText}>{t('ui.soobschenie_pridet_vsem_polzovatelyam_kak_uved')}</Text>
                 </View>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Заголовок</Text>
+                  <Text style={styles.label}>{t('ui.zagolovok')}</Text>
                   <TextInput
                     style={styles.input}
                     value={bcTitle}
                     onChangeText={setBcTitle}
-                    placeholder="Например: Плановые работы"
+                    placeholder={t('ui.naprimer_planovye_raboty')}
                     placeholderTextColor={colors.textMuted}
                   />
                 </View>
                 <View style={styles.field}>
-                  <Text style={styles.label}>Текст (необязательно)</Text>
+                  <Text style={styles.label}>{t('ui.tekst_neobyazatelno')}</Text>
                   <TextInput
                     style={[styles.input, styles.textarea]}
                     value={bcBody}
                     onChangeText={setBcBody}
-                    placeholder="Подробности объявления..."
+                    placeholder={t('ui.podrobnosti_obyavleniya')}
                     placeholderTextColor={colors.textMuted}
                     multiline
                     textAlignVertical="top"
@@ -446,18 +448,18 @@ export default function AdminScreen() {
                 {bcResult === 'ok' && (
                   <View style={styles.successBanner}>
                     <Ionicons name="checkmark-circle" size={18} color={colors.success} />
-                    <Text style={styles.successBannerText}>Рассылка отправлена всем пользователям</Text>
+                    <Text style={styles.successBannerText}>{t('ui.rassylka_otpravlena_vsem_polzovatelyam')}</Text>
                   </View>
                 )}
                 {bcResult === 'error' && (
-                  <View style={styles.errorBox}><Text style={styles.errorText}>Ошибка при отправке</Text></View>
+                  <View style={styles.errorBox}><Text style={styles.errorText}>{t('ui.oshibka_pri_otpravke')}</Text></View>
                 )}
                 <TouchableOpacity
                   style={[styles.submitBtn, (bcSending || !bcTitle.trim()) && styles.btnDisabled]}
                   onPress={handleBroadcast}
                   disabled={bcSending || !bcTitle.trim()}
                 >
-                  <Text style={styles.submitBtnText}>{bcSending ? 'Отправка...' : 'Отправить всем'}</Text>
+                  <Text style={styles.submitBtnText}>{bcSending ? t('ui.otpravka') : t('ui.otpravit_vsem')}</Text>
                 </TouchableOpacity>
               </ScrollView>
             </KeyboardAvoidingView>
@@ -469,7 +471,7 @@ export default function AdminScreen() {
               <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]} keyboardShouldPersistTaps="handled">
                 <View style={styles.infoBanner}>
                   <Ionicons name="construct-outline" size={18} color={colors.accent} />
-                  <Text style={styles.infoBannerText}>Выбирайте людей и команды по имени — ID подставляются автоматически.</Text>
+                  <Text style={styles.infoBannerText}>{t('ui.vybirayte_lyudey_i_komandy_po_imeni')}</Text>
                 </View>
 
                 {mgMsg ? (
@@ -479,43 +481,43 @@ export default function AdminScreen() {
                 ) : null}
 
                 {(() => {
-                  const userItems = (stats?.users ?? []).map((u: any) => ({ id: u.id, label: u.name, sub: `${u.email} · ${u.role === 'team_lead' ? 'тимлид' : 'участник'}` }));
+                  const userItems = (stats?.users ?? []).map((u: any) => ({ id: u.id, label: u.name, sub: `${u.email} · ${u.role === 'team_lead' ? t('ui.timlid') : t('ui.uchastnik_3')}` }));
                   const teamItems = mgTeamsData.map((t: any) => ({ id: t.id, label: t.name, sub: `тимлид #${t.team_lead_id}` }));
                   const meetTeam = mgTeamsData.find((t: any) => t.id === mgMeetTeam);
                   const memberItems = (meetTeam?.members ?? []).map((m: any) => ({ id: m.user_id, label: m.user_name, sub: m.role }));
                   return (
                   <>
                     {/* Create team */}
-                    <Text style={styles.sectionLabel}>Создать команду</Text>
-                    <View style={styles.field}><Text style={styles.label}>Название</Text>
-                      <TextInput style={styles.input} value={mgTeamName} onChangeText={setMgTeamName} placeholder="Название команды" placeholderTextColor={colors.textMuted} />
+                    <Text style={styles.sectionLabel}>{t('ui.sozdat_komandu')}</Text>
+                    <View style={styles.field}><Text style={styles.label}>{t('ui.nazvanie')}</Text>
+                      <TextInput style={styles.input} value={mgTeamName} onChangeText={setMgTeamName} placeholder={t('ui.nazvanie_komandy')} placeholderTextColor={colors.textMuted} />
                     </View>
-                    <EntityPicker label="Тимлид" placeholder="Выберите тимлида" valueId={mgTeamLead} items={userItems} onSelect={setMgTeamLead} />
+                    <EntityPicker label={t('ui.timlid')} placeholder={t('ui.vyberite_timlida')} valueId={mgTeamLead} items={userItems} onSelect={setMgTeamLead} />
                     <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTeam} disabled={mgBusy}>
-                      <Text style={styles.submitBtnText}>Создать команду</Text>
+                      <Text style={styles.submitBtnText}>{t('ui.sozdat_komandu')}</Text>
                     </TouchableOpacity>
 
                     {/* Create task */}
-                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать задачу</Text>
-                    <View style={styles.field}><Text style={styles.label}>Задача</Text>
-                      <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder="Текст задачи" placeholderTextColor={colors.textMuted} />
+                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>{t('ui.sozdat_zadachu')}</Text>
+                    <View style={styles.field}><Text style={styles.label}>{t('ui.zadacha')}</Text>
+                      <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder={t('ui.tekst_zadachi')} placeholderTextColor={colors.textMuted} />
                     </View>
-                    <EntityPicker label="Исполнитель" placeholder="Выберите пользователя" valueId={mgTaskAssignee} items={userItems} onSelect={setMgTaskAssignee} />
-                    <EntityPicker label="Команда (необязательно)" placeholder="Без команды" valueId={mgTaskTeam} items={teamItems} onSelect={setMgTaskTeam} emptyText="Команды не загружены" />
+                    <EntityPicker label={t('ui.ispolnitel')} placeholder={t('ui.vyberite_polzovatelya')} valueId={mgTaskAssignee} items={userItems} onSelect={setMgTaskAssignee} />
+                    <EntityPicker label={t('ui.komanda_neobyazatelno')} placeholder={t('ui.bez_komandy')} valueId={mgTaskTeam} items={teamItems} onSelect={setMgTaskTeam} emptyText="Команды не загружены" />
                     <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTask} disabled={mgBusy}>
-                      <Text style={styles.submitBtnText}>Создать задачу</Text>
+                      <Text style={styles.submitBtnText}>{t('ui.sozdat_zadachu')}</Text>
                     </TouchableOpacity>
 
                     {/* Create meeting */}
-                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>Создать встречу</Text>
-                    <EntityPicker label="Команда" placeholder="Выберите команду" valueId={mgMeetTeam} items={teamItems} onSelect={(id) => { setMgMeetTeam(id); setMgMeetMember(null); }} emptyText="Команды не загружены" />
-                    <EntityPicker label="Участник" placeholder={mgMeetTeam ? 'Выберите участника' : 'Сначала выберите команду'} valueId={mgMeetMember} items={memberItems} onSelect={setMgMeetMember} emptyText="В команде нет участников" />
-                    <View style={styles.field}><Text style={styles.label}>Дата и время</Text>
+                    <Text style={[styles.sectionLabel, { marginTop: 18 }]}>{t('ui.sozdat_vstrechu')}</Text>
+                    <EntityPicker label={t('ui.komanda')} placeholder={t('ui.vyberite_komandu')} valueId={mgMeetTeam} items={teamItems} onSelect={(id) => { setMgMeetTeam(id); setMgMeetMember(null); }} emptyText="Команды не загружены" />
+                    <EntityPicker label={t('ui.uchastnik')} placeholder={mgMeetTeam ? t('ui.vyberite_uchastnika_3') : t('ui.snachala_vyberite_komandu')} valueId={mgMeetMember} items={memberItems} onSelect={setMgMeetMember} emptyText="В команде нет участников" />
+                    <View style={styles.field}><Text style={styles.label}>{t('ui.data_i_vremya')}</Text>
                       <DateTimePickerField value={mgMeetDate} onChange={setMgMeetDate} />
                     </View>
-                    <Text style={styles.hintNote}>Тимлид встречи определяется автоматически по выбранной команде.</Text>
+                    <Text style={styles.hintNote}>{t('ui.timlid_vstrechi_opredelyaetsya_avtomaticheski')}</Text>
                     <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateMeeting} disabled={mgBusy}>
-                      <Text style={styles.submitBtnText}>Создать встречу</Text>
+                      <Text style={styles.submitBtnText}>{t('ui.sozdat_vstrechu')}</Text>
                     </TouchableOpacity>
                   </>
                   );
@@ -533,37 +535,37 @@ export default function AdminScreen() {
               {!health ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="warning-outline" size={40} color={colors.warning} />
-                  <Text style={styles.emptyText}>Не удалось загрузить данные</Text>
+                  <Text style={styles.emptyText}>{t('ui.ne_udalos_zagruzit_dannye')}</Text>
                 </View>
               ) : (
                 <>
                   <View style={[styles.healthStatus, health.status === 'ok' ? styles.healthOk : styles.healthWarn]}>
                     <View style={[styles.healthDot, { backgroundColor: health.status === 'ok' ? '#22c55e' : '#f59e0b' }]} />
                     <Text style={styles.healthStatusText}>
-                      {health.status === 'ok' ? 'Все системы работают' : 'Есть проблемы'}
+                      {health.status === 'ok' ? t('ui.vse_sistemy_rabotayut') : t('ui.est_problemy')}
                     </Text>
                   </View>
 
                   <View style={styles.statsGrid}>
                     <View style={styles.statCard}>
                       <Text style={styles.statValue}>{Math.floor((health.uptime_seconds ?? 0) / 3600)}ч</Text>
-                      <Text style={styles.statLabel}>Аптайм</Text>
+                      <Text style={styles.statLabel}>{t('ui.aptaym')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statValue}>{health.db_latency_ms ?? '—'}мс</Text>
-                      <Text style={styles.statLabel}>Задержка БД</Text>
+                      <Text style={styles.statLabel}>{t('ui.zaderzhka_bd')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statValue}>{health.stats?.users ?? '—'}</Text>
-                      <Text style={styles.statLabel}>Пользователей</Text>
+                      <Text style={styles.statLabel}>{t('ui.polzovateley')}</Text>
                     </View>
                     <View style={styles.statCard}>
                       <Text style={styles.statValue}>{health.stats?.open_tickets ?? '—'}</Text>
-                      <Text style={styles.statLabel}>Открытых обращений</Text>
+                      <Text style={styles.statLabel}>{t('ui.otkrytyh_obrascheniy')}</Text>
                     </View>
                   </View>
 
-                  <Text style={styles.sectionLabel}>Сервисы</Text>
+                  <Text style={styles.sectionLabel}>{t('ui.servisy')}</Text>
                   {Object.entries(health.services ?? {}).map(([name, status]: any) => {
                     const ok = status === 'ok' || status === 'up';
                     const notConfigured = status === 'not_configured';
@@ -589,12 +591,12 @@ export default function AdminScreen() {
             <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomPad + 40 }]}>
               <View style={styles.infoBanner}>
                 <Ionicons name="information-circle-outline" size={18} color={colors.accent} />
-                <Text style={styles.infoBannerText}>Монетизация пока не подключена</Text>
+                <Text style={styles.infoBannerText}>{t('ui.monetizaciya_poka_ne_podklyuchena')}</Text>
               </View>
               {[
-                { code: 'TP', title: 'Team Pro', desc: 'Расширенная аналитика и неограниченные команды' },
-                { code: 'HP', title: 'HR Plus', desc: 'Интеграции с HR-системами и отчёты' },
-                { code: 'PP', title: 'Priority', desc: 'Приоритетная поддержка и SLA' },
+                { code: 'TP', title: 'Team Pro', desc: t('ui.rasshirennaya_analitika_i_neogranichennye_koma') },
+                { code: 'HP', title: 'HR Plus', desc: t('ui.integracii_s_hr_sistemami_i_otchety') },
+                { code: 'PP', title: 'Priority', desc: t('ui.prioritetnaya_podderzhka_i_sla') },
               ].map(p => (
                 <View key={p.code} style={styles.planCard}>
                   <View style={styles.planMono}><Text style={styles.planMonoText}>{p.code}</Text></View>
@@ -602,7 +604,7 @@ export default function AdminScreen() {
                     <Text style={styles.planTitle}>{p.title}</Text>
                     <Text style={styles.planDesc}>{p.desc}</Text>
                   </View>
-                  <View style={styles.devBadge}><Text style={styles.devBadgeText}>В разработке</Text></View>
+                  <View style={styles.devBadge}><Text style={styles.devBadgeText}>{t('ui.v_razrabotke')}</Text></View>
                 </View>
               ))}
             </ScrollView>

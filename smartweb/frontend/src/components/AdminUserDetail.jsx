@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getTeams, getMemberTeam, getMeetings, getTasks,
   updateUser, deleteUser, blockUser, unblockUser,
@@ -13,6 +14,7 @@ const statusOf = (t) => t.status ?? (t.completed ? 'done' : 'in_progress')
 // Click a user in the admin table → full detail with every related id,
 // plus role change / block / delete. Responsive (full-width on mobile).
 export default function AdminUserDetail({ user, onClose, onChanged }) {
+  const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
   useEscapeKey(onClose)  // keyboard escape hatch
   const [teams, setTeams] = useState([])
@@ -73,7 +75,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
     finally { setBusy(false) }
   }
   const handleDelete = async () => {
-    if (!await confirmDialog({ title: 'Удалить пользователя?', message: `${user.name} (id ${user.id}) будет удалён безвозвратно.`, confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_polzovatelya'), message: `${user.name} (id ${user.id}) будет удалён безвозвратно.`, confirmText: 'Удалить', danger: true })) return
     setBusy(true)
     try { await deleteUser(user.id); onChanged?.(); onClose() }
     finally { setBusy(false) }
@@ -99,80 +101,80 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
               <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
             </div>
           </div>
-          <button aria-label="Закрыть" onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+          <button aria-label={t('ui.zakryt')} onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           <span style={chip}>ID: {user.id}</span>
           <span style={{ ...chip, background: 'var(--color-accent-light, #eef2ff)', color: 'var(--color-accent)' }}>{role === 'team_lead' ? 'Тимлид' : 'Участник'}</span>
-          {blocked && <span style={{ ...chip, background: '#fee2e2', color: '#b91c1c' }}>Заблокирован</span>}
+          {blocked && <span style={{ ...chip, background: '#fee2e2', color: '#b91c1c' }}>{t('ui.zablokirovan')}</span>}
         </div>
 
         {loading ? <div style={{ padding: 20, textAlign: 'center' }}><div className="spinner" /></div> : (
           <>
             <p style={sect}>Команды ({teams.length})</p>
-            {teams.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нет</p> :
+            {teams.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.net')}</p> :
               teams.map(t => <div key={t.id} style={row}><span>{t.name}</span><span style={meta}>team_id:{t.id} · {t.role}</span></div>)}
 
             <p style={sect}>Встречи ({meetings.length})</p>
-            {meetings.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нет</p> :
+            {meetings.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.net')}</p> :
               meetings.slice(0, 25).map(m => <div key={m.id} style={row}>
                 <span>{m.scheduled_date ? new Date(m.scheduled_date).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</span>
                 <span style={meta}>meeting_id:{m.id} · {m.status}</span>
               </div>)}
 
             <p style={sect}>Задачи ({tasks.length})</p>
-            {tasks.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нет</p> :
+            {tasks.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.net')}</p> :
               tasks.slice(0, 25).map(t => <div key={t.id} style={row}>
                 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title || t.description}</span>
                 <span style={meta}>task_id:{t.id} · {statusOf(t)}</span>
               </div>)}
 
             {/* Биллинг пользователя (Task 2): тариф, пробный период, менеджер, платежи */}
-            <p style={sect}>Биллинг</p>
+            <p style={sect}>{t('ui.billing')}</p>
             {!billing ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Загрузка…</p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.zagruzka_2')}</p>
             ) : (
               <>
                 <div style={row}>
-                  <span>Тариф</span>
+                  <span>{t('ui.tarif')}</span>
                   <span style={meta}>
                     {billing.user?.billing_override ? 'полный доступ' : (billing.subscription ? `${billing.subscription.plan_code} · ${billing.subscription.status}` : 'нет подписки')}
                   </span>
                 </div>
                 {billing.free_window?.free_until && (
                   <div style={row}>
-                    <span>Пробный период (14 дней)</span>
+                    <span>{t('ui.probnyy_period_14_dney')}</span>
                     <span style={meta}>{billing.free_window.free_expired ? 'истекло' : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
                   </div>
                 )}
                 <div style={{ ...row, alignItems: 'flex-start' }}>
-                  <span>Менеджер</span>
+                  <span>{t('ui.menedzher')}</span>
                   <span style={{ textAlign: 'right' }}>
                     {billing.subscription?.manager_name
                       ? <span style={{ fontSize: 13 }}>{billing.subscription.manager_name}{billing.subscription.manager_contact ? ` · ${billing.subscription.manager_contact}` : ''}</span>
-                      : <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>не назначен</span>}
+                      : <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.ne_naznachen_2')}</span>}
                     <button onClick={() => setMgr({ managerId: billing.subscription?.manager_id || '', saving: false })}
-                      style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)' }}>Изменить</button>
+                      style={{ marginLeft: 8, fontSize: 11, padding: '2px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)' }}>{t('ui.izmenit')}</button>
                   </span>
                 </div>
                 {mgr && (
                   <div style={{ padding: '8px 0', display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {managers.length === 0 ? (
-                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Список менеджеров пуст. Добавьте их на вкладке «Биллинг».</p>
+                      <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{t('ui.spisok_menedzherov_pust_dobavte_ih_na')}</p>
                     ) : (
                       <select className="input input-sm" value={mgr.managerId} onChange={e => setMgr(m => ({ ...m, managerId: e.target.value }))}>
-                        <option value="">— не назначен —</option>
+                        <option value="">{t('ui.ne_naznachen')}</option>
                         {managers.map(m => <option key={m.id} value={m.id}>{m.name}{m.contact ? ` · ${m.contact}` : ''}</option>)}
                       </select>
                     )}
                     <div style={{ display: 'flex', gap: 8 }}>
-                      <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} disabled={mgr.saving} onClick={() => setMgr(null)}>Отмена</button>
+                      <button className="btn btn-sm btn-secondary" style={{ flex: 1 }} disabled={mgr.saving} onClick={() => setMgr(null)}>{t('ui.otmena')}</button>
                       <button className="btn btn-sm btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} disabled={mgr.saving}
                         onClick={async () => {
                           setMgr(m => ({ ...m, saving: true }))
-                          try { await assignManager(user.id, mgr.managerId ? Number(mgr.managerId) : null); await loadBilling(); toast('Менеджер обновлён', 'success'); setMgr(null) }
-                          catch { toast('Не удалось сохранить', 'error'); setMgr(m => ({ ...m, saving: false })) }
-                        }}>{mgr.saving ? <><Spinner size={14} /> Сохранение…</> : 'Сохранить'}</button>
+                          try { await assignManager(user.id, mgr.managerId ? Number(mgr.managerId) : null); await loadBilling(); toast(t('ui.menedzher_obnovlen'), 'success'); setMgr(null) }
+                          catch { toast(t('ui.ne_udalos_sohranit'), 'error'); setMgr(m => ({ ...m, saving: false })) }
+                        }}>{mgr.saving ? <><Spinner size={14} />{t('ui.sohranenie_2')}</> : 'Сохранить'}</button>
                     </div>
                   </div>
                 )}
@@ -190,7 +192,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
               </>
             )}
 
-            <p style={sect}>Сменить роль</p>
+            <p style={sect}>{t('ui.smenit_rol')}</p>
             <div style={{ display: 'flex', gap: 8 }}>
               {['member', 'team_lead'].map(r => (
                 <button key={r} disabled={busy} onClick={() => changeRole(r)} className="btn btn-sm"
@@ -202,7 +204,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
 
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button disabled={busy} onClick={toggleBlock} className="btn btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: blocked ? '#f0fdf4' : '#fff7ed', color: blocked ? '#16a34a' : '#c2410c', border: '1px solid var(--color-border)' }}>
-                {busy && <Spinner size={13} tone="accent" />}{blocked ? 'Разблокировать' : 'Заблокировать'}
+                {busy && <Spinner size={13} tone="accent" />}{blocked ? t('ui.razblokirovat') : t('ui.zablokirovat')}
               </button>
               <button disabled={busy} onClick={handleDelete} className="btn btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6, background: '#dc2626', color: '#fff', border: 'none' }}>{busy && <Spinner size={13} />}Удалить</button>
             </div>

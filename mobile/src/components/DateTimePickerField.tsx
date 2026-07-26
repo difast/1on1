@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, Pressable, ScrollView,
 } from 'react-native';
@@ -37,6 +38,7 @@ export function DateTimePickerField({
   placeholder?: string;
   minToday?: boolean;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
@@ -148,7 +150,7 @@ export function DateTimePickerField({
             </View>
 
             {/* Time */}
-            <Text style={styles.timeLabel}>Время</Text>
+            <Text style={styles.timeLabel}>{t('ui.vremya')}</Text>
             <View style={styles.timeRow}>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.timeScroll}>
                 {Array.from({ length: 24 }, (_, h) => (
@@ -168,7 +170,7 @@ export function DateTimePickerField({
 
             <View style={styles.actions}>
               <TouchableOpacity style={styles.cancelBtn} onPress={() => setOpen(false)}>
-                <Text style={styles.cancelText}>Отмена</Text>
+                <Text style={styles.cancelText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.confirmBtn, !selected && styles.btnDisabled]}

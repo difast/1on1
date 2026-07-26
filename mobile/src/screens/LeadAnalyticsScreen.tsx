@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator,
 } from 'react-native';
@@ -13,6 +14,7 @@ import { Spinner } from '../components/Spinner';
 import { StatusBadge } from '../components/StatusBadge';
 
 function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [advice, setAdvice] = useState<string>('');
   const [loading, setLoading] = useState(false);
@@ -47,7 +49,7 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
         {loading
           ? <ActivityIndicator size="small" color={colors.accent} />
           : <Ionicons name="sparkles" size={14} color={colors.accent} />}
-        <Text style={styles.aiBtnText}>{advice ? 'Скрыть совет' : loading ? 'AI думает...' : 'Совет от AI'}</Text>
+        <Text style={styles.aiBtnText}>{advice ? 'Скрыть совет' : loading ? t('ui.ai_dumaet_2') : t('ui.sovet_ot_ai')}</Text>
       </TouchableOpacity>
       {!!advice && (
         <View style={styles.aiBox}>
@@ -59,6 +61,7 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
 }
 
 export default function LeadAnalyticsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -116,7 +119,7 @@ export default function LeadAnalyticsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Аналитика</Text>
+        <Text style={styles.headerTitle}>{t('ui.analitika')}</Text>
       </View>
 
       <ScrollView
@@ -125,8 +128,8 @@ export default function LeadAnalyticsScreen() {
       >
         {teams.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.noData}>Нет данных для отображения.</Text>
-            <Text style={styles.noDataSub}>Создайте команду и проведите встречи.</Text>
+            <Text style={styles.noData}>{t('ui.net_dannyh_dlya_otobrazheniya')}</Text>
+            <Text style={styles.noDataSub}>{t('ui.sozdayte_komandu_i_provedite_vstrechi')}</Text>
           </View>
         ) : (
           <>
@@ -158,6 +161,7 @@ export default function LeadAnalyticsScreen() {
 }
 
 function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const members: any[] = team.member_stats ?? [];
@@ -167,10 +171,10 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
     <>
       {/* Summary */}
       <View style={styles.statsRow}>
-        <StatCard label="Всего встреч" value={team.total_meetings ?? '—'} accent />
-        <StatCard label="Участников" value={members.length} />
+        <StatCard label={t('ui.vsego_vstrech')} value={team.total_meetings ?? '—'} accent />
+        <StatCard label={t('ui.uchastnikov')} value={members.length} />
         <StatCard
-          label="Под риском"
+          label={t('ui.pod_riskom')}
           value={(team.at_risk_members ?? []).length}
           danger={(team.at_risk_members ?? []).length > 0}
         />
@@ -178,7 +182,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
 
       {team.avg_interval_days != null && (
         <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Средний интервал между встречами</Text>
+          <Text style={styles.infoLabel}>{t('ui.sredniy_interval_mezhdu_vstrechami')}</Text>
           <Text style={styles.infoValue}>{team.avg_interval_days} дн.</Text>
         </View>
       )}
@@ -190,7 +194,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* Последние темы повесток (Задача 10) */}
       {topics.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Последние темы повесток</Text>
+          <Text style={styles.sectionTitle}>{t('ui.poslednie_temy_povestok')}</Text>
           <View style={styles.topicsWrap}>
             {topics.map((tp, i) => (
               <View key={i} style={styles.topicChip}>
@@ -206,7 +210,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
         <View style={styles.section}>
           <View style={styles.riskHeader}>
             <Ionicons name="warning-outline" size={16} color="#ef4444" />
-            <Text style={styles.riskHeaderText}>Зоны риска · выгорание</Text>
+            <Text style={styles.riskHeaderText}>{t('ui.zony_riska_vygoranie')}</Text>
             <View style={styles.riskCountBadge}><Text style={styles.riskCountText}>{signals.length}</Text></View>
           </View>
           {signals.map((s: any, i: number) => (
@@ -218,7 +222,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* Member stats */}
       {members.length > 0 && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Участники</Text>
+          <Text style={styles.sectionTitle}>{t('ui.uchastniki')}</Text>
           {members.map((ms: any) => (
             <View key={ms.user_id} style={styles.memberStat}>
               <View style={{ flex: 1 }}>
@@ -252,7 +256,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* Mood drop alerts */}
       {signals.filter((s: any) => s.type === 'mood_declining').length > 0 && (
         <View style={styles.alertCard}>
-          <Text style={styles.alertTitle}>Снижение настроения</Text>
+          <Text style={styles.alertTitle}>{t('ui.snizhenie_nastroeniya')}</Text>
           {signals.filter((s: any) => s.type === 'mood_declining').map((s: any, i: number) => (
             <Text key={i} style={styles.alertText}>• {s.member_name} — негативный тренд</Text>
           ))}
@@ -262,7 +266,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
       {/* Mood sparklines per member */}
       {members.some((ms: any) => (ms.mood_trend ?? []).length > 1) && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Тренд настроения (12 встреч)</Text>
+          <Text style={styles.sectionTitle}>{t('ui.trend_nastroeniya_12_vstrech')}</Text>
           {members.filter((ms: any) => (ms.mood_trend ?? []).length > 1).map((ms: any) => (
             <View key={ms.user_id} style={styles.moodRow}>
               <Text style={styles.moodName}>{ms.name}</Text>
@@ -279,6 +283,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
 }
 
 function AnonTeamMood({ teamId }: { teamId: number }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [mood, setMood] = useState<any>(null);
@@ -296,7 +301,7 @@ function AnonTeamMood({ teamId }: { teamId: number }) {
 
   if (loading) return (
     <View style={styles.infoCard}>
-      <Text style={styles.infoLabel}>Настроение команды · анонимно</Text>
+      <Text style={styles.infoLabel}>{t('ui.nastroenie_komandy_anonimno')}</Text>
       <ActivityIndicator size="small" color={colors.accent} style={{ marginTop: 8 }} />
     </View>
   );
@@ -304,7 +309,7 @@ function AnonTeamMood({ teamId }: { teamId: number }) {
 
   return (
     <View style={styles.infoCard}>
-      <Text style={styles.infoLabel}>Настроение команды · анонимно</Text>
+      <Text style={styles.infoLabel}>{t('ui.nastroenie_komandy_anonimno')}</Text>
       {mood.insufficient ? (
         <Text style={styles.moodInsufficient}>
           {mood.message || `Недостаточно данных для анонимной статистики (нужно от ${mood.threshold} ответов).`}
@@ -313,20 +318,20 @@ function AnonTeamMood({ teamId }: { teamId: number }) {
         <View style={styles.moodStatsRow}>
           <View style={styles.moodStatItem}>
             <Text style={styles.moodStatValue}>{mood.avg}/5</Text>
-            <Text style={styles.moodStatLabel}>средний</Text>
+            <Text style={styles.moodStatLabel}>{t('ui.sredniy')}</Text>
           </View>
           {mood.delta_prev != null && (
             <View style={styles.moodStatItem}>
               <Text style={[styles.moodStatValue, {
                 color: mood.delta_prev > 0 ? colors.success : mood.delta_prev < 0 ? colors.danger : colors.textMuted,
               }]}>{mood.delta_prev > 0 ? '+' : ''}{mood.delta_prev}</Text>
-              <Text style={styles.moodStatLabel}>к вчера</Text>
+              <Text style={styles.moodStatLabel}>{t('ui.k_vchera')}</Text>
             </View>
           )}
           {mood.share_pct != null && (
             <View style={styles.moodStatItem}>
               <Text style={styles.moodStatValue}>{mood.share_pct}%</Text>
-              <Text style={styles.moodStatLabel}>заполнили</Text>
+              <Text style={styles.moodStatLabel}>{t('ui.zapolnili')}</Text>
             </View>
           )}
         </View>

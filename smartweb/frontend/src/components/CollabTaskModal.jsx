@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createTask } from '../api/client'
 import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
@@ -10,6 +11,7 @@ import useEscapeKey from '../lib/useEscapeKey'
  * с массивом assignees; assigned_to = первый участник (обратная совместимость).
  */
 export default function CollabTaskModal({ members, teamId, assignedBy, onClose, onCreated }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose)
   const [title, setTitle] = useState('')
   const [dueDate, setDueDate] = useState('')
@@ -26,9 +28,9 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
 
   const submit = async (e) => {
     e.preventDefault()
-    if (!title.trim()) { toast('Укажите заголовок задачи', 'error'); return }
-    if (chosen.length < 1) { toast('Выберите хотя бы одного участника', 'error'); return }
-    if (uniqueCount !== chosen.length) { toast('Участники не должны повторяться', 'error'); return }
+    if (!title.trim()) { toast(t('ui.ukazhite_zagolovok_zadachi'), 'error'); return }
+    if (chosen.length < 1) { toast(t('ui.vyberite_hotya_by_odnogo_uchastnika'), 'error'); return }
+    if (uniqueCount !== chosen.length) { toast(t('ui.uchastniki_ne_dolzhny_povtoryatsya'), 'error'); return }
 
     const assignees = chosen.map(r => ({ user_id: Number(r.user_id), part_description: r.part.trim() || null }))
     setSaving(true)
@@ -42,11 +44,11 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
         meeting_id: null,
         assignees,
       })
-      toast('Совместная задача создана', 'success')
+      toast(t('ui.sovmestnaya_zadacha_sozdana'), 'success')
       onCreated?.(data)
       onClose()
     } catch {
-      toast('Не удалось создать задачу. Попробуйте ещё раз.', 'error')
+      toast(t('ui.ne_udalos_sozdat_zadachu_poprobuyte_esche'), 'error')
     } finally {
       setSaving(false)
     }
@@ -57,24 +59,22 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
       <form className="modal" onClick={e => e.stopPropagation()} onSubmit={submit} style={{ maxWidth: 520, width: '94vw' }}>
         <div className="modal-header" style={{ paddingBottom: 12 }}>
           <div>
-            <span className="modal-title">Совместная задача</span>
-            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
-              Одна задача на нескольких участников — у каждого своя часть и свой статус
-            </p>
+            <span className="modal-title">{t('ui.sovmestnaya_zadacha_2')}</span>
+            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.odna_zadacha_na_neskolkih_uchastnikov_u')}</p>
           </div>
-          <button type="button" className="modal-close" aria-label="Закрыть" onClick={onClose}>✕</button>
+          <button type="button" className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
         </div>
 
         <div className="form-group">
-          <label className="form-label">Заголовок задачи</label>
-          <input className="input" placeholder="Например: Подготовить презентацию" value={title} onChange={e => setTitle(e.target.value)} autoFocus />
+          <label className="form-label">{t('ui.zagolovok_zadachi')}</label>
+          <input className="input" placeholder={t('ui.naprimer_podgotovit_prezentaciyu')} value={title} onChange={e => setTitle(e.target.value)} autoFocus />
         </div>
         <div className="form-group">
-          <label className="form-label">Срок (необязательно)</label>
+          <label className="form-label">{t('ui.srok_neobyazatelno')}</label>
           <input type="date" className="input" value={dueDate} onChange={e => setDueDate(e.target.value)} />
         </div>
 
-        <label className="form-label" style={{ marginTop: 4 }}>Участники и их части</label>
+        <label className="form-label" style={{ marginTop: 4 }}>{t('ui.uchastniki_i_ih_chasti')}</label>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {rows.map((r, i) => (
             <div key={i} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -84,19 +84,19 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
                 onChange={e => setRow(i, { user_id: e.target.value })}
                 style={{ flex: '0 0 40%', minWidth: 0 }}
               >
-                <option value="">— участник —</option>
+                <option value="">{t('ui.uchastnik_2')}</option>
                 {members.map(m => (
                   <option key={m.user_id} value={m.user_id}>{m.name}</option>
                 ))}
               </select>
               <input
                 className="input input-sm"
-                placeholder="Часть работы (напр. дизайн)"
+                placeholder={t('ui.chast_raboty_napr_dizayn')}
                 value={r.part}
                 onChange={e => setRow(i, { part: e.target.value })}
                 style={{ flex: 1, minWidth: 0 }}
               />
-              <button type="button" aria-label="Убрать" onClick={() => removeRow(i)}
+              <button type="button" aria-label={t('ui.ubrat')} onClick={() => removeRow(i)}
                 disabled={rows.length <= 1}
                 style={{ flexShrink: 0, width: 30, height: 30, borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-bg)', color: 'var(--color-text-muted)', cursor: rows.length <= 1 ? 'default' : 'pointer', opacity: rows.length <= 1 ? 0.4 : 1 }}>
                 −
@@ -104,14 +104,12 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
             </div>
           ))}
         </div>
-        <button type="button" onClick={addRow} style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '4px 0' }}>
-          + Добавить участника
-        </button>
+        <button type="button" onClick={addRow} style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, cursor: 'pointer', padding: '4px 0' }}>{t('ui.dobavit_uchastnika')}</button>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 18 }}>
-          <button type="button" onClick={onClose} className="btn btn-secondary">Отмена</button>
+          <button type="button" onClick={onClose} className="btn btn-secondary">{t('ui.otmena')}</button>
           <button type="submit" disabled={saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 140 }}>
-            {saving ? <><Spinner size={15} /> Создание...</> : 'Создать задачу'}
+            {saving ? <><Spinner size={15} />{t('ui.sozdanie')}</> : 'Создать задачу'}
           </button>
         </div>
       </form>

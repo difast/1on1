@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import TaskStatusSelect, { StatusIcon, STATUS_LABEL } from './TaskStatusSelect'
 import { updateTaskAssignee } from '../api/client'
 import TaskCollabModal from './TaskCollabModal'
@@ -17,6 +18,7 @@ const STATUS_COLOR = {
  * только свой. Остальным статус показывается как read-only бейдж.
  */
 export default function TaskAssignees({ task, currentUserId, canManageAll = false, onChanged, contacts = [] }) {
+  const { t } = useTranslation()
   const [busyId, setBusyId] = useState(null)
   const [showCollab, setShowCollab] = useState(false)
   const assignees = task.assignees || []
@@ -38,9 +40,7 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px dashed var(--color-border)' }}>
       {/* Сводный прогресс */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Участники
-        </span>
+        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('ui.uchastniki')}</span>
         <div style={{ flex: 1, height: 6, borderRadius: 999, background: 'var(--color-bg)', overflow: 'hidden', border: '1px solid var(--color-border)' }}>
           <div style={{ width: `${progress.percent}%`, height: '100%', background: 'linear-gradient(90deg, #22c55e, #15803d)', transition: 'width 0.3s ease' }} />
         </div>
@@ -90,9 +90,7 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
       {/* Совместная работа (39.2/39.3): активность, комментарии, состав */}
       <button
         onClick={() => setShowCollab(true)}
-        style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-        Активность и комментарии
-      </button>
+        style={{ marginTop: 8, background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textAlign: 'left' }}>{t('ui.aktivnost_i_kommentarii')}</button>
       {showCollab && (
         <TaskCollabModal
           task={task}

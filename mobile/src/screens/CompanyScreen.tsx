@@ -12,6 +12,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { getTeams, getMemberTeam, getTeamCompany, suggestCompany, saveTeamCompany } from '../lib/api';
 
+import { useI18n } from '../lib/i18n';
 type Status = 'loading' | 'error' | 'view' | 'empty';
 
 const EMPTY_FORM = {
@@ -32,6 +33,7 @@ const FIELD_DEFS: { key: keyof typeof EMPTY_FORM; label: string; numeric?: boole
 ];
 
 export default function CompanyScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, activeRole } = useAuth();
@@ -130,7 +132,7 @@ export default function CompanyScreen() {
 
   const handleSave = async () => {
     if (!teamId) return;
-    if (!String(form.name || '').trim()) { Alert.alert('Проверьте данные', 'Название обязательно'); return; }
+    if (!String(form.name || '').trim()) { Alert.alert(t('ui.proverte_dannye'), 'Название обязательно'); return; }
     setSaving(true);
     try {
       const payload = { ...form, size: form.size ? Number(form.size) : null };
@@ -139,23 +141,23 @@ export default function CompanyScreen() {
       setEditing(false); setManual(false);
       setStatus('view');
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить реквизиты');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить реквизиты');
     } finally { setSaving(false); }
   };
 
   const countryLabel = (c?: string) => (c === 'KZ' ? 'Казахстан' : c === 'RU' ? 'Россия' : c || '');
 
   const viewRows = company ? [
-    { label: 'Название', value: company.name },
-    { label: 'Страна', value: countryLabel(company.country) },
-    { label: 'ИНН / БИН', value: company.inn },
-    { label: 'КПП', value: company.kpp },
-    { label: 'ОГРН', value: company.ogrn },
-    { label: 'Юридический адрес', value: company.legal_address },
-    { label: 'Отрасль', value: company.industry },
-    { label: 'Руководитель', value: company.management },
-    { label: 'Статус', value: company.status },
-    { label: 'Размер (сотрудников)', value: company.size },
+    { label: t('common.name'), value: company.name },
+    { label: t('ui.strana'), value: countryLabel(company.country) },
+    { label: t('company.fieldInn'), value: company.inn },
+    { label: t('company.fieldKpp'), value: company.kpp },
+    { label: t('company.fieldOgrn'), value: company.ogrn },
+    { label: t('company.fieldAddress'), value: company.legal_address },
+    { label: t('ui.otrasl'), value: company.industry },
+    { label: t('company.fieldManagement'), value: company.management },
+    { label: t('common.status'), value: company.status },
+    { label: t('company.fieldSize'), value: company.size },
   ].filter((f) => f.value !== null && f.value !== undefined && `${f.value}`.length > 0) : [];
 
   return (
@@ -164,12 +166,12 @@ export default function CompanyScreen() {
         <TouchableOpacity onPress={() => (editing ? setEditing(false) : router.back())} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Организация</Text>
+        <Text style={styles.headerTitle}>{t('ui.organizaciya')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {status === 'loading' && <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>}
-      {status === 'error' && <View style={styles.center}><Text style={styles.muted}>Не удалось загрузить. Попробуйте позже.</Text></View>}
+      {status === 'error' && <View style={styles.center}><Text style={styles.muted}>{t('ui.ne_udalos_zagruzit_poprobuyte_pozzhe')}</Text></View>}
 
       {(status === 'view' || status === 'empty') && (
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
@@ -184,32 +186,32 @@ export default function CompanyScreen() {
                 ))}
               </View>
               <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
-                <Text style={styles.primaryBtnText}>Редактировать</Text>
+                <Text style={styles.primaryBtnText}>{t('ui.redaktirovat')}</Text>
               </TouchableOpacity>
             </>
           )}
 
           {!editing && status === 'empty' && (
             <>
-              <Text style={styles.muted}>Реквизиты компании не заполнены. Можно найти по ИНН/БИН или ввести вручную.</Text>
+              <Text style={styles.muted}>{t('ui.rekvizity_kompanii_ne_zapolneny_mozhno_nayti')}</Text>
               <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
-                <Text style={styles.primaryBtnText}>Добавить компанию</Text>
+                <Text style={styles.primaryBtnText}>{t('ui.dobavit_kompaniyu')}</Text>
               </TouchableOpacity>
             </>
           )}
 
           {editing && !manual && (
             <>
-              <Text style={styles.fieldLabel}>Поиск по названию, ИНН или БИН</Text>
+              <Text style={styles.fieldLabel}>{t('ui.poisk_po_nazvaniyu_inn_ili_bin')}</Text>
               <TextInput
                 style={styles.input}
                 value={query}
                 onChangeText={setQuery}
-                placeholder="Например: ИНН или название"
+                placeholder={t('ui.naprimer_inn_ili_nazvanie')}
                 placeholderTextColor={colors.textMuted}
                 autoCapitalize="none"
               />
-              {searching && <Text style={[styles.muted, { marginTop: 10 }]}>Поиск...</Text>}
+              {searching && <Text style={[styles.muted, { marginTop: 10 }]}>{t('ui.poisk')}</Text>}
               {!searching && searched && suggestions.length > 0 && suggestions.map((s, i) => (
                 <TouchableOpacity key={i} style={styles.suggestion} onPress={() => pick(s)}>
                   <Text style={styles.suggestionName}>{s.name}</Text>
@@ -220,11 +222,11 @@ export default function CompanyScreen() {
               ))}
               {!searching && (notConfigured || (searched && suggestions.length === 0)) && query.trim().length >= 2 && (
                 <Text style={[styles.muted, { marginTop: 10 }]}>
-                  {notConfigured ? 'Автопоиск недоступен. Введите реквизиты вручную.' : 'Ничего не найдено. Можно ввести вручную.'}
+                  {notConfigured ? t('company.notConfigured') : t('ui.nichego_ne_naydeno_mozhno_vvesti_vruchnuyu')}
                 </Text>
               )}
               <TouchableOpacity style={styles.secondaryBtn} onPress={() => setManual(true)}>
-                <Text style={styles.secondaryBtnText}>Ввести вручную</Text>
+                <Text style={styles.secondaryBtnText}>{t('ui.vvesti_vruchnuyu')}</Text>
               </TouchableOpacity>
             </>
           )}
@@ -245,10 +247,10 @@ export default function CompanyScreen() {
                 </View>
               ))}
               <TouchableOpacity style={[styles.primaryBtn, saving && styles.btnDisabled]} onPress={handleSave} disabled={saving}>
-                <Text style={styles.primaryBtnText}>{saving ? 'Сохранение...' : 'Сохранить'}</Text>
+                <Text style={styles.primaryBtnText}>{saving ? t('ui.sohranenie') : t('common.save')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.secondaryBtn} onPress={() => setEditing(false)}>
-                <Text style={styles.secondaryBtnText}>Отмена</Text>
+                <Text style={styles.secondaryBtnText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
             </>
           )}

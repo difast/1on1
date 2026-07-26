@@ -1,4 +1,5 @@
 import { confirmDialog } from '../lib/ui'
+import { useTranslation } from 'react-i18next'
 import EmptyState from './EmptyState'
 import Spinner from '../lib/Spinner'
 import { useState, useEffect } from 'react'
@@ -15,6 +16,7 @@ function timeAgo(dateStr) {
 }
 
 export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
+  const { t } = useTranslation()
   const [articles, setArticles] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)   // article being viewed
@@ -70,7 +72,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation()
-    if (!await confirmDialog({ title: 'Удалить статью?', confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_statyu_2'), confirmText: 'Удалить', danger: true })) return
     setDeleting(id)
     try {
       await deleteKnowledgeArticle(id)
@@ -85,16 +87,14 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       <button
         onClick={() => setSelected(null)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}
-      >
-        ← Все статьи
-      </button>
+      >{t('ui.vse_stati')}</button>
       <div className="card" style={{ padding: '28px 32px' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 20 }}>
           <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{selected.title}</h2>
           {canEdit && (
             <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-              <button onClick={(e) => openEdit(selected, e)} className="btn btn-secondary btn-sm">Редактировать</button>
-              <button onClick={(e) => handleDelete(selected.id, e)} disabled={deleting === selected.id} className="btn btn-danger btn-sm">Удалить</button>
+              <button onClick={(e) => openEdit(selected, e)} className="btn btn-secondary btn-sm">{t('ui.redaktirovat')}</button>
+              <button onClick={(e) => handleDelete(selected.id, e)} disabled={deleting === selected.id} className="btn btn-danger btn-sm">{t('ui.udalit')}</button>
             </div>
           )}
         </div>
@@ -103,7 +103,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
         </p>
         {selected.content
           ? <div style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selected.content}</div>
-          : <p style={{ fontSize: 14, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>Содержимое не добавлено</p>
+          : <p style={{ fontSize: 14, color: 'var(--color-text-muted)', fontStyle: 'italic' }}>{t('ui.soderzhimoe_ne_dobavleno')}</p>
         }
       </div>
     </div>
@@ -115,38 +115,36 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       <button
         onClick={() => setEditing(null)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, marginBottom: 20, padding: 0 }}
-      >
-        ← Отмена
-      </button>
+      >{t('ui.otmena_2')}</button>
       <div className="card" style={{ padding: '24px 28px' }}>
         <p style={{ fontWeight: 700, fontSize: 16, color: 'var(--color-text-primary)', marginBottom: 18 }}>
-          {editing === 'new' ? 'Новая статья' : 'Редактировать'}
+          {editing === 'new' ? t('ui.novaya_statya_2') : t('common.edit')}
         </p>
         <div className="form-group">
-          <label className="form-label">Заголовок *</label>
+          <label className="form-label">{t('ui.zagolovok_2')}</label>
           <input
             className="input"
             value={form.title}
             onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-            placeholder="Название статьи..."
+            placeholder={t('ui.nazvanie_stati_2')}
             autoFocus
           />
         </div>
         <div className="form-group">
-          <label className="form-label">Содержимое</label>
+          <label className="form-label">{t('ui.soderzhimoe')}</label>
           <textarea
             className="input"
             value={form.content}
             onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-            placeholder="Текст статьи, инструкции, полезные ссылки..."
+            placeholder={t('ui.tekst_stati_instrukcii_poleznye_ssylki')}
             rows={12}
             style={{ resize: 'vertical', fontSize: 14, lineHeight: 1.6 }}
           />
         </div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button onClick={() => setEditing(null)} className="btn btn-secondary">Отмена</button>
+          <button onClick={() => setEditing(null)} className="btn btn-secondary">{t('ui.otmena')}</button>
           <button onClick={handleSave} disabled={!form.title.trim() || saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving ? <><Spinner size={15} /> Сохраняем...</> : 'Сохранить'}
+            {saving ? <><Spinner size={15} />{t('ui.sohranyaem')}</> : 'Сохранить'}
           </button>
         </div>
       </div>
@@ -159,17 +157,13 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <div style={{ flex: 1 }}>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>
-            База знаний
-          </h2>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 4 }}>{t('ui.baza_znaniy')}</h2>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
             {articles.length} статей · общая база команды
           </p>
         </div>
         {canEdit && (
-          <button onClick={openNew} className="btn btn-accent" style={{ flexShrink: 0 }}>
-            + Новая статья
-          </button>
+          <button onClick={openNew} className="btn btn-accent" style={{ flexShrink: 0 }}>{t('ui.novaya_statya')}</button>
         )}
       </div>
 
@@ -177,7 +171,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
       <input
         className="input"
         style={{ marginBottom: 16, fontSize: 14 }}
-        placeholder="Поиск по статьям..."
+        placeholder={t('ui.poisk_po_statyam')}
         value={search}
         onChange={e => setSearch(e.target.value)}
       />
@@ -188,12 +182,12 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
           <div className="spinner" />
         </div>
       ) : !teamId ? (
-        <EmptyState title="Команда не выбрана" desc="Выберите команду, чтобы открыть базу знаний" />
+        <EmptyState title={t('ui.komanda_ne_vybrana')} desc="Выберите команду, чтобы открыть базу знаний" />
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
-          <p className="empty-title">{search ? 'Ничего не найдено' : 'База знаний пуста'}</p>
-          <p className="empty-desc">{search ? 'Попробуйте другой запрос' : canEdit ? 'Добавьте первую статью — инструкции, процессы, полезные ссылки' : 'Тимлид ещё не добавил статьи'}</p>
+          <p className="empty-title">{search ? t('common.notFound') : t('ui.baza_znaniy_pusta')}</p>
+          <p className="empty-desc">{search ? 'Попробуйте другой запрос' : canEdit ? t('ui.dobavte_pervuyu_statyu_instrukcii_processy_pol') : t('ui.timlid_esche_ne_dobavil_stati')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -232,10 +226,10 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
               </div>
               {canEdit && (
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                  <button onClick={(e) => openEdit(a, e)} className="btn btn-secondary btn-sm" aria-label="Редактировать статью" title="Редактировать">
+                  <button onClick={(e) => openEdit(a, e)} className="btn btn-secondary btn-sm" aria-label={t('ui.redaktirovat_statyu')} title={t('ui.redaktirovat')}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg>
                   </button>
-                  <button onClick={(e) => handleDelete(a.id, e)} disabled={deleting === a.id} className="btn btn-danger btn-sm" aria-label="Удалить статью" title="Удалить">
+                  <button onClick={(e) => handleDelete(a.id, e)} disabled={deleting === a.id} className="btn btn-danger btn-sm" aria-label={t('ui.udalit_statyu')} title={t('ui.udalit')}>
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>
                   </button>
                 </div>

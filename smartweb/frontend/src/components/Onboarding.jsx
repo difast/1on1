@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import { createUser, joinTeam, updateUser } from '../api/client'
 import AvatarCropModal from './AvatarCropModal'
@@ -45,6 +46,7 @@ const STYLES = `
 `
 
 function PitBig() {
+  const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: 8 }}>
       <div style={{
@@ -69,7 +71,7 @@ function PitBig() {
         <div style={{ position:'absolute',bottom:'22%',left:'50%',transform:'translateX(-50%)',width:28,height:12,borderBottom:'3px solid rgba(255,255,255,0.75)',borderRadius:'0 0 28px 28px' }} />
       </div>
       <div style={{ width:72,height:12,borderRadius:'50%',margin:'4px auto 0',background:'rgba(37,84,212,0.4)',animation:'obShadow 3s ease-in-out infinite' }} />
-      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#93B4FD',background:'rgba(37,84,212,0.15)',border:'1px solid rgba(147,180,253,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>Пит</div>
+      <div style={{ marginTop:8,fontSize:12,fontWeight:700,color:'#93B4FD',background:'rgba(37,84,212,0.15)',border:'1px solid rgba(147,180,253,0.3)',borderRadius:10,padding:'3px 14px',letterSpacing:'0.04em' }}>{t('ui.pit')}</div>
     </div>
   )
 }
@@ -129,6 +131,7 @@ function resizeImage(file, maxPx = 256) {
 }
 
 export default function Onboarding({ email, existingUser, onComplete }) {
+  const { t } = useTranslation()
   const initialCode = new URLSearchParams(window.location.search).get('join') || ''
   const [step, setStep] = useState(1)
   const [role, setRole] = useState('')
@@ -153,7 +156,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
   const handleProfileSubmit = async e => {
     e.preventDefault()
     setError('')
-    if (!name.trim()) { setError('Укажите имя'); return }
+    if (!name.trim()) { setError(t('ui.ukazhite_imya')); return }
     setLoading(true)
     try {
       const payload = {
@@ -238,17 +241,15 @@ export default function Onboarding({ email, existingUser, onComplete }) {
           {/* ── Step 1: Role ── */}
           {step === 1 && (
             <div style={glass}>
-              <h2 style={{ textAlign:'center',marginBottom:8,fontSize:22,fontWeight:700,color:'#fff' }}>Добро пожаловать!</h2>
-              <p style={{ textAlign:'center',fontSize:14,color:'rgba(255,255,255,0.5)',marginBottom:24 }}>
-                Пит поможет настроить рабочее пространство. Кто вы?
-              </p>
+              <h2 style={{ textAlign:'center',marginBottom:8,fontSize:22,fontWeight:700,color:'#fff' }}>{t('ui.dobro_pozhalovat')}</h2>
+              <p style={{ textAlign:'center',fontSize:14,color:'rgba(255,255,255,0.5)',marginBottom:24 }}>{t('ui.pit_pomozhet_nastroit_rabochee_prostranstvo_kt')}</p>
               <div style={{ display:'flex',flexDirection:'column',gap:12 }}>
                 {/* Role icons are purposeful line-icons, not emoji — keeps the
                     first screen clean and professional (no decorative clutter). */}
                 {[
-                  { role:'team_lead', title:'Тимлид', desc:'Провожу 1-on-1 встречи, управляю командой и задачами',
+                  { role:'team_lead', title:t('profile.roleLead'), desc:t('ui.provozhu_1_on_1_vstrechi_upravlyayu'),
                     icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>) },
-                  { role:'member', title:'Участник команды', desc:'Участвую во встречах, работаю над задачами',
+                  { role:'member', title:t('profile.roleMember'), desc:t('ui.uchastvuyu_vo_vstrechah_rabotayu_nad_zadachami'),
                     icon:(<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#5B8EF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>) },
                 ].map(opt => (
                   <button key={opt.role} onClick={() => handleRoleSelect(opt.role)} style={{
@@ -270,15 +271,15 @@ export default function Onboarding({ email, existingUser, onComplete }) {
           {/* ── Step 2: Profile ── */}
           {step === 2 && (
             <div style={glass}>
-              <button onClick={() => setStep(1)} style={{ background:'none',border:'none',color:'rgba(255,255,255,0.45)',cursor:'pointer',fontSize:13,marginBottom:16,padding:0,display:'flex',alignItems:'center',gap:4 }}>← Назад</button>
+              <button onClick={() => setStep(1)} style={{ background:'none',border:'none',color:'rgba(255,255,255,0.45)',cursor:'pointer',fontSize:13,marginBottom:16,padding:0,display:'flex',alignItems:'center',gap:4 }}>{t('ui.nazad')}</button>
               <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:4 }}>
                 {role === 'team_lead' ? 'Тимлид' : 'Участник'}
               </h2>
-              <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:22 }}>Расскажите немного о себе</p>
+              <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:22 }}>{t('ui.rasskazhite_nemnogo_o_sebe')}</p>
               <form onSubmit={handleProfileSubmit}>
                 {[
-                  { label:'Имя *',      val:name,      set:setName,     ph:'Иван Иванов',       req:true },
-                  { label:'Должность',  val:title,     set:setTitle,    ph:'Senior Engineer' },
+                  { label:t('ui.imya'),      val:name,      set:setName,     ph:'Иван Иванов',       req:true },
+                  { label:t('profile.position'),  val:title,     set:setTitle,    ph:'Senior Engineer' },
                   { label:'Telegram',   val:telegram,  set:setTelegram, ph:'@username' },
                   { label:'LinkedIn',   val:linkedin,  set:setLinkedin, ph:'linkedin.com/in/...' },
                   { label:'GitHub',     val:github,    set:setGithub,   ph:'github.com/...' },
@@ -297,7 +298,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                 )}
                 {role === 'member' && (
                   <div style={{ marginBottom:14 }}>
-                    <label style={lbl}>Код приглашения</label>
+                    <label style={lbl}>{t('ui.kod_priglasheniya')}</label>
                     <input type="text" value={inviteCode} onChange={e => setInviteCode(e.target.value)}
                       placeholder="ABC123" style={{ ...inp,fontFamily:'monospace' }} onFocus={fOpts} onBlur={fOut} />
                   </div>
@@ -314,7 +315,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                   boxShadow:'0 4px 16px rgba(37,84,212,0.35)',transition:'all 0.2s',
                   display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,
                 }}>
-                  {loading ? <><Spinner size={15} /> Сохранение...</> : 'Далее →'}
+                  {loading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : 'Далее →'}
                 </button>
               </form>
             </div>
@@ -325,10 +326,8 @@ export default function Onboarding({ email, existingUser, onComplete }) {
             <div style={{ ...glass, textAlign:'center' }}>
               {!done ? (
                 <>
-                  <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:8 }}>Фото профиля</h2>
-                  <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:28 }}>
-                    Помогает коллегам узнать вас. Можно пропустить.
-                  </p>
+                  <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:8 }}>{t('ui.foto_profilya')}</h2>
+                  <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:28 }}>{t('ui.pomogaet_kollegam_uznat_vas_mozhno_propustit')}</p>
                   <div
                     onClick={() => setShowCropModal(true)}
                     style={{
@@ -350,7 +349,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                     background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.2)',
                     color:'#fff',borderRadius:10,padding:'8px 20px',cursor:'pointer',fontSize:13,fontWeight:600,marginBottom:24,
                   }}>
-                    {avatarPreview ? 'Выбрать другое' : 'Выбрать фото'}
+                    {avatarPreview ? t('ui.vybrat_drugoe') : t('ui.vybrat_foto')}
                   </button>
                   <AvatarCropModal
                     open={showCropModal}
@@ -362,21 +361,21 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                       flex:1,padding:'12px',background:'rgba(255,255,255,0.07)',
                       border:'1px solid rgba(255,255,255,0.15)',color:'rgba(255,255,255,0.65)',
                       borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:600,
-                    }}>Пропустить</button>
+                    }}>{t('ui.propustit')}</button>
                     {avatarPreview && (
                       <button onClick={handlePhotoSave} disabled={photoLoading} style={{
                         flex:1,padding:'12px',background:'linear-gradient(135deg,#2554D4,#3B6EF0)',
                         border:'none',color:'#fff',borderRadius:12,cursor:'pointer',fontSize:14,fontWeight:700,
                         boxShadow:'0 4px 16px rgba(37,84,212,0.35)',
-                      }}>{photoLoading ? 'Сохранение...' : 'Сохранить →'}</button>
+                      }}>{photoLoading ? t('ui.sohranenie') : t('ui.sohranit')}</button>
                     )}
                   </div>
                 </>
               ) : (
                 <div style={{ animation:'obSlideUp 0.5s ease' }}>
                   <div style={{ width:64,height:64,borderRadius:'50%',background:'rgba(255,255,255,0.12)',border:'2px solid rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',margin:'0 auto 20px',animation:'obConfettiPop 0.6s ease' }}><svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polyline points="5,14 11,20 23,8" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
-                  <h2 style={{ fontSize:22,fontWeight:700,color:'#fff',marginBottom:8 }}>Всё готово!</h2>
-                  <p style={{ fontSize:14,color:'rgba(255,255,255,0.55)' }}>Открываем рабочее пространство...</p>
+                  <h2 style={{ fontSize:22,fontWeight:700,color:'#fff',marginBottom:8 }}>{t('ui.vse_gotovo')}</h2>
+                  <p style={{ fontSize:14,color:'rgba(255,255,255,0.55)' }}>{t('ui.otkryvaem_rabochee_prostranstvo')}</p>
                   <div style={{ marginTop:20,display:'flex',justifyContent:'center' }}>
                     <div style={{ width:28,height:28,borderRadius:'50%',border:'3px solid rgba(37,84,212,0.3)',borderTopColor:'#2554D4',animation:'obSpin 0.8s linear infinite' }} />
                   </div>

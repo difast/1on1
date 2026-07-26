@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity,
 } from 'react-native';
@@ -12,6 +13,7 @@ import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 
 export default function MemberAnalyticsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -42,7 +44,7 @@ export default function MemberAnalyticsScreen() {
         >
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Аналитика</Text>
+        <Text style={styles.headerTitle}>{t('ui.analitika')}</Text>
       </View>
       <ScrollView
         contentContainerStyle={styles.content}
@@ -50,22 +52,22 @@ export default function MemberAnalyticsScreen() {
       >
         {!data ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.noData}>Нет данных</Text>
-            <Text style={styles.noDataSub}>Данные появятся после первых встреч</Text>
+            <Text style={styles.noData}>{t('ui.net_dannyh')}</Text>
+            <Text style={styles.noDataSub}>{t('ui.dannye_poyavyatsya_posle_pervyh_vstrech')}</Text>
           </View>
         ) : (
           <>
             {/* Summary stats */}
             <View style={styles.statsRow}>
-              <StatCard label="Всего встреч" value={data.total_meetings ?? '—'} accent />
-              <StatCard label="За 90 дней" value={data.meetings_last_90 ?? '—'} />
-              <StatCard label="Задач выполнено" value={data.completed_tasks ?? '—'} />
+              <StatCard label={t('ui.vsego_vstrech')} value={data.total_meetings ?? '—'} accent />
+              <StatCard label={t('ui.za_90_dney')} value={data.meetings_last_90 ?? '—'} />
+              <StatCard label={t('ui.zadach_vypolneno')} value={data.completed_tasks ?? '—'} />
             </View>
 
             {/* Task progress */}
             {data.task_completion_pct != null && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoLabel}>Выполнение задач</Text>
+                <Text style={styles.infoLabel}>{t('ui.vypolnenie_zadach')}</Text>
                 <View style={styles.progressRow}>
                   <Text style={styles.infoValue}>{data.task_completion_pct}%</Text>
                   <Text style={styles.infoSub}>
@@ -83,23 +85,23 @@ export default function MemberAnalyticsScreen() {
 
             {/* Meeting activity */}
             <View style={styles.infoCard}>
-              <Text style={styles.infoLabel}>Активность встреч</Text>
+              <Text style={styles.infoLabel}>{t('ui.aktivnost_vstrech')}</Text>
               <View style={styles.meetingRow}>
                 <View style={styles.meetingItem}>
                   <Text style={styles.meetingNum}>{data.lead_initiated ?? 0}</Text>
-                  <Text style={styles.meetingLabel}>Назначено тимлидом</Text>
+                  <Text style={styles.meetingLabel}>{t('ui.naznacheno_timlidom')}</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.meetingItem}>
                   <Text style={styles.meetingNum}>{data.member_initiated ?? 0}</Text>
-                  <Text style={styles.meetingLabel}>Запрошено мной</Text>
+                  <Text style={styles.meetingLabel}>{t('ui.zaprosheno_mnoy')}</Text>
                 </View>
                 <View style={styles.divider} />
                 <View style={styles.meetingItem}>
                   <Text style={[styles.meetingNum, data.days_since_last != null && data.days_since_last >= 14 && { color: colors.danger }]}>
                     {data.days_since_last != null ? `${data.days_since_last} дн.` : '—'}
                   </Text>
-                  <Text style={styles.meetingLabel}>С последней</Text>
+                  <Text style={styles.meetingLabel}>{t('ui.s_posledney')}</Text>
                 </View>
               </View>
             </View>
@@ -108,7 +110,7 @@ export default function MemberAnalyticsScreen() {
                 цифрах (без графика: график доступен в веб-версии). */}
             {(data.mood_checkin_avg != null || (data.mood_checkin_series?.length ?? 0) > 0) && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoLabel}>Моё настроение (чек-ины)</Text>
+                <Text style={styles.infoLabel}>{t('ui.moe_nastroenie_chek_iny')}</Text>
                 <View style={styles.progressRow}>
                   <Text style={styles.infoValue}>
                     {data.mood_checkin_avg != null ? `${data.mood_checkin_avg}/5` : '—'}
@@ -123,11 +125,11 @@ export default function MemberAnalyticsScreen() {
             {/* Сравнение с собственным прошлым периодом (31.3) — только свои данные. */}
             {data.compare && (
               <View style={styles.infoCard}>
-                <Text style={styles.infoLabel}>Динамика к прошлому периоду</Text>
-                <CompareRow label="Закрыто задач" cur={data.compare.closed_tasks_30} prev={data.compare.closed_tasks_prev_30} />
-                <CompareRow label="Встреч" cur={data.compare.meetings_30} prev={data.compare.meetings_prev_30} />
+                <Text style={styles.infoLabel}>{t('ui.dinamika_k_proshlomu_periodu')}</Text>
+                <CompareRow label={t('ui.zakryto_zadach')} cur={data.compare.closed_tasks_30} prev={data.compare.closed_tasks_prev_30} />
+                <CompareRow label={t('ui.vstrech')} cur={data.compare.meetings_30} prev={data.compare.meetings_prev_30} />
                 <View style={styles.compareRow}>
-                  <Text style={styles.compareLabel}>Настроение (15 дн.)</Text>
+                  <Text style={styles.compareLabel}>{t('ui.nastroenie_15_dn')}</Text>
                   <Text style={[styles.compareDelta, {
                     color: data.compare.mood_delta_15d == null ? colors.textMuted
                       : data.compare.mood_delta_15d > 0 ? colors.success

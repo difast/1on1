@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import { MeetingDateBadge, MeetingNoteEditor, NotesPreview, UploadRecordingButton, AiBadge } from './MeetingCardParts'
 import { fmtDate, fmtTime } from '../lib/datetime'
@@ -28,6 +29,7 @@ import UserCard from './UserCard'
 import { useIsTelegram } from '../lib/surface'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
+  const { t } = useTranslation()
   // Mini App: скрываем видеозвонки и транскрипты (недоступны по таблице).
   const isTg = useIsTelegram()
   const [team, setTeam] = useState(null)
@@ -111,7 +113,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { toast('Не удалось начать созвон', 'error') }
+    } catch { toast(t('ui.ne_udalos_nachat_sozvon'), 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -135,7 +137,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { toast('Не удалось загрузить запись', 'error') }
+    } catch { toast(t('ui.ne_udalos_zagruzit_zapis'), 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -261,7 +263,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
     } catch {
       setTasks(prev => prev.filter(t => t.id !== tempId))
       setSelfTaskForm({ title, due_date: selfTaskForm.due_date || '', open: true, loading: false })
-      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+      toast(t('ui.ne_udalos_dobavit_zadachu_poprobuyte_esche'), 'error')
     }
   }
 
@@ -359,16 +361,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
         <div style={{ maxWidth: 420, margin: '48px auto' }}>
           <div className="card" style={{ padding: 32, textAlign: 'center' }}>
             <div className="empty-icon" style={{ margin: '0 auto 20px' }} aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
-            <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--color-text-primary)', marginBottom: 6 }}>
-              Присоединитесь к команде
-            </h2>
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 24 }}>
-              Введите код приглашения от вашего тимлида
-            </p>
+            <h2 style={{ fontWeight: 700, fontSize: 18, color: 'var(--color-text-primary)', marginBottom: 6 }}>{t('ui.prisoedinites_k_komande')}</h2>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 24 }}>{t('ui.vvedite_kod_priglasheniya_ot_vashego_timlida')}</p>
             <form onSubmit={handleJoin} style={{ textAlign: 'left' }}>
               <div className="form-group">
                 {/* label tied to input (htmlFor/id) so screen readers announce it */}
-                <label className="form-label" htmlFor="join-code">Код приглашения</label>
+                <label className="form-label" htmlFor="join-code">{t('ui.kod_priglasheniya')}</label>
                 <input
                   id="join-code"
                   type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)}
@@ -377,9 +375,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   autoFocus
                 />
                 {/* Prevent the dead-end feeling for members who have no code yet */}
-                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
-                  Нет кода? Попросите тимлида отправить вам приглашение.
-                </p>
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{t('ui.net_koda_poprosite_timlida_otpravit_vam')}</p>
               </div>
               {joinError && (
                 <div style={{
@@ -391,7 +387,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               )}
               <button type="submit" disabled={joinLoading} className="btn btn-accent" style={{ width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {joinLoading ? <><Spinner size={15} /> Присоединение...</> : 'Присоединиться'}
+                {joinLoading ? <><Spinner size={15} />{t('ui.prisoedinenie')}</> : 'Присоединиться'}
               </button>
             </form>
           </div>
@@ -434,9 +430,9 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               className="btn btn-secondary btn-sm"
               disabled={moodFilledToday}
               style={moodFilledToday ? { opacity: 0.6, cursor: 'default' } : undefined}
-              title={moodFilledToday ? 'Настроение уже отмечено сегодня' : 'Заполнить опрос настроения'}
+              title={moodFilledToday ? t('ui.nastroenie_uzhe_otmecheno_segodnya') : t('ui.zapolnit_opros_nastroeniya')}
             >
-              {moodFilledToday ? 'Настроение отмечено' : 'Настроение'}
+              {moodFilledToday ? t('ui.nastroenie_otmecheno') : t('nav.mood')}
             </button>
             {checkin?.arrived_at && (
               <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>
@@ -453,21 +449,21 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 {checkinLoading ? '...' : 'Ушёл'}
               </button>
             ) : (
-              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '5px 12px' }}>День завершён</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-success)', background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 8, padding: '5px 12px' }}>{t('ui.den_zavershen')}</span>
             )}
           </div>
         </div>
 
         <div className="tabs" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
-            { key: 'overview', label: 'Обзор' },
-            { key: 'meetings', label: 'Встречи' },
-            { key: 'tasks', label: 'Задачи' },
-            { key: 'goals', label: 'Цели' },
-            { key: 'development', label: 'Развитие' },
+            { key: 'overview', label: t('nav.overview') },
+            { key: 'meetings', label: t('nav.meetings') },
+            { key: 'tasks', label: t('nav.tasks') },
+            { key: 'goals', label: t('nav.goals') },
+            { key: 'development', label: t('nav.development') },
             { key: 'oneai', label: 'ONE AI' },
-            { key: 'notes', label: 'Заметки' },
-            { key: 'analytics', label: 'Аналитика' },
+            { key: 'notes', label: t('nav.notes') },
+            { key: 'analytics', label: t('nav.analytics') },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
@@ -495,7 +491,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       : (team.team_lead_name || '?').charAt(0).toUpperCase()}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <p className="label" style={{ marginBottom: 4 }}>Тимлид</p>
+                    <p className="label" style={{ marginBottom: 4 }}>{t('ui.timlid')}</p>
                     <p
                       style={{ fontWeight: 600, fontSize: 17, color: 'var(--color-text-primary)', cursor: 'pointer' }}
                       onClick={() => setViewUserCard(lead ? { ...lead, role: 'team_lead' } : { user_id: team.team_lead_id, name: team.team_lead_name, role: 'team_lead', user_title: team.team_lead_title })}
@@ -510,16 +506,14 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     onClick={() => { setActiveTab('meetings'); setShowRequestMeeting(true) }}
                     className="btn btn-accent btn-sm"
                     style={{ flexShrink: 0 }}
-                  >
-                    Запросить встречу
-                  </button>
+                  >{t('ui.zaprosit_vstrechu')}</button>
                 </div>
               )
             })()}
 
             {upcomingMeetings.length > 0 && (
               <div>
-                <p className="label" style={{ marginBottom: 12 }}>Ближайшие встречи</p>
+                <p className="label" style={{ marginBottom: 12 }}>{t('ui.blizhayshie_vstrechi')}</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {upcomingMeetings.slice(0, 2).map(m => (
                     <div key={m.id} className="meeting-item" style={{ display: 'flex', flexDirection: 'column' }}>
@@ -568,7 +562,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
             {pastMeetings.length > 0 && (
               <div>
-                <p className="label" style={{ marginBottom: 12 }}>Последняя встреча с тимлидом</p>
+                <p className="label" style={{ marginBottom: 12 }}>{t('ui.poslednyaya_vstrecha_s_timlidom')}</p>
                 {(() => {
                   const m = pastMeetings[0]
                   return (
@@ -602,7 +596,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
             {team.members && team.members.length > 0 && (
               <div>
-                <p className="label" style={{ marginBottom: 12 }}>Участники команды</p>
+                <p className="label" style={{ marginBottom: 12 }}>{t('ui.uchastniki_komandy')}</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(200px, 100%), 1fr))', gap: 10 }}>
                   {[...team.members].filter(m => m.user_id !== user.id).sort((a, b) => {
                     if (!a.last_meeting_date) return -1
@@ -610,7 +604,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                     return new Date(a.last_meeting_date) - new Date(b.last_meeting_date)
                   }).map(m => (
                     <div key={m.user_id} className="card" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}
-                      onClick={() => setViewUserCard(m)} title="Открыть карточку">
+                      onClick={() => setViewUserCard(m)} title={t('ui.otkryt_kartochku')}>
                       <div style={{ position: 'relative', flexShrink: 0 }}>
                         <div className={`avatar avatar-sm ${m.user_avatar_url ? '' : 'avatar-accent'}`}>
                           {m.user_avatar_url
@@ -624,7 +618,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             background: m.is_online ? 'var(--color-success)' : 'var(--gray-300)',
                             border: '2px solid var(--color-surface)',
                             transition: 'background 0.3s',
-                          }} title={m.is_online ? 'Онлайн' : 'Не в сети'} />
+                          }} title={m.is_online ? t('ui.onlayn') : t('ui.ne_v_seti')} />
                         )}
                       </div>
                       <div style={{ minWidth: 0 }}>
@@ -646,30 +640,22 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
           <div style={{ maxWidth: 700, width: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 16 }}>
               {/* Предложить встречу другому участнику (Задача 5) */}
-              <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">
-                Предложения встреч
-              </button>
-              <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">
-                Предложения задач
-              </button>
-              <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">
-                Взаимодействия
-              </button>
-              <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">
-                + Запросить встречу
-              </button>
+              <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">{t('ui.predlozheniya_vstrech')}</button>
+              <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">{t('ui.predlozheniya_zadach')}</button>
+              <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">{t('ui.vzaimodeystviya')}</button>
+              <button onClick={() => setShowRequestMeeting(true)} className="btn btn-accent btn-sm">{t('ui.zaprosit_vstrechu_2')}</button>
             </div>
             {/* Meeting filter bar */}
             <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 18 }}>
               {[
-                { key: 'all', label: 'Все' },
-                { key: 'scheduled', label: 'Запланировано' },
-                { key: 'confirmed', label: 'Подтверждено' },
-                { key: 'in_progress', label: 'Идёт' },
-                { key: 'completed', label: 'Завершено' },
-                { key: 'rescheduled', label: 'Перенесено' },
-                { key: 'cancelled', label: 'Отменено' },
-                { key: 'declined', label: 'Отклонено' },
+                { key: 'all', label: t('common.all') },
+                { key: 'scheduled', label: t('ui.zaplanirovano') },
+                { key: 'confirmed', label: t('ui.podtverzhdeno') },
+                { key: 'in_progress', label: t('ui.idet') },
+                { key: 'completed', label: t('ui.zaversheno') },
+                { key: 'rescheduled', label: t('ui.pereneseno') },
+                { key: 'cancelled', label: t('ui.otmeneno') },
+                { key: 'declined', label: t('ui.otkloneno') },
               ].filter(f => f.key === 'all' || meetingFilterCounts[f.key] > 0).map(f => (
                 <button
                   key={f.key}
@@ -711,8 +697,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                       </span>
                       {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0 }}>
-                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
-                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
+                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>{t('ui.proveli')}</button>
+                          <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>{t('ui.otmenit')}</button>
                         </div>
                       )}
                       {/* Call must stay available for any active meeting, even
@@ -732,7 +718,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           onClick={() => toggleMeetingNote(m.id)}
                           style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: isExpanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
                         >
-                          {isExpanded ? '↓ Заметки' : '→ Заметки'}{hasNote ? ' ·' : ''}
+                          {isExpanded ? t('ui.zametki') : t('ui.zametki_2')}{hasNote ? ' ·' : ''}
                         </button>
                       )}
                       {isPast && !m.ai_summary && !isTg && (
@@ -755,7 +741,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               }}
             />
             {meetings.length === 0 && (
-              <EmptyState title="Нет встреч" desc="Запросите первую встречу с тимлидом" style={{ marginTop: 16 }} />
+              <EmptyState title={t('ui.net_vstrech')} desc="Запросите первую встречу с тимлидом" style={{ marginTop: 16 }} />
             )}
           </div>
         )}
@@ -770,7 +756,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   type="text"
                   value={selfTaskForm.title}
                   onChange={e => setSelfTaskForm(f => ({ ...f, title: e.target.value }))}
-                  placeholder="Название задачи"
+                  placeholder={t('ui.nazvanie_zadachi')}
                   autoFocus
                   className="input"
                 />
@@ -782,7 +768,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   style={{ maxWidth: 200 }}
                 />
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button type="button" onClick={() => setSelfTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">Отмена</button>
+                  <button type="button" onClick={() => setSelfTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                   <button type="submit" disabled={selfTaskForm.loading} className="btn btn-accent btn-sm">
                     {selfTaskForm.loading ? '...' : 'Добавить'}
                   </button>
@@ -790,12 +776,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
               </form>
             ) : (
               <div style={{ marginBottom: 16 }}>
-                <button onClick={() => setSelfTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">+ Добавить задачу</button>
+                <button onClick={() => setSelfTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">{t('ui.dobavit_zadachu')}</button>
               </div>
             )}
 
             {tasks.length === 0 ? (
-              <EmptyState title="Нет задач" desc="Создайте задачу или дождитесь задач от тимлида" />
+              <EmptyState title={t('ui.net_zadach')} desc="Создайте задачу или дождитесь задач от тимлида" />
             ) : (
               <>
                 <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -808,7 +794,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               {tasks.filter(t => taskFilter === 'all' ? true : taskFilter === 'open' ? !t.completed : t.completed).length === 0 ? (
                 <p style={{ fontSize: 14, color: 'var(--color-text-muted)', padding: '12px 0' }}>
-                  {taskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                  {taskFilter === 'open' ? t('ui.net_otkrytyh_zadach') : t('ui.net_vypolnennyh_zadach')}
                 </p>
               ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -825,11 +811,11 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             setEditingTask(null)
                           } catch {}
                         }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder={t('ui.nazvanie_zadachi')} />
                           <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
-                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                            <button type="submit" className="btn btn-accent btn-sm">{t('ui.sohranit')}</button>
+                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                           </div>
                         </form>
                       ) : (
@@ -842,7 +828,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                               const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                               return (
                                 <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                  {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                  {overdue ? t('ui.prosrocheno') : t('ui.do')}{new Date(task.due_date).toLocaleDateString('ru-RU')}
                                 </p>
                               )
                             })()}
@@ -857,13 +843,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                             <TaskStatusSelect status={task.status || 'in_progress'} onChange={(newStatus) => handleUpdateTaskStatus(task, newStatus)} canMarkDone={true} />
                           )}
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title={t('ui.redaktirovat')} aria-label={t('ui.redaktirovat')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           {isSelf && (
                             <button onClick={() => handleDeleteTask(task.id)}
                               style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                               onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                               onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                              title="Удалить">✕</button>
+                              title={t('ui.udalit')}>✕</button>
                           )}
                           {!task.completed && !task.is_multi && (
                             <TaskAIHelper
@@ -902,12 +888,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
           <div style={{ maxWidth: 640, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* General notes */}
             <div>
-              <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
+              <p className="label" style={{ marginBottom: 12 }}>{t('ui.obschie_zametki')}</p>
               <div className="card" style={{ padding: 20, marginBottom: 10 }}>
                 <textarea
                   value={newNoteText}
                   onChange={e => setNewNoteText(e.target.value)}
-                  placeholder="Запишите мысль, идею или наблюдение..."
+                  placeholder={t('ui.zapishite_mysl_ideyu_ili_nablyudenie')}
                   className="input"
                   style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
@@ -918,7 +904,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                   className="btn btn-accent btn-sm"
                   style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
                 >
-                  {noteLoading ? <><Spinner size={14} /> Сохранение...</> : '+ Добавить заметку'}
+                  {noteLoading ? <><Spinner size={14} />{t('ui.sohranenie')}</> : '+ Добавить заметку'}
                 </button>
               </div>
               {freeNotes.length > 0 ? (
@@ -936,23 +922,23 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                        title="Удалить"
+                        title={t('ui.udalit')}
                       >✕</button>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
-                  <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  <p className="empty-title" style={{ fontSize: 14 }}>{t('ui.net_obschih_zametok')}</p>
                   {/* Empty state should invite the first action, not read as a blank/bug */}
-                  <p className="empty-desc">Запишите мысль или вопрос к встрече — заметки видите только вы.</p>
+                  <p className="empty-desc">{t('ui.zapishite_mysl_ili_vopros_k_vstreche')}</p>
                 </div>
               )}
             </div>
 
             {/* Meeting notes */}
             <div>
-              <p className="label" style={{ marginBottom: 12 }}>Заметки по встречам</p>
+              <p className="label" style={{ marginBottom: 12 }}>{t('ui.zametki_po_vstrecham')}</p>
               {notes.filter(n => n.meeting_id).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {notes.filter(n => n.meeting_id).map(note => {
@@ -981,8 +967,8 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
-                  <p className="empty-title" style={{ fontSize: 14 }}>Нет заметок по встречам</p>
-                  <p className="empty-desc">Добавляйте заметки к прошедшим встречам во вкладке «Встречи»</p>
+                  <p className="empty-title" style={{ fontSize: 14 }}>{t('ui.net_zametok_po_vstrecham')}</p>
+                  <p className="empty-desc">{t('ui.dobavlyayte_zametki_k_proshedshim_vstrecham_vo')}</p>
                 </div>
               )}
             </div>
@@ -1013,26 +999,25 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
       />
 
       {showRequestMeeting && (
-        <Modal title="Запросить встречу" onClose={() => setShowRequestMeeting(false)}>
+        <Modal title={t('ui.zaprosit_vstrechu')} onClose={() => setShowRequestMeeting(false)}>
           <form onSubmit={handleRequestMeeting}>
             <div className="form-group">
-              <label className="form-label">Дата и время</label>
+              <label className="form-label">{t('ui.data_i_vremya')}</label>
               <input type="datetime-local" value={meetingDate} onChange={e => setMeetingDate(e.target.value)} className="input" autoFocus />
             </div>
             <div className="form-group">
-              <label className="form-label">
-                Тема <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(необязательно)</span>
+              <label className="form-label">{t('ui.tema')}<span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>{t('ui.neobyazatelno')}</span>
               </label>
               <textarea
                 value={meetingTopic} onChange={e => setMeetingTopic(e.target.value)}
-                placeholder="О чём хотите поговорить?"
+                placeholder={t('ui.o_chem_hotite_pogovorit')}
                 className="input" style={{ resize: 'none', minHeight: 80 }}
               />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
-              <button type="button" onClick={() => setShowRequestMeeting(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
+              <button type="button" onClick={() => setShowRequestMeeting(false)} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
               <button type="submit" disabled={meetingLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                {meetingLoading ? <><Spinner size={15} /> Отправка...</> : 'Запросить'}
+                {meetingLoading ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Запросить'}
               </button>
             </div>
           </form>
@@ -1096,12 +1081,13 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 }
 
 function Modal({ title, onClose, children }) {
+  const { t } = useTranslation()
   return (
     <div className="overlay-center" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
+          <button onClick={onClose} className="modal-close" aria-label={t('ui.zakryt')}>×</button>
         </div>
         {children}
       </div>

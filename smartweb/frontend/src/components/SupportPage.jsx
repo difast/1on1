@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createSupportTicket, getUserTickets, userSendMessage, userReadReply } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 import useStickyScroll from '../lib/useStickyScroll'
 import Spinner from '../lib/Spinner'
 
 function MessageBubble({ msg }) {
+  const { t } = useTranslation()
   const isAdmin = msg.sender === 'admin'
   return (
     <div style={{
@@ -21,7 +23,7 @@ function MessageBubble({ msg }) {
         boxShadow: 'var(--shadow-xs)',
         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
       }}>
-        {isAdmin && <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 4, margin: '0 0 4px' }}>Поддержка</p>}
+        {isAdmin && <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', marginBottom: 4, margin: '0 0 4px' }}>{t('ui.podderzhka')}</p>}
         {msg.body}
         <p style={{ fontSize: 10, color: isAdmin ? 'var(--color-text-muted)' : 'rgba(255,255,255,0.65)', margin: '4px 0 0', textAlign: 'right' }}>
           {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -32,6 +34,7 @@ function MessageBubble({ msg }) {
 }
 
 function TicketThread({ ticket, currentUser, onUpdate }) {
+  const { t } = useTranslation()
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
   // Умный автоскролл к новым сообщениям, если пользователь уже у нижнего края.
@@ -79,7 +82,7 @@ function TicketThread({ ticket, currentUser, onUpdate }) {
         <textarea
           value={reply}
           onChange={e => setReply(e.target.value)}
-          placeholder="Написать сообщение..."
+          placeholder={t('ui.napisat_soobschenie')}
           rows={2}
           style={{
             flex: 1, resize: 'none', fontSize: 14, padding: '8px 12px',
@@ -100,6 +103,7 @@ function TicketThread({ ticket, currentUser, onUpdate }) {
 }
 
 export default function SupportPage({ currentUser, onClose }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose)  // keyboard escape hatch
   const [view, setView] = useState('list') // 'list' | 'new' | 'thread'
   const [tickets, setTickets] = useState([])
@@ -120,14 +124,14 @@ export default function SupportPage({ currentUser, onClose }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!subject.trim() || !body.trim()) { setError('Заполните тему и содержание'); return }
+    if (!subject.trim() || !body.trim()) { setError(t('ui.zapolnite_temu_i_soderzhanie')); return }
     setSubmitting(true); setError('')
     try {
       const { data } = await createSupportTicket({ user_id: currentUser.id, subject: subject.trim(), body: body.trim() })
       setTickets(prev => [data, ...prev])
       setSent(true)
       setTimeout(() => { setSent(false); setSubject(''); setBody(''); setView('list') }, 1800)
-    } catch { setError('Ошибка при отправке. Попробуйте ещё раз.') }
+    } catch { setError(t('ui.oshibka_pri_otpravke_poprobuyte_esche_raz')) }
     finally { setSubmitting(false) }
   }
 
@@ -169,9 +173,9 @@ export default function SupportPage({ currentUser, onClose }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {view === 'list' && (
-            <button onClick={() => setView('new')} className="btn btn-accent btn-sm">+ Новое обращение</button>
+            <button onClick={() => setView('new')} className="btn btn-accent btn-sm">{t('ui.novoe_obraschenie_2')}</button>
           )}
-          <button onClick={onClose} className="btn btn-secondary btn-sm">✕ Закрыть</button>
+          <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt_2')}</button>
         </div>
       </div>
 
@@ -182,7 +186,7 @@ export default function SupportPage({ currentUser, onClose }) {
         {view === 'list' && (
           <div style={{ maxWidth: 680, width: '100%', margin: '0 auto', padding: '28px 20px' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>Мои обращения</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 700, margin: 0 }}>{t('ui.moi_obrascheniya')}</h2>
               {unreadCount > 0 && <span className="badge badge-red">{unreadCount} новых ответа</span>}
             </div>
 
@@ -191,9 +195,9 @@ export default function SupportPage({ currentUser, onClose }) {
             ) : tickets.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="2" y="5" width="18" height="13" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><path d="M2 8l9 6 9-6" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
-                <p className="empty-title">Обращений пока нет</p>
-                <p className="empty-desc">Создайте первое обращение — мы ответим как можно скорее</p>
-                <button onClick={() => setView('new')} className="btn btn-accent" style={{ marginTop: 20 }}>Написать в поддержку</button>
+                <p className="empty-title">{t('ui.obrascheniy_poka_net')}</p>
+                <p className="empty-desc">{t('ui.sozdayte_pervoe_obraschenie_my_otvetim_kak')}</p>
+                <button onClick={() => setView('new')} className="btn btn-accent" style={{ marginTop: 20 }}>{t('ui.napisat_v_podderzhku')}</button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -211,7 +215,7 @@ export default function SupportPage({ currentUser, onClose }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                           <p style={{ fontWeight: 700, fontSize: 14, margin: 0, color: 'var(--color-text-primary)' }}>{t.subject}</p>
-                          {t.has_unread_reply && <span className="badge badge-blue" style={{ fontSize: 10 }}>Новый ответ</span>}
+                          {t.has_unread_reply && <span className="badge badge-blue" style={{ fontSize: 10 }}>{t('ui.novyy_otvet')}</span>}
                         </div>
                         <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>
                           {t.messages?.length || 0} сообщений · {new Date(t.created_at).toLocaleDateString('ru-RU')}
@@ -236,12 +240,12 @@ export default function SupportPage({ currentUser, onClose }) {
                 <div style={{ width: 64, height: 64, borderRadius: '50%', background: '#f0fdf4', border: '2px solid #86efac', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px' }}>
                   <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><polyline points="5,14 11,20 23,8" stroke="#16a34a" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </div>
-                <h2 style={{ fontSize: 20, fontWeight: 700 }}>Обращение отправлено</h2>
-                <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>Возвращаем вас к списку...</p>
+                <h2 style={{ fontSize: 20, fontWeight: 700 }}>{t('ui.obraschenie_otpravleno')}</h2>
+                <p style={{ color: 'var(--color-text-muted)', fontSize: 14 }}>{t('ui.vozvraschaem_vas_k_spisku')}</p>
               </div>
             ) : (
               <>
-                <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>Новое обращение</h2>
+                <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 20 }}>{t('ui.novoe_obraschenie')}</h2>
                 {/* User chip */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'var(--gray-50)', border: '1px solid var(--color-border)', borderRadius: 10, padding: '10px 14px', marginBottom: 20 }}>
                   <div className="avatar avatar-sm avatar-accent">{(currentUser?.name || '?').charAt(0).toUpperCase()}</div>
@@ -252,18 +256,18 @@ export default function SupportPage({ currentUser, onClose }) {
                 </div>
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Тема обращения</label>
-                    <input className="input" placeholder="Кратко опишите суть" value={subject} onChange={e => setSubject(e.target.value)} maxLength={300} required />
+                    <label className="form-label">{t('ui.tema_obrascheniya')}</label>
+                    <input className="input" placeholder={t('ui.kratko_opishite_sut')} value={subject} onChange={e => setSubject(e.target.value)} maxLength={300} required />
                   </div>
                   <div className="form-group" style={{ marginBottom: 0 }}>
-                    <label className="form-label">Содержание</label>
-                    <textarea className="input" placeholder="Подробно опишите вопрос или проблему..." value={body} onChange={e => setBody(e.target.value)} rows={6} required style={{ minHeight: 140, resize: 'vertical' }} />
+                    <label className="form-label">{t('ui.soderzhanie')}</label>
+                    <textarea className="input" placeholder={t('ui.podrobno_opishite_vopros_ili_problemu')} value={body} onChange={e => setBody(e.target.value)} rows={6} required style={{ minHeight: 140, resize: 'vertical' }} />
                   </div>
                   {error && <p style={{ fontSize: 13, color: 'var(--color-danger)', margin: 0 }}>{error}</p>}
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>Назад</button>
+                    <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.nazad_2')}</button>
                     <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {submitting ? <><Spinner size={15} /> Отправка...</> : 'Отправить'}
+                      {submitting ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить'}
                     </button>
                   </div>
                 </form>

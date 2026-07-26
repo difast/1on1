@@ -14,6 +14,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { getOneAiSections, oneAiQuery, getTeams, getTeam, type OneAiSection } from '../lib/api';
 
+import { useI18n } from '../lib/i18n';
 const HINT: Record<string, string> = {
   team_analysis: 'Проблемы, риски и вовлечённость команды за период.',
   employee_analysis: 'Эффективность и динамика конкретного сотрудника.',
@@ -30,6 +31,7 @@ const HINT: Record<string, string> = {
 const NEEDS_MEMBER = ['employee_analysis', 'feedback_prep'];
 
 export default function OneAiScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -69,7 +71,7 @@ export default function OneAiScreen() {
 
   const run = async () => {
     if (!active) return;
-    if (NEEDS_MEMBER.includes(active) && !target) { Alert.alert('Выберите сотрудника'); return; }
+    if (NEEDS_MEMBER.includes(active) && !target) { Alert.alert(t('ui.vyberite_sotrudnika')); return; }
     setLoading(true); setResult(null); setLocked(null);
     try {
       const d = await oneAiQuery({
@@ -81,7 +83,7 @@ export default function OneAiScreen() {
     } catch (e: any) {
       const detail = e?.response?.data?.detail || e?.response?.detail;
       if (detail?.code === 'feature_locked') setLocked(detail.message);
-      else Alert.alert('ONE AI недоступен', typeof detail === 'string' ? detail : 'Попробуйте позже');
+      else Alert.alert(t('ui.one_ai_nedostupen'), typeof detail === 'string' ? detail : 'Попробуйте позже');
     } finally { setLoading(false); }
   };
 
@@ -121,7 +123,7 @@ export default function OneAiScreen() {
               <Text style={styles.muted}>{HINT[active]}</Text>
               {NEEDS_MEMBER.includes(active) && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
-                  {members.length === 0 && <Text style={styles.muted}>Нет участников для выбора.</Text>}
+                  {members.length === 0 && <Text style={styles.muted}>{t('ui.net_uchastnikov_dlya_vybora')}</Text>}
                   {members.map(m => (
                     <TouchableOpacity key={m.id} onPress={() => setTarget(m.id)} style={[styles.secChip, target === m.id && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
                       <Text style={[styles.secChipText, target === m.id && { color: colors.accent }]}>{m.name}</Text>
@@ -129,9 +131,9 @@ export default function OneAiScreen() {
                   ))}
                 </View>
               )}
-              <TextInput style={styles.input} placeholder="Уточните запрос (необязательно)" placeholderTextColor={colors.textMuted} value={message} onChangeText={setMessage} multiline />
+              <TextInput style={styles.input} placeholder={t('ui.utochnite_zapros_neobyazatelno')} placeholderTextColor={colors.textMuted} value={message} onChangeText={setMessage} multiline />
               <TouchableOpacity style={[styles.primaryBtn, loading && { opacity: 0.6 }]} onPress={run} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>Запросить анализ</Text>}
+                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryBtnText}>{t('ui.zaprosit_analiz')}</Text>}
               </TouchableOpacity>
             </View>
           )}
@@ -146,7 +148,7 @@ export default function OneAiScreen() {
           )}
 
           {!result && !loading && !locked && (
-            <EmptyState icon="sparkles-outline" title="ONE AI готов к анализу" description="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
+            <EmptyState icon="sparkles-outline" title={t('ui.one_ai_gotov_k_analizu')} description="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
           )}
         </ScrollView>
       )}

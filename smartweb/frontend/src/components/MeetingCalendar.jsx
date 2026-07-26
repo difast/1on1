@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
 const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
@@ -37,6 +38,7 @@ function getMonthGrid(year, month) {
 }
 
 export default function MeetingCalendar({ meetings, renderCard }) {
+  const { t } = useTranslation()
   const [viewMode, setViewMode] = useState('week')
   const [weekOffset, setWeekOffset] = useState(0)
   const [selectedDay, setSelectedDay] = useState(null)
@@ -102,18 +104,18 @@ export default function MeetingCalendar({ meetings, renderCard }) {
           onClick={() => { setViewMode('week'); setSelectedDay(null) }}
           className={viewMode === 'week' ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
           style={{ fontSize: 12 }}
-        >Неделя</button>
+        >{t('ui.nedelya')}</button>
         <button
           onClick={() => { setViewMode('month'); setSelectedDay(null) }}
           className={viewMode === 'month' ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
           style={{ fontSize: 12 }}
-        >Месяц</button>
+        >{t('ui.mesyac')}</button>
       </div>
 
       {viewMode === 'week' && (<>
         {/* Weekly load bars */}
         <div className="card" style={{ padding: '14px 16px' }}>
-          <p className="label" style={{ marginBottom: 8, fontSize: 10 }}>Нагрузка по неделям</p>
+          <p className="label" style={{ marginBottom: 8, fontSize: 10 }}>{t('ui.nagruzka_po_nedelyam')}</p>
           <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 36 }}>
             {weekLoads.map((w, i) => (
               <div
@@ -136,9 +138,9 @@ export default function MeetingCalendar({ meetings, renderCard }) {
             ))}
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>−4 нед</span>
-            <span style={{ fontSize: 9, color: 'var(--color-accent)', fontWeight: 700 }}>Текущая</span>
-            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>+3 нед</span>
+            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{t('ui.4_ned')}</span>
+            <span style={{ fontSize: 9, color: 'var(--color-accent)', fontWeight: 700 }}>{t('ui.tekuschaya')}</span>
+            <span style={{ fontSize: 9, color: 'var(--color-text-muted)' }}>{t('ui.3_ned')}</span>
           </div>
         </div>
 
@@ -149,7 +151,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)' }}>{weekLabel}</span>
               {weekOffset !== 0 && (
-                <button onClick={() => { setWeekOffset(0); setSelectedDay(null) }} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '3px 8px' }}>Сегодня</button>
+                <button onClick={() => { setWeekOffset(0); setSelectedDay(null) }} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '3px 8px' }}>{t('ui.segodnya')}</button>
               )}
             </div>
             <button onClick={() => { setWeekOffset(o => o + 1); setSelectedDay(null) }} className="btn btn-secondary btn-sm" style={{ padding: '4px 12px', fontSize: 18, lineHeight: 1 }}>›</button>
@@ -191,7 +193,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
           </div>
         ) : (
           <div style={{ textAlign: 'center', padding: '24px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>
-            {selectedDay ? 'Встреч в этот день нет' : 'На этой неделе встреч нет'}
+            {selectedDay ? t('ui.vstrech_v_etot_den_net') : t('ui.na_etoy_nedele_vstrech_net')}
           </div>
         )}
       </>)}
@@ -206,7 +208,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
                 {MONTH_FULL[monthYear.month]} {monthYear.year}
               </span>
               {!isCurrentMonthAndYear && (
-                <button onClick={goMonthToday} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '3px 8px' }}>Сегодня</button>
+                <button onClick={goMonthToday} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '3px 8px' }}>{t('ui.segodnya')}</button>
               )}
             </div>
             <button onClick={goMonthNext} className="btn btn-secondary btn-sm" style={{ padding: '4px 12px', fontSize: 18, lineHeight: 1 }}>›</button>
@@ -262,15 +264,11 @@ export default function MeetingCalendar({ meetings, renderCard }) {
               {monthVisibleMeetings.map(m => renderCard(m))}
             </div>
           ) : (
-            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>
-              Встреч в этот день нет
-            </div>
+            <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--color-text-muted)', fontSize: 14 }}>{t('ui.vstrech_v_etot_den_net')}</div>
           )
         )}
         {!selectedDay && (
-          <div style={{ textAlign: 'center', padding: '12px 0', color: 'var(--color-text-muted)', fontSize: 13 }}>
-            Нажмите на день, чтобы увидеть встречи
-          </div>
+          <div style={{ textAlign: 'center', padding: '12px 0', color: 'var(--color-text-muted)', fontSize: 13 }}>{t('ui.nazhmite_na_den_chtoby_uvidet_vstrechi')}</div>
         )}
       </>)}
     </div>

@@ -1,4 +1,5 @@
 import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { fmtDate, fmtTime } from '../lib/datetime'
 
 /*
@@ -41,6 +42,7 @@ export function NotesPreview({ text }) {
 // so callers only pass state + an onFile handler (was duplicated with a shared
 // ref map in each dashboard).
 export function UploadRecordingButton({ uploading, done, onFile }) {
+  const { t } = useTranslation()
   const ref = useRef(null)
   return (
     <>
@@ -51,10 +53,10 @@ export function UploadRecordingButton({ uploading, done, onFile }) {
       <button
         onClick={() => ref.current?.click()}
         disabled={uploading || done}
-        title="Загрузить запись созвона для AI-анализа"
+        title={t('ui.zagruzit_zapis_sozvona_dlya_ai_analiza')}
         style={{ fontSize: 12, fontWeight: 600, background: done ? '#f0fdf4' : 'var(--color-surface)', color: done ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: done ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
       >
-        {uploading ? 'Загрузка...' : done ? 'Анализирую...' : 'Запись'}
+        {uploading ? 'Загрузка...' : done ? t('ui.analiziruyu') : t('ui.zapis')}
       </button>
     </>
   )
@@ -67,17 +69,18 @@ export function AiBadge({ summary }) {
 }
 
 export function MeetingNoteEditor({ value, onChange, onSave, saving }) {
+  const { t } = useTranslation()
   return (
     <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
       <textarea
         value={value}
         onChange={onChange}
-        placeholder="Заметки к встрече (каждая строка — отдельный пункт)..."
+        placeholder={t('ui.zametki_k_vstreche_kazhdaya_stroka_otdelnyy')}
         className="input"
         style={{ resize: 'vertical', minHeight: 72, fontSize: 13 }}
       />
       <button onClick={onSave} disabled={saving} className="btn btn-accent btn-sm" style={{ marginTop: 6 }}>
-        {saving ? 'Сохранение...' : 'Сохранить'}
+        {saving ? t('ui.sohranenie') : t('common.save')}
       </button>
     </div>
   )

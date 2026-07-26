@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getManagers, createManager, updateManager, deleteManager } from '../api/client'
 import { toast, confirmDialog } from '../lib/ui'
 
@@ -16,6 +17,7 @@ const ROLE_BADGE = { admin: 'badge-red', manager: 'badge-blue', support: 'badge-
 const EMPTY = { name: '', role: 'manager', email: '', contact: '', responsibility: '' }
 
 export default function AdminEmployees() {
+  const { t } = useTranslation()
   const [list, setList] = useState([])
   const [loading, setLoading] = useState(true)
   const [form, setForm] = useState(EMPTY)
@@ -36,34 +38,34 @@ export default function AdminEmployees() {
 
   const handleSave = async (ev) => {
     ev.preventDefault()
-    if (!form.name.trim()) { toast('Укажите имя сотрудника', 'error'); return }
+    if (!form.name.trim()) { toast(t('ui.ukazhite_imya_sotrudnika'), 'error'); return }
     setSaving(true)
     try {
       if (editingId) {
         const { data } = await updateManager(editingId, form)
         setList(prev => prev.map(m => m.id === editingId ? data : m))
-        toast('Изменения сохранены', 'success')
+        toast(t('ui.izmeneniya_sohraneny'), 'success')
       } else {
         const { data } = await createManager(form)
         setList(prev => [...prev, data].sort((a, b) => a.name.localeCompare(b.name)))
-        toast('Сотрудник добавлен', 'success')
+        toast(t('ui.sotrudnik_dobavlen'), 'success')
       }
       startCreate()
     } catch {
-      toast('Не удалось сохранить', 'error')
+      toast(t('ui.ne_udalos_sohranit'), 'error')
     } finally { setSaving(false) }
   }
 
   const handleDelete = async (e) => {
     if (!await confirmDialog({
-      title: 'Удалить сотрудника?',
+      title: t('ui.udalit_sotrudnika'),
       message: `${e.name} будет снят со всех назначений. Действие необратимо.`,
       confirmText: 'Удалить', cancelText: 'Отмена', danger: true,
     })) return
     await deleteManager(e.id).catch(() => {})
     setList(prev => prev.filter(m => m.id !== e.id))
     if (editingId === e.id) startCreate()
-    toast('Сотрудник удалён', 'success')
+    toast(t('ui.sotrudnik_udalen'), 'success')
   }
 
   const field = (k, v) => setForm(f => ({ ...f, [k]: v }))
@@ -79,8 +81,8 @@ export default function AdminEmployees() {
           <div style={{ display: 'flex', justifyContent: 'center', padding: '40px 0' }}><div className="spinner" /></div>
         ) : list.length === 0 ? (
           <div style={{ padding: '32px 8px', textAlign: 'center', color: 'var(--color-text-muted)' }}>
-            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, color: 'var(--color-text-secondary)' }}>Сотрудников пока нет</p>
-            <p style={{ fontSize: 13 }}>Добавьте первого сотрудника в форме справа.</p>
+            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 4, color: 'var(--color-text-secondary)' }}>{t('ui.sotrudnikov_poka_net')}</p>
+            <p style={{ fontSize: 13 }}>{t('ui.dobavte_pervogo_sotrudnika_v_forme_sprava')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -98,11 +100,9 @@ export default function AdminEmployees() {
                   </div>
                   <span className={`badge ${ROLE_BADGE[e.role] || 'badge-gray'}`} style={{ fontSize: 11 }}>{ROLE_LABEL[e.role] || e.role}</span>
                   <div style={{ display: 'flex', gap: 6 }}>
-                    <button onClick={() => startEdit(e)} className="btn btn-secondary btn-sm" style={{ fontSize: 12 }}>Изменить</button>
+                    <button onClick={() => startEdit(e)} className="btn btn-secondary btn-sm" style={{ fontSize: 12 }}>{t('ui.izmenit')}</button>
                     <button onClick={() => handleDelete(e)}
-                      style={{ fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>
-                      Удалить
-                    </button>
+                      style={{ fontSize: 12, padding: '5px 12px', borderRadius: 8, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>{t('ui.udalit')}</button>
                   </div>
                 </div>
                 {(e.email || e.contact) && (
@@ -119,13 +119,13 @@ export default function AdminEmployees() {
 
       {/* Форма добавления/изменения */}
       <form onSubmit={handleSave} className="card" style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 16 }}>
-        <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>{editingId ? 'Изменить сотрудника' : 'Добавить сотрудника'}</p>
+        <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>{editingId ? t('ui.izmenit_sotrudnika') : t('ui.dobavit_sotrudnika')}</p>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontSize: 13 }}>Имя<span style={{ color: 'var(--color-danger)', marginLeft: 3 }}>*</span></label>
-          <input className="input" value={form.name} onChange={e => field('name', e.target.value)} placeholder="Иван Петров" required />
+          <label className="form-label" style={{ fontSize: 13 }}>{t('ui.imya')}<span style={{ color: 'var(--color-danger)', marginLeft: 3 }}>*</span></label>
+          <input className="input" value={form.name} onChange={e => field('name', e.target.value)} placeholder={t('ui.ivan_petrov')} required />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontSize: 13 }}>Роль</label>
+          <label className="form-label" style={{ fontSize: 13 }}>{t('ui.rol')}</label>
           <select className="input" value={form.role} onChange={e => field('role', e.target.value)}>
             {ROLES.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
           </select>
@@ -135,20 +135,20 @@ export default function AdminEmployees() {
           <input className="input" type="email" value={form.email} onChange={e => field('email', e.target.value)} placeholder="ivan@company.com" />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontSize: 13 }}>Контакт</label>
-          <input className="input" value={form.contact} onChange={e => field('contact', e.target.value)} placeholder="Telegram, телефон" />
+          <label className="form-label" style={{ fontSize: 13 }}>{t('ui.kontakt')}</label>
+          <input className="input" value={form.contact} onChange={e => field('contact', e.target.value)} placeholder={t('ui.telegram_telefon')} />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontSize: 13 }}>Зона ответственности</label>
+          <label className="form-label" style={{ fontSize: 13 }}>{t('ui.zona_otvetstvennosti')}</label>
           <textarea className="input" value={form.responsibility} onChange={e => field('responsibility', e.target.value)}
-            placeholder="Например: клиенты Enterprise, поддержка RU" rows={2} style={{ resize: 'none' }} />
+            placeholder={t('ui.naprimer_klienty_enterprise_podderzhka_ru')} rows={2} style={{ resize: 'none' }} />
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <button type="submit" disabled={saving} className="btn btn-accent" style={{ flex: 1 }}>
-            {saving ? 'Сохранение...' : editingId ? 'Сохранить' : 'Добавить'}
+            {saving ? 'Сохранение...' : editingId ? t('common.save') : t('common.add')}
           </button>
           {editingId && (
-            <button type="button" onClick={startCreate} className="btn btn-secondary">Отмена</button>
+            <button type="button" onClick={startCreate} className="btn btn-secondary">{t('ui.otmena')}</button>
           )}
         </div>
       </form>

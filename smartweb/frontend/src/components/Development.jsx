@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import EmptyState from './EmptyState'
 import { toast } from '../lib/ui'
@@ -60,6 +61,7 @@ function toDateInput(iso) {
 
 // ── навык сотрудника (просмотр/редактирование) ───────────────────────────────
 function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
+  const { t } = useTranslation()
   const [showHist, setShowHist] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -70,7 +72,7 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
     finally { setSaving(false) }
   }
   const remove = async () => {
-    if (!window.confirm('Удалить навык?')) return
+    if (!window.confirm(t('ui.udalit_navyk'))) return
     try { await deleteUserSkill(us.id, meId); onRemoved(us.id) }
     catch (e) { toast(e?.response?.data?.detail || 'Не удалось удалить', 'error') }
   }
@@ -95,25 +97,22 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
           {us.target_date && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>Срок: {fmtDate(us.target_date)}</p>}
         </div>
         {!readOnly && (
-          <button onClick={remove} style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>Удалить</button>
+          <button onClick={remove} style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>{t('ui.udalit')}</button>
         )}
       </div>
 
       {!readOnly && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
-          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Текущий
-            <select className="input" disabled={saving} value={us.current_level} onChange={e => patch({ current_level: Number(e.target.value) })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
+          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.tekuschiy')}<select className="input" disabled={saving} value={us.current_level} onChange={e => patch({ current_level: Number(e.target.value) })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
               {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
             </select>
           </label>
-          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Желаемый
-            <select className="input" disabled={saving} value={us.desired_level || ''} onChange={e => patch({ desired_level: e.target.value ? Number(e.target.value) : 0 })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
+          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.zhelaemyy')}<select className="input" disabled={saving} value={us.desired_level || ''} onChange={e => patch({ desired_level: e.target.value ? Number(e.target.value) : 0 })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
               <option value="">—</option>
               {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
             </select>
           </label>
-          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>Срок
-            <input type="date" className="input" disabled={saving} value={toDateInput(us.target_date)} onChange={e => patch({ target_date: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }} />
+          <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.srok')}<input type="date" className="input" disabled={saving} value={toDateInput(us.target_date)} onChange={e => patch({ target_date: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }} />
           </label>
         </div>
       )}
@@ -140,6 +139,7 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
 
 // ── шаг плана развития ───────────────────────────────────────────────────────
 function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const [saving, setSaving] = useState(false)
   const linked = !!step.goal_id
@@ -151,7 +151,7 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
     finally { setSaving(false) }
   }
   const remove = async () => {
-    if (!window.confirm('Удалить шаг?')) return
+    if (!window.confirm(t('ui.udalit_shag'))) return
     try { await deleteDevStep(step.id, meId); onRemoved(step.id) }
     catch (e) { toast(e?.response?.data?.detail || 'Не удалось удалить', 'error') }
   }
@@ -164,8 +164,8 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
             {step.skill_name && <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--gray-100)', borderRadius: 6, padding: '1px 8px' }}>Навык: {step.skill_name}</span>}
             {step.goal_title && <span style={{ fontSize: 11, color: '#1d4ed8', background: '#eff6ff', borderRadius: 6, padding: '1px 8px' }}>Цель: {step.goal_title}</span>}
-            {step.assigned_by_lead && <span style={{ fontSize: 11, color: '#7c3aed', background: '#ede9fe', borderRadius: 6, padding: '1px 8px' }}>Назначено руководителем</span>}
-            {step.overdue && <span style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '1px 8px' }}>Просрочен</span>}
+            {step.assigned_by_lead && <span style={{ fontSize: 11, color: '#7c3aed', background: '#ede9fe', borderRadius: 6, padding: '1px 8px' }}>{t('ui.naznacheno_rukovoditelem')}</span>}
+            {step.overdue && <span style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '1px 8px' }}>{t('ui.prosrochen')}</span>}
           </div>
         </div>
         <StepStatusBadge status={step.status} />
@@ -190,7 +190,7 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
               {Object.keys(STEP_STATUS).map(s => <option key={s} value={s}>{STEP_STATUS[s].label}</option>)}
             </select>
           ) : (
-            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>статус ведётся связанной целью</span>
+            <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{t('ui.status_vedetsya_svyazannoy_celyu_2')}</span>
           )}
         </div>
       )}
@@ -199,7 +199,7 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
         <button onClick={() => setExpanded(v => !v)} style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: 0 }}>
           Обсуждение{step.comments?.length ? ` (${step.comments.length})` : ''}
         </button>
-        {!readOnly && <button onClick={remove} style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>Удалить</button>}
+        {!readOnly && <button onClick={remove} style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{t('ui.udalit')}</button>}
       </div>
       {expanded && (
         <CommentThread goal={step} meId={meId} canFeedback={canFeedback}
@@ -211,6 +211,7 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
 
 // ── рекомендация ─────────────────────────────────────────────────────────────
 function RecommendationCard({ rec, meId, onChanged }) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const act = async (action) => {
     setBusy(true)
@@ -229,11 +230,11 @@ function RecommendationCard({ rec, meId, onChanged }) {
       <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>{rec.title}</h4>
       {rec.body && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 4, whiteSpace: 'pre-wrap' }}>{rec.body}</p>}
       {done ? (
-        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{rec.status === 'accepted' ? 'Принято — добавлено в план' : 'Отклонено'}</p>
+        <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>{rec.status === 'accepted' ? t('ui.prinyato_dobavleno_v_plan') : t('ui.otkloneno')}</p>
       ) : (
         <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-          <button className="btn btn-accent btn-sm" disabled={busy} onClick={() => act('accept')}>Принять и добавить в план</button>
-          <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => act('dismiss')}>Отклонить</button>
+          <button className="btn btn-accent btn-sm" disabled={busy} onClick={() => act('accept')}>{t('ui.prinyat_i_dobavit_v_plan')}</button>
+          <button className="btn btn-secondary btn-sm" disabled={busy} onClick={() => act('dismiss')}>{t('ui.otklonit')}</button>
         </div>
       )}
     </div>
@@ -242,6 +243,7 @@ function RecommendationCard({ rec, meId, onChanged }) {
 
 // ── добавление навыка ────────────────────────────────────────────────────────
 function AddSkillForm({ meId, dict, onAdded, onCancel }) {
+  const { t } = useTranslation()
   const [skillId, setSkillId] = useState('')
   const [name, setName] = useState('')
   const [category, setCategory] = useState('technical')
@@ -250,7 +252,7 @@ function AddSkillForm({ meId, dict, onAdded, onCancel }) {
   const [saving, setSaving] = useState(false)
 
   const submit = async () => {
-    if (!skillId && !name.trim()) { toast('Выберите или введите навык', 'error'); return }
+    if (!skillId && !name.trim()) { toast(t('ui.vyberite_ili_vvedite_navyk'), 'error'); return }
     setSaving(true)
     try {
       const { data } = await addUserSkill({
@@ -267,36 +269,34 @@ function AddSkillForm({ meId, dict, onAdded, onCancel }) {
   return (
     <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div>
-        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>Навык из справочника</label>
+        <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{t('ui.navyk_iz_spravochnika')}</label>
         <select className="input" value={skillId} onChange={e => setSkillId(e.target.value)} style={{ marginTop: 4 }}>
-          <option value="">— новый навык —</option>
+          <option value="">{t('ui.novyy_navyk')}</option>
           {dict.map(s => <option key={s.id} value={s.id}>{s.name} ({CATEGORY_LABEL[s.category] || s.category})</option>)}
         </select>
       </div>
       {!skillId && (
         <div style={{ display: 'flex', gap: 8 }}>
-          <input className="input" placeholder="Название навыка" value={name} onChange={e => setName(e.target.value)} style={{ flex: 1 }} />
+          <input className="input" placeholder={t('ui.nazvanie_navyka')} value={name} onChange={e => setName(e.target.value)} style={{ flex: 1 }} />
           <select className="input" value={category} onChange={e => setCategory(e.target.value)} style={{ width: 'auto' }}>
             {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
           </select>
         </div>
       )}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Текущий уровень
-          <select className="input" value={current} onChange={e => setCurrent(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
+        <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.tekuschiy_uroven')}<select className="input" value={current} onChange={e => setCurrent(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
             {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
           </select>
         </label>
-        <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Желаемый
-          <select className="input" value={desired} onChange={e => setDesired(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
+        <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.zhelaemyy')}<select className="input" value={desired} onChange={e => setDesired(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
             <option value="">—</option>
             {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
           </select>
         </label>
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button className="btn btn-secondary btn-sm" onClick={onCancel}>Отмена</button>
-        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? 'Добавляем…' : 'Добавить навык'}</button>
+        <button className="btn btn-secondary btn-sm" onClick={onCancel}>{t('ui.otmena')}</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? t('ui.dobavlyaem') : t('ui.dobavit_navyk')}</button>
       </div>
     </div>
   )
@@ -304,13 +304,14 @@ function AddSkillForm({ meId, dict, onAdded, onCancel }) {
 
 // ── добавление шага ──────────────────────────────────────────────────────────
 function AddStepForm({ meId, userId, skills, onAdded, onCancel }) {
+  const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
   const [skillId, setSkillId] = useState('')
   const [due, setDue] = useState('')
   const [saving, setSaving] = useState(false)
   const submit = async () => {
-    if (!title.trim()) { toast('Укажите название шага', 'error'); return }
+    if (!title.trim()) { toast(t('ui.ukazhite_nazvanie_shaga'), 'error'); return }
     setSaving(true)
     try {
       const { data } = await createDevStep({
@@ -323,18 +324,18 @@ function AddStepForm({ meId, userId, skills, onAdded, onCancel }) {
   }
   return (
     <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <input className="input" placeholder="Название шага" value={title} onChange={e => setTitle(e.target.value)} />
-      <textarea className="input" placeholder="Описание (необязательно)" rows={2} value={desc} onChange={e => setDesc(e.target.value)} style={{ resize: 'vertical' }} />
+      <input className="input" placeholder={t('ui.nazvanie_shaga')} value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea className="input" placeholder={t('ui.opisanie_neobyazatelno')} rows={2} value={desc} onChange={e => setDesc(e.target.value)} style={{ resize: 'vertical' }} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select className="input" value={skillId} onChange={e => setSkillId(e.target.value)} style={{ flex: 1, minWidth: 160 }}>
-          <option value="">Навык (необязательно)</option>
+          <option value="">{t('ui.navyk_neobyazatelno')}</option>
           {skills.map(s => <option key={s.id} value={s.skill_id}>{s.skill_name}</option>)}
         </select>
         <input type="date" className="input" value={due} onChange={e => setDue(e.target.value)} style={{ width: 'auto' }} />
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button className="btn btn-secondary btn-sm" onClick={onCancel}>Отмена</button>
-        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? 'Добавляем…' : 'Добавить шаг'}</button>
+        <button className="btn btn-secondary btn-sm" onClick={onCancel}>{t('ui.otmena')}</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? t('ui.dobavlyaem') : t('ui.dobavit_shag')}</button>
       </div>
     </div>
   )
@@ -342,6 +343,7 @@ function AddStepForm({ meId, userId, skills, onAdded, onCancel }) {
 
 // ══ Сотрудник ═════════════════════════════════════════════════════════════════
 export function DevelopmentMember({ user }) {
+  const { t } = useTranslation()
   const meId = user.id
   const [dev, setDev] = useState(null)
   const [dict, setDict] = useState([])
@@ -364,7 +366,7 @@ export function DevelopmentMember({ user }) {
 
   const askAi = async () => {
     setAiBusy(true)
-    try { const { data } = await aiDevRecommendation(meId, meId); setDev(d => ({ ...d, recommendations: [data, ...d.recommendations] })); toast('Пит добавил рекомендацию', 'success') }
+    try { const { data } = await aiDevRecommendation(meId, meId); setDev(d => ({ ...d, recommendations: [data, ...d.recommendations] })); toast(t('ui.pit_dobavil_rekomendaciyu'), 'success') }
     catch (e) {
       const detail = e?.response?.data?.detail
       if (detail?.code === 'feature_locked') toast(detail.message, 'info')
@@ -386,61 +388,59 @@ export function DevelopmentMember({ user }) {
       {/* Навыки */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>Навыки</h3>
-          {!showSkill && <button className="btn btn-accent btn-sm" onClick={() => setShowSkill(true)}>+ Навык</button>}
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.navyki')}</h3>
+          {!showSkill && <button className="btn btn-accent btn-sm" onClick={() => setShowSkill(true)}>{t('ui.navyk')}</button>}
         </div>
         {showSkill && <AddSkillForm meId={meId} dict={dict} onCancel={() => setShowSkill(false)} onAdded={(s) => { setDev(d => ({ ...d, skills: [...d.skills, s] })); setShowSkill(false) }} />}
-        {dev.skills.length === 0 && !showSkill && <EmptyState title="Навыки не заданы" desc="Добавьте навык и укажите текущий и желаемый уровень." />}
+        {dev.skills.length === 0 && !showSkill && <EmptyState title={t('ui.navyki_ne_zadany')} desc="Добавьте навык и укажите текущий и желаемый уровень." />}
         {dev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} onChanged={upSkill} onRemoved={(id) => upSkill(null, id)} />)}
       </section>
 
       {/* План развития */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>План развития
-            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginLeft: 8 }}>прогресс {dev.plan_progress}%</span>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.plan_razvitiya')}<span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginLeft: 8 }}>прогресс {dev.plan_progress}%</span>
           </h3>
-          {!showStep && <button className="btn btn-accent btn-sm" onClick={() => setShowStep(true)}>+ Шаг</button>}
+          {!showStep && <button className="btn btn-accent btn-sm" onClick={() => setShowStep(true)}>{t('ui.shag')}</button>}
         </div>
         {showStep && <AddStepForm meId={meId} userId={meId} skills={dev.skills} onCancel={() => setShowStep(false)} onAdded={(s) => { setDev(d => ({ ...d, steps: [s, ...d.steps] })); setShowStep(false) }} />}
-        {dev.steps.length === 0 && !showStep && <EmptyState title="План пуст" desc="Добавьте первый шаг развития — свяжите его с навыком и сроком." />}
+        {dev.steps.length === 0 && !showStep && <EmptyState title={t('ui.plan_pust')} desc="Добавьте первый шаг развития — свяжите его с навыком и сроком." />}
         {dev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} canFeedback={false} onChanged={upStep} onRemoved={(id) => upStep(null, id)} />)}
       </section>
 
       {/* Рекомендации */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>Рекомендации</h3>
-          <button className="btn btn-secondary btn-sm" disabled={aiBusy} onClick={askAi}>{aiBusy ? 'Пит думает…' : 'Спросить Пита'}</button>
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.rekomendacii')}</h3>
+          <button className="btn btn-secondary btn-sm" disabled={aiBusy} onClick={askAi}>{aiBusy ? t('ui.pit_dumaet') : t('pit.ask')}</button>
         </div>
-        {openRecs.length === 0 && <EmptyState title="Рекомендаций нет" desc="Задайте желаемые уровни навыков — появятся рекомендации по разрыву." />}
+        {openRecs.length === 0 && <EmptyState title={t('ui.rekomendaciy_net')} desc="Задайте желаемые уровни навыков — появятся рекомендации по разрыву." />}
         {openRecs.map(r => <RecommendationCard key={r.id} rec={r} meId={meId} onChanged={upRec} />)}
       </section>
 
       {/* Учебные цели (единая модель с вкладкой «Цели») */}
       <section style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
-          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>Учебные цели</h3>
-          {!showLearn && <button className="btn btn-accent btn-sm" onClick={() => setShowLearn(true)}>+ Учебная цель</button>}
+          <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.uchebnye_celi')}</h3>
+          {!showLearn && <button className="btn btn-accent btn-sm" onClick={() => setShowLearn(true)}>{t('ui.uchebnaya_cel')}</button>}
         </div>
         {showLearn && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Связанный навык
-              <select className="input" value={learnSkill} onChange={e => setLearnSkill(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
-                <option value="">— нет —</option>
+            <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.svyazannyy_navyk')}<select className="input" value={learnSkill} onChange={e => setLearnSkill(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
+                <option value="">{t('ui.net_2')}</option>
                 {dev.skills.map(s => <option key={s.id} value={s.skill_id}>{s.skill_name}</option>)}
               </select>
             </label>
-            <GoalForm submitLabel="Создать учебную цель" placeholder="Например: Пройти курс по системному дизайну"
+            <GoalForm submitLabel="Создать учебную цель" placeholder={t('ui.naprimer_proyti_kurs_po_sistemnomu_dizaynu')}
               onCancel={() => { setShowLearn(false); setLearnSkill('') }}
               onCreate={async (payload) => {
                 const { data } = await createGoal({ user_id: meId, goal_kind: 'learning', skill_id: learnSkill ? Number(learnSkill) : undefined, ...payload })
                 setDev(d => ({ ...d, learning_goals: [data, ...(d.learning_goals || [])] }))
-                setShowLearn(false); setLearnSkill(''); toast('Учебная цель создана — видна и во вкладке «Цели»', 'success')
+                setShowLearn(false); setLearnSkill(''); toast(t('ui.uchebnaya_cel_sozdana_vidna_i_vo'), 'success')
               }} />
           </div>
         )}
-        {learning.length === 0 && !showLearn && <EmptyState title="Учебных целей нет" desc="Создайте учебную цель — она появится и во вкладке «Цели»." />}
+        {learning.length === 0 && !showLearn && <EmptyState title={t('ui.uchebnyh_celey_net')} desc="Создайте учебную цель — она появится и во вкладке «Цели»." />}
         {learning.map(g => (
           <div key={g.id} className="card" style={{ padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
@@ -451,7 +451,7 @@ export function DevelopmentMember({ user }) {
             <div style={{ marginTop: 8, height: 8, background: 'var(--gray-100)', borderRadius: 999, overflow: 'hidden' }}>
               <div style={{ width: `${g.progress}%`, height: '100%', background: g.progress >= 100 ? 'var(--color-success)' : 'var(--color-accent)' }} />
             </div>
-            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>Прогресс и статус ведутся во вкладке «Цели».</p>
+            <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8 }}>{t('ui.progress_i_status_vedutsya_vo_vkladke')}</p>
           </div>
         ))}
       </section>
@@ -461,6 +461,7 @@ export function DevelopmentMember({ user }) {
 
 // ── карточка сотрудника в обзоре тимлида ─────────────────────────────────────
 function TeamMemberRow({ m, meId, onOpen }) {
+  const { t } = useTranslation()
   return (
     <div className="card" style={{ padding: 16 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -468,12 +469,12 @@ function TeamMemberRow({ m, meId, onOpen }) {
           {(m.user_name || '?').slice(0, 1).toUpperCase()}
         </div>
         <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{m.user_name}</h4>
-        <button className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto' }} onClick={() => onOpen(m.user_id)}>Открыть развитие</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto' }} onClick={() => onOpen(m.user_id)}>{t('ui.otkryt_razvitie')}</button>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 12 }}>
         <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', background: 'var(--gray-100)', borderRadius: 6, padding: '3px 10px' }}>Навыков: {m.skills.length}</span>
         <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', background: 'var(--gray-100)', borderRadius: 6, padding: '3px 10px' }}>План: {m.plan_progress}%</span>
-        {!m.has_active_plan && <span style={{ fontSize: 12, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '3px 10px' }}>Нет активного плана</span>}
+        {!m.has_active_plan && <span style={{ fontSize: 12, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '3px 10px' }}>{t('ui.net_aktivnogo_plana')}</span>}
         {m.overdue_steps > 0 && <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-danger)', background: 'var(--color-danger-bg)', border: '1px solid #fca5a5', borderRadius: 6, padding: '3px 10px' }}>Просрочено: {m.overdue_steps}</span>}
         {m.gaps > 0 && <span style={{ fontSize: 12, color: 'var(--color-text-secondary)', background: 'var(--gray-100)', borderRadius: 6, padding: '3px 10px' }}>Разрывов: {m.gaps}</span>}
       </div>
@@ -483,6 +484,7 @@ function TeamMemberRow({ m, meId, onOpen }) {
 
 // ── назначение направления роста тимлидом ────────────────────────────────────
 function AssignDirection({ meId, userId, skills, onDone }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [title, setTitle] = useState('')
   const [body, setBody] = useState('')
@@ -491,7 +493,7 @@ function AssignDirection({ meId, userId, skills, onDone }) {
   const [due, setDue] = useState('')
   const [saving, setSaving] = useState(false)
   const submit = async () => {
-    if (!title.trim()) { toast('Укажите направление', 'error'); return }
+    if (!title.trim()) { toast(t('ui.ukazhite_napravlenie'), 'error'); return }
     setSaving(true)
     try {
       await createDevRecommendation({
@@ -499,30 +501,30 @@ function AssignDirection({ meId, userId, skills, onDone }) {
         skill_id: skillId ? Number(skillId) : undefined, target_level: level ? Number(level) : undefined,
         target_date: due ? new Date(due).toISOString() : undefined,
       })
-      toast('Направление назначено — сотрудник получит уведомление', 'success')
+      toast(t('ui.napravlenie_naznacheno_sotrudnik_poluchit_uved'), 'success')
       setTitle(''); setBody(''); setSkillId(''); setLevel(''); setDue(''); setOpen(false); onDone?.()
     } catch (e) { toast(e?.response?.data?.detail || 'Не удалось назначить', 'error') }
     finally { setSaving(false) }
   }
-  if (!open) return <button className="btn btn-accent btn-sm" onClick={() => setOpen(true)}>Назначить направление роста</button>
+  if (!open) return <button className="btn btn-accent btn-sm" onClick={() => setOpen(true)}>{t('ui.naznachit_napravlenie_rosta')}</button>
   return (
     <div className="card" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <input className="input" placeholder="Направление роста" value={title} onChange={e => setTitle(e.target.value)} />
-      <textarea className="input" placeholder="Комментарий (необязательно)" rows={2} value={body} onChange={e => setBody(e.target.value)} style={{ resize: 'vertical' }} />
+      <input className="input" placeholder={t('ui.napravlenie_rosta')} value={title} onChange={e => setTitle(e.target.value)} />
+      <textarea className="input" placeholder={t('ui.kommentariy_neobyazatelno')} rows={2} value={body} onChange={e => setBody(e.target.value)} style={{ resize: 'vertical' }} />
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <select className="input" value={skillId} onChange={e => setSkillId(e.target.value)} style={{ flex: 1, minWidth: 140 }}>
-          <option value="">Навык (необязательно)</option>
+          <option value="">{t('ui.navyk_neobyazatelno')}</option>
           {skills.map(s => <option key={s.id} value={s.skill_id}>{s.skill_name}</option>)}
         </select>
         <select className="input" value={level} onChange={e => setLevel(e.target.value)} style={{ width: 'auto' }}>
-          <option value="">Целевой уровень</option>
+          <option value="">{t('ui.celevoy_uroven')}</option>
           {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
         </select>
         <input type="date" className="input" value={due} onChange={e => setDue(e.target.value)} style={{ width: 'auto' }} />
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-        <button className="btn btn-secondary btn-sm" onClick={() => setOpen(false)}>Отмена</button>
-        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? 'Назначаем…' : 'Назначить'}</button>
+        <button className="btn btn-secondary btn-sm" onClick={() => setOpen(false)}>{t('ui.otmena')}</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={saving}>{saving ? t('ui.naznachaem') : t('ui.naznachit')}</button>
       </div>
     </div>
   )
@@ -530,6 +532,7 @@ function AssignDirection({ meId, userId, skills, onDone }) {
 
 // ══ Тимлид ════════════════════════════════════════════════════════════════════
 export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
+  const { t } = useTranslation()
   const meId = user.id
   const myTeams = (teams || []).filter(t => t.team_lead_id === meId)
   const [teamId, setTeamId] = useState(selectedTeamId || myTeams[0]?.id || null)
@@ -563,20 +566,20 @@ export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
     const m = members.find(x => x.user_id === openMember)
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <button onClick={() => { setOpenMember(null); setMemberDev(null) }} style={{ fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', alignSelf: 'flex-start', padding: 0 }}>← К обзору команды</button>
+        <button onClick={() => { setOpenMember(null); setMemberDev(null) }} style={{ fontSize: 13, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', alignSelf: 'flex-start', padding: 0 }}>{t('ui.k_obzoru_komandy')}</button>
         <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text-primary)' }}>Развитие: {m?.user_name}</h3>
 
         <AssignDirection meId={meId} userId={openMember} skills={memberDev.skills} onDone={load} />
 
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>Навыки</h4>
-          {memberDev.skills.length === 0 && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Навыки не заданы.</p>}
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.navyki')}</h4>
+          {memberDev.skills.length === 0 && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.navyki_ne_zadany_2')}</p>}
           {memberDev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} readOnly onChanged={() => {}} onRemoved={() => {}} />)}
         </section>
 
         <section style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>План развития</h4>
-          {memberDev.steps.length === 0 && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>План пуст.</p>}
+          <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.plan_razvitiya')}</h4>
+          {memberDev.steps.length === 0 && <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.plan_pust_2')}</p>}
           {memberDev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} readOnly canFeedback onChanged={upMemberStep} onRemoved={() => {}} />)}
         </section>
       </div>
@@ -596,7 +599,7 @@ export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
         )}
       </div>
       {loading && <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>}
-      {!loading && members.length === 0 && <EmptyState title="В команде пока нет данных развития" desc="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
+      {!loading && members.length === 0 && <EmptyState title={t('ui.v_komande_poka_net_dannyh_razvitiya')} desc="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
       {!loading && members.map(m => <TeamMemberRow key={m.user_id} m={m} meId={meId} onOpen={openMemberDev} />)}
     </div>
   )

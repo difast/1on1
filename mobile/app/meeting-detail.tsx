@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useI18n } from '../src/lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Linking, Alert, TextInput, ActivityIndicator,
@@ -37,6 +38,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export default function MeetingDetailScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
@@ -71,7 +73,7 @@ export default function MeetingDetailScreen() {
     } catch {
       // Встреча могла быть удалена или стать недоступной (устаревшее
       // уведомление) — понятное сообщение вместо пустого экрана.
-      Alert.alert('Встреча недоступна', 'Эта встреча удалена или у вас нет к ней доступа.');
+      Alert.alert(t('ui.vstrecha_nedostupna'), 'Эта встреча удалена или у вас нет к ней доступа.');
       router.back();
     } finally { setLoading(false); }
   }, [params.id]);
@@ -125,7 +127,7 @@ export default function MeetingDetailScreen() {
     try {
       await confirmMeeting(meeting.id);
       setMeeting((prev: any) => ({ ...prev, status: 'confirmed' }));
-    } catch { Alert.alert('Ошибка', 'Не удалось подтвердить встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось подтвердить встречу'); }
     finally { setActionLoading(false); }
   };
 
@@ -135,7 +137,7 @@ export default function MeetingDetailScreen() {
     try {
       await declineMeeting(meeting.id);
       setMeeting((prev: any) => ({ ...prev, status: 'declined' }));
-    } catch { Alert.alert('Ошибка', 'Не удалось отклонить встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось отклонить встречу'); }
     finally { setActionLoading(false); }
   };
 
@@ -145,7 +147,7 @@ export default function MeetingDetailScreen() {
     // Accept "YYYY-MM-DD HH:MM" or "YYYY-MM-DDTHH:MM"
     const iso = slot.replace(' ', 'T');
     if (isNaN(new Date(iso).getTime())) {
-      Alert.alert('Неверная дата', 'Формат: ГГГГ-ММ-ДД ЧЧ:ММ');
+      Alert.alert(t('ui.nevernaya_data'), 'Формат: ГГГГ-ММ-ДД ЧЧ:ММ');
       return;
     }
     setActionLoading(true);
@@ -154,7 +156,7 @@ export default function MeetingDetailScreen() {
       setMeeting((prev: any) => ({ ...prev, scheduled_date: iso, is_rescheduled: true, status: prev.status === 'declined' || prev.status === 'cancelled' ? 'scheduled' : prev.status }));
       setShowReschedule(false);
       setNewDate('');
-    } catch { Alert.alert('Ошибка', 'Не удалось перенести встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось перенести встречу'); }
     finally { setActionLoading(false); }
   };
 
@@ -171,7 +173,7 @@ export default function MeetingDetailScreen() {
         setNotes(prev => [...prev, n]);
       }
       setNoteText('');
-    } catch { Alert.alert('Ошибка', 'Не удалось сохранить заметку'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку'); }
     finally { setNoteLoading(false); }
   };
 
@@ -264,7 +266,7 @@ export default function MeetingDetailScreen() {
           {meeting.is_rescheduled === true && (
             <View style={styles.infoRow}>
               <Ionicons name="refresh-outline" size={16} color={colors.warning} />
-              <Text style={[styles.infoText, { color: colors.warning }]}>Перенесена</Text>
+              <Text style={[styles.infoText, { color: colors.warning }]}>{t('ui.perenesena')}</Text>
             </View>
           )}
         </View>
@@ -273,11 +275,9 @@ export default function MeetingDetailScreen() {
         {feedback && (
           <View style={[styles.coachCard, !feedback.covered && styles.coachCardWarn]}>
             <View style={styles.coachHead}>
-              <Text style={[styles.coachTag, { color: feedback.covered ? colors.success : '#b45309' }]}>
-                Пит: итог встречи
-              </Text>
+              <Text style={[styles.coachTag, { color: feedback.covered ? colors.success : '#b45309' }]}>{t('ui.pit_itog_vstrechi')}</Text>
               <TouchableOpacity onPress={() => setCoachHidden(true)} hitSlop={8}>
-                <Text style={styles.coachHide}>Скрыть</Text>
+                <Text style={styles.coachHide}>{t('ui.skryt')}</Text>
               </TouchableOpacity>
             </View>
             <Text style={styles.coachNote}>{feedback.note}</Text>
@@ -302,7 +302,7 @@ export default function MeetingDetailScreen() {
                   disabled={actionLoading}
                 >
                   <Ionicons name="checkmark" size={18} color="#fff" />
-                  <Text style={styles.confirmBtnText}>Подтвердить</Text>
+                  <Text style={styles.confirmBtnText}>{t('ui.podtverdit')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.declineBtn, actionLoading && styles.btnDisabled]}
@@ -310,7 +310,7 @@ export default function MeetingDetailScreen() {
                   disabled={actionLoading}
                 >
                   <Ionicons name="close" size={18} color={colors.danger} />
-                  <Text style={styles.declineBtnText}>Отклонить</Text>
+                  <Text style={styles.declineBtnText}>{t('ui.otklonit')}</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -321,7 +321,7 @@ export default function MeetingDetailScreen() {
               activeOpacity={0.8}
             >
               <Ionicons name="calendar-outline" size={18} color={colors.accent} />
-              <Text style={styles.rescheduleBtnText}>Перенести встречу</Text>
+              <Text style={styles.rescheduleBtnText}>{t('ui.perenesti_vstrechu')}</Text>
             </TouchableOpacity>
 
             {showReschedule && (
@@ -330,7 +330,7 @@ export default function MeetingDetailScreen() {
                   style={styles.rescheduleInput}
                   value={newDate}
                   onChangeText={setNewDate}
-                  placeholder="Новая дата: ГГГГ-ММ-ДД ЧЧ:ММ"
+                  placeholder={t('ui.novaya_data_gggg_mm_dd_chch')}
                   placeholderTextColor={colors.textMuted}
                   autoFocus
                 />
@@ -339,7 +339,7 @@ export default function MeetingDetailScreen() {
                     style={styles.noteCancelBtn}
                     onPress={() => { setShowReschedule(false); setNewDate(''); }}
                   >
-                    <Text style={styles.noteCancelText}>Отмена</Text>
+                    <Text style={styles.noteCancelText}>{t('ui.otmena')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.noteSaveBtn, (!newDate.trim() || actionLoading) && styles.btnDisabled]}
@@ -364,14 +364,14 @@ export default function MeetingDetailScreen() {
           >
             <Ionicons name="videocam-outline" size={20} color="#fff" />
             <Text style={styles.callBtnText}>
-              {callLoading ? 'Подключение...' : 'Начать видеозвонок'}
+              {callLoading ? t('ui.podklyuchenie') : t('ui.nachat_videozvonok')}
             </Text>
           </TouchableOpacity>
         )}
 
         {/* Notes */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Заметки</Text>
+          <Text style={styles.sectionTitle}>{t('ui.zametki')}</Text>
         </View>
 
         {notes.map(note => (
@@ -391,7 +391,7 @@ export default function MeetingDetailScreen() {
             style={styles.noteInput}
             value={noteText}
             onChangeText={setNoteText}
-            placeholder={editingNote ? 'Редактировать заметку...' : 'Добавить заметку...'}
+            placeholder={editingNote ? t('ui.redaktirovat_zametku') : t('ui.dobavit_zametku_2')}
             placeholderTextColor={colors.textMuted}
             multiline
           />
@@ -401,7 +401,7 @@ export default function MeetingDetailScreen() {
                 style={styles.noteCancelBtn}
                 onPress={() => { setEditingNote(null); setNoteText(''); }}
               >
-                <Text style={styles.noteCancelText}>Отмена</Text>
+                <Text style={styles.noteCancelText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity
@@ -409,7 +409,7 @@ export default function MeetingDetailScreen() {
               onPress={handleSaveNote}
               disabled={!noteText.trim() || noteLoading}
             >
-              <Text style={styles.noteSaveText}>{noteLoading ? '...' : editingNote ? 'Сохранить' : 'Добавить'}</Text>
+              <Text style={styles.noteSaveText}>{noteLoading ? '...' : editingNote ? t('common.save') : t('common.add')}</Text>
             </TouchableOpacity>
           </View>
         </View>

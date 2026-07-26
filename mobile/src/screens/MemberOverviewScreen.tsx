@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, TextInput, Alert, Modal, KeyboardAvoidingView, Platform, Pressable,
@@ -17,6 +18,7 @@ import { Spinner } from '../components/Spinner';
 import { NotificationBell } from '../components/NotificationBell';
 
 export default function MemberOverviewScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -70,7 +72,7 @@ export default function MemberOverviewScreen() {
       setMoodSent(true);
       setTimeout(() => setShowMoodSurvey(false), 1500);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось отправить опрос');
+      Alert.alert(t('ui.oshibka'), 'Не удалось отправить опрос');
     } finally {
       setMoodLoading(false);
     }
@@ -168,7 +170,7 @@ export default function MemberOverviewScreen() {
       setNoteText('');
       setShowNoteForm(false);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось создать заметку');
+      Alert.alert(t('ui.oshibka'), 'Не удалось создать заметку');
     } finally { setNoteLoading(false); }
   };
 
@@ -181,15 +183,15 @@ export default function MemberOverviewScreen() {
       await updateNote(editingNoteId, { content: editNoteText.trim() });
       setNotes(prev => prev.map((n: any) => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
       setEditingNoteId(null);
-    } catch { Alert.alert('Ошибка', 'Не удалось сохранить'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить'); }
     finally { setEditNoteLoading(false); }
   };
 
   const handleDeleteNote = (noteId: number) => {
-    Alert.alert('Удалить заметку?', undefined, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('ui.udalit_zametku'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить', style: 'destructive', onPress: async () => {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
           try {
             await deleteNote(noteId);
             setNotes(prev => prev.filter(n => n.id !== noteId));
@@ -214,7 +216,7 @@ export default function MemberOverviewScreen() {
       }
       setExpandedMeetingNote(null);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -240,14 +242,14 @@ export default function MemberOverviewScreen() {
     return (
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Обзор</Text>
+          <Text style={styles.headerTitle}>{t('ui.obzor')}</Text>
         </View>
         <View style={styles.joinContainer}>
           <View style={styles.joinIconWrap}><Ionicons name="link-outline" size={36} color={colors.accent} /></View>
-          <Text style={styles.joinTitle}>Присоединитесь к команде</Text>
-          <Text style={styles.joinDesc}>Введите код приглашения от вашего тимлида</Text>
+          <Text style={styles.joinTitle}>{t('ui.prisoedinites_k_komande')}</Text>
+          <Text style={styles.joinDesc}>{t('ui.vvedite_kod_priglasheniya_ot_vashego_timlida')}</Text>
           <View style={styles.joinForm}>
-            <Text style={styles.label}>Код приглашения</Text>
+            <Text style={styles.label}>{t('ui.kod_priglasheniya')}</Text>
             <TextInput
               style={styles.input}
               value={joinCode}
@@ -266,7 +268,7 @@ export default function MemberOverviewScreen() {
               onPress={handleJoin}
               disabled={joinLoading}
             >
-              <Text style={styles.joinBtnText}>{joinLoading ? 'Присоединение...' : 'Присоединиться'}</Text>
+              <Text style={styles.joinBtnText}>{joinLoading ? t('ui.prisoedinenie') : t('meetings.join')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -317,9 +319,9 @@ export default function MemberOverviewScreen() {
           <TouchableOpacity style={styles.moodBanner} onPress={() => { setMoodSent(false); setShowMoodSurvey(true) }} activeOpacity={0.85}>
             <Ionicons name="partly-sunny-outline" size={22} color="#fff" />
             <View style={{ flex: 1 }}>
-              <Text style={styles.moodBannerTitle}>{moodDone ? 'Настроение отмечено' : 'Опрос настроения'}</Text>
+              <Text style={styles.moodBannerTitle}>{moodDone ? t('ui.nastroenie_otmecheno') : t('ui.opros_nastroeniya')}</Text>
               <Text style={styles.moodBannerSub}>
-                {moodDone ? 'Можно обновить ответ за сегодня' : 'Как прошёл день? AI анализирует анонимно'}
+                {moodDone ? t('ui.mozhno_obnovit_otvet_za_segodnya') : t('ui.kak_proshel_den_ai_analiziruet_anonimno')}
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color="rgba(255,255,255,0.7)" />
@@ -334,12 +336,12 @@ export default function MemberOverviewScreen() {
                 {moodSent ? (
                   <View style={{ alignItems: 'center', padding: 24, gap: 8 }}>
                     <Text style={{ fontSize: 36 }}>✅</Text>
-                    <Text style={styles.moodDoneText}>Спасибо! Ответы отправлены</Text>
+                    <Text style={styles.moodDoneText}>{t('ui.spasibo_otvety_otpravleny')}</Text>
                   </View>
                 ) : (
                   <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
                     <View style={styles.moodModalHeader}>
-                      <Text style={styles.moodModalTitle}>Ежедневный опрос</Text>
+                      <Text style={styles.moodModalTitle}>{t('ui.ezhednevnyy_opros')}</Text>
                       <TouchableOpacity onPress={() => setShowMoodSurvey(false)}>
                         <Ionicons name="close" size={20} color={colors.textMuted} />
                       </TouchableOpacity>
@@ -351,7 +353,7 @@ export default function MemberOverviewScreen() {
                           style={styles.moodInput}
                           value={moodAnswers[i]}
                           onChangeText={v => setMoodAnswers(prev => { const a = [...prev]; a[i] = v; return a; })}
-                          placeholder="Ваш ответ..."
+                          placeholder={t('ui.vash_otvet')}
                           placeholderTextColor={colors.textMuted}
                           multiline
                         />
@@ -362,7 +364,7 @@ export default function MemberOverviewScreen() {
                       onPress={handleMoodSubmit}
                       disabled={moodLoading || moodAnswers.every(a => !a.trim())}
                     >
-                      <Text style={styles.moodSubmitText}>{moodLoading ? 'Отправка...' : 'Отправить'}</Text>
+                      <Text style={styles.moodSubmitText}>{moodLoading ? t('ui.otpravka') : t('common.send')}</Text>
                     </TouchableOpacity>
                   </ScrollView>
                 )}
@@ -376,7 +378,7 @@ export default function MemberOverviewScreen() {
           <View style={styles.leadCard}>
             <Avatar name={leadMember?.user_name || team.team_lead_name} imageUrl={leadMember?.user_avatar_url} size={52} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.leadLabel}>Тимлид</Text>
+              <Text style={styles.leadLabel}>{t('ui.timlid')}</Text>
               <Text style={styles.leadName}>{team.team_lead_name || 'Тимлид'}</Text>
               {team.team_lead_title ? <Text style={styles.leadTitle}>{team.team_lead_title}</Text> : null}
             </View>
@@ -392,8 +394,8 @@ export default function MemberOverviewScreen() {
                 {checkin?.arrived_at && !checkin?.left_at
                   ? 'Вы на рабочем месте'
                   : checkin?.left_at
-                  ? 'Рабочий день завершён'
-                  : 'Не отмечено сегодня'}
+                  ? t('ui.rabochiy_den_zavershen')
+                  : t('ui.ne_otmecheno_segodnya')}
               </Text>
               {checkin?.arrived_at && (
                 <Text style={styles.checkinTime}>
@@ -410,7 +412,7 @@ export default function MemberOverviewScreen() {
                 onPress={handleArrive} disabled={checkinLoading}
               >
                 <Ionicons name="log-in-outline" size={14} color="#fff" />
-                <Text style={styles.checkinBtnText}>Пришёл</Text>
+                <Text style={styles.checkinBtnText}>{t('ui.prishel')}</Text>
               </TouchableOpacity>
             )}
             {checkin?.arrived_at && !checkin?.left_at && (
@@ -419,7 +421,7 @@ export default function MemberOverviewScreen() {
                 onPress={handleLeave} disabled={checkinLoading}
               >
                 <Ionicons name="log-out-outline" size={14} color="#fff" />
-                <Text style={styles.checkinBtnText}>Ушёл</Text>
+                <Text style={styles.checkinBtnText}>{t('ui.ushel')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -428,7 +430,7 @@ export default function MemberOverviewScreen() {
         {/* Upcoming meetings */}
         {upcomingMeetings.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Ближайшие встречи</Text>
+            <Text style={styles.sectionTitle}>{t('ui.blizhayshie_vstrechi')}</Text>
             {upcomingMeetings.map(m => (
               <MeetingItem key={m.id} meeting={m} />
             ))}
@@ -438,7 +440,7 @@ export default function MemberOverviewScreen() {
         {/* Last meeting with lead */}
         {lastMeeting && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Последняя встреча с тимлидом</Text>
+            <Text style={styles.sectionTitle}>{t('ui.poslednyaya_vstrecha_s_timlidom')}</Text>
             <View style={styles.lastMeetingCard}>
               <View style={styles.lastMeetingDate}>
                 <Text style={styles.lastMeetingDay}>
@@ -463,7 +465,7 @@ export default function MemberOverviewScreen() {
         {/* Meeting notes */}
         {pastMeetings.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Заметки по встречам</Text>
+            <Text style={styles.sectionTitle}>{t('ui.zametki_po_vstrecham')}</Text>
             {pastMeetings.slice(0, 8).map((m: any) => {
               const hasNote = notes.some((n: any) => n.meeting_id === m.id);
               const isOpen = expandedMeetingNote === m.id;
@@ -498,14 +500,14 @@ export default function MemberOverviewScreen() {
                         style={styles.meetingNoteInput}
                         value={draft}
                         onChangeText={v => setMeetingNoteDrafts(prev => ({ ...prev, [m.id]: v }))}
-                        placeholder="Добавьте заметку по встрече..."
+                        placeholder={t('ui.dobavte_zametku_po_vstreche')}
                         placeholderTextColor={colors.textMuted}
                         multiline
                         autoFocus
                       />
                       <View style={styles.noteFormRow}>
                         <TouchableOpacity style={styles.cancelBtn} onPress={() => setExpandedMeetingNote(null)}>
-                          <Text style={styles.cancelBtnText}>Закрыть</Text>
+                          <Text style={styles.cancelBtnText}>{t('ui.zakryt')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
                           style={[styles.saveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
@@ -526,9 +528,9 @@ export default function MemberOverviewScreen() {
         {/* Notes section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Общие заметки</Text>
+            <Text style={styles.sectionTitle}>{t('ui.obschie_zametki')}</Text>
             <TouchableOpacity onPress={() => setShowNoteForm(s => !s)}>
-              <Text style={styles.addLink}>{showNoteForm ? 'Закрыть' : '+ Добавить'}</Text>
+              <Text style={styles.addLink}>{showNoteForm ? t('common.close') : t('ui.dobavit')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -538,14 +540,14 @@ export default function MemberOverviewScreen() {
                 style={styles.noteInput}
                 value={noteText}
                 onChangeText={setNoteText}
-                placeholder="Введите заметку..."
+                placeholder={t('ui.vvedite_zametku')}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 autoFocus
               />
               <View style={styles.noteFormRow}>
                 <TouchableOpacity style={styles.cancelBtn} onPress={() => { setShowNoteForm(false); setNoteText(''); }}>
-                  <Text style={styles.cancelBtnText}>Отмена</Text>
+                  <Text style={styles.cancelBtnText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.saveBtn, (!noteText.trim() || noteLoading) && styles.btnDisabled]}
@@ -560,7 +562,7 @@ export default function MemberOverviewScreen() {
 
           {notes.filter((n: any) => !n.meeting_id).length === 0 && !showNoteForm ? (
             <View style={styles.notesEmpty}>
-              <Text style={styles.notesEmptyText}>Заметок нет. Нажмите «+ Добавить»</Text>
+              <Text style={styles.notesEmptyText}>{t('ui.zametok_net_nazhmite_dobavit')}</Text>
             </View>
           ) : (
             notes.filter((n: any) => !n.meeting_id).slice(0, 5).map((n: any) => (
@@ -575,7 +577,7 @@ export default function MemberOverviewScreen() {
                   />
                   <View style={styles.noteFormRow}>
                     <TouchableOpacity style={styles.cancelBtn} onPress={() => setEditingNoteId(null)}>
-                      <Text style={styles.cancelBtnText}>Отмена</Text>
+                      <Text style={styles.cancelBtnText}>{t('ui.otmena')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.saveBtn, (!editNoteText.trim() || editNoteLoading) && styles.btnDisabled]}
@@ -605,20 +607,20 @@ export default function MemberOverviewScreen() {
         {/* Team members with search */}
         {otherMembers.length > 0 && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Участники команды</Text>
+            <Text style={styles.sectionTitle}>{t('ui.uchastniki_komandy')}</Text>
             {showSearch && (
               <TextInput
                 style={styles.searchInput}
                 value={memberSearch}
                 onChangeText={setMemberSearch}
-                placeholder="Поиск по имени..."
+                placeholder={t('ui.poisk_po_imeni')}
                 placeholderTextColor={colors.textMuted}
                 autoFocus={showSearch}
               />
             )}
             <View style={styles.membersGrid}>
               {filteredMembers.length === 0 ? (
-                <Text style={styles.noResults}>Участники не найдены</Text>
+                <Text style={styles.noResults}>{t('ui.uchastniki_ne_naydeny')}</Text>
               ) : (
                 filteredMembers.map((m: any) => (
                   <View key={m.user_id} style={styles.memberChip}>
@@ -635,7 +637,7 @@ export default function MemberOverviewScreen() {
         )}
 
         {upcomingMeetings.length === 0 && otherMembers.length === 0 && notes.length === 0 && (
-          <EmptyState icon="people-outline" title="Команда пуста" description="Ждём когда тимлид добавит участников" />
+          <EmptyState icon="people-outline" title={t('ui.komanda_pusta')} description="Ждём когда тимлид добавит участников" />
         )}
       </ScrollView>
     </SafeAreaView>

@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useI18n } from '../src/lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -8,6 +9,7 @@ import { useTheme } from '../src/context/theme';
 import type { AppColors } from '../src/constants/colors';
 
 export default function RoleSelectScreen() {
+  const { t } = useI18n();
   const { setActiveRole, signOut } = useAuth();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
@@ -21,12 +23,12 @@ export default function RoleSelectScreen() {
   return (
     <SafeAreaView style={styles.root}>
       <View style={styles.inner}>
-        <Text style={styles.title}>Войти как</Text>
-        <Text style={styles.sub}>У вас есть обе роли. Выберите, в каком режиме работать сейчас.</Text>
+        <Text style={styles.title}>{t('ui.voyti_kak')}</Text>
+        <Text style={styles.sub}>{t('ui.u_vas_est_obe_roli_vyberite')}</Text>
 
         {([
-          { role: 'team_lead', icon: 'briefcase-outline', title: 'Тимлид', desc: 'Управление командой и 1-on-1 встречами' },
-          { role: 'member', icon: 'person-outline', title: 'Участник команды', desc: 'Участие во встречах и задачах команды' },
+          { role: 'team_lead', icon: 'briefcase-outline', title: t('profile.roleLead'), desc: t('ui.upravlenie_komandoy_i_1_on_1') },
+          { role: 'member', icon: 'person-outline', title: t('profile.roleMember'), desc: t('ui.uchastie_vo_vstrechah_i_zadachah_komandy') },
         ] as const).map(opt => (
           <TouchableOpacity key={opt.role} style={styles.card} onPress={() => choose(opt.role)}>
             <View style={styles.cardIconWrap}>
@@ -42,7 +44,7 @@ export default function RoleSelectScreen() {
 
         <TouchableOpacity style={styles.backBtn} onPress={async () => { await signOut(); router.replace('/(auth)/login'); }}>
           <Ionicons name="arrow-back-outline" size={16} color={colors.textMuted} />
-          <Text style={styles.backText}>Вернуться к входу</Text>
+          <Text style={styles.backText}>{t('ui.vernutsya_k_vhodu')}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

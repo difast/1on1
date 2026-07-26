@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert, Linking,
 } from 'react-native';
@@ -23,6 +24,7 @@ export function SpontaneousCallModal({
   members: { user_id: number; name: string }[];
   onStarted?: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [step, setStep] = useState<'type' | 'select' | 'done'>('type');
@@ -34,15 +36,15 @@ export function SpontaneousCallModal({
   const close = () => { reset(); onClose(); };
 
   const start = async (memberIds: number[], isGroup: boolean) => {
-    if (!teamId) { Alert.alert('Ошибка', 'Нет команды'); return; }
-    if (memberIds.length === 0) { Alert.alert('Выберите участников'); return; }
+    if (!teamId) { Alert.alert(t('ui.oshibka'), 'Нет команды'); return; }
+    if (memberIds.length === 0) { Alert.alert(t('ui.vyberite_uchastnikov')); return; }
     setLoading(true);
     try {
       const data = await startSpontaneousCall({ lead_id: leadId, team_id: teamId, member_ids: memberIds, is_group: isGroup });
       setResult({ room_url: data.room_url });
       setStep('done');
       onStarted?.();
-    } catch { Alert.alert('Ошибка', 'Не удалось создать созвон'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать созвон'); }
     finally { setLoading(false); }
   };
 
@@ -52,26 +54,26 @@ export function SpontaneousCallModal({
     <Modal visible={visible} animationType="slide" onRequestClose={close}>
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Быстрый созвон</Text>
+          <Text style={styles.headerTitle}>{t('ui.bystryy_sozvon')}</Text>
           <TouchableOpacity onPress={close} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10 }}>
           {step === 'type' && (
             <>
-              <Text style={styles.hint}>Выберите тип созвона:</Text>
+              <Text style={styles.hint}>{t('ui.vyberite_tip_sozvona')}</Text>
               <TouchableOpacity style={styles.optPrimary} disabled={loading} onPress={() => start(allIds, true)}>
                 <Ionicons name="people" size={20} color="#fff" />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.optPrimaryTitle}>Общий созвон</Text>
+                  <Text style={styles.optPrimaryTitle}>{t('ui.obschiy_sozvon')}</Text>
                   <Text style={styles.optPrimarySub}>Вся команда получит приглашение ({members.length})</Text>
                 </View>
               </TouchableOpacity>
               <TouchableOpacity style={styles.opt} disabled={loading} onPress={() => { setSelected([]); setStep('select'); }}>
                 <Ionicons name="people-outline" size={20} color={colors.accent} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.optTitle}>Несколько участников</Text>
-                  <Text style={styles.optSub}>Выбрать нескольких из команды</Text>
+                  <Text style={styles.optTitle}>{t('ui.neskolko_uchastnikov')}</Text>
+                  <Text style={styles.optSub}>{t('ui.vybrat_neskolkih_iz_komandy')}</Text>
                 </View>
               </TouchableOpacity>
               {members.map(m => (
@@ -88,8 +90,8 @@ export function SpontaneousCallModal({
 
           {step === 'select' && (
             <>
-              <TouchableOpacity onPress={() => setStep('type')}><Text style={styles.back}>Назад</Text></TouchableOpacity>
-              <Text style={styles.hint}>Отметьте участников:</Text>
+              <TouchableOpacity onPress={() => setStep('type')}><Text style={styles.back}>{t('ui.nazad_2')}</Text></TouchableOpacity>
+              <Text style={styles.hint}>{t('ui.otmette_uchastnikov')}</Text>
               {members.map(m => {
                 const on = selected.includes(m.user_id);
                 return (
@@ -108,12 +110,12 @@ export function SpontaneousCallModal({
           {step === 'done' && result && (
             <View style={{ gap: 14, alignItems: 'center', paddingTop: 20 }}>
               <Ionicons name="checkmark-circle" size={48} color={colors.success} />
-              <Text style={styles.doneTitle}>Созвон создан</Text>
-              <Text style={styles.hint}>Приглашения отправлены. Откройте комнату:</Text>
+              <Text style={styles.doneTitle}>{t('ui.sozvon_sozdan')}</Text>
+              <Text style={styles.hint}>{t('ui.priglasheniya_otpravleny_otkroyte_komnatu')}</Text>
               <TouchableOpacity style={styles.startBtn} onPress={() => { Linking.openURL(result.room_url).catch(() => {}); }}>
-                <Text style={styles.startText}>Войти в созвон</Text>
+                <Text style={styles.startText}>{t('ui.voyti_v_sozvon')}</Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={close}><Text style={styles.back}>Закрыть</Text></TouchableOpacity>
+              <TouchableOpacity onPress={close}><Text style={styles.back}>{t('ui.zakryt')}</Text></TouchableOpacity>
             </View>
           )}
         </ScrollView>

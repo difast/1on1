@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { pitChat, createSupportTicket, getUserTickets, userSendMessage, userReadReply } from '../api/client'
 import { buildPitContext, parsePitActions, executePitAction } from '../lib/pit'
 import useEscapeKey from '../lib/useEscapeKey'
@@ -45,6 +46,7 @@ function readCurrentUser() {
 }
 
 export default function PitAssistant() {
+  const { t } = useTranslation()
   const currentUser = readCurrentUser()
   // Mini App: та же функция Пита, но иконка-триггер заметно компактнее, а окно
   // чата вписывается в узкий вьюпорт (только визуальные правки, surface).
@@ -212,14 +214,14 @@ export default function PitAssistant() {
               </div>
             </div>
             <div style={{ flex: 1 }}>
-              <p style={{ fontWeight: 700, fontSize: 14, color: '#fff', margin: 0, lineHeight: 1.2 }}>Пит</p>
-              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0 }}>{mode === 'support' ? 'Обращение в поддержку' : 'AI-ассистент · всегда на связи'}</p>
+              <p style={{ fontWeight: 700, fontSize: 14, color: '#fff', margin: 0, lineHeight: 1.2 }}>{t('ui.pit')}</p>
+              <p style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', margin: 0 }}>{mode === 'support' ? t('ui.obraschenie_v_podderzhku') : t('ui.ai_assistent_vsegda_na_svyazi')}</p>
             </div>
             <button
               onClick={() => { setMode(m => m === 'support' ? 'chat' : 'support'); setActiveTicketId(null) }}
-              title={mode === 'support' ? 'Вернуться к чату' : 'Обратиться в поддержку'}
+              title={mode === 'support' ? t('ui.vernutsya_k_chatu') : t('ui.obratitsya_v_podderzhku')}
               style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', height: 28, padding: '0 10px', borderRadius: 8, fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', flexShrink: 0 }}
-            >{mode === 'support' ? 'Чат' : 'Поддержка'}</button>
+            >{mode === 'support' ? t('ui.chat') : t('nav.support')}</button>
             <button
               onClick={() => setOpen(false)}
               style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', width: 28, height: 28, borderRadius: 8, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
@@ -230,7 +232,7 @@ export default function PitAssistant() {
           {mode === 'support' && (
             <div style={{ flex: 1, overflow: 'auto', padding: '14px 14px 4px', display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                <button onClick={() => setActiveTicketId(null)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: `1px solid ${activeTicketId === null ? '#2554D4' : '#e2e8f0'}`, background: activeTicketId === null ? '#eff6ff' : '#fff', color: activeTicketId === null ? '#2554D4' : '#475569', cursor: 'pointer' }}>Новое обращение</button>
+                <button onClick={() => setActiveTicketId(null)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: `1px solid ${activeTicketId === null ? '#2554D4' : '#e2e8f0'}`, background: activeTicketId === null ? '#eff6ff' : '#fff', color: activeTicketId === null ? '#2554D4' : '#475569', cursor: 'pointer' }}>{t('ui.novoe_obraschenie')}</button>
                 {tickets.map(t => (
                   <button key={t.id} onClick={() => setActiveTicketId(t.id)} style={{ fontSize: 12, fontWeight: 600, padding: '5px 10px', borderRadius: 8, border: `1px solid ${activeTicketId === t.id ? '#2554D4' : '#e2e8f0'}`, background: activeTicketId === t.id ? '#eff6ff' : '#fff', color: activeTicketId === t.id ? '#2554D4' : '#475569', cursor: 'pointer', maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {t.subject}{t.has_unread_reply ? ' •' : ''}
@@ -247,7 +249,7 @@ export default function PitAssistant() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                     {thread.map((m, i) => (
                       <div key={i} style={{ alignSelf: m.sender === 'admin' ? 'flex-start' : 'flex-end', maxWidth: '85%', background: m.sender === 'admin' ? '#f1f5f9' : 'linear-gradient(135deg, #2554D4, #4f46e5)', color: m.sender === 'admin' ? '#1e293b' : '#fff', borderRadius: 12, padding: '8px 12px', fontSize: 13 }}>
-                        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, marginBottom: 2 }}>{m.sender === 'admin' ? 'Поддержка' : 'Вы'}</div>
+                        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.7, marginBottom: 2 }}>{m.sender === 'admin' ? t('nav.support') : t('ui.vy')}</div>
                         {m.body}
                       </div>
                     ))}
@@ -277,9 +279,7 @@ export default function PitAssistant() {
                 }}>
                   {m.content}
                   {m.locked && (
-                    <button onClick={() => openPricing(m.locked?.min_plan || 'start')} style={{ display: 'block', marginTop: 8, background: 'linear-gradient(135deg, #2554D4, #4f46e5)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, padding: '6px 12px', cursor: 'pointer' }}>
-                      Посмотреть тарифы
-                    </button>
+                    <button onClick={() => openPricing(m.locked?.min_plan || 'start')} style={{ display: 'block', marginTop: 8, background: 'linear-gradient(135deg, #2554D4, #4f46e5)', color: '#fff', border: 'none', borderRadius: 8, fontSize: 12, fontWeight: 700, padding: '6px 12px', cursor: 'pointer' }}>{t('ui.posmotret_tarify')}</button>
                   )}
                 </div>
               </div>
@@ -307,7 +307,7 @@ export default function PitAssistant() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder={mode === 'support' ? (activeTicketId ? 'Ваш ответ в поддержку...' : 'Опишите проблему...') : 'Спросите Пита...'}
+              placeholder={mode === 'support' ? (activeTicketId ? t('ui.vash_otvet_v_podderzhku') : t('ui.opishite_problemu')) : 'Спросите Пита...'}
               disabled={loading}
               style={{
                 flex: 1, padding: '9px 13px', borderRadius: 12,
@@ -344,7 +344,7 @@ export default function PitAssistant() {
           data-tour="pit"
           className="icon-hover"
           onClick={() => setOpen(o => !o)}
-          title="Пит — AI-ассистент"
+          title={t('ui.pit_ai_assistent')}
           style={{
             position: 'fixed', bottom: 74, right: 12, zIndex: 9350,
             width: 44, height: 44, borderRadius: '50%', border: 'none', cursor: 'pointer',
@@ -365,12 +365,13 @@ export default function PitAssistant() {
 // даты (QuickWidget), на той же горизонтальной линии внизу справа. Иконка и
 // размер согласованы с кнопкой даты.
 export function PitTriggerButton() {
+  const { t } = useTranslation()
   return (
     <button
       data-tour="pit"
       className="icon-hover"
       onClick={() => { try { window.dispatchEvent(new Event('pit-toggle')) } catch {} }}
-      title="Пит — AI-ассистент"
+      title={t('ui.pit_ai_assistent')}
       style={{
         display: 'flex', alignItems: 'center', gap: 8,
         background: 'var(--color-surface)', color: 'var(--color-accent)',
@@ -387,8 +388,6 @@ export function PitTriggerButton() {
       }}>
         <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
         <span style={{ width: 4, height: 4, borderRadius: '50%', background: '#fff' }} />
-      </span>
-      Пит
-    </button>
+      </span>{t('ui.pit')}</button>
   )
 }

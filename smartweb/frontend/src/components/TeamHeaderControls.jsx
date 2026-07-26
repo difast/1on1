@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import useEscapeKey from '../lib/useEscapeKey'
 
 /*
@@ -23,6 +24,7 @@ export default function TeamHeaderControls({
   searchQuery,
   onSearchChange,
 }) {
+  const { t } = useTranslation()
   const [manageOpen, setManageOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const manageRef = useRef(null)
@@ -76,9 +78,9 @@ export default function TeamHeaderControls({
             type="button"
             className={`head-icon-btn icon-hover${manageOpen ? ' active' : ''}`}
             onClick={toggleManage}
-            aria-label="Управление командой"
+            aria-label={t('ui.upravlenie_komandoy')}
             aria-expanded={manageOpen}
-            title="Управление командой и приглашения"
+            title={t('ui.upravlenie_komandoy_i_priglasheniya')}
           >
             {/* Силуэт людей с плюсом — приглашение участников */}
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -91,9 +93,7 @@ export default function TeamHeaderControls({
 
           {manageOpen && (
             <div className="head-pop" role="menu">
-              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
-                Код приглашения
-              </p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--blue-600)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>{t('ui.kod_priglasheniya')}</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 20, fontWeight: 700, color: 'var(--blue-700)' }}>
                   {inviteCode || '—'}
@@ -101,14 +101,12 @@ export default function TeamHeaderControls({
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <button className="btn btn-accent btn-sm" onClick={onCopyInvite}>
-                  {copied ? 'Скопировано' : 'Скопировать ссылку'}
+                  {copied ? t('common.copied') : t('ui.skopirovat_ssylku')}
                 </button>
-                <button className="btn btn-secondary btn-sm" onClick={onRegenerate} disabled={regenerating} title="Сгенерировать новый код">
+                <button className="btn btn-secondary btn-sm" onClick={onRegenerate} disabled={regenerating} title={t('ui.sgenerirovat_novyy_kod')}>
                   {regenerating ? '...' : 'Новый код'}
                 </button>
-                <button className="btn btn-accent-ghost btn-sm" onClick={() => { setManageOpen(false); onAddMember() }}>
-                  Добавить участника
-                </button>
+                <button className="btn btn-accent-ghost btn-sm" onClick={() => { setManageOpen(false); onAddMember() }}>{t('ui.dobavit_uchastnika_2')}</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => { setManageOpen(false); onOpenOrg() }} title={orgLabel}>
                   {orgLabel}
                 </button>
@@ -136,17 +134,17 @@ export default function TeamHeaderControls({
                 value={searchQuery}
                 onChange={e => onSearchChange(e.target.value)}
                 onBlur={collapseSearchIfEmpty}
-                placeholder="Поиск участников по имени или email"
+                placeholder={t('ui.poisk_uchastnikov_po_imeni_ili_email')}
                 className="thc-search-input"
-                aria-label="Поиск участников"
+                aria-label={t('ui.poisk_uchastnikov')}
               />
               <button
                 type="button"
                 className="thc-search-clear icon-hover"
                 onMouseDown={e => e.preventDefault()}
                 onClick={() => { onSearchChange(''); setSearchOpen(false) }}
-                aria-label="Закрыть поиск"
-                title="Закрыть"
+                aria-label={t('ui.zakryt_poisk')}
+                title={t('ui.zakryt')}
               >
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" aria-hidden="true">
                   <line x1="6" y1="6" x2="18" y2="18" />
@@ -159,9 +157,9 @@ export default function TeamHeaderControls({
               type="button"
               className="head-icon-btn icon-hover"
               onClick={toggleSearch}
-              aria-label="Поиск участников"
+              aria-label={t('ui.poisk_uchastnikov')}
               aria-expanded={searchOpen}
-              title="Поиск участников"
+              title={t('ui.poisk_uchastnikov')}
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <circle cx="11" cy="11" r="7" />

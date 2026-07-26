@@ -14,6 +14,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
+import { useI18n } from '../lib/i18n';
 import {
   getGoals, createGoal, updateGoal, deleteGoal, addGoalComment,
   getTeams, getTeamGoals, getTeamSharedGoals, getGoal, getMemberTeam,
@@ -94,6 +95,7 @@ export function Thread({
   comments: GoalComment[]; meId: number; colors: AppColors; canFeedback: boolean;
   onSend: (p: { body: string; kind?: string; rating?: number }) => Promise<void>;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [text, setText] = useState('');
   const [kind, setKind] = useState<'comment' | 'feedback'>('comment');
@@ -112,7 +114,7 @@ export function Thread({
 
   return (
     <View style={styles.thread}>
-      {comments.length === 0 && <Text style={styles.muted}>Обсуждения пока нет.</Text>}
+      {comments.length === 0 && <Text style={styles.muted}>{t('ui.obsuzhdeniya_poka_net')}</Text>}
       {comments.map(cm => {
         const mine = cm.author_id === meId;
         const isFb = cm.kind === 'feedback';
@@ -136,7 +138,7 @@ export function Thread({
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 6 }}>
           {(['comment', 'feedback'] as const).map(k => (
             <TouchableOpacity key={k} onPress={() => setKind(k)} style={[styles.kindChip, kind === k && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
-              <Text style={[styles.kindChipText, kind === k && { color: colors.accent }]}>{k === 'comment' ? 'Комментарий' : 'Итоговая оценка'}</Text>
+              <Text style={[styles.kindChipText, kind === k && { color: colors.accent }]}>{k === 'comment' ? t('common.comment') : t('ui.itogovaya_ocenka')}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -156,7 +158,7 @@ export function Thread({
           style={styles.threadInput}
           value={text}
           onChangeText={setText}
-          placeholder={kind === 'feedback' ? 'Итоговая обратная связь…' : 'Комментарий…'}
+          placeholder={kind === 'feedback' ? t('ui.itogovaya_obratnaya_svyaz') : t('ui.kommentariy')}
           placeholderTextColor={colors.textMuted}
           multiline
         />
@@ -173,6 +175,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
   goal: Goal; meId: number; colors: AppColors;
   onChanged: (g: Goal) => void; onRemoved: (id: number) => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -182,7 +185,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
   const patch = async (payload: any) => {
     setSaving(true);
     try { const g = await updateGoal(goal.id, { actor_id: meId, ...payload }); onChanged(g); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось сохранить'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось сохранить'); }
     finally { setSaving(false); }
   };
 
@@ -192,9 +195,9 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
   };
 
   const remove = () => {
-    Alert.alert('Удалить цель?', undefined, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('ui.udalit_cel'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try { await deleteGoal(goal.id, meId); onRemoved(goal.id); } catch {}
       } },
     ]);
@@ -264,7 +267,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
         <View style={styles.hintRow}>
           <Text style={styles.hintText}>По прогрессу и сроку статус ближе к «{STATUS_LABEL[goal.suggested_status!]}».</Text>
           <TouchableOpacity onPress={() => patch({ status: goal.suggested_status })} disabled={saving}>
-            <Text style={styles.hintApply}>Применить</Text>
+            <Text style={styles.hintApply}>{t('ui.primenit')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -274,7 +277,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
           <Text style={styles.link}>Обсуждение{goal.comments?.length ? ` (${goal.comments.length})` : ''}</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }} />
-        <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>Удалить</Text></TouchableOpacity>
+        <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>{t('ui.udalit')}</Text></TouchableOpacity>
       </View>
 
       {expanded && (
@@ -291,6 +294,7 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
   onCreate: (p: { title: string; description: string | null; period_label: string; period_start: string; period_end: string }) => Promise<void>;
   onCancel: () => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [title, setTitle] = useState('');
   const [desc, setDesc] = useState('');
@@ -299,13 +303,13 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
   const [creating, setCreating] = useState(false);
 
   const submit = async () => {
-    if (!title.trim()) { Alert.alert('Укажите название цели'); return; }
+    if (!title.trim()) { Alert.alert(t('ui.ukazhite_nazvanie_celi')); return; }
     setCreating(true);
     try {
       const opt = qOpts.find(o => o.value === period) || qOpts[0];
       await onCreate({ title: title.trim(), description: desc.trim() || null, period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end });
       setTitle(''); setDesc(''); setPeriod(qOpts[0].value);
-    } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось создать цель'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось создать цель'); }
     finally { setCreating(false); }
   };
 
@@ -314,8 +318,8 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
       <TextInput style={styles.formInput} value={title} onChangeText={setTitle}
         placeholder={titlePlaceholder} placeholderTextColor={colors.textMuted} />
       <TextInput style={[styles.formInput, { minHeight: 70, textAlignVertical: 'top' }]} value={desc} onChangeText={setDesc}
-        placeholder="Ожидаемый результат — как поймём, что цель достигнута" placeholderTextColor={colors.textMuted} multiline />
-      <Text style={styles.formLabel}>Период</Text>
+        placeholder={t('ui.ozhidaemyy_rezultat_kak_poymem_chto_cel')} placeholderTextColor={colors.textMuted} multiline />
+      <Text style={styles.formLabel}>{t('ui.period')}</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
         {qOpts.map(o => (
           <TouchableOpacity key={o.value} onPress={() => setPeriod(o.value)}
@@ -326,7 +330,7 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
       </View>
       <View style={{ flexDirection: 'row', gap: 8, marginTop: 4 }}>
         <TouchableOpacity style={styles.formBtnSecondary} onPress={onCancel}>
-          <Text style={styles.formBtnSecondaryText}>Отмена</Text>
+          <Text style={styles.formBtnSecondaryText}>{t('ui.otmena')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.formBtnPrimary, creating && { opacity: 0.6 }]} onPress={submit} disabled={creating}>
           <Text style={styles.formBtnPrimaryText}>{creating ? 'Создаём…' : submitLabel}</Text>
@@ -370,6 +374,7 @@ function TeamGoalCardRO({ goal, meId, colors, onChanged }: {
 
 // ── экран сотрудника ────────────────────────────────────────────────────────
 function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [goals, setGoals] = useState<Goal[] | null>(null);
   const [teamGoals, setTeamGoals] = useState<Goal[]>([]);
@@ -403,7 +408,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
     >
       {teamGoals.length > 0 && (
         <>
-          <Text style={styles.sectionTitle}>Цели команды</Text>
+          <Text style={styles.sectionTitle}>{t('ui.celi_komandy')}</Text>
           {teamGoals.map(g => <TeamGoalCardRO key={g.id} goal={g} meId={meId} colors={colors} onChanged={onTeamChanged} />)}
         </>
       )}
@@ -412,7 +417,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
 
       {!showForm && (
         <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowForm(true)}>
-          <Text style={styles.primaryBtnText}>+ Новая цель</Text>
+          <Text style={styles.primaryBtnText}>{t('ui.novaya_cel')}</Text>
         </TouchableOpacity>
       )}
 
@@ -427,13 +432,13 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       )}
 
       {goals.length === 0 && !showForm && teamGoals.length === 0 && (
-        <EmptyState icon="flag-outline" title="Целей пока нет" description="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
+        <EmptyState icon="flag-outline" title={t('ui.celey_poka_net')} description="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
       )}
 
-      {active.length > 0 && <Text style={styles.sectionTitle}>Мои цели</Text>}
+      {active.length > 0 && <Text style={styles.sectionTitle}>{t('ui.moi_celi')}</Text>}
       {active.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onChanged} onRemoved={onRemoved} />)}
 
-      {history.length > 0 && <Text style={[styles.sectionTitle, { marginTop: 8 }]}>История</Text>}
+      {history.length > 0 && <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.istoriya')}</Text>}
       {history.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onChanged} onRemoved={onRemoved} />)}
     </ScrollView>
   );
@@ -489,6 +494,7 @@ function LeadGoalCard({ goal, meId, colors, onCommented }: {
 
 // ── экран тимлида ───────────────────────────────────────────────────────────
 function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [teams, setTeams] = useState<any[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
@@ -510,7 +516,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
     if (!teamId) { setData(null); setTeamGoals([]); setLoading(false); return; }
     setLoading(true);
     try { const d = await getTeamGoals(teamId, meId); setData(d); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось загрузить цели'); setData(null); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось загрузить цели'); setData(null); }
     finally { setLoading(false); }
     try { const tg = await getTeamSharedGoals(teamId, meId); setTeamGoals(tg || []); }
     catch { setTeamGoals([]); }
@@ -552,9 +558,9 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       {teamId && (
         <>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <Text style={styles.sectionTitle}>Цели команды</Text>
+            <Text style={styles.sectionTitle}>{t('ui.celi_komandy')}</Text>
             {!showTeamForm && (
-              <TouchableOpacity onPress={() => setShowTeamForm(true)}><Text style={styles.link}>+ Командная цель</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setShowTeamForm(true)}><Text style={styles.link}>{t('ui.komandnaya_cel')}</Text></TouchableOpacity>
             )}
           </View>
           {showTeamForm && (
@@ -567,13 +573,13 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
               }} />
           )}
           {teamGoals.length === 0 && !showTeamForm && (
-            <Text style={styles.muted}>Командных целей пока нет. Поставьте цель на команду — её увидят все участники.</Text>
+            <Text style={styles.muted}>{t('ui.komandnyh_celey_poka_net_postavte_cel')}</Text>
           )}
           {teamGoals.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onTeamChanged} onRemoved={onTeamRemoved} />)}
         </>
       )}
 
-      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Личные цели сотрудников</Text>
+      <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.lichnye_celi_sotrudnikov')}</Text>
 
       {totalGoals > 0 && (
         <Text style={styles.summary}>Всего целей: {totalGoals}{attention > 0 ? `  ·  требуют внимания: ${attention}` : ''}</Text>
@@ -582,7 +588,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       {loading && <Spinner />}
 
       {!loading && members.length === 0 && (
-        <EmptyState icon="flag-outline" title="В команде пока нет личных целей" description="Как только сотрудники создадут цели, они появятся здесь." />
+        <EmptyState icon="flag-outline" title={t('ui.v_komande_poka_net_lichnyh_celey')} description="Как только сотрудники создадут цели, они появятся здесь." />
       )}
 
       {!loading && members.map(m => (
@@ -594,7 +600,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
             <Text style={styles.muted}>{m.goals.length ? `${m.goals.length} цел.` : 'нет целей'}</Text>
           </View>
           {m.goals.length === 0
-            ? <Text style={styles.muted}>Сотрудник ещё не поставил цели.</Text>
+            ? <Text style={styles.muted}>{t('ui.sotrudnik_esche_ne_postavil_celi')}</Text>
             : m.goals.map(g => <LeadGoalCard key={g.id} goal={g} meId={meId} colors={colors} onCommented={patchGoal} />)}
         </View>
       ))}
@@ -604,6 +610,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
 
 // ── корневой экран с заголовком/назад ───────────────────────────────────────
 export default function GoalsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, activeRole } = useAuth();
@@ -616,7 +623,7 @@ export default function GoalsScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={{ width: 28 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isLead ? 'Цели команды' : 'Цели'}</Text>
+        <Text style={styles.headerTitle}>{isLead ? t('ui.celi_komandy') : t('nav.goals')}</Text>
         <View style={{ width: 28 }} />
       </View>
       {user && (isLead

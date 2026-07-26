@@ -168,7 +168,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     deadlineDismissed.current = true
     const first = upcoming[0]
     const diff = Math.ceil((new Date(first.due_date) - now) / 86400000)
-    const dueLabel = diff <= 0 ? 'сегодня' : diff === 1 ? 'завтра' : 'послезавтра'
+    const dueLabel = diff <= 0 ? 'сегодня' : diff === 1 ? t('ui.zavtra') : t('ui.poslezavtra')
     setDeadlineBanner({
       title: upcoming.length === 1 ? `Срок задачи — ${dueLabel}` : `${upcoming.length} задач истекают скоро`,
       body: (first.title || '').slice(0, 42) + ((first.title || '').length > 42 ? '…' : ''),
@@ -408,9 +408,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     setResendLoading(true)
     try {
       await authResendConfirmation({ user_id: currentUser.id })
-      toast('Письмо отправлено. Проверьте почту.')
+      toast(t('ui.pismo_otpravleno_proverte_pochtu'))
     } catch {
-      toast('Не удалось отправить письмо')
+      toast(t('ui.ne_udalos_otpravit_pismo'))
     } finally { setResendLoading(false) }
   }
 
@@ -423,7 +423,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       onUserUpdate?.(data)
       setShowAddEmailModal(false)
       setAddEmailVal('')
-      toast('Email добавлен. Проверьте почту для подтверждения.')
+      toast(t('ui.email_dobavlen_proverte_pochtu_dlya_podtverzhd'))
     } catch (err) {
       setAddEmailErr(err?.response?.data?.detail || 'Не удалось добавить email')
     } finally { setAddEmailLoading(false) }
@@ -485,9 +485,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       if (onUserUpdate) onUserUpdate(merged)
       try { window.dispatchEvent(new Event('profile-updated')) } catch {}
       setShowAvatarModal(false)
-      toast('Фото профиля обновлено', 'success')
+      toast(t('ui.foto_profilya_obnovleno'), 'success')
     } catch {
-      toast('Не удалось обновить фото', 'error')
+      toast(t('ui.ne_udalos_obnovit_foto'), 'error')
     } finally {
       setUploadingAvatar(false)
     }
@@ -536,7 +536,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             className="mobile-menu-btn"
-            aria-label="Меню"
+            aria-label={t('ui.menyu')}
             onClick={() => setSidebarOpen(o => !o)}
           >
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
@@ -568,9 +568,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   padding: '14px 18px', borderBottom: '1px solid var(--color-border)',
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 }}>
-                  <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)' }}>
-                    Уведомления
-                  </span>
+                  <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)' }}>{t('ui.uvedomleniya')}</span>
                   <button
                     onClick={handleMarkAllRead}
                     style={{
@@ -581,15 +579,11 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                       animation: unreadCount > 0 ? 'markAllPulse 1.8s ease infinite' : 'none',
                       transition: 'background 0.2s',
                     }}
-                  >
-                    Прочитать все
-                  </button>
+                  >{t('ui.prochitat_vse')}</button>
                 </div>
                 <div style={{ maxHeight: 360, overflowY: 'auto' }}>
                   {notifications.length === 0 ? (
-                    <p style={{ padding: '20px 18px', color: 'var(--color-text-muted)', fontSize: 14, textAlign: 'center' }}>
-                      Нет уведомлений
-                    </p>
+                    <p style={{ padding: '20px 18px', color: 'var(--color-text-muted)', fontSize: 14, textAlign: 'center' }}>{t('ui.net_uvedomleniy')}</p>
                   ) : (
                     notifications.map(n => {
                       const isCall = n.type === 'call_started'
@@ -626,9 +620,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
                             <div style={{ flex: 1, minWidth: 0 }}>
                               {isBroadcast && (
-                                <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 10, marginBottom: 4 }}>
-                                  ОБЪЯВЛЕНИЕ
-                                </span>
+                                <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.05em', background: '#ef4444', color: '#fff', padding: '1px 6px', borderRadius: 10, marginBottom: 4 }}>{t('ui.obyavlenie')}</span>
                               )}
                               <p style={{ fontWeight: isUnread ? 600 : 500, fontSize: 14, color: 'var(--color-text-primary)' }}>{n.title}</p>
                               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{n.body}</p>
@@ -640,9 +632,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                                 background: isBroadcast ? '#ef4444' : 'var(--color-accent)', color: '#fff',
                                 padding: '2px 7px', borderRadius: 20,
                                 whiteSpace: 'nowrap',
-                              }}>
-                                НОВОЕ
-                              </span>
+                              }}>{t('ui.novoe')}</span>
                             )}
                           </div>
                           {isCall && n.data?.room_url && (
@@ -663,9 +653,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                                 background: 'var(--color-accent)', color: '#fff',
                                 border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer',
                               }}
-                            >
-                              Присоединиться →
-                            </button>
+                            >{t('ui.prisoedinitsya')}</button>
                           )}
                         </div>
                       )
@@ -695,7 +683,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <svg width="13" height="13" viewBox="0 0 14 14" fill="none" style={{ flexShrink: 0 }}>
                 <path d="M7 1l1.7 3.6L12.5 5l-2.9 2.7.7 4L7 9.8 3.7 11.7l.7-4L1.5 5l3.8-.4L7 1z" fill="#fff"/>
               </svg>
-              <span className="payment-label">Мой тариф</span>
+              <span className="payment-label">{t('ui.moy_tarif')}</span>
             </button>
           )}
 
@@ -760,22 +748,16 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 {/* Смена пароля — только если у аккаунта есть пароль. У входа
                     только через Telegram пароля нет, поэтому пункт скрыт. */}
                 {currentUser?.has_password && (
-                  <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdCurrent(''); setPwdNew(''); setPwdConfirm('') }}>
-                    Сменить пароль
-                  </MenuItemBtn>
+                  <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdCurrent(''); setPwdNew(''); setPwdConfirm('') }}>{t('ui.smenit_parol')}</MenuItemBtn>
                 )}
                 {/* Добавить email — ненавязчивое предложение для тех, кто вошёл
                     только через Telegram и не указывал почту. */}
                 {!currentUser?.email && (
-                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowAddEmailModal(true); setAddEmailErr(''); setAddEmailVal('') }}>
-                    Добавить email
-                  </MenuItemBtn>
+                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowAddEmailModal(true); setAddEmailErr(''); setAddEmailVal('') }}>{t('ui.dobavit_email')}</MenuItemBtn>
                 )}
                 {/* Привязка Telegram — только если бот включён и ещё не привязан */}
                 {tgEnabled && !currentUser?.telegram_id && (
-                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowTgModal(true); setTgErr(''); setTgCode('') }}>
-                    Привязать Telegram
-                  </MenuItemBtn>
+                  <MenuItemBtn icon={<IconSend />} onClick={() => { setShowUserMenu(false); setShowTgModal(true); setTgErr(''); setTgCode('') }}>{t('ui.privyazat_telegram')}</MenuItemBtn>
                 )}
                 {/* Тумблер = «тёмная тема вкл»: привычная модель dark mode switch. */}
                 <MenuItemBtn icon={isDark ? <IconMoon /> : <IconSun />} onClick={toggleDark} right={<Toggle on={isDark} />}>
@@ -820,21 +802,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuDivider />
 
                 {/* 4. Помощь и информация */}
-                <MenuItemBtn icon={<IconBook />} onClick={() => { setShowUserMenu(false); setShowKnowledge(true) }}>
-                  База знаний
-                </MenuItemBtn>
-                <MenuItemBtn icon={<IconLifebuoy />} onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>
-                  Поддержка
-                </MenuItemBtn>
-                <MenuItemBtn icon={<IconDoc />} onClick={() => { setShowUserMenu(false); setShowDocs(true) }}>
-                  Документы
-                </MenuItemBtn>
+                <MenuItemBtn icon={<IconBook />} onClick={() => { setShowUserMenu(false); setShowKnowledge(true) }}>{t('ui.baza_znaniy')}</MenuItemBtn>
+                <MenuItemBtn icon={<IconLifebuoy />} onClick={() => { setShowUserMenu(false); setShowSupport(true) }}>{t('ui.podderzhka')}</MenuItemBtn>
+                <MenuItemBtn icon={<IconDoc />} onClick={() => { setShowUserMenu(false); setShowDocs(true) }}>{t('ui.dokumenty')}</MenuItemBtn>
                 <MenuDivider />
 
                 {/* 5. Выход */}
-                <MenuItemBtn danger icon={<IconLogout />} onClick={() => { setShowUserMenu(false); onLogout?.() }}>
-                  Выйти
-                </MenuItemBtn>
+                <MenuItemBtn danger icon={<IconLogout />} onClick={() => { setShowUserMenu(false); onLogout?.() }}>{t('ui.vyyti')}</MenuItemBtn>
               </div>
             )}
           </div>
@@ -851,7 +825,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         }}>
           <svg width="18" height="18" viewBox="0 0 18 18" fill="none" style={{ flexShrink: 0 }}><rect x="1" y="4" width="11" height="10" rx="2" fill="rgba(255,255,255,0.9)"/><path d="M12 7l5-3v10l-5-3V7z" fill="rgba(255,255,255,0.9)"/></svg>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <span style={{ fontWeight: 600, fontSize: 14 }}>Идёт созвон</span>
+            <span style={{ fontWeight: 600, fontSize: 14 }}>{t('ui.idet_sozvon')}</span>
           </div>
           <button
             onClick={() => {
@@ -865,9 +839,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               background: '#fff', color: 'var(--color-accent)',
               border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0,
             }}
-          >
-            Войти
-          </button>
+          >{t('ui.voyti')}</button>
           <button
             onClick={async () => { try { await endCall(activeCallMeeting.id) } catch {} setActiveCallMeeting(null) }}
             style={{
@@ -875,9 +847,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               background: 'transparent', color: '#fff',
               border: '1px solid rgba(255,255,255,0.5)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', flexShrink: 0,
             }}
-          >
-            Завершить
-          </button>
+          >{t('ui.zavershit')}</button>
         </div>
       )}
 
@@ -887,9 +857,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">
-                {currentUser?.role === 'team_lead' ? 'Перейти в режим участника?' : 'Перейти в режим тимлида?'}
+                {currentUser?.role === 'team_lead' ? t('ui.pereyti_v_rezhim_uchastnika') : t('ui.pereyti_v_rezhim_timlida')}
               </span>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>✕</button>
             </div>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
               {currentUser?.role === 'team_lead'
@@ -897,9 +867,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 : 'Вы переключитесь на представление тимлида — с командами, встречами и аналитикой. Вернуться можно так же через это меню.'}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
-              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>Отмена</button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>{t('ui.otmena')}</button>
               <button className="btn btn-accent" style={{ flex: 1 }} onClick={confirmSwitchRole} disabled={switchingRole}>
-                {switchingRole ? 'Переключение…' : 'Переключить'}
+                {switchingRole ? t('ui.pereklyuchenie') : t('ui.pereklyuchit')}
               </button>
             </div>
           </div>
@@ -911,8 +881,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <div className="overlay-center" onClick={() => setShowPasswordModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <span className="modal-title">Сменить пароль</span>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowPasswordModal(false)}>✕</button>
+              <span className="modal-title">{t('ui.smenit_parol')}</span>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowPasswordModal(false)}>✕</button>
             </div>
             {pwdSuccess ? (
               <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
@@ -921,34 +891,34 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             ) : (
               <form onSubmit={handleChangePassword}>
                 <div className="form-group">
-                  <label className="form-label">Текущий пароль</label>
+                  <label className="form-label">{t('ui.tekuschiy_parol')}</label>
                   <input
                     type="password" className="input" value={pwdCurrent}
                     onChange={e => setPwdCurrent(e.target.value)}
-                    required placeholder="Текущий пароль" autoComplete="current-password"
+                    required placeholder={t('ui.tekuschiy_parol')} autoComplete="current-password"
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Новый пароль</label>
+                  <label className="form-label">{t('ui.novyy_parol')}</label>
                   <input
                     type="password" className="input" value={pwdNew}
                     onChange={e => setPwdNew(e.target.value)}
-                    required minLength={8} placeholder="Минимум 8 символов, буквы и цифры" autoComplete="new-password"
+                    required minLength={8} placeholder={t('ui.minimum_8_simvolov_bukvy_i_cifry')} autoComplete="new-password"
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">Подтвердите пароль</label>
+                  <label className="form-label">{t('ui.podtverdite_parol')}</label>
                   <input
                     type="password" className="input" value={pwdConfirm}
                     onChange={e => setPwdConfirm(e.target.value)}
-                    required minLength={8} placeholder="Повторите пароль" autoComplete="new-password"
+                    required minLength={8} placeholder={t('ui.povtorite_parol')} autoComplete="new-password"
                   />
                 </div>
                 {pwdError && (
                   <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{pwdError}</p>
                 )}
                 <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={pwdLoading}>
-                  {pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}
+                  {pwdLoading ? t('ui.sohranenie') : t('ui.sohranit_parol')}
                 </button>
               </form>
             )}
@@ -960,8 +930,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <div className="overlay-center" onClick={() => setShowAddEmailModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <span className="modal-title">Добавить email</span>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowAddEmailModal(false)}>✕</button>
+              <span className="modal-title">{t('ui.dobavit_email')}</span>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowAddEmailModal(false)}>✕</button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
               Email нужен для оформления платной подписки. Мы отправим на него ссылку для подтверждения.
@@ -979,7 +949,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{addEmailErr}</p>
               )}
               <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={addEmailLoading}>
-                {addEmailLoading ? 'Сохранение...' : 'Добавить и отправить письмо'}
+                {addEmailLoading ? t('ui.sohranenie') : t('ui.dobavit_i_otpravit_pismo')}
               </button>
             </form>
           </div>
@@ -990,8 +960,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         <div className="overlay-center" onClick={() => setShowTgModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
-              <span className="modal-title">Привязать Telegram</span>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowTgModal(false)}>✕</button>
+              <span className="modal-title">{t('ui.privyazat_telegram')}</span>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowTgModal(false)}>✕</button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
               Откройте бота в Telegram, отправьте команду /link и введите полученный код. Ваш
@@ -999,17 +969,17 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
             </p>
             <form onSubmit={handleTelegramLink}>
               <div className="form-group">
-                <label className="form-label">Код из бота</label>
+                <label className="form-label">{t('ui.kod_iz_bota')}</label>
                 <input
                   type="text" className="input" value={tgCode}
                   onChange={e => setTgCode(e.target.value.toUpperCase())}
-                  placeholder="Например: K7M2QP" autoFocus
+                  placeholder={t('ui.naprimer_k7m2qp')} autoFocus
                   style={{ fontFamily: 'monospace', letterSpacing: '0.08em' }}
                 />
               </div>
               {tgErr && <p style={{ fontSize: 13, color: 'var(--color-danger)', marginBottom: 12 }}>{tgErr}</p>}
               <button type="submit" className="btn btn-accent" style={{ width: '100%' }} disabled={tgBusy || !tgCode.trim()}>
-                {tgBusy ? 'Привязка...' : 'Привязать'}
+                {tgBusy ? t('ui.privyazka') : t('ui.privyazat')}
               </button>
             </form>
           </div>
@@ -1046,8 +1016,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <polyline points="14,17 18,17 18,13" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>Настроение падает 3 дня подряд</p>
-                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 3 }}>Нажмите, чтобы запланировать встречу</p>
+                <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>{t('ui.nastroenie_padaet_3_dnya_podryad')}</p>
+                <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 3 }}>{t('ui.nazhmite_chtoby_zaplanirovat_vstrechu')}</p>
               </div>
               <button
                 onClick={e => { e.stopPropagation(); setMoodBanner(null) }}
@@ -1165,8 +1135,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               onClick={() => setShowAvatarModal(true)}
               style={{ position: 'relative', cursor: 'pointer', marginBottom: 8, background: 'none', border: 'none', padding: 0 }}
               className="group"
-              title="Изменить фото"
-              aria-label="Изменить фото профиля"
+              title={t('ui.izmenit_foto')}
+              aria-label={t('ui.izmenit_foto_profilya')}
             >
               <div className={`avatar avatar-xl avatar-circle ${user?.avatar ? '' : 'avatar-accent'}`}
                 style={{ width: 64, height: 64, borderRadius: '50%' }}>
@@ -1195,16 +1165,14 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               type="button"
               onClick={() => setShowAvatarModal(true)}
               style={{ background: 'none', border: 'none', color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginBottom: 10 }}
-            >
-              Изменить фото
-            </button>
+            >{t('ui.izmenit_foto')}</button>
 
             <p style={{ fontWeight: 600, fontSize: 15, color: 'var(--color-text-primary)', lineHeight: 1.3 }}>
               {user?.name || '—'}
             </p>
             {user?.title
               ? <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{user.title}</p>
-              : <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3, fontStyle: 'italic' }}>должность не указана</p>
+              : <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3, fontStyle: 'italic' }}>{t('ui.dolzhnost_ne_ukazana')}</p>
             }
           </div>
 
@@ -1214,24 +1182,22 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <SocialLink icon="TG" label="Telegram" value={user?.telegram}
                 href={user?.telegram ? `https://t.me/${user.telegram.replace(/^@/, '')}` : null}
                 display={user?.telegram ? `@${user.telegram.replace(/^@/, '')}` : null}
-                placeholder="не указан" />
+                placeholder={t('ui.ne_ukazan')} />
               <SocialLink icon="in" label="LinkedIn" value={user?.linkedin}
                 href={user?.linkedin ? (user.linkedin.startsWith('http') ? user.linkedin : `https://linkedin.com/in/${user.linkedin}`) : null}
-                display={user?.linkedin} placeholder="не указан" />
+                display={user?.linkedin} placeholder={t('ui.ne_ukazan')} />
               <SocialLink icon="⌥" label="GitHub" value={user?.github}
                 href={user?.github ? `https://github.com/${user.github.replace(/^@/, '')}` : null}
-                display={user?.github} placeholder="не указан" />
+                display={user?.github} placeholder={t('ui.ne_ukazan')} />
 
               {/* Mini stats */}
               <div style={{ marginTop: 6, paddingTop: 14, borderTop: '1px solid var(--color-border)' }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>
-                  Статистика
-                </p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 10 }}>{t('ui.statistika')}</p>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 6 }}>
                   {[
-                    { value: sidebarStats?.meetings, label: 'Встреч', color: '#4f46e5', bg: 'var(--color-bg-secondary, #f1f5f9)' },
-                    { value: sidebarStats?.teams, label: 'Команд', color: '#0891b2', bg: 'var(--color-bg-secondary, #f1f5f9)' },
-                    { value: sidebarStats?.tasks_done, label: 'Задач', color: '#16a34a', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                    { value: sidebarStats?.meetings, label: t('ui.vstrech'), color: '#4f46e5', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                    { value: sidebarStats?.teams, label: t('ui.komand'), color: '#0891b2', bg: 'var(--color-bg-secondary, #f1f5f9)' },
+                    { value: sidebarStats?.tasks_done, label: t('ui.zadach'), color: '#16a34a', bg: 'var(--color-bg-secondary, #f1f5f9)' },
                   ].map(s => (
                     <div key={s.label} style={{ background: s.bg, borderRadius: 10, padding: '9px 4px', textAlign: 'center', border: '1px solid var(--color-border)' }}>
                       <p style={{ fontSize: 17, fontWeight: 800, color: s.color, lineHeight: 1.1 }}>
@@ -1246,7 +1212,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                     Участник — свои закрытые сегодня; тимлид — по всей команде. */}
                 <button
                   onClick={openClosedToday}
-                  title="Показать закрытые сегодня задачи"
+                  title={t('ui.pokazat_zakrytye_segodnya_zadachi')}
                   style={{
                     marginTop: 6, width: '100%', display: 'flex', alignItems: 'center',
                     justifyContent: 'space-between', gap: 10, cursor: 'pointer',
@@ -1259,9 +1225,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                       <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><polyline points="6,12.5 10,16.5 18,7.5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
                     </span>
                     <span>
-                      <span style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#065f46', lineHeight: 1.1 }}>Закрыто сегодня</span>
+                      <span style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#065f46', lineHeight: 1.1 }}>{t('ui.zakryto_segodnya')}</span>
                       <span style={{ display: 'block', fontSize: 10, color: '#047857', opacity: 0.85 }}>
-                        {user?.role === 'team_lead' ? 'по команде' : 'мои задачи'}
+                        {user?.role === 'team_lead' ? t('ui.po_komande') : t('ui.moi_zadachi_2')}
                       </span>
                     </span>
                   </span>
@@ -1279,7 +1245,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               {[
                 { key: 'title', label: t('profile.position'), placeholder: 'Senior Engineer' },
                 { key: 'telegram', label: 'Telegram', placeholder: '@username' },
-                { key: 'linkedin', label: 'LinkedIn', placeholder: 'username или URL' },
+                { key: 'linkedin', label: 'LinkedIn', placeholder: t('ui.username_ili_url') },
                 { key: 'github', label: 'GitHub', placeholder: 'username' },
               ].map(f => (
                 <div key={f.key} className="form-group" style={{ marginBottom: 0 }}>
@@ -1294,9 +1260,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 </div>
               ))}
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
-                <button type="button" onClick={() => setEditing(false)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>
-                  Отмена
-                </button>
+                <button type="button" onClick={() => setEditing(false)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>{t('ui.otmena')}</button>
                 <button type="submit" disabled={savingProfile} className="btn btn-accent btn-sm" style={{ flex: 1 }}>
                   {savingProfile ? '...' : 'Сохранить'}
                 </button>
@@ -1307,17 +1271,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {/* Edit button */}
           {!editing && (
             <div style={{ padding: '12px 20px', borderTop: '1px solid var(--color-border)' }}>
-              <button onClick={() => setEditing(true)} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>
-                Редактировать
-              </button>
+              <button onClick={() => setEditing(true)} className="btn btn-secondary btn-sm" style={{ width: '100%' }}>{t('ui.redaktirovat')}</button>
             </div>
           )}
 
           {/* App download buttons */}
           <div style={{ padding: '12px 20px 16px', borderTop: '1px solid var(--color-border)' }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-              Приложения
-            </p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{t('ui.prilozheniya')}</p>
             <div style={{ display: 'flex', gap: 8 }}>
               <StoreBtn compact title="App Store" icon={
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -1359,19 +1319,17 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460, width: '92vw' }}>
             <div className="modal-header" style={{ paddingBottom: 12 }}>
               <div>
-                <span className="modal-title">Закрыто сегодня</span>
+                <span className="modal-title">{t('ui.zakryto_segodnya')}</span>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>
-                  {currentUser?.role === 'team_lead' ? 'Задачи, закрытые сегодня всеми участниками команды' : 'Ваши задачи, закрытые сегодня'}
+                  {currentUser?.role === 'team_lead' ? t('ui.zadachi_zakrytye_segodnya_vsemi_uchastnikami_k') : t('ui.vashi_zadachi_zakrytye_segodnya')}
                 </p>
               </div>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setShowClosedToday(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowClosedToday(false)}>✕</button>
             </div>
             {closedTasks === null ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
             ) : closedTasks.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px 0' }}>
-                Сегодня ещё нет закрытых задач
-              </p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: '24px 0' }}>{t('ui.segodnya_esche_net_zakrytyh_zadach')}</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: '60vh', overflowY: 'auto' }}>
                 {closedTasks.map(t => (
@@ -1496,6 +1454,7 @@ function SocialLink({ icon, label, value, href, display, placeholder }) {
 }
 
 function StoreBtn({ label, title, icon, href, compact }) {
+  const { t } = useTranslation()
   const base = compact
     ? {
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -1520,10 +1479,10 @@ function StoreBtn({ label, title, icon, href, compact }) {
   }
   // Stores not published yet — graceful placeholder.
   return (
-    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => toast('Появится позже')}
+    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => toast(t('ui.poyavitsya_pozzhe'))}
       style={{ ...base, opacity: 0.55, cursor: 'pointer' }}>
       {inner}
-      {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>скоро</span>}
+      {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('ui.skoro_3')}</span>}
     </button>
   )
 }

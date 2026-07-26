@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, KeyboardAvoidingView, Platform, ActivityIndicator,
@@ -27,6 +28,7 @@ const PIT_STARTERS = [
 ];
 
 export default function SupportScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -138,7 +140,7 @@ export default function SupportScreen() {
       await loadTickets();
       setTimeout(() => threadRef.current?.scrollToEnd({ animated: true }), 150);
     } catch {
-      setError('Ошибка отправки');
+      setError(t('ui.oshibka_otpravki'));
     } finally { setReplying(false); }
   };
 
@@ -155,7 +157,7 @@ export default function SupportScreen() {
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         ) : null}
-        <Text style={styles.headerTitle}>Поддержка</Text>
+        <Text style={styles.headerTitle}>{t('ui.podderzhka')}</Text>
       </View>
 
       {/* Tabs */}
@@ -163,11 +165,11 @@ export default function SupportScreen() {
         <View style={styles.tabs}>
           <TouchableOpacity style={[styles.tab, tab === 'pit' && styles.tabActive]} onPress={() => setTab('pit')}>
             <Ionicons name="sparkles-outline" size={15} color={tab === 'pit' ? colors.accent : colors.textMuted} />
-            <Text style={[styles.tabText, tab === 'pit' && styles.tabTextActive]}>Спросить Пита</Text>
+            <Text style={[styles.tabText, tab === 'pit' && styles.tabTextActive]}>{t('ui.sprosit_pita')}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.tab, tab === 'ticket' && styles.tabActive]} onPress={() => setTab('ticket')}>
             <Ionicons name="mail-outline" size={15} color={tab === 'ticket' ? colors.accent : colors.textMuted} />
-            <Text style={[styles.tabText, tab === 'ticket' && styles.tabTextActive]}>Поддержка</Text>
+            <Text style={[styles.tabText, tab === 'ticket' && styles.tabTextActive]}>{t('ui.podderzhka')}</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -214,7 +216,7 @@ export default function SupportScreen() {
               style={styles.chatInput}
               value={pitInput}
               onChangeText={setPitInput}
-              placeholder="Спросите Пита..."
+              placeholder={t('ui.sprosite_pita')}
               placeholderTextColor={colors.textMuted}
               multiline
               maxLength={500}
@@ -247,8 +249,8 @@ export default function SupportScreen() {
               {threadMessages.length === 0 ? (
                 <View style={styles.emptyWrap}>
                   <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-                  <Text style={styles.emptyText}>Напишите в поддержку</Text>
-                  <Text style={styles.emptySubText}>Опишите вопрос — мы ответим прямо здесь, в этом чате</Text>
+                  <Text style={styles.emptyText}>{t('ui.napishite_v_podderzhku')}</Text>
+                  <Text style={styles.emptySubText}>{t('ui.opishite_vopros_my_otvetim_pryamo_zdes')}</Text>
                 </View>
               ) : (
                 threadMessages.map((msg: any, i: number) => {
@@ -284,7 +286,7 @@ export default function SupportScreen() {
               style={styles.chatInput}
               value={replyText}
               onChangeText={v => { setReplyText(v); setError(''); }}
-              placeholder="Сообщение в поддержку..."
+              placeholder={t('ui.soobschenie_v_podderzhku')}
               placeholderTextColor={colors.textMuted}
               multiline
               maxLength={1000}

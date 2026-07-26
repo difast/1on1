@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useIsTelegram } from '../lib/surface'
 import { useExclusiveOverlay } from '../lib/overlay'
 import { PitTriggerButton } from './PitAssistant'
 
 export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoTasks }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const isTg = useIsTelegram()
 
@@ -53,9 +55,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
           }}>
             {/* Next meeting */}
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                Следующая встреча
-              </p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{t('ui.sleduyuschaya_vstrecha')}</p>
               {nextMeeting ? (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{
@@ -85,7 +85,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Встреч не запланировано</p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.vstrech_ne_zaplanirovano')}</p>
               )}
               <button
                 onClick={() => { setOpen(false); onGoMeetings() }}
@@ -94,18 +94,14 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
                   background: 'var(--blue-50)', border: '1px solid var(--blue-200)',
                   borderRadius: 'var(--radius-sm)', padding: '5px 12px', cursor: 'pointer', width: '100%',
                 }}
-              >
-                → Встречи
-              </button>
+              >{t('ui.vstrechi_2')}</button>
             </div>
 
             <div style={{ height: 1, background: 'var(--color-border)' }} />
 
             {/* Next task */}
             <div>
-              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
-                Ближайшая задача
-              </p>
+              <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{t('ui.blizhayshaya_zadacha')}</p>
               {nextTask ? (
                 <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{
@@ -127,7 +123,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
                   </div>
                 </div>
               ) : (
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Активных задач нет</p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.aktivnyh_zadach_net')}</p>
               )}
               <button
                 onClick={() => { setOpen(false); onGoTasks() }}
@@ -136,9 +132,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
                   background: '#fef3c7', border: '1px solid #fde68a',
                   borderRadius: 'var(--radius-sm)', padding: '5px 12px', cursor: 'pointer', width: '100%',
                 }}
-              >
-                → Задачи
-              </button>
+              >{t('ui.zadachi_2')}</button>
             </div>
           </div>
         )}

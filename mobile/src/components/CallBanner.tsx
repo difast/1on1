@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { useI18n } from '../lib/i18n';
 import { View, Text, StyleSheet, TouchableOpacity, Linking, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,6 +7,7 @@ import { useAuth } from '../context/auth';
 import { getMeetings, endCall } from '../lib/api';
 
 export function CallBanner() {
+  const { t } = useI18n();
   const { user } = useAuth();
   const insets = useSafeAreaInsets();
   const [meeting, setMeeting] = useState<any>(null);
@@ -60,11 +62,11 @@ export function CallBanner() {
           <Ionicons name="videocam" size={18} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title} numberOfLines={1}>Идёт созвон</Text>
-          <Text style={styles.sub} numberOfLines={1}>Нажмите «Войти», чтобы присоединиться</Text>
+          <Text style={styles.title} numberOfLines={1}>{t('ui.idet_sozvon')}</Text>
+          <Text style={styles.sub} numberOfLines={1}>{t('ui.nazhmite_voyti_chtoby_prisoedinitsya')}</Text>
         </View>
         <TouchableOpacity style={styles.joinBtn} onPress={handleJoin}>
-          <Text style={styles.joinText}>Войти</Text>
+          <Text style={styles.joinText}>{t('ui.voyti')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.endBtn} onPress={handleEnd} disabled={ending}>
           <Text style={styles.endText}>{ending ? '...' : 'Завершить'}</Text>

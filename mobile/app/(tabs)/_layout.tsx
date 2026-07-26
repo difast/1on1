@@ -6,7 +6,9 @@ import { useTheme } from '../../src/context/theme';
 import { ActivityIndicator, View, TouchableOpacity, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { useI18n } from '../../src/lib/i18n';
 export default function TabsLayout() {
+  const { t } = useI18n();
   const { session, user, loading, initializing, activeRole } = useAuth();
   const { colors } = useTheme();
   const insets = useSafeAreaInsets();
@@ -64,12 +66,12 @@ export default function TabsLayout() {
         },
       })}
     >
-      <Tabs.Screen name="index" options={{ title: isLead ? 'Команды' : 'Обзор' }} />
-      <Tabs.Screen name="meetings" options={{ title: 'Встречи' }} />
+      <Tabs.Screen name="index" options={{ title: isLead ? t('ui.komandy') : t('nav.overview') }} />
+      <Tabs.Screen name="meetings" options={{ title: t('nav.meetings') }} />
       <Tabs.Screen
         name="support"
         options={{
-          title: 'Пит',
+          title: t('nav.assistant'),
           tabBarIcon: () => null,
           tabBarLabel: () => null,
           tabBarButton: (props) => (
@@ -85,8 +87,8 @@ export default function TabsLayout() {
           ),
         }}
       />
-      <Tabs.Screen name="tasks" options={{ title: 'Задачи' }} />
-      <Tabs.Screen name="profile" options={{ title: 'Профиль' }} />
+      <Tabs.Screen name="tasks" options={{ title: t('nav.tasks') }} />
+      <Tabs.Screen name="profile" options={{ title: t('menu.profile') }} />
       {/* Hidden screens — accessible via router.push, not shown in tab bar */}
       <Tabs.Screen name="notifications" options={{ href: null }} />
       <Tabs.Screen name="analytics" options={{ href: null }} />

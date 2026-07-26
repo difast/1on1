@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useI18n } from '../lib/i18n';
 import { Modal, View, Text, TouchableOpacity, StyleSheet, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
@@ -31,6 +32,7 @@ export function StatusPicker({
   onSelect: (status: TaskStatus) => void;
   onClose: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const tint = STATUS_TINT(colors);
@@ -39,7 +41,7 @@ export function StatusPicker({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={() => {}}>
-          <Text style={styles.title}>Статус задачи</Text>
+          <Text style={styles.title}>{t('ui.status_zadachi')}</Text>
           {STATUS_ORDER.map(s => (
             <TouchableOpacity
               key={s}

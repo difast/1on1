@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TextInput,
   TouchableOpacity, KeyboardAvoidingView, Platform,
@@ -27,6 +28,7 @@ const STARTERS = [
 ];
 
 export default function AssistantScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -90,8 +92,8 @@ export default function AssistantScreen() {
           <Ionicons name="sparkles" size={18} color={colors.accent} />
         </View>
         <View>
-          <Text style={styles.headerTitle}>AI Ассистент</Text>
-          <Text style={styles.headerSub}>Советы по управлению командой</Text>
+          <Text style={styles.headerTitle}>{t('ui.ai_assistent')}</Text>
+          <Text style={styles.headerSub}>{t('ui.sovety_po_upravleniyu_komandoy')}</Text>
         </View>
       </View>
 
@@ -110,8 +112,8 @@ export default function AssistantScreen() {
           {messages.length === 0 && (
             <View style={styles.emptyState}>
               <Ionicons name="sparkles-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyTitle}>Спросите что угодно</Text>
-              <Text style={styles.emptySub}>о проведении встреч, мотивации команды, обратной связи</Text>
+              <Text style={styles.emptyTitle}>{t('ui.sprosite_chto_ugodno')}</Text>
+              <Text style={styles.emptySub}>{t('ui.o_provedenii_vstrech_motivacii_komandy_obratno')}</Text>
               <View style={styles.starters}>
                 {STARTERS.map((s, i) => (
                   <TouchableOpacity key={i} style={styles.starterChip} onPress={() => send(s)}>
@@ -147,7 +149,7 @@ export default function AssistantScreen() {
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Напишите вопрос..."
+            placeholder={t('ui.napishite_vopros')}
             placeholderTextColor={colors.textMuted}
             multiline
             maxLength={1000}

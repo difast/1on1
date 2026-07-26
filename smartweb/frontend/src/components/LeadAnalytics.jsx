@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getLeadAnalytics, getTeamMoodSummary, getTeamCheckins, getMeetings, pitChat, getMyMoodSeries, getBillingMe } from '../api/client'
 import { openPricing } from '../lib/featureLock'
 import { useIsTelegram } from '../lib/surface'
@@ -82,6 +83,7 @@ function Heatmap({ weeks }) {
 
 // ─── SVG line chart ───────────────────────────────────────────────────────────
 function LineChart({ points, color = 'var(--color-accent)', yMin = 1, yMax = 5, height = 90 }) {
+  const { t } = useTranslation()
   const [animated, setAnimated] = useState(false)
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 200); return () => clearTimeout(t) }, [])
 
@@ -89,7 +91,7 @@ function LineChart({ points, color = 'var(--color-accent)', yMin = 1, yMax = 5, 
   const valid = points.filter(p => p.y !== null && p.y !== undefined)
   if (valid.length < 2) return (
     <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Недостаточно данных</p>
+      <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.nedostatochno_dannyh')}</p>
     </div>
   )
 
@@ -225,6 +227,7 @@ function MemberRow({ s, delay }) {
 
 // ─── Risk card ────────────────────────────────────────────────────────────────
 function RiskCard({ s, delay }) {
+  const { t } = useTranslation()
   const [vis, setVis] = useState(false)
   const [advice, setAdvice] = useState('')
   const [loading, setLoading] = useState(false)
@@ -272,7 +275,7 @@ function RiskCard({ s, delay }) {
           borderRadius: 8, padding: '7px 12px',
         }}
       >
-        {advice ? 'Скрыть совет' : loading ? 'AI думает…' : 'Совет от AI'}
+        {advice ? 'Скрыть совет' : loading ? t('ui.ai_dumaet') : t('ui.sovet_ot_ai')}
       </button>
       {advice && (
         <div style={{ marginTop: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>
@@ -285,6 +288,7 @@ function RiskCard({ s, delay }) {
 
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function LeadAnalytics({ user }) {
+  const { t } = useTranslation()
   // Mini App: только сводка (StatCards), без графиков и экспорта (таблица).
   const isTg = useIsTelegram()
   // Экспорт Excel — функция тарифа Team и выше: спрашиваем свои лимиты, чтобы
@@ -627,7 +631,7 @@ export default function LeadAnalytics({ user }) {
       sc(ws1, row, 7, s.open_tasks ?? 0, S[a]('center'))
       sc(ws1, row, 8, s.completed_tasks ?? 0, S[a]('center'))
       sc(ws1, row, 9, s.total_tasks ?? 0, S[a]('center'))
-      sc(ws1, row, 10, isUrgent ? 'Срочно' : isRisk ? 'Риск' : 'ОК', st)
+      sc(ws1, row, 10, isUrgent ? 'Срочно' : isRisk ? t('ui.risk') : t('ui.ok'), st)
       ws1['!rows'].push({ hpt: 22 })
     })
 
@@ -677,7 +681,7 @@ export default function LeadAnalytics({ user }) {
       const flags = s.warning_flags || []
       const isRisk = flags.length > 0
       const isUrgent = s.days_since_last >= 21 || flags.length >= 2
-      const statusTxt = isUrgent ? 'СРОЧНО' : isRisk ? 'РИСК' : 'ОК'
+      const statusTxt = isUrgent ? 'СРОЧНО' : isRisk ? t('ui.risk_2') : t('ui.ok')
 
       // Spacer
       ws2['!rows'].push({ hpt: 6 })
@@ -796,7 +800,7 @@ export default function LeadAnalytics({ user }) {
         sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + ' дн.' : '—', isUrgent ? S.urgent : S.danger)
         sc(ws3, r3, 2, s.open_tasks ?? 0, a('center'))
         sc(ws3, r3, 3, s.task_completion_pct != null ? s.task_completion_pct + '%' : '—', a('center'))
-        sc(ws3, r3, 4, isUrgent ? 'СРОЧНО' : 'РИСК', isUrgent ? S.urgent : S.danger)
+        sc(ws3, r3, 4, isUrgent ? t('ui.srochno_2') : t('ui.risk_2'), isUrgent ? S.urgent : S.danger)
         sc(ws3, r3, 5, reasons, { font: { sz: 10, color: { rgb: RED } }, alignment: { horizontal: 'left', vertical: 'center', wrapText: true }, border: brdB() })
         ws3['!rows'].push({ hpt: 22 })
         r3++
@@ -1029,8 +1033,8 @@ export default function LeadAnalytics({ user }) {
   if (!data?.teams?.length) return (
     <div className="empty-state">
       <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
-      <p className="empty-title">Нет данных для аналитики</p>
-      <p className="empty-desc">Данные появятся после проведения встреч</p>
+      <p className="empty-title">{t('ui.net_dannyh_dlya_analitiki')}</p>
+      <p className="empty-desc">{t('ui.dannye_poyavyatsya_posle_provedeniya_vstrech')}</p>
     </div>
   )
 
@@ -1073,25 +1077,25 @@ export default function LeadAnalytics({ user }) {
 
       {/* 4 Top stats */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <StatCard value={teamAvgInterval} suffix=" дн." label="Ср. интервал встреч" delay={0} />
-        <StatCard value={teamMeetings30} label="Встреч за 30 дней" accent delay={100} />
-        <StatCard value={teamTaskPct} suffix="%" label="Задач выполнено" accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
-        <StatCard value={atRiskCount} label="В зоне риска" danger={atRiskCount > 0} delay={300} />
-        <StatCard value={agendaPct} suffix="%" label="Встреч с повесткой" accent={agendaPct !== null && agendaPct >= 70} warning={agendaPct !== null && agendaPct < 40} delay={350} />
+        <StatCard value={teamAvgInterval} suffix=" дн." label={t('ui.sr_interval_vstrech')} delay={0} />
+        <StatCard value={teamMeetings30} label={t('ui.vstrech_za_30_dney')} accent delay={100} />
+        <StatCard value={teamTaskPct} suffix="%" label={t('ui.zadach_vypolneno')} accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
+        <StatCard value={atRiskCount} label={t('ui.v_zone_riska')} danger={atRiskCount > 0} delay={300} />
+        <StatCard value={agendaPct} suffix="%" label={t('ui.vstrech_s_povestkoy')} accent={agendaPct !== null && agendaPct >= 70} warning={agendaPct !== null && agendaPct < 40} delay={350} />
         {/* Экспорт Excel недоступен в Mini App (таблица). На тарифе Start —
             мягкое тарифное уведомление вместо выгрузки. */}
         {!isTg && !exportAllowed && (
           <button
             onClick={() => openPricing(exportMinPlan)}
-            title="Экспорт данных (Excel) доступен на тарифе Team"
+            title={t('ui.eksport_dannyh_excel_dostupen_na_tarife')}
             style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-muted)', cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >Экспорт Excel — на тарифе Team</button>
+          >{t('ui.eksport_excel_na_tarife_team')}</button>
         )}
         {!isTg && exportAllowed && (
           <button
             onClick={() => exportExcel(team, team.member_stats, moodByTeam[team.team_id], checkinsByTeam[team.team_id] || [])}
             style={{ alignSelf: 'center', marginLeft: 'auto', fontSize: 13, fontWeight: 600, padding: '8px 16px', borderRadius: 8, background: 'var(--color-surface)', border: '1px solid var(--color-border)', color: 'var(--color-text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
-          >↓ Экспорт Excel</button>
+          >{t('ui.eksport_excel')}</button>
         )}
       </div>
 
@@ -1099,14 +1103,14 @@ export default function LeadAnalytics({ user }) {
           разрывы, рост уровней за квартал. Числа доступны и в Mini App. */}
       {team.development && (
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>Развитие команды</p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.razvitie_komandy')}</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <StatCard value={team.development.with_active_plan} label="С активным планом" delay={0} />
-            <StatCard value={team.development.without_plan} label="Без плана" warning={team.development.without_plan > 0} delay={80} />
-            <StatCard value={team.development.avg_plan_progress} suffix="%" label="Средний прогресс плана" accent delay={160} />
-            <StatCard value={team.development.overdue_steps} label="Просрочено шагов" danger={team.development.overdue_steps > 0} delay={240} />
-            <StatCard value={team.development.gap_total} label="Разрывов уровней" delay={320} />
-            <StatCard value={team.development.levelups_quarter} label="Рост уровней (квартал)" delay={400} />
+            <StatCard value={team.development.with_active_plan} label={t('ui.s_aktivnym_planom')} delay={0} />
+            <StatCard value={team.development.without_plan} label={t('ui.bez_plana')} warning={team.development.without_plan > 0} delay={80} />
+            <StatCard value={team.development.avg_plan_progress} suffix="%" label={t('ui.sredniy_progress_plana')} accent delay={160} />
+            <StatCard value={team.development.overdue_steps} label={t('ui.prosrocheno_shagov')} danger={team.development.overdue_steps > 0} delay={240} />
+            <StatCard value={team.development.gap_total} label={t('ui.razryvov_urovney')} delay={320} />
+            <StatCard value={team.development.levelups_quarter} label={t('ui.rost_urovney_kvartal')} delay={400} />
           </div>
           {team.development.category_avg_level && Object.keys(team.development.category_avg_level).length > 0 && (
             <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
@@ -1127,9 +1131,7 @@ export default function LeadAnalytics({ user }) {
       {/* Последние темы повесток — повестка встреч, собранная в аналитике */}
       {agendaTopics.length > 0 && (
         <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 12, padding: '16px 18px' }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
-            Последние темы повесток
-          </p>
+          <p style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>{t('ui.poslednie_temy_povestok')}</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {agendaTopics.map((t, i) => (
               <span key={i} style={{ fontSize: 13, color: 'var(--color-text-secondary)', background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 999, padding: '4px 12px', maxWidth: 320, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -1143,16 +1145,14 @@ export default function LeadAnalytics({ user }) {
       {/* Heatmap + Mood line */}
       <div className="grid-2-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-            Активность встреч по неделям
-          </p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>{t('ui.aktivnost_vstrech_po_nedelyam')}</p>
           <Heatmap weeks={team.meetings_per_week} />
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 12 }}>
             {['', '#bfdbfe', '#60a5fa', '#2563eb', '#1d4ed8'].map((c, i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
                 <div style={{ width: 12, height: 12, borderRadius: 3, background: i === 0 ? 'var(--gray-200)' : c }} />
                 {i === 0 && <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>0</span>}
-                {i === 4 && <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>много</span>}
+                {i === 4 && <span style={{ fontSize: 10, color: 'var(--color-text-muted)' }}>{t('ui.mnogo')}</span>}
               </div>
             ))}
           </div>
@@ -1162,10 +1162,8 @@ export default function LeadAnalytics({ user }) {
             заполнивших (ниже порога) статистика скрывается — только сообщение. */}
         <div className="card" style={{ padding: '18px 20px', borderTop: '3px solid #3B6EF0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>
-              Настроение команды
-            </p>
-            <span className="badge badge-blue" style={{ fontSize: 10 }}>анонимно</span>
+            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{t('ui.nastroenie_komandy')}</p>
+            <span className="badge badge-blue" style={{ fontSize: 10 }}>{t('ui.anonimno')}</span>
           </div>
           <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>
             Обобщённая статистика без привязки к участникам · опрос и быстрая оценка (единая шкала 1–5)
@@ -1188,14 +1186,14 @@ export default function LeadAnalytics({ user }) {
               <div style={{ display: 'flex', gap: 18, flexWrap: 'wrap', marginBottom: 14 }}>
                 <div>
                   <p style={{ fontSize: 22, fontWeight: 800, color: 'var(--color-text-primary)', lineHeight: 1 }}>{mood.avg}/5</p>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>средний балл сегодня</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>{t('ui.sredniy_ball_segodnya')}</p>
                 </div>
                 {mood.delta_prev != null && (
                   <div>
                     <p style={{ fontSize: 22, fontWeight: 800, lineHeight: 1, color: mood.delta_prev > 0 ? 'var(--color-success)' : mood.delta_prev < 0 ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
                       {mood.delta_prev > 0 ? '+' : ''}{mood.delta_prev}
                     </p>
-                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>к прошлому дню</p>
+                    <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 4 }}>{t('ui.k_proshlomu_dnyu')}</p>
                   </div>
                 )}
                 {mood.share_pct != null && (
@@ -1208,7 +1206,7 @@ export default function LeadAnalytics({ user }) {
               {/* Распределение баллов сегодня */}
               {mood.distribution && (
                 <div style={{ marginBottom: 14 }}>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>Распределение сегодня</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>{t('ui.raspredelenie_segodnya')}</p>
                   {(() => {
                     const dist = mood.distribution
                     const maxC = Math.max(...Object.values(dist), 1)
@@ -1228,13 +1226,13 @@ export default function LeadAnalytics({ user }) {
               )}
               {moodLinePoints.filter(p => p.y != null).length >= 2 && (
                 <>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Динамика по неделям</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>{t('ui.dinamika_po_nedelyam')}</p>
                   <LineChart points={moodLinePoints} color="#3B6EF0" height={90} />
                 </>
               )}
               {mood.recent_summaries?.length > 0 && (
                 <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 5 }}>
-                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Последние темы (анонимно)</p>
+                  <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('ui.poslednie_temy_anonimno')}</p>
                   {mood.recent_summaries.map((s, i) => (
                     <p key={i} style={{ fontSize: 12, color: 'var(--color-text-secondary)', fontStyle: 'italic' }}>«{s}»</p>
                   ))}
@@ -1249,18 +1247,16 @@ export default function LeadAnalytics({ user }) {
           командной статистики: это личные отметки самого тимлида, не команда. */}
       <div className="card" style={{ padding: '18px 20px', borderTop: '3px solid #0D9488' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>Моё настроение (чек-ины)</p>
-          <span className="badge badge-green" style={{ fontSize: 10 }}>личное</span>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{t('ui.moe_nastroenie_chek_iny')}</p>
+          <span className="badge badge-green" style={{ fontSize: 10 }}>{t('ui.lichnoe')}</span>
         </div>
-        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>Только ваши отметки за 30 дней</p>
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>{t('ui.tolko_vashi_otmetki_za_30_dney')}</p>
         {myMoodLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><div className="spinner" /></div>
         ) : (() => {
           const s = myMood?.series || []
           if (s.length === 0) return (
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-              Вы ещё не отмечали настроение. График появится сразу после первой отметки.
-            </p>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.vy_esche_ne_otmechali_nastroenie_grafik')}</p>
           )
           // Непрерывная ось: пропущенные дни — разрыв (null), не ноль.
           const byDate = {}; s.forEach(p => { byDate[p.date] = p.score })
@@ -1283,9 +1279,7 @@ export default function LeadAnalytics({ user }) {
       {/* Risk zone */}
       {team.at_risk_members.length > 0 && (
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-            Зоны риска
-          </p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>{t('ui.zony_riska')}</p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 10 }}>
             {team.at_risk_members.map((s, i) => <RiskCard key={s.user_id} s={s} delay={i * 80} />)}
           </div>
@@ -1294,9 +1288,7 @@ export default function LeadAnalytics({ user }) {
 
       {/* Member table */}
       <div className="card" style={{ padding: '18px 20px', overflow: 'hidden' }}>
-        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-          По каждому участнику
-        </p>
+        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>{t('ui.po_kazhdomu_uchastniku')}</p>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
@@ -1324,7 +1316,7 @@ export default function LeadAnalytics({ user }) {
         const maxH = Math.max(...hourEntries.map(e => e.count), 1)
         return (
           <div className="card" style={{ padding: '18px 20px' }}>
-            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>Распределение встреч по времени</p>
+            <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>{t('ui.raspredelenie_vstrech_po_vremeni')}</p>
             <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 64 }}>
               {hourEntries.map((e, i) => (
                 <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, height: '100%', justifyContent: 'flex-end' }}>
@@ -1358,9 +1350,9 @@ export default function LeadAnalytics({ user }) {
         }
         return (
           <div className="card" style={{ padding: '18px 20px' }}>
-            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>Приход / уход сегодня</p>
+            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>{t('ui.prihod_uhod_segodnya')}</p>
             {todayCheckins.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Никто ещё не отметился сегодня</p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.nikto_esche_ne_otmetilsya_segodnya')}</p>
             ) : (
               <div style={{ overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 360 }}>
@@ -1379,7 +1371,7 @@ export default function LeadAnalytics({ user }) {
                       <td style={{ padding: '10px 12px', color: c.left_at ? 'var(--color-text-secondary)' : 'var(--color-text-muted)' }}>{fmt(c.left_at)}</td>
                       <td style={{ padding: '10px 12px' }}>
                         {!c.left_at
-                          ? <span className="badge badge-green" style={{ fontSize: 11 }}>Онлайн</span>
+                          ? <span className="badge badge-green" style={{ fontSize: 11 }}>{t('ui.onlayn')}</span>
                           : <span style={{ color: 'var(--color-text-secondary)' }}>{dur(c.arrived_at, c.left_at)}</span>}
                       </td>
                     </tr>

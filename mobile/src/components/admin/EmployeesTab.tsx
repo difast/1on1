@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../../lib/i18n';
 import {
   View, Text, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Alert, ScrollView,
 } from 'react-native';
@@ -20,6 +21,7 @@ type FormState = { name: string; role: string; email: string; contact: string; r
 const EMPTY: FormState = { name: '', role: 'manager', email: '', contact: '', responsibility: '' };
 
 export function EmployeesTab() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [list, setList] = useState<StaffMember[]>([]);
@@ -44,7 +46,7 @@ export function EmployeesTab() {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { Alert.alert('Проверьте форму', 'Укажите имя сотрудника'); return; }
+    if (!form.name.trim()) { Alert.alert(t('ui.proverte_formu'), 'Укажите имя сотрудника'); return; }
     setSaving(true);
     try {
       if (editingId) {
@@ -56,15 +58,15 @@ export function EmployeesTab() {
       }
       reset();
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить сотрудника');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить сотрудника');
     } finally { setSaving(false); }
   };
 
   const remove = (e: StaffMember) => {
-    Alert.alert('Удалить сотрудника?', `${e.name} будет снят со всех назначений. Действие необратимо.`, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('ui.udalit_sotrudnika'), `${e.name} будет снят со всех назначений. Действие необратимо.`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить', style: 'destructive', onPress: async () => {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
           await deleteManager(e.id).catch(() => {});
           setList(prev => prev.filter(m => m.id !== e.id));
           if (editingId === e.id) reset();
@@ -79,11 +81,11 @@ export function EmployeesTab() {
     <View style={{ gap: 16 }}>
       {/* Форма */}
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{editingId ? 'Изменить сотрудника' : 'Добавить сотрудника'}</Text>
-        <Text style={styles.label}>Имя</Text>
+        <Text style={styles.cardTitle}>{editingId ? t('ui.izmenit_sotrudnika') : t('ui.dobavit_sotrudnika')}</Text>
+        <Text style={styles.label}>{t('ui.imya')}</Text>
         <TextInput style={styles.input} value={form.name} onChangeText={t => field('name', t)}
-          placeholder="Иван Петров" placeholderTextColor={colors.textMuted} />
-        <Text style={styles.label}>Роль</Text>
+          placeholder={t('ui.ivan_petrov')} placeholderTextColor={colors.textMuted} />
+        <Text style={styles.label}>{t('ui.rol')}</Text>
         <View style={styles.roleRow}>
           {ROLES.map(r => (
             <TouchableOpacity key={r.value} onPress={() => field('role', r.value)}
@@ -95,21 +97,21 @@ export function EmployeesTab() {
         <Text style={styles.label}>Email</Text>
         <TextInput style={styles.input} value={form.email} onChangeText={t => field('email', t)}
           placeholder="ivan@company.com" placeholderTextColor={colors.textMuted} autoCapitalize="none" keyboardType="email-address" />
-        <Text style={styles.label}>Контакт</Text>
+        <Text style={styles.label}>{t('ui.kontakt')}</Text>
         <TextInput style={styles.input} value={form.contact} onChangeText={t => field('contact', t)}
-          placeholder="Telegram, телефон" placeholderTextColor={colors.textMuted} />
-        <Text style={styles.label}>Зона ответственности</Text>
+          placeholder={t('ui.telegram_telefon')} placeholderTextColor={colors.textMuted} />
+        <Text style={styles.label}>{t('ui.zona_otvetstvennosti')}</Text>
         <TextInput style={[styles.input, { height: 64, textAlignVertical: 'top' }]} value={form.responsibility}
-          onChangeText={t => field('responsibility', t)} placeholder="Например: клиенты Enterprise" placeholderTextColor={colors.textMuted} multiline />
+          onChangeText={t => field('responsibility', t)} placeholder={t('ui.naprimer_klienty_enterprise')} placeholderTextColor={colors.textMuted} multiline />
         {/* Порядок: основное действие первым, отмена — второй (задача 4). */}
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 12 }}>
           <TouchableOpacity style={[styles.primaryBtn, { flex: 2 }]} onPress={save} disabled={saving}>
             {saving ? <ActivityIndicator size="small" color="#fff" />
-              : <Text style={styles.primaryBtnText}>{editingId ? 'Сохранить' : 'Добавить'}</Text>}
+              : <Text style={styles.primaryBtnText}>{editingId ? t('common.save') : t('common.add')}</Text>}
           </TouchableOpacity>
           {editingId && (
             <TouchableOpacity style={[styles.secondaryBtn, { flex: 1 }]} onPress={reset} disabled={saving}>
-              <Text style={styles.secondaryBtnText}>Отмена</Text>
+              <Text style={styles.secondaryBtnText}>{t('ui.otmena')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -120,7 +122,7 @@ export function EmployeesTab() {
       {loading ? (
         <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 24 }} />
       ) : list.length === 0 ? (
-        <Text style={styles.empty}>Сотрудников пока нет. Добавьте первого в форме выше.</Text>
+        <Text style={styles.empty}>{t('ui.sotrudnikov_poka_net_dobavte_pervogo_v')}</Text>
       ) : (
         list.map(e => (
           <View key={e.id} style={styles.card}>

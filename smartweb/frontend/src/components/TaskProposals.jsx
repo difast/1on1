@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTaskProposals, createTaskProposal, acceptTaskProposal, declineTaskProposal, commentTaskProposal } from '../api/client'
 import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
@@ -18,6 +19,7 @@ const fmtDue = (iso) => iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '
  * Сущность отдельная и от задачи, и от предложения встречи.
  */
 export default function TaskProposals({ currentUser, contacts = [], teamId, onClose, onChanged, presetToUserId = null, initialTab = 'inbox' }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose)
   const [proposals, setProposals] = useState(null)
   const [tab, setTab] = useState(presetToUserId ? 'new' : initialTab)  // inbox | outbox | new
@@ -59,7 +61,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
   const doDecline = (p) => act(declineTaskProposal, p.id)
 
   const sendComment = async (p) => {
-    if (!commentText.trim()) { toast('Введите сообщение', 'error'); return }
+    if (!commentText.trim()) { toast(t('ui.vvedite_soobschenie'), 'error'); return }
     setBusyId(p.id)
     try {
       await commentTaskProposal(p.id, currentUser.id, commentText.trim())
@@ -74,8 +76,8 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
 
   const submitNew = async (e) => {
     e.preventDefault()
-    if (!toUser) { toast('Выберите получателя', 'error'); return }
-    if (!title.trim()) { toast('Укажите название задачи', 'error'); return }
+    if (!toUser) { toast(t('ui.vyberite_poluchatelya'), 'error'); return }
+    if (!title.trim()) { toast(t('ui.ukazhite_nazvanie_zadachi'), 'error'); return }
     setCreating(true)
     try {
       await createTaskProposal({
@@ -83,7 +85,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
         title: title.trim(), description: desc.trim() || null,
         due_date: due || null, team_id: teamId || null,
       })
-      toast('Предложение задачи отправлено', 'success')
+      toast(t('ui.predlozhenie_zadachi_otpravleno'), 'success')
       setTitle(''); setDesc(''); setDue('')
       if (!presetToUserId) setToUser('')
       setTab('outbox'); load(); onChanged?.()
@@ -134,12 +136,12 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
         {isOpen(p) && (p.from_user_id === currentUser.id || p.to_user_id === currentUser.id) && (
           commentFor === p.id ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--color-bg)', padding: 10, borderRadius: 8 }}>
-              <textarea className="input" rows={2} placeholder="Сообщение по задаче" value={commentText} onChange={e => setCommentText(e.target.value)} style={{ resize: 'none' }} />
+              <textarea className="input" rows={2} placeholder={t('ui.soobschenie_po_zadache')} value={commentText} onChange={e => setCommentText(e.target.value)} style={{ resize: 'none' }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-accent btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => sendComment(p)}>
                   {busyId === p.id ? <Spinner size={14} /> : 'Отправить'}
                 </button>
-                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => { setCommentFor(null); setCommentText('') }}>Отмена</button>
+                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => { setCommentFor(null); setCommentText('') }}>{t('ui.otmena')}</button>
               </div>
             </div>
           ) : (
@@ -149,9 +151,9 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
                   {busyId === p.id ? <Spinner size={14} /> : null} Принять
                 </button>
               )}
-              <button className="btn btn-secondary btn-sm" disabled={busyId === p.id} onClick={() => { setCommentFor(p.id); setCommentText('') }}>Обсудить</button>
+              <button className="btn btn-secondary btn-sm" disabled={busyId === p.id} onClick={() => { setCommentFor(p.id); setCommentText('') }}>{t('ui.obsudit')}</button>
               {respond && (
-                <button className="btn btn-danger btn-sm" disabled={busyId === p.id} onClick={() => doDecline(p)}>Отклонить</button>
+                <button className="btn btn-danger btn-sm" disabled={busyId === p.id} onClick={() => doDecline(p)}>{t('ui.otklonit')}</button>
               )}
             </div>
           )
@@ -160,7 +162,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
           <p style={{ fontSize: 12, color: '#15803d', margin: 0, fontWeight: 600 }}>Задача создана и назначена на {p.to_user_name || 'получателя'}</p>
         )}
         {p.status === 'declined' && (
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Предложение отклонено</p>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{t('ui.predlozhenie_otkloneno')}</p>
         )}
       </div>
     )
@@ -171,9 +173,9 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
       <div style={{ height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="logo">OneOn<span className="accent">One</span></span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>/ Предложения задач</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ui.predlozheniya_zadach_2')}</span>
         </div>
-        <button onClick={onClose} className="btn btn-secondary btn-sm">Закрыть</button>
+        <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt')}</button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, padding: '12px 20px 0', maxWidth: 680, width: '100%', margin: '0 auto' }}>
@@ -186,26 +188,26 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
         {tab === 'new' ? (
           <form onSubmit={submitNew} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Кому</label>
+              <label className="form-label">{t('ui.komu')}</label>
               <select className="input" value={toUser} onChange={e => setToUser(e.target.value)}>
-                <option value="">— выберите участника —</option>
+                <option value="">{t('ui.vyberite_uchastnika')}</option>
                 {contacts.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
               </select>
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Название задачи</label>
-              <input className="input" placeholder="Что нужно сделать" value={title} onChange={e => setTitle(e.target.value)} />
+              <label className="form-label">{t('ui.nazvanie_zadachi')}</label>
+              <input className="input" placeholder={t('ui.chto_nuzhno_sdelat')} value={title} onChange={e => setTitle(e.target.value)} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Описание</label>
-              <textarea className="input" rows={3} placeholder="Подробности (необязательно)" value={desc} onChange={e => setDesc(e.target.value)} style={{ resize: 'vertical' }} />
+              <label className="form-label">{t('ui.opisanie')}</label>
+              <textarea className="input" rows={3} placeholder={t('ui.podrobnosti_neobyazatelno')} value={desc} onChange={e => setDesc(e.target.value)} style={{ resize: 'vertical' }} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Срок</label>
+              <label className="form-label">{t('ui.srok')}</label>
               <input type="date" className="input" value={due} onChange={e => setDue(e.target.value)} />
             </div>
             <button type="submit" disabled={creating} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {creating ? <><Spinner size={15} /> Отправка...</> : 'Отправить предложение'}
+              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить предложение'}
             </button>
           </form>
         ) : proposals === null ? (
@@ -214,7 +216,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
           const list = tab === 'inbox' ? incoming : mine
           if (list.length === 0) {
             return <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 14, padding: '40px 0' }}>
-              {tab === 'inbox' ? 'Нет предложений, ожидающих вашего ответа' : 'Предложений пока нет'}
+              {tab === 'inbox' ? t('ui.net_predlozheniy_ozhidayuschih_vashego_otveta') : t('ui.predlozheniy_poka_net')}
             </p>
           }
           return <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{list.map(renderCard)}</div>

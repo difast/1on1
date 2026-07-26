@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getSubtasks, updateSubtask } from '../api/client'
 
 export default function SubtaskList({ taskId, refreshKey = 0, onAllDone }) {
+  const { t } = useTranslation()
   const [subtasks, setSubtasks] = useState([])
   const [loading, setLoading] = useState(false)
 
@@ -32,7 +34,7 @@ export default function SubtaskList({ taskId, refreshKey = 0, onAllDone }) {
   if (loading) return (
     <div style={{ padding: '6px 0 2px', display: 'flex', alignItems: 'center', gap: 6 }}>
       <div className="spinner" style={{ width: 14, height: 14, borderWidth: 2, borderColor: '#d1fae5', borderTopColor: '#22c55e' }} />
-      <span style={{ fontSize: 11, color: '#6b7280' }}>Загрузка подзадач...</span>
+      <span style={{ fontSize: 11, color: '#6b7280' }}>{t('ui.zagruzka_podzadach')}</span>
     </div>
   )
 
@@ -43,9 +45,7 @@ export default function SubtaskList({ taskId, refreshKey = 0, onAllDone }) {
   return (
     <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px solid #f0fdf4' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a', letterSpacing: '0.04em' }}>
-          ПОДЗАДАЧИ
-        </span>
+        <span style={{ fontSize: 11, fontWeight: 600, color: '#16a34a', letterSpacing: '0.04em' }}>{t('ui.podzadachi')}</span>
         <span style={{
           fontSize: 11, fontWeight: 700, color: doneCount === subtasks.length ? '#16a34a' : '#6b7280',
           background: doneCount === subtasks.length ? '#dcfce7' : '#f3f4f6',

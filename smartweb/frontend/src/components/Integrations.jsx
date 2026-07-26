@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getIntegrationsStatus, getIntegrationAuthUrl, disconnectIntegration,
   createWebhook, deleteWebhook, testWebhook,
@@ -23,6 +24,7 @@ const STATUS_LABEL = {
 }
 
 function CalendarCard({ item, userId, onChange }) {
+  const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
   const meta = CAL_META[item.provider] || { name: item.provider, desc: '' }
 
@@ -38,7 +40,7 @@ function CalendarCard({ item, userId, onChange }) {
   }
 
   const disconnect = async () => {
-    if (!(await confirmDialog({ title: `Отключить ${meta.name}?`, message: 'Синхронизация встреч с этим календарём прекратится. Уже созданные события останутся.', confirmText: 'Отключить', danger: true }))) return
+    if (!(await confirmDialog({ title: `Отключить ${meta.name}?`, message: t('ui.sinhronizaciya_vstrech_s_etim_kalendarem_prekr'), confirmText: 'Отключить', danger: true }))) return
     setBusy(true)
     try { await disconnectIntegration(item.provider, userId); onChange?.() }
     finally { setBusy(false) }
@@ -62,9 +64,9 @@ function CalendarCard({ item, userId, onChange }) {
         {item.connected && item.account_email ? `Подключён как ${item.account_email}` : ''}
       </p>
       {!item.configured ? (
-        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled title="Интеграция ещё не настроена администратором">Недоступно</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled title={t('ui.integraciya_esche_ne_nastroena_administratorom')}>{t('ui.nedostupno')}</button>
       ) : item.connected && !reauth ? (
-        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={disconnect}>Отключить</button>
+        <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={disconnect}>{t('ui.otklyuchit')}</button>
       ) : (
         <button className="btn btn-accent btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={connect}>
           {busy ? '...' : reauth ? 'Переподключить' : `Подключить ${meta.name}`}
@@ -75,6 +77,7 @@ function CalendarCard({ item, userId, onChange }) {
 }
 
 function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
+  const { t } = useTranslation()
   const [url, setUrl] = useState('')
   const [adding, setAdding] = useState(false)
   const [expanded, setExpanded] = useState(null)
@@ -89,7 +92,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
   }
 
   const remove = async (id) => {
-    if (!(await confirmDialog({ title: 'Удалить Webhook?', message: 'Доставка событий на этот URL прекратится.', confirmText: 'Удалить', danger: true }))) return
+    if (!(await confirmDialog({ title: t('ui.udalit_webhook'), message: t('ui.dostavka_sobytiy_na_etot_url_prekratitsya'), confirmText: 'Удалить', danger: true }))) return
     try { await deleteWebhook(id, userId); onChange?.() } catch { notify?.('Не удалось удалить.') }
   }
 
@@ -114,7 +117,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
       </div>
 
       {webhooks.length === 0 ? (
-        <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Пока нет добавленных Webhook.</p>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.poka_net_dobavlennyh_webhook')}</p>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {webhooks.map(w => (
@@ -122,20 +125,19 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontSize: 13, color: 'var(--color-text-primary)', wordBreak: 'break-all' }}>{w.url}</span>
                 <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                  <button className="btn btn-secondary btn-sm" onClick={() => test(w.id)}>Тест</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => test(w.id)}>{t('ui.test')}</button>
                   <button className="btn btn-secondary btn-sm" onClick={() => setExpanded(expanded === w.id ? null : w.id)}>
-                    {expanded === w.id ? 'Скрыть' : 'История'}
+                    {expanded === w.id ? t('ui.skryt') : t('ui.istoriya')}
                   </button>
-                  <button className="btn btn-danger btn-sm" onClick={() => remove(w.id)}>Удалить</button>
+                  <button className="btn btn-danger btn-sm" onClick={() => remove(w.id)}>{t('ui.udalit')}</button>
                 </div>
               </div>
-              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, wordBreak: 'break-all' }}>
-                Секрет для проверки подписи: <span style={{ fontFamily: 'var(--font-mono)' }}>{w.secret}</span>
+              <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6, wordBreak: 'break-all' }}>{t('ui.sekret_dlya_proverki_podpisi')}<span style={{ fontFamily: 'var(--font-mono)' }}>{w.secret}</span>
               </div>
               {expanded === w.id && (
                 <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
                   {(w.recent_deliveries || []).length === 0 ? (
-                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>Доставок пока не было.</p>
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{t('ui.dostavok_poka_ne_bylo')}</p>
                   ) : w.recent_deliveries.map(d => (
                     <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
                       <span style={{ color: 'var(--color-text-secondary)' }}>{d.event_type}</span>
@@ -155,6 +157,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
 }
 
 export default function Integrations({ user, teamId }) {
+  const { t } = useTranslation()
   const [data, setData] = useState(null)
   const [msg, setMsg] = useState('')
   const [loading, setLoading] = useState(true)
@@ -187,10 +190,8 @@ export default function Integrations({ user, teamId }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 720 }}>
       <div>
-        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: 'var(--color-text-primary)' }}>Календари</h2>
-        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 12px' }}>
-          Двусторонняя синхронизация встреч 1-на-1 с вашим календарём.
-        </p>
+        <h2 style={{ fontSize: 16, fontWeight: 700, marginBottom: 4, color: 'var(--color-text-primary)' }}>{t('ui.kalendari')}</h2>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 12px' }}>{t('ui.dvustoronnyaya_sinhronizaciya_vstrech_1_na_1')}</p>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(300px, 100%), 1fr))', gap: 14 }}>
           {calendars.map(c => <CalendarCard key={c.provider} item={c} userId={user.id} onChange={(m) => { if (typeof m === 'string') notify(m); load() }} />)}
         </div>
@@ -201,13 +202,13 @@ export default function Integrations({ user, teamId }) {
       ) : (
         <div className="card" style={{ padding: 18 }}>
           <span style={{ fontWeight: 700, fontSize: 15 }}>Webhook</span>
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Выберите команду на вкладке «Команды», чтобы настроить исходящие Webhook.</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>{t('ui.vyberite_komandu_na_vkladke_komandy_chtoby')}</p>
         </div>
       )}
 
       <div className="card" style={{ padding: 18 }}>
-        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>Скоро</span>
-        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '6px 0 12px' }}>Эти интеграции запланированы. Сроки пока не называем.</p>
+        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>{t('ui.skoro_2')}</span>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '6px 0 12px' }}>{t('ui.eti_integracii_zaplanirovany_sroki_poka_ne')}</p>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
           {comingSoon.map(s => (
             <span key={s.key} aria-disabled="true" style={{

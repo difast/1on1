@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, FlatList, TouchableOpacity,
   RefreshControl, ActivityIndicator, Linking,
@@ -23,6 +24,7 @@ const TYPE_ICON: Record<string, { name: keyof typeof Ionicons.glyphMap; color: s
 };
 
 export default function NotificationsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -118,7 +120,7 @@ export default function NotificationsScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
-        <View style={styles.header}><Text style={styles.headerTitle}>Уведомления</Text></View>
+        <View style={styles.header}><Text style={styles.headerTitle}>{t('ui.uvedomleniya')}</Text></View>
         <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
       </SafeAreaView>
     );
@@ -157,7 +159,7 @@ export default function NotificationsScreen() {
         ListEmptyComponent={
           <View style={styles.emptyWrap}>
             <Ionicons name="notifications-off-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>Нет уведомлений</Text>
+            <Text style={styles.emptyTitle}>{t('ui.net_uvedomleniy')}</Text>
           </View>
         }
         renderItem={({ item: n }) => {
@@ -182,7 +184,7 @@ export default function NotificationsScreen() {
               <View style={{ flex: 1, minWidth: 0 }}>
                 {isBroadcast && (
                   <View style={styles.broadcastBadge}>
-                    <Text style={styles.broadcastBadgeText}>ОБЪЯВЛЕНИЕ</Text>
+                    <Text style={styles.broadcastBadgeText}>{t('ui.obyavlenie')}</Text>
                   </View>
                 )}
                 <Text

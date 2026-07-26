@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useEffect, useCallback } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, TextInput, Alert, Linking, Modal, Pressable,
@@ -22,6 +23,7 @@ import { InteractionsModal } from '../components/InteractionsModal';
 import { SpontaneousCallModal } from '../components/SpontaneousCallModal';
 
 export default function LeadMeetingsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -120,15 +122,15 @@ export default function LeadMeetingsScreen() {
   };
 
   const handleCreateMeeting = async () => {
-    if (!createDate) { Alert.alert('Заполните поля', 'Выберите дату'); return; }
+    if (!createDate) { Alert.alert(t('ui.zapolnite_polya'), 'Выберите дату'); return; }
     setCreating(true);
     try {
       if (groupMode) {
         // Групповая встреча: несколько участников или вся команда.
         const teamId = teamMembers[0]?.team_id;
-        if (!teamId) { Alert.alert('Ошибка', 'Нет команды'); setCreating(false); return; }
+        if (!teamId) { Alert.alert(t('ui.oshibka'), 'Нет команды'); setCreating(false); return; }
         if (!wholeTeam && groupSelected.length === 0) {
-          Alert.alert('Выберите участников', 'Отметьте участников или «Вся команда»'); setCreating(false); return;
+          Alert.alert(t('ui.vyberite_uchastnikov'), 'Отметьте участников или «Вся команда»'); setCreating(false); return;
         }
         await createGroupMeeting({
           team_id: teamId,
@@ -140,7 +142,7 @@ export default function LeadMeetingsScreen() {
         });
       } else {
         const member = teamMembers.find(m => m.user_id === createMemberId);
-        if (!member) { Alert.alert('Заполните поля', 'Выберите участника'); setCreating(false); return; }
+        if (!member) { Alert.alert(t('ui.zapolnite_polya'), t('ui.vyberite_uchastnika_3')); setCreating(false); return; }
         await createMeeting({
           team_id: member.team_id,
           team_lead_id: user!.id,
@@ -151,7 +153,7 @@ export default function LeadMeetingsScreen() {
       }
       resetCreate();
       await load();
-    } catch { Alert.alert('Ошибка', 'Не удалось создать встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать встречу'); }
     finally { setCreating(false); }
   };
 
@@ -169,7 +171,7 @@ export default function LeadMeetingsScreen() {
       const url = `${data.room_url}?t=${data.token}`;
       await Linking.openURL(url);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось начать созвон');
+      Alert.alert(t('ui.oshibka'), 'Не удалось начать созвон');
     } finally {
       setCallLoading(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -239,7 +241,7 @@ export default function LeadMeetingsScreen() {
       }
       setExpandedNoteId(null);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -247,14 +249,14 @@ export default function LeadMeetingsScreen() {
 
   const now = new Date();
   const FILTERS = [
-    { key: 'all', label: 'Все' },
-    { key: 'scheduled', label: 'Запланировано' },
-    { key: 'confirmed', label: 'Подтверждено' },
-    { key: 'in_progress', label: 'Идёт' },
-    { key: 'completed', label: 'Завершено' },
-    { key: 'rescheduled', label: 'Перенесено' },
-    { key: 'cancelled', label: 'Отменено' },
-    { key: 'declined', label: 'Отклонено' },
+    { key: 'all', label: t('common.all') },
+    { key: 'scheduled', label: t('ui.zaplanirovano') },
+    { key: 'confirmed', label: t('ui.podtverzhdeno') },
+    { key: 'in_progress', label: t('ui.idet') },
+    { key: 'completed', label: t('ui.zaversheno') },
+    { key: 'rescheduled', label: t('ui.pereneseno') },
+    { key: 'cancelled', label: t('ui.otmeneno') },
+    { key: 'declined', label: t('ui.otkloneno') },
   ];
   const visibleFilters = FILTERS.filter(f => f.key === 'all' || meetings.some(m =>
     f.key === 'rescheduled'
@@ -279,20 +281,20 @@ export default function LeadMeetingsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Мои встречи</Text>
+        <Text style={styles.headerTitle}>{t('ui.moi_vstrechi')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <View style={styles.viewToggle}>
             <TouchableOpacity
               style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
               onPress={() => setCalendarView(false)}
             >
-              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>Список</Text>
+              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>{t('ui.spisok')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
               onPress={() => setCalendarView(true)}
             >
-              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>Неделя</Text>
+              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>{t('ui.nedelya')}</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border }]} onPress={openQuickCall}>
@@ -358,7 +360,7 @@ export default function LeadMeetingsScreen() {
       <Modal visible={showCreate} transparent animationType="fade" onRequestClose={() => setShowCreate(false)}>
         <Pressable style={styles.modalBackdrop} onPress={() => setShowCreate(false)}>
           <Pressable style={styles.modalSheet} onPress={() => {}}>
-            <Text style={styles.modalTitle}>Новая встреча</Text>
+            <Text style={styles.modalTitle}>{t('ui.novaya_vstrecha')}</Text>
 
             {/* Формат: 1-на-1 или групповая (Задача 4) */}
             <View style={{ flexDirection: 'row', gap: 8, marginBottom: 8 }}>
@@ -366,13 +368,13 @@ export default function LeadMeetingsScreen() {
                 style={[styles.memberPick, { flex: 1, justifyContent: 'center' }, !groupMode && styles.memberPickActive]}
                 onPress={() => setGroupMode(false)}
               >
-                <Text style={[styles.memberPickName, { flex: 0 }]}>1-на-1</Text>
+                <Text style={[styles.memberPickName, { flex: 0 }]}>{t('ui.1_na_1')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.memberPick, { flex: 1, justifyContent: 'center' }, groupMode && styles.memberPickActive]}
                 onPress={() => setGroupMode(true)}
               >
-                <Text style={[styles.memberPickName, { flex: 0 }]}>Групповая</Text>
+                <Text style={[styles.memberPickName, { flex: 0 }]}>{t('ui.gruppovaya')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -382,13 +384,13 @@ export default function LeadMeetingsScreen() {
                 onPress={() => setWholeTeam(w => !w)}
               >
                 <Ionicons name={wholeTeam ? 'checkbox' : 'square-outline'} size={20} color={wholeTeam ? colors.accent : colors.textMuted} />
-                <Text style={styles.memberPickName}>Вся команда</Text>
+                <Text style={styles.memberPickName}>{t('ui.vsya_komanda')}</Text>
               </TouchableOpacity>
             )}
 
             <Text style={styles.modalLabel}>{groupMode ? 'Участники' : 'Участник'}</Text>
             {teamMembers.length === 0 ? (
-              <Text style={styles.modalHint}>Нет участников в командах</Text>
+              <Text style={styles.modalHint}>{t('ui.net_uchastnikov_v_komandah')}</Text>
             ) : (
               <ScrollView style={{ maxHeight: 160 }} keyboardShouldPersistTaps="handled">
                 {teamMembers.map(m => {
@@ -417,24 +419,24 @@ export default function LeadMeetingsScreen() {
               </ScrollView>
             )}
 
-            <Text style={styles.modalLabel}>Дата и время</Text>
+            <Text style={styles.modalLabel}>{t('ui.data_i_vremya')}</Text>
             <DateTimePickerField value={createDate} onChange={setCreateDate} />
 
-            <Text style={styles.modalLabel}>Тема (необязательно)</Text>
+            <Text style={styles.modalLabel}>{t('ui.tema_neobyazatelno')}</Text>
             <TextInput
               style={styles.modalInput}
               value={createTopic}
               onChangeText={setCreateTopic}
-              placeholder="О чём встреча"
+              placeholder={t('ui.o_chem_vstrecha')}
               placeholderTextColor={colors.textMuted}
             />
 
             {agendaSuggestions.length > 0 && (
               <View style={styles.coachBox}>
                 <View style={styles.coachBoxHead}>
-                  <Text style={styles.coachBoxTitle}>Пит подсказывает темы</Text>
+                  <Text style={styles.coachBoxTitle}>{t('ui.pit_podskazyvaet_temy')}</Text>
                   <TouchableOpacity onPress={() => setCoachHidden(true)} hitSlop={8}>
-                    <Text style={styles.coachBoxHide}>Скрыть</Text>
+                    <Text style={styles.coachBoxHide}>{t('ui.skryt')}</Text>
                   </TouchableOpacity>
                 </View>
                 {agendaSuggestions.map(s => (
@@ -444,7 +446,7 @@ export default function LeadMeetingsScreen() {
                       <Text style={styles.coachReason}>{s.reason}</Text>
                     </View>
                     <TouchableOpacity style={styles.coachAdd} onPress={() => addAgendaLine(s.line)}>
-                      <Text style={styles.coachAddText}>Добавить</Text>
+                      <Text style={styles.coachAddText}>{t('ui.dobavit')}</Text>
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -453,7 +455,7 @@ export default function LeadMeetingsScreen() {
 
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={resetCreate}>
-                <Text style={styles.modalCancelText}>Отмена</Text>
+                <Text style={styles.modalCancelText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
               {(() => {
                 const invalid = !createDate || creating || (groupMode
@@ -465,7 +467,7 @@ export default function LeadMeetingsScreen() {
                     onPress={handleCreateMeeting}
                     disabled={invalid}
                   >
-                    <Text style={styles.modalCreateText}>{creating ? 'Создание...' : 'Создать встречу'}</Text>
+                    <Text style={styles.modalCreateText}>{creating ? t('ui.sozdanie') : t('ui.sozdat_vstrechu')}</Text>
                   </TouchableOpacity>
                 );
               })()}
@@ -493,7 +495,7 @@ export default function LeadMeetingsScreen() {
         )}
 
         {meetings.length === 0 && (
-          <EmptyState icon="calendar-outline" title="Встреч пока нет" description="Встречи появятся после планирования" />
+          <EmptyState icon="calendar-outline" title={t('ui.vstrech_poka_net')} description="Встречи появятся после планирования" />
         )}
 
         {calendarView ? (
@@ -506,7 +508,7 @@ export default function LeadMeetingsScreen() {
             {requests.length > 0 && (
               <View style={styles.section}>
                 <View style={styles.sectionHeader}>
-                  <Text style={styles.sectionTitle}>Запросы на встречу</Text>
+                  <Text style={styles.sectionTitle}>{t('ui.zaprosy_na_vstrechu')}</Text>
                   <View style={styles.badge}>
                     <Text style={styles.badgeText}>{requests.length}</Text>
                   </View>
@@ -525,14 +527,14 @@ export default function LeadMeetingsScreen() {
                         onPress={() => handleConfirm(m.id)}
                         disabled={actionLoading[m.id]}
                       >
-                        <Text style={styles.confirmBtnText}>Принять</Text>
+                        <Text style={styles.confirmBtnText}>{t('ui.prinyat')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.declineBtn, actionLoading[m.id] && styles.btnDisabled]}
                         onPress={() => handleDecline(m.id)}
                         disabled={actionLoading[m.id]}
                       >
-                        <Text style={styles.declineBtnText}>Отклонить</Text>
+                        <Text style={styles.declineBtnText}>{t('ui.otklonit')}</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -542,7 +544,7 @@ export default function LeadMeetingsScreen() {
 
             {upcoming.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Предстоящие</Text>
+                <Text style={styles.sectionTitle}>{t('ui.predstoyaschie')}</Text>
                 {upcoming.map(m => (
                   <View key={m.id} style={styles.upcomingCard}>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
@@ -557,7 +559,7 @@ export default function LeadMeetingsScreen() {
                       disabled={callLoading[m.id]}
                     >
                       <Text style={styles.callBtnText}>
-                        {callLoading[m.id] ? 'Подключение...' : 'Начать созвон'}
+                        {callLoading[m.id] ? t('ui.podklyuchenie') : t('meetings.startCall')}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -567,7 +569,7 @@ export default function LeadMeetingsScreen() {
 
             {past.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Прошедшие</Text>
+                <Text style={styles.sectionTitle}>{t('ui.proshedshie')}</Text>
                 {past.map(m => {
                   const memberName = usersMap[m.member_id]?.name ?? `Участник #${m.member_id}`;
                   const hasNote = notes.some(n => n.meeting_id === m.id);
@@ -596,14 +598,14 @@ export default function LeadMeetingsScreen() {
                             style={styles.noteInput}
                             value={draft}
                             onChangeText={v => setNoteDrafts(prev => ({ ...prev, [m.id]: v }))}
-                            placeholder="Добавьте заметку по встрече..."
+                            placeholder={t('ui.dobavte_zametku_po_vstreche')}
                             placeholderTextColor={colors.textMuted}
                             multiline
                             autoFocus
                           />
                           <View style={styles.noteEditorRow}>
                             <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setExpandedNoteId(null)}>
-                              <Text style={styles.noteCancelText}>Закрыть</Text>
+                              <Text style={styles.noteCancelText}>{t('ui.zakryt')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.noteSaveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
