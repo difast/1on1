@@ -3,7 +3,8 @@ import { Text, TouchableOpacity, StyleSheet, View, Linking, ActivityIndicator } 
 import { yandexAuthUrl } from '../lib/api';
 
 /*
- * Кнопка «Войти через Яндекс ID» для мобильного приложения.
+ * Кнопка «Войти с Яндекс ID» для мобильного приложения (официальная
+ * формулировка Yandex ID; сокращать «Яндекс ID» нельзя).
  *
  * Оформление — по брендовым гайдлайнам Yandex ID: фирменный красный #FC3F1D
  * (разрешены также чёрный и белый варианты), логотип-бейдж с фирменной «Я» в
@@ -48,7 +49,7 @@ export default function YandexLoginButton({
   return (
     <TouchableOpacity
       accessibilityRole="button"
-      accessibilityLabel="Войти через Яндекс ID"
+      accessibilityLabel="Войти с Яндекс ID"
       activeOpacity={0.85}
       onPress={start}
       disabled={loading || disabled}
@@ -59,7 +60,7 @@ export default function YandexLoginButton({
       </View>
       {loading
         ? <ActivityIndicator size="small" color={c.text} />
-        : <Text style={[styles.label, { color: c.text }]}>Войти через Яндекс ID</Text>}
+        : <Text style={[styles.label, { color: c.text }]}>Войти с Яндекс ID</Text>}
     </TouchableOpacity>
   );
 }
