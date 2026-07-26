@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getProposals, createProposal, acceptProposal, declineProposal, counterProposal } from '../api/client'
 import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
@@ -17,6 +18,7 @@ const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit
  * принятия — на бэкенде.
  */
 export default function MeetingProposals({ currentUser, contacts = [], teamId, onClose, onChanged, presetToUserId = null }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose)
   const [proposals, setProposals] = useState(null)
   const [tab, setTab] = useState(presetToUserId ? 'new' : 'inbox')   // inbox | outbox | new
@@ -58,7 +60,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
   const doAccept = (p) => act(acceptProposal, p.id)
   const doDecline = (p) => act(declineProposal, p.id)
   const doCounter = async (p) => {
-    if (!counterTime) { toast('Укажите новое время', 'error'); return }
+    if (!counterTime) { toast(t('ui.ukazhite_novoe_vremya'), 'error'); return }
     setBusyId(p.id)
     try {
       await counterProposal(p.id, currentUser.id, counterTime, undefined)
@@ -72,12 +74,12 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
 
   const submitNew = async (e) => {
     e.preventDefault()
-    if (!toUser) { toast('Выберите получателя', 'error'); return }
-    if (!when) { toast('Укажите время встречи', 'error'); return }
+    if (!toUser) { toast(t('ui.vyberite_poluchatelya'), 'error'); return }
+    if (!when) { toast(t('ui.ukazhite_vremya_vstrechi'), 'error'); return }
     setCreating(true)
     try {
       await createProposal({ from_user_id: currentUser.id, to_user_id: Number(toUser), proposed_time: when, topic: topic.trim() || null, team_id: teamId || null })
-      toast('Предложение отправлено', 'success')
+      toast(t('ui.predlozhenie_otpravleno'), 'success')
       setToUser(''); setTopic(''); setWhen('')
       setTab('outbox'); load(); onChanged?.()
     } catch (err) {
@@ -128,10 +130,10 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
         {iAmAwaited && (
           counterFor === p.id ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--color-bg)', padding: 10, borderRadius: 8 }}>
-              <label className="form-label" style={{ margin: 0 }}>Предложить другое время</label>
+              <label className="form-label" style={{ margin: 0 }}>{t('ui.predlozhit_drugoe_vremya')}</label>
               <input type="datetime-local" className="input input-sm" value={counterTime} onChange={e => setCounterTime(e.target.value)} />
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => { setCounterFor(null); setCounterTime('') }}>Отмена</button>
+                <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => { setCounterFor(null); setCounterTime('') }}>{t('ui.otmena')}</button>
                 <button className="btn btn-accent btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} disabled={busyId === p.id} onClick={() => doCounter(p)}>
                   {busyId === p.id ? <Spinner size={14} /> : 'Отправить'}
                 </button>
@@ -142,8 +144,8 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
               <button className="btn btn-accent btn-sm" disabled={busyId === p.id} onClick={() => doAccept(p)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {busyId === p.id ? <Spinner size={14} /> : null} Принять
               </button>
-              <button className="btn btn-secondary btn-sm" disabled={busyId === p.id} onClick={() => { setCounterFor(p.id); setCounterTime('') }}>Другое время</button>
-              <button className="btn btn-danger btn-sm" disabled={busyId === p.id} onClick={() => doDecline(p)}>Отклонить</button>
+              <button className="btn btn-secondary btn-sm" disabled={busyId === p.id} onClick={() => { setCounterFor(p.id); setCounterTime('') }}>{t('ui.drugoe_vremya')}</button>
+              <button className="btn btn-danger btn-sm" disabled={busyId === p.id} onClick={() => doDecline(p)}>{t('ui.otklonit')}</button>
             </div>
           )
         )}
@@ -163,9 +165,9 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
       <div style={{ height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="logo">OneOn<span className="accent">One</span></span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>/ Предложения встреч</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ui.predlozheniya_vstrech_2')}</span>
         </div>
-        <button onClick={onClose} className="btn btn-secondary btn-sm">Закрыть</button>
+        <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt')}</button>
       </div>
 
       {/* Tabs */}
@@ -179,22 +181,22 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
         {tab === 'new' ? (
           <form onSubmit={submitNew} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Кому</label>
+              <label className="form-label">{t('ui.komu')}</label>
               <select className="input" value={toUser} onChange={e => setToUser(e.target.value)}>
-                <option value="">— выберите участника —</option>
+                <option value="">{t('ui.vyberite_uchastnika')}</option>
                 {contacts.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
               </select>
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Тема</label>
-              <input className="input" placeholder="О чём встреча" value={topic} onChange={e => setTopic(e.target.value)} />
+              <label className="form-label">{t('ui.tema')}</label>
+              <input className="input" placeholder={t('ui.o_chem_vstrecha')} value={topic} onChange={e => setTopic(e.target.value)} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Предлагаемое время</label>
+              <label className="form-label">{t('ui.predlagaemoe_vremya')}</label>
               <input type="datetime-local" className="input" value={when} onChange={e => setWhen(e.target.value)} />
             </div>
             <button type="submit" disabled={creating} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {creating ? <><Spinner size={15} /> Отправка...</> : 'Отправить предложение'}
+              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить предложение'}
             </button>
           </form>
         ) : proposals === null ? (
@@ -203,7 +205,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
           const list = tab === 'inbox' ? incoming : mine
           if (list.length === 0) {
             return <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 14, padding: '40px 0' }}>
-              {tab === 'inbox' ? 'Нет предложений, ожидающих вашего ответа' : 'Предложений пока нет'}
+              {tab === 'inbox' ? t('ui.net_predlozheniy_ozhidayuschih_vashego_otveta') : t('ui.predlozheniy_poka_net')}
             </p>
           }
           return <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{list.map(renderCard)}</div>

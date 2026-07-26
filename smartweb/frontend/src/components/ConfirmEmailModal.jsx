@@ -1,4 +1,5 @@
 import useEscapeKey from '../lib/useEscapeKey'
+import { useTranslation } from 'react-i18next'
 import { mailProviderFor } from '../lib/mailProviders'
 
 /*
@@ -11,6 +12,7 @@ import { mailProviderFor } from '../lib/mailProviders'
  * подтверждения), справа — переход в почтовый сервис по домену адреса.
  */
 export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose, open)
   if (!open) return null
 
@@ -35,7 +37,7 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
         style={{ width: '100%', maxWidth: 440, padding: '32px 28px', textAlign: 'center' }}
         role="dialog"
         aria-modal="true"
-        aria-label="Подтверждение почты"
+        aria-label={t('ui.podtverzhdenie_pochty')}
       >
         {/* Брендовый акцент окна — крупная надпись заглавными буквами */}
         <div style={{
@@ -56,9 +58,7 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
           </svg>
         </div>
 
-        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>
-          Подтвердите почту
-        </h2>
+        <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.podtverdite_pochtu')}</h2>
         <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 6 }}>
           Регистрация завершена. Мы отправили письмо со ссылкой для подтверждения и активации аккаунта на адрес:
         </p>
@@ -74,14 +74,12 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
             className="btn btn-secondary"
             onClick={onGoLogin}
             style={{ flex: '0 0 auto', minWidth: 110 }}
-          >
-            Войти
-          </button>
+          >{t('ui.voyti')}</button>
           <button
             className="btn btn-accent"
             onClick={openMail}
             disabled={!provider.url}
-            title={provider.url ? provider.label : 'Откройте ваш почтовый ящик'}
+            title={provider.url ? provider.label : t('ui.otkroyte_vash_pochtovyy_yaschik')}
             style={{ flex: 1 }}
           >
             {provider.label}

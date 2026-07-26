@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authResetPassword } from '../api/client'
 import { setToken } from '../lib/auth'
 
@@ -6,6 +7,7 @@ import { setToken } from '../lib/auth'
 // Форма нового пароля. После успеха токен инвалидируется на бэкенде, а нас
 // сразу авторизуют выданным JWT и ведут в приложение.
 export default function ResetPasswordPage() {
+  const { t } = useTranslation()
   const token = new URLSearchParams(window.location.search).get('token') || ''
   const [pwd, setPwd] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -22,10 +24,10 @@ export default function ResetPasswordPage() {
   const submit = async (e) => {
     e.preventDefault()
     setError('')
-    if (pwd !== confirm) { setError('Пароли не совпадают'); return }
+    if (pwd !== confirm) { setError(t('ui.paroli_ne_sovpadayut')); return }
     const pr = problem(pwd)
     if (pr) { setError(pr); return }
-    if (!token) { setError('Нет токена в ссылке'); return }
+    if (!token) { setError(t('ui.net_tokena_v_ssylke')); return }
     setLoading(true)
     try {
       const { data } = await authResetPassword(token, pwd)
@@ -43,20 +45,18 @@ export default function ResetPasswordPage() {
         <div style={{ textAlign: 'center', marginBottom: 20 }}>
           <span className="logo" style={{ fontSize: 24 }}>OneOn<span className="accent">One</span></span>
         </div>
-        <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 16, textAlign: 'center' }}>
-          Новый пароль
-        </h2>
+        <h2 style={{ fontSize: 18, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 16, textAlign: 'center' }}>{t('ui.novyy_parol')}</h2>
         {done ? (
-          <p style={{ textAlign: 'center', color: 'var(--color-success)', fontSize: 14 }}>Пароль изменён. Входим...</p>
+          <p style={{ textAlign: 'center', color: 'var(--color-success)', fontSize: 14 }}>{t('ui.parol_izmenen_vhodim')}</p>
         ) : (
           <form onSubmit={submit}>
             <div className="form-group">
-              <label className="form-label" htmlFor="rp-new">Новый пароль</label>
+              <label className="form-label" htmlFor="rp-new">{t('ui.novyy_parol')}</label>
               <input id="rp-new" type="password" value={pwd} onChange={e => setPwd(e.target.value)}
                 placeholder="••••••••" className="input" required autoComplete="new-password" autoFocus />
             </div>
             <div className="form-group">
-              <label className="form-label" htmlFor="rp-confirm">Повторите пароль</label>
+              <label className="form-label" htmlFor="rp-confirm">{t('ui.povtorite_parol')}</label>
               <input id="rp-confirm" type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
                 placeholder="••••••••" className="input" required autoComplete="new-password" />
             </div>
@@ -64,7 +64,7 @@ export default function ResetPasswordPage() {
               <div style={{ background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14 }}>{error}</div>
             )}
             <button type="submit" disabled={loading} className="btn btn-accent" style={{ width: '100%' }}>
-              {loading ? 'Сохраняем...' : 'Сохранить пароль'}
+              {loading ? t('common.saving') : t('ui.sohranit_parol')}
             </button>
           </form>
         )}

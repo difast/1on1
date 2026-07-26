@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import { useI18n } from '../lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
@@ -19,6 +20,7 @@ export function ClosedTodayCard({
   role?: string;
   refreshKey?: number;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [count, setCount] = useState<number | null>(null);
@@ -50,8 +52,8 @@ export function ClosedTodayCard({
           <Ionicons name="checkmark-done" size={18} color="#fff" />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.title}>Закрыто сегодня</Text>
-          <Text style={styles.sub}>{isLead ? 'по команде' : 'мои задачи'}</Text>
+          <Text style={styles.title}>{t('ui.zakryto_segodnya')}</Text>
+          <Text style={styles.sub}>{isLead ? t('ui.po_komande') : t('ui.moi_zadachi_2')}</Text>
         </View>
         <Text style={styles.count}>{count === null ? '—' : count}</Text>
         <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
@@ -60,12 +62,12 @@ export function ClosedTodayCard({
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
-            <Text style={styles.sheetTitle}>Закрыто сегодня</Text>
-            <Text style={styles.sheetSub}>{isLead ? 'Задачи, закрытые сегодня всей командой' : 'Ваши задачи, закрытые сегодня'}</Text>
+            <Text style={styles.sheetTitle}>{t('ui.zakryto_segodnya')}</Text>
+            <Text style={styles.sheetSub}>{isLead ? t('ui.zadachi_zakrytye_segodnya_vsey_komandoy') : t('ui.vashi_zadachi_zakrytye_segodnya')}</Text>
             {list === null ? (
               <ActivityIndicator size="small" color={colors.accent} style={{ marginVertical: 24 }} />
             ) : list.length === 0 ? (
-              <Text style={styles.empty}>Сегодня ещё нет закрытых задач</Text>
+              <Text style={styles.empty}>{t('ui.segodnya_esche_net_zakrytyh_zadach')}</Text>
             ) : (
               <ScrollView style={{ maxHeight: 360 }}>
                 {list.map(t => (
@@ -83,7 +85,7 @@ export function ClosedTodayCard({
               </ScrollView>
             )}
             <TouchableOpacity style={styles.closeBtn} onPress={() => setOpen(false)}>
-              <Text style={styles.closeText}>Закрыть</Text>
+              <Text style={styles.closeText}>{t('ui.zakryt')}</Text>
             </TouchableOpacity>
           </Pressable>
         </Pressable>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../src/lib/i18n';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet,
   ScrollView, KeyboardAvoidingView, Platform, Image, Alert,
@@ -14,6 +15,7 @@ import { useTheme } from '../src/context/theme';
 import type { AppColors } from '../src/constants/colors';
 
 export default function OnboardingScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { session, user, setUser, setActiveRole, signOut } = useAuth();
@@ -50,7 +52,7 @@ export default function OnboardingScreen() {
   const email = session.email || user?.email || '';
 
   const handleProfileSubmit = async () => {
-    if (!name.trim()) { setError('Укажите имя'); return; }
+    if (!name.trim()) { setError(t('ui.ukazhite_imya')); return; }
     setError('');
     setLoading(true);
     try {
@@ -89,7 +91,7 @@ export default function OnboardingScreen() {
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Нет доступа', 'Разрешите доступ к фото в настройках');
+      Alert.alert(t('ui.net_dostupa'), 'Разрешите доступ к фото в настройках');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -136,7 +138,7 @@ export default function OnboardingScreen() {
         {/* Back to login */}
         <TouchableOpacity style={styles.exitBtn} onPress={handleBack}>
           <Ionicons name="arrow-back-outline" size={18} color={colors.textSecondary} />
-          <Text style={styles.exitBtnText}>Назад</Text>
+          <Text style={styles.exitBtnText}>{t('ui.nazad_2')}</Text>
         </TouchableOpacity>
 
         {/* Logo */}
@@ -149,10 +151,10 @@ export default function OnboardingScreen() {
         {/* Step 1: Role */}
         {step === 1 && (
           <View style={{ width: '100%', maxWidth: 400 }}>
-            <Text style={styles.stepTitle}>Кто вы?</Text>
+            <Text style={styles.stepTitle}>{t('ui.kto_vy')}</Text>
             {([
-              { r: 'team_lead', icon: 'briefcase-outline', title: 'Тимлид', desc: 'Управляю командой, провожу 1-on-1 встречи' },
-              { r: 'member', icon: 'person-outline', title: 'Участник команды', desc: 'Являюсь частью команды, участвую в 1-on-1 встречах' },
+              { r: 'team_lead', icon: 'briefcase-outline', title: t('profile.roleLead'), desc: t('ui.upravlyayu_komandoy_provozhu_1_on_1') },
+              { r: 'member', icon: 'person-outline', title: t('profile.roleMember'), desc: t('ui.yavlyayus_chastyu_komandy_uchastvuyu_v_1') },
             ] as const).map(opt => (
               <TouchableOpacity
                 key={opt.r}
@@ -173,16 +175,16 @@ export default function OnboardingScreen() {
         {step === 2 && (
           <View style={[styles.card, { width: '100%', maxWidth: 400 }]}>
             <TouchableOpacity onPress={() => setStep(1)} style={styles.backBtn}>
-              <Text style={styles.backBtnText}>← Назад</Text>
+              <Text style={styles.backBtnText}>{t('ui.nazad')}</Text>
             </TouchableOpacity>
             <Text style={styles.stepHeader}>
-              {role === 'team_lead' ? 'Тимлид' : 'Участник команды'}
+              {role === 'team_lead' ? t('profile.roleLead') : t('profile.roleMember')}
             </Text>
-            <Text style={styles.stepSub}>Расскажите немного о себе</Text>
+            <Text style={styles.stepSub}>{t('ui.rasskazhite_nemnogo_o_sebe')}</Text>
 
             {[
-              { label: 'Имя *', value: name, setter: setName, placeholder: 'Иван Иванов' },
-              { label: 'Должность', value: title, setter: setTitle, placeholder: 'Senior Engineer' },
+              { label: t('ui.imya'), value: name, setter: setName, placeholder: t('ui.ivan_ivanov') },
+              { label: t('profile.position'), value: title, setter: setTitle, placeholder: 'Senior Engineer' },
               { label: 'Telegram', value: telegram, setter: setTelegram, placeholder: '@username' },
               { label: 'LinkedIn', value: linkedin, setter: setLinkedin, placeholder: 'linkedin.com/in/username' },
               { label: 'GitHub', value: github, setter: setGithub, placeholder: 'github.com/username' },
@@ -211,7 +213,7 @@ export default function OnboardingScreen() {
 
             {role === 'member' && (
               <View style={styles.field}>
-                <Text style={styles.label}>Код приглашения</Text>
+                <Text style={styles.label}>{t('ui.kod_priglasheniya')}</Text>
                 <TextInput
                   style={styles.input}
                   value={inviteCode}
@@ -234,7 +236,7 @@ export default function OnboardingScreen() {
               onPress={handleProfileSubmit}
               disabled={loading}
             >
-              <Text style={styles.btnText}>{loading ? 'Сохранение...' : 'Далее →'}</Text>
+              <Text style={styles.btnText}>{loading ? t('ui.sohranenie') : t('ui.dalee')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -242,8 +244,8 @@ export default function OnboardingScreen() {
         {/* Step 3: Photo */}
         {step === 3 && (
           <View style={[styles.card, { width: '100%', maxWidth: 400, alignItems: 'center' }]}>
-            <Text style={styles.stepHeader}>Фото профиля</Text>
-            <Text style={styles.stepSub}>Помогает коллегам узнать вас. Можно пропустить.</Text>
+            <Text style={styles.stepHeader}>{t('ui.foto_profilya')}</Text>
+            <Text style={styles.stepSub}>{t('ui.pomogaet_kollegam_uznat_vas_mozhno_propustit')}</Text>
 
             {joinWarning ? (
               <View style={[styles.warningBox, { width: '100%' }]}>
@@ -263,7 +265,7 @@ export default function OnboardingScreen() {
 
             <TouchableOpacity onPress={pickPhoto} style={styles.btnSecondary}>
               <Text style={styles.btnSecondaryText}>
-                {avatarUri ? 'Выбрать другое' : 'Выбрать фото'}
+                {avatarUri ? t('ui.vybrat_drugoe') : t('ui.vybrat_foto')}
               </Text>
             </TouchableOpacity>
 
@@ -273,7 +275,7 @@ export default function OnboardingScreen() {
                 onPress={() => finish(createdUser)}
                 disabled={photoLoading}
               >
-                <Text style={styles.btnGhostText}>Пропустить</Text>
+                <Text style={styles.btnGhostText}>{t('ui.propustit')}</Text>
               </TouchableOpacity>
               {avatarUri && (
                 <TouchableOpacity
@@ -281,7 +283,7 @@ export default function OnboardingScreen() {
                   onPress={handlePhotoSave}
                   disabled={photoLoading}
                 >
-                  <Text style={styles.btnText}>{photoLoading ? 'Сохранение...' : 'Сохранить'}</Text>
+                  <Text style={styles.btnText}>{photoLoading ? t('ui.sohranenie') : t('common.save')}</Text>
                 </TouchableOpacity>
               )}
             </View>

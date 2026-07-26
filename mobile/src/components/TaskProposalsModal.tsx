@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
@@ -31,6 +32,7 @@ export function TaskProposalsModal({
   onChanged?: () => void;
   presetToUserId?: number | null;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<'inbox' | 'all' | 'new'>(presetToUserId ? 'new' : 'inbox');
@@ -60,29 +62,29 @@ export function TaskProposalsModal({
   const act = async (fn: (id: number, uid: number) => Promise<any>, id: number) => {
     setBusyId(id);
     try { await fn(id, currentUser.id); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
     finally { setBusyId(null); }
   };
 
   const sendComment = async (id: number) => {
-    if (!commentText.trim()) { Alert.alert('Введите сообщение'); return; }
+    if (!commentText.trim()) { Alert.alert(t('ui.vvedite_soobschenie')); return; }
     setBusyId(id);
     try {
       await commentTaskProposal(id, currentUser.id, commentText.trim());
       setCommentFor(null); setCommentText(''); setExpanded(id); load(); onChanged?.();
-    } catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось отправить'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить'); }
     finally { setBusyId(null); }
   };
 
   const submitNew = async () => {
-    if (!toUser) { Alert.alert('Выберите получателя'); return; }
-    if (!title.trim()) { Alert.alert('Укажите название задачи'); return; }
+    if (!toUser) { Alert.alert(t('ui.vyberite_poluchatelya')); return; }
+    if (!title.trim()) { Alert.alert(t('ui.ukazhite_nazvanie_zadachi')); return; }
     setCreating(true);
     try {
       await createTaskProposal({ from_user_id: currentUser.id, to_user_id: toUser, title: title.trim(), description: desc.trim() || null, due_date: due || null, team_id: teamId ?? null });
       setTitle(''); setDesc(''); setDue(''); if (!presetToUserId) setToUser(null);
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось отправить предложение'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить предложение'); }
     finally { setCreating(false); }
   };
 
@@ -121,13 +123,13 @@ export function TaskProposalsModal({
 
         {isOpen(p) && (p.from_user_id === currentUser.id || p.to_user_id === currentUser.id) && (commentFor === p.id ? (
           <View style={{ marginTop: 8, gap: 8 }}>
-            <TextInput style={[styles.input, { minHeight: 60 }]} value={commentText} onChangeText={setCommentText} placeholder="Сообщение по задаче" placeholderTextColor={colors.textMuted} multiline />
+            <TextInput style={[styles.input, { minHeight: 60 }]} value={commentText} onChangeText={setCommentText} placeholder={t('ui.soobschenie_po_zadache')} placeholderTextColor={colors.textMuted} multiline />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity style={[styles.btnPrimary, { flex: 1 }]} disabled={busyId === p.id} onPress={() => sendComment(p.id)}>
-                {busyId === p.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Отправить</Text>}
+                {busyId === p.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.otpravit')}</Text>}
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btnSecondary, { flex: 1 }]} onPress={() => { setCommentFor(null); setCommentText(''); }}>
-                <Text style={styles.btnSecondaryText}>Отмена</Text>
+                <Text style={styles.btnSecondaryText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -135,15 +137,15 @@ export function TaskProposalsModal({
           <View style={styles.actionsRow}>
             {respond && (
               <TouchableOpacity style={styles.btnPrimary} disabled={busyId === p.id} onPress={() => act(acceptTaskProposal, p.id)}>
-                <Text style={styles.btnPrimaryText}>Принять</Text>
+                <Text style={styles.btnPrimaryText}>{t('ui.prinyat')}</Text>
               </TouchableOpacity>
             )}
             <TouchableOpacity style={styles.btnSecondary} disabled={busyId === p.id} onPress={() => { setCommentFor(p.id); setCommentText(''); }}>
-              <Text style={styles.btnSecondaryText}>Обсудить</Text>
+              <Text style={styles.btnSecondaryText}>{t('ui.obsudit')}</Text>
             </TouchableOpacity>
             {respond && (
               <TouchableOpacity style={styles.btnDanger} disabled={busyId === p.id} onPress={() => act(declineTaskProposal, p.id)}>
-                <Text style={styles.btnDangerText}>Отклонить</Text>
+                <Text style={styles.btnDangerText}>{t('ui.otklonit')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -157,7 +159,7 @@ export function TaskProposalsModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Предложения задач</Text>
+          <Text style={styles.headerTitle}>{t('ui.predlozheniya_zadach')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
         </View>
 
@@ -173,7 +175,7 @@ export function TaskProposalsModal({
           {tab === 'new' ? (
             <View style={{ gap: 14 }}>
               <View>
-                <Text style={styles.label}>Кому</Text>
+                <Text style={styles.label}>{t('ui.komu')}</Text>
                 <ScrollView style={{ maxHeight: 160 }}>
                   {contacts.map(c => (
                     <TouchableOpacity key={c.user_id} style={[styles.pick, toUser === c.user_id && styles.pickActive]} onPress={() => setToUser(c.user_id)}>
@@ -181,30 +183,30 @@ export function TaskProposalsModal({
                       {toUser === c.user_id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
                     </TouchableOpacity>
                   ))}
-                  {contacts.length === 0 && <Text style={styles.hint}>Нет доступных участников</Text>}
+                  {contacts.length === 0 && <Text style={styles.hint}>{t('ui.net_dostupnyh_uchastnikov')}</Text>}
                 </ScrollView>
               </View>
               <View>
-                <Text style={styles.label}>Название задачи</Text>
-                <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder="Что нужно сделать" placeholderTextColor={colors.textMuted} />
+                <Text style={styles.label}>{t('ui.nazvanie_zadachi')}</Text>
+                <TextInput style={styles.input} value={title} onChangeText={setTitle} placeholder={t('ui.chto_nuzhno_sdelat')} placeholderTextColor={colors.textMuted} />
               </View>
               <View>
-                <Text style={styles.label}>Описание</Text>
-                <TextInput style={[styles.input, { minHeight: 70 }]} value={desc} onChangeText={setDesc} placeholder="Подробности (необязательно)" placeholderTextColor={colors.textMuted} multiline />
+                <Text style={styles.label}>{t('ui.opisanie')}</Text>
+                <TextInput style={[styles.input, { minHeight: 70 }]} value={desc} onChangeText={setDesc} placeholder={t('ui.podrobnosti_neobyazatelno')} placeholderTextColor={colors.textMuted} multiline />
               </View>
               <View>
-                <Text style={styles.label}>Срок</Text>
-                <DateTimePickerField value={due} onChange={setDue} placeholder="Выберите срок" />
+                <Text style={styles.label}>{t('ui.srok')}</Text>
+                <DateTimePickerField value={due} onChange={setDue} placeholder={t('ui.vyberite_srok')} />
               </View>
               <TouchableOpacity style={styles.btnPrimaryWide} disabled={creating} onPress={submitNew}>
-                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Отправить предложение</Text>}
+                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.otpravit_predlozhenie')}</Text>}
               </TouchableOpacity>
             </View>
           ) : proposals === null ? (
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : (() => {
             const list = tab === 'inbox' ? incoming : mine;
-            if (list.length === 0) return <Text style={styles.emptyList}>{tab === 'inbox' ? 'Нет предложений, ожидающих ответа' : 'Предложений пока нет'}</Text>;
+            if (list.length === 0) return <Text style={styles.emptyList}>{tab === 'inbox' ? t('ui.net_predlozheniy_ozhidayuschih_otveta') : t('ui.predlozheniy_poka_net')}</Text>;
             return list.map(renderCard);
           })()}
         </ScrollView>

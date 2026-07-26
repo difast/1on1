@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -46,6 +47,7 @@ interface Props {
 }
 
 export function WeekCalendar({ meetings, subtitleFn }: Props) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
 
@@ -163,13 +165,13 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
           style={[styles.modeBtn, mode === 'week' && styles.modeBtnActive]}
           onPress={() => setMode('week')}
         >
-          <Text style={[styles.modeBtnText, mode === 'week' && styles.modeBtnTextActive]}>Неделя</Text>
+          <Text style={[styles.modeBtnText, mode === 'week' && styles.modeBtnTextActive]}>{t('ui.nedelya')}</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.modeBtn, mode === 'month' && styles.modeBtnActive]}
           onPress={() => setMode('month')}
         >
-          <Text style={[styles.modeBtnText, mode === 'month' && styles.modeBtnTextActive]}>Месяц</Text>
+          <Text style={[styles.modeBtnText, mode === 'month' && styles.modeBtnTextActive]}>{t('ui.mesyac')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -254,7 +256,7 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
             })}
           </Text>
           {selectedMeetings.length === 0 ? (
-            <Text style={styles.panelEmpty}>Нет встреч</Text>
+            <Text style={styles.panelEmpty}>{t('ui.net_vstrech')}</Text>
           ) : (
             selectedMeetings.map(m => {
               const sub = subtitleFn?.(m);

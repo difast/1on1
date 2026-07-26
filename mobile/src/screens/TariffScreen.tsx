@@ -10,6 +10,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { getBillingMe } from '../lib/api';
 
+import { useI18n } from '../lib/i18n';
 type Status = 'loading' | 'error' | 'ready';
 
 // Запасные подписи: обычно название и цену тарифа отдаёт бэкенд
@@ -37,6 +38,7 @@ function limitValue(v: any) {
 }
 
 export default function TariffScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -68,10 +70,10 @@ export default function TariffScreen() {
   const trialLocked: string[] = data?.trial_restricted_features || [];
 
   const limitRows: { label: string; value: string }[] = [
-    { label: 'Пользователей', value: data?.users_label || limitValue(limits.max_users ?? limits.max_members_per_team) },
-    { label: 'Команды', value: limitValue(limits.max_teams) },
-    { label: 'Встреч в месяц', value: limitValue(limits.max_meetings_per_month) },
-    { label: 'История, дней', value: limitValue(limits.history_days) },
+    { label: t('ui.polzovateley'), value: data?.users_label || limitValue(limits.max_users ?? limits.max_members_per_team) },
+    { label: t('ui.komandy'), value: limitValue(limits.max_teams) },
+    { label: t('ui.vstrech_v_mesyac'), value: limitValue(limits.max_meetings_per_month) },
+    { label: t('ui.istoriya_dney'), value: limitValue(limits.history_days) },
   ];
 
   return (
@@ -80,7 +82,7 @@ export default function TariffScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Мой тариф</Text>
+        <Text style={styles.headerTitle}>{t('ui.moy_tarif')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
@@ -88,19 +90,19 @@ export default function TariffScreen() {
         <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>
       )}
       {status === 'error' && (
-        <View style={styles.center}><Text style={styles.muted}>Не удалось загрузить тариф. Попробуйте позже.</Text></View>
+        <View style={styles.center}><Text style={styles.muted}>{t('ui.ne_udalos_zagruzit_tarif_poprobuyte_pozzhe')}</Text></View>
       )}
 
       {status === 'ready' && (
         <ScrollView contentContainerStyle={styles.content}>
           <View style={styles.planCard}>
-            <Text style={styles.planLabel}>Текущий тариф</Text>
+            <Text style={styles.planLabel}>{t('ui.tekuschiy_tarif')}</Text>
             <Text style={styles.planName}>{planName}</Text>
             {priceLabel && !data?.full_access_override ? (
               <Text style={styles.planPrice}>{priceLabel}</Text>
             ) : null}
             {data?.full_access_override ? (
-              <Text style={styles.planSub}>Полный доступ предоставлен</Text>
+              <Text style={styles.planSub}>{t('ui.polnyy_dostup_predostavlen')}</Text>
             ) : sub ? (
               <Text style={styles.planSub}>
                 {SUB_STATUS[sub.status] ?? sub.status}
@@ -121,7 +123,7 @@ export default function TariffScreen() {
             </View>
           )}
 
-          <Text style={styles.sectionLabel}>Лимиты тарифа</Text>
+          <Text style={styles.sectionLabel}>{t('ui.limity_tarifa')}</Text>
           <View style={styles.card}>
             {limitRows.map((r, i) => (
               <View key={r.label} style={[styles.row, i > 0 && styles.rowBorder]}>
@@ -133,10 +135,10 @@ export default function TariffScreen() {
 
           {data?.usage?.meetings_this_month !== undefined && (
             <>
-              <Text style={styles.sectionLabel}>Использование в этом месяце</Text>
+              <Text style={styles.sectionLabel}>{t('ui.ispolzovanie_v_etom_mesyace')}</Text>
               <View style={styles.card}>
                 <View style={styles.row}>
-                  <Text style={styles.rowLabel}>Встреч создано</Text>
+                  <Text style={styles.rowLabel}>{t('ui.vstrech_sozdano')}</Text>
                   <Text style={styles.rowValue}>{data.usage.meetings_this_month}</Text>
                 </View>
               </View>
@@ -145,7 +147,7 @@ export default function TariffScreen() {
 
           {sub?.manager_name ? (
             <>
-              <Text style={styles.sectionLabel}>Персональный менеджер</Text>
+              <Text style={styles.sectionLabel}>{t('ui.personalnyy_menedzher')}</Text>
               <View style={styles.card}>
                 <View style={styles.row}>
                   <Text style={styles.rowLabel}>{sub.manager_name}</Text>
@@ -155,7 +157,7 @@ export default function TariffScreen() {
             </>
           ) : null}
 
-          <Text style={styles.sectionLabel}>Тарифы</Text>
+          <Text style={styles.sectionLabel}>{t('ui.tarify')}</Text>
           <View style={styles.card}>
             {[
               { name: 'Start', price: '1 490 ₽/мес', users: 'до 5 пользователей, 1 команда' },

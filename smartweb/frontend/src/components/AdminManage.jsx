@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { createTeam, createTask, createMeeting, getUsers, getTeams, getTeam } from '../api/client'
 
 // Admin manual creation — pick people/teams by name (ids filled automatically). Responsive.
 export default function AdminManage() {
+  const { t } = useTranslation()
   const [msg, setMsg] = useState('')
   const [busy, setBusy] = useState(false)
   const [users, setUsers] = useState([])
@@ -49,54 +51,54 @@ export default function AdminManage() {
   const sect = { fontSize: 13, fontWeight: 700, margin: '0 0 12px' }
   const meetTeam = teams.find(t => t.id === Number(mTeam))
 
-  const UserOpts = () => users.map(u => <option key={u.id} value={u.id}>{u.name} · {u.role === 'team_lead' ? 'тимлид' : 'участник'} (ID {u.id})</option>)
+  const UserOpts = () => users.map(u => <option key={u.id} value={u.id}>{u.name} · {u.role === 'team_lead' ? t('ui.timlid') : t('ui.uchastnik_3')} (ID {u.id})</option>)
   const TeamOpts = () => teams.map(t => <option key={t.id} value={t.id}>{t.name} (ID {t.id})</option>)
 
   return (
     <div style={{ display: 'grid', gap: 16, gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))' }}>
       <div className="card" style={{ padding: 18 }}>
-        <p style={sect}>Создать команду</p>
-        <div style={field}><label style={label}>Название</label><input className="input" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder="Название команды" /></div>
-        <div style={field}><label style={label}>Тимлид</label>
+        <p style={sect}>{t('ui.sozdat_komandu')}</p>
+        <div style={field}><label style={label}>{t('ui.nazvanie')}</label><input className="input" value={teamName} onChange={e => setTeamName(e.target.value)} placeholder={t('ui.nazvanie_komandy')} /></div>
+        <div style={field}><label style={label}>{t('ui.timlid')}</label>
           <select className="input" value={teamLead} onChange={e => setTeamLead(e.target.value)}>
-            <option value="">— выберите —</option>{UserOpts()}
+            <option value="">{t('ui.vyberite')}</option>{UserOpts()}
           </select>
         </div>
-        <button className="btn btn-primary" disabled={busy} onClick={doTeam} style={{ width: '100%' }}>Создать команду</button>
+        <button className="btn btn-primary" disabled={busy} onClick={doTeam} style={{ width: '100%' }}>{t('ui.sozdat_komandu')}</button>
       </div>
 
       <div className="card" style={{ padding: 18 }}>
-        <p style={sect}>Создать задачу</p>
-        <div style={field}><label style={label}>Задача</label><input className="input" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder="Текст задачи" /></div>
-        <div style={field}><label style={label}>Исполнитель</label>
+        <p style={sect}>{t('ui.sozdat_zadachu')}</p>
+        <div style={field}><label style={label}>{t('ui.zadacha')}</label><input className="input" value={taskTitle} onChange={e => setTaskTitle(e.target.value)} placeholder={t('ui.tekst_zadachi')} /></div>
+        <div style={field}><label style={label}>{t('ui.ispolnitel')}</label>
           <select className="input" value={taskAssignee} onChange={e => setTaskAssignee(e.target.value)}>
-            <option value="">— выберите —</option>{UserOpts()}
+            <option value="">{t('ui.vyberite')}</option>{UserOpts()}
           </select>
         </div>
-        <div style={field}><label style={label}>Команда (необязательно)</label>
+        <div style={field}><label style={label}>{t('ui.komanda_neobyazatelno')}</label>
           <select className="input" value={taskTeam} onChange={e => setTaskTeam(e.target.value)}>
-            <option value="">— без команды —</option>{TeamOpts()}
+            <option value="">{t('ui.bez_komandy_2')}</option>{TeamOpts()}
           </select>
         </div>
-        <button className="btn btn-primary" disabled={busy} onClick={doTask} style={{ width: '100%' }}>Создать задачу</button>
+        <button className="btn btn-primary" disabled={busy} onClick={doTask} style={{ width: '100%' }}>{t('ui.sozdat_zadachu')}</button>
       </div>
 
       <div className="card" style={{ padding: 18 }}>
-        <p style={sect}>Создать встречу</p>
-        <div style={field}><label style={label}>Команда</label>
+        <p style={sect}>{t('ui.sozdat_vstrechu')}</p>
+        <div style={field}><label style={label}>{t('ui.komanda')}</label>
           <select className="input" value={mTeam} onChange={e => { setMTeam(e.target.value); setMMember('') }}>
-            <option value="">— выберите —</option>{TeamOpts()}
+            <option value="">{t('ui.vyberite')}</option>{TeamOpts()}
           </select>
         </div>
-        <div style={field}><label style={label}>Участник</label>
+        <div style={field}><label style={label}>{t('ui.uchastnik')}</label>
           <select className="input" value={mMember} onChange={e => setMMember(e.target.value)} disabled={!meetTeam}>
-            <option value="">{meetTeam ? '— выберите —' : 'сначала команда'}</option>
+            <option value="">{meetTeam ? t('ui.vyberite') : t('ui.snachala_komanda')}</option>
             {(meetTeam?.members || []).map(m => <option key={m.user_id} value={m.user_id}>{m.user_name} · {m.role} (ID {m.user_id})</option>)}
           </select>
         </div>
-        <div style={field}><label style={label}>Дата и время</label><input className="input" type="datetime-local" value={mDate} onChange={e => setMDate(e.target.value)} /></div>
-        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '0 0 10px' }}>Тимлид определяется автоматически по команде.</p>
-        <button className="btn btn-primary" disabled={busy} onClick={doMeeting} style={{ width: '100%' }}>Создать встречу</button>
+        <div style={field}><label style={label}>{t('ui.data_i_vremya')}</label><input className="input" type="datetime-local" value={mDate} onChange={e => setMDate(e.target.value)} /></div>
+        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '0 0 10px' }}>{t('ui.timlid_opredelyaetsya_avtomaticheski_po_komand')}</p>
+        <button className="btn btn-primary" disabled={busy} onClick={doMeeting} style={{ width: '100%' }}>{t('ui.sozdat_vstrechu')}</button>
       </div>
 
       {msg && (

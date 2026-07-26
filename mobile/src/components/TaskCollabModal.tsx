@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
@@ -32,6 +33,7 @@ export function TaskCollabModal({
   contacts?: { user_id: number; name: string }[];
   onChanged?: (t: any) => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<'activity' | 'comments' | 'members'>('activity');
@@ -52,7 +54,7 @@ export function TaskCollabModal({
     if (!text.trim()) return;
     setSending(true);
     try { await addTaskComment(task.id, currentUserId, text.trim()); setText(''); loadComments(); loadActivity(); }
-    catch { Alert.alert('Ошибка', 'Не удалось отправить'); }
+    catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить'); }
     finally { setSending(false); }
   };
 
@@ -63,13 +65,13 @@ export function TaskCollabModal({
   const doAdd = async (uid: number) => {
     setBusy(true);
     try { await addTaskAssignee(task.id, { user_id: uid, actor_id: currentUserId }); await refreshTask(); loadActivity(); }
-    catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось добавить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось добавить'); }
     finally { setBusy(false); }
   };
   const doRemove = async (assigneeId: number) => {
     setBusy(true);
     try { await removeTaskAssigneeById(task.id, assigneeId, currentUserId); await refreshTask(); loadActivity(); }
-    catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось удалить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось удалить'); }
     finally { setBusy(false); }
   };
 
@@ -78,7 +80,7 @@ export function TaskCollabModal({
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
           <View style={{ flex: 1 }}>
-            <Text style={styles.headerTitle}>Совместная работа</Text>
+            <Text style={styles.headerTitle}>{t('ui.sovmestnaya_rabota')}</Text>
             <Text style={styles.headerSub} numberOfLines={1}>{localTask.title}</Text>
           </View>
           <TouchableOpacity onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
@@ -95,7 +97,7 @@ export function TaskCollabModal({
         <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {tab === 'activity' && (
             activity === null ? <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} /> :
-            activity.length === 0 ? <Text style={styles.empty}>Пока нет событий</Text> :
+            activity.length === 0 ? <Text style={styles.empty}>{t('ui.poka_net_sobytiy')}</Text> :
             activity.map(a => (
               <View key={a.id} style={styles.activityRow}>
                 <View style={styles.dot} />
@@ -110,7 +112,7 @@ export function TaskCollabModal({
           {tab === 'comments' && (
             <>
               {comments === null ? <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} /> :
-                comments.length === 0 ? <Text style={styles.empty}>Комментариев пока нет</Text> :
+                comments.length === 0 ? <Text style={styles.empty}>{t('ui.kommentariev_poka_net')}</Text> :
                 comments.map(c => (
                   <View key={c.id} style={styles.comment}>
                     <Text style={styles.commentAuthor}>{c.author_name || 'Участник'} · {fmt(c.created_at)}</Text>
@@ -118,7 +120,7 @@ export function TaskCollabModal({
                   </View>
                 ))}
               <View style={{ flexDirection: 'row', gap: 8, alignItems: 'flex-end', marginTop: 4 }}>
-                <TextInput style={[styles.input, { flex: 1 }]} value={text} onChangeText={setText} placeholder="Комментарий..." placeholderTextColor={colors.textMuted} multiline />
+                <TextInput style={[styles.input, { flex: 1 }]} value={text} onChangeText={setText} placeholder={t('ui.kommentariy_2')} placeholderTextColor={colors.textMuted} multiline />
                 <TouchableOpacity style={styles.sendBtn} disabled={sending || !text.trim()} onPress={send}>
                   {sending ? <ActivityIndicator size="small" color="#fff" /> : <Ionicons name="arrow-up" size={18} color="#fff" />}
                 </TouchableOpacity>
@@ -136,15 +138,15 @@ export function TaskCollabModal({
                   </View>
                   {canManage && (
                     <TouchableOpacity style={styles.removeBtn} disabled={busy} onPress={() => doRemove(a.id)}>
-                      <Text style={styles.removeText}>Удалить</Text>
+                      <Text style={styles.removeText}>{t('ui.udalit')}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
               ))}
-              {assignees.length === 0 && <Text style={styles.empty}>Один исполнитель (без совместной работы)</Text>}
+              {assignees.length === 0 && <Text style={styles.empty}>{t('ui.odin_ispolnitel_bez_sovmestnoy_raboty')}</Text>}
               {canManage && addable.length > 0 && (
                 <>
-                  <Text style={styles.addLabel}>Добавить исполнителя</Text>
+                  <Text style={styles.addLabel}>{t('ui.dobavit_ispolnitelya_2')}</Text>
                   {addable.map(c => (
                     <TouchableOpacity key={c.user_id} style={styles.addRow} disabled={busy} onPress={() => doAdd(c.user_id)}>
                       <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
@@ -153,7 +155,7 @@ export function TaskCollabModal({
                   ))}
                 </>
               )}
-              {!canManage && <Text style={styles.hint}>Изменять состав может только тимлид.</Text>}
+              {!canManage && <Text style={styles.hint}>{t('ui.izmenyat_sostav_mozhet_tolko_timlid')}</Text>}
             </>
           )}
         </ScrollView>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import useEscapeKey from '../lib/useEscapeKey'
 import { updateUser } from '../api/client'
 import { useIsTelegram } from '../lib/surface'
@@ -93,6 +94,7 @@ function placeTip(rect, prefer, isTg) {
 }
 
 export default function WelcomeTour({ currentUser }) {
+  const { t } = useTranslation()
   const isTg = useIsTelegram()
   const role = currentUser?.role === 'team_lead' ? 'team_lead' : 'member'
   const key = currentUser?.id ? `tour_done_${currentUser.id}` : null
@@ -167,7 +169,7 @@ export default function WelcomeTour({ currentUser }) {
   const tip = placeTip(rect, step.place || 'bottom', isTg)
 
   return (
-    <div role="dialog" aria-modal="true" aria-label="Знакомство с продуктом"
+    <div role="dialog" aria-modal="true" aria-label={t('ui.znakomstvo_s_produktom')}
       style={{ position: 'fixed', inset: 0, zIndex: 9700 }}>
       {/* Подсветка: прозрачное окно + огромная тень наружу затемняет остальной экран */}
       <div style={{
@@ -203,9 +205,9 @@ export default function WelcomeTour({ currentUser }) {
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{step.title}</h3>
         <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.55, margin: '0 0 16px' }}>{step.text}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <button onClick={finish} className="btn btn-secondary btn-sm">Пропустить</button>
+          <button onClick={finish} className="btn btn-secondary btn-sm">{t('ui.propustit')}</button>
           <button onClick={() => last ? finish() : setI(i + 1)} className="btn btn-accent btn-sm" style={{ fontWeight: 700 }}>
-            {last ? 'Готово' : 'Далее'}
+            {last ? t('common.done') : t('common.next')}
           </button>
         </div>
       </div>

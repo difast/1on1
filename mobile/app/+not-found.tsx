@@ -1,4 +1,5 @@
 import React from 'react';
+import { useI18n } from '../src/lib/i18n';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,6 +8,7 @@ import { useTheme } from '../src/context/theme';
 import type { AppColors } from '../src/constants/colors';
 
 export default function NotFound() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const router = useRouter();
@@ -16,10 +18,10 @@ export default function NotFound() {
       <View style={styles.iconWrap}>
         <Ionicons name="compass-outline" size={36} color={colors.accent} />
       </View>
-      <Text style={styles.title}>Страница не найдена</Text>
-      <Text style={styles.desc}>Похоже, этот раздел недоступен или был перемещён.</Text>
+      <Text style={styles.title}>{t('ui.stranica_ne_naydena')}</Text>
+      <Text style={styles.desc}>{t('ui.pohozhe_etot_razdel_nedostupen_ili_byl')}</Text>
       <TouchableOpacity style={styles.btn} onPress={() => router.replace('/')}>
-        <Text style={styles.btnText}>На главную</Text>
+        <Text style={styles.btnText}>{t('ui.na_glavnuyu')}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

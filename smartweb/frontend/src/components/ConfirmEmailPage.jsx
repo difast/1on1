@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { authConfirmEmail } from '../api/client'
 
 // Страница по ссылке из письма: /confirm-email?token=...
 // Проверяет токен через бэкенд и показывает результат.
 export default function ConfirmEmailPage() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState('loading') // loading | ok | error
 
   useEffect(() => {
@@ -20,24 +22,22 @@ export default function ConfirmEmailPage() {
         <span className="logo" style={{ fontSize: 24 }}>OneOn<span className="accent">One</span></span>
         <div style={{ marginTop: 24 }}>
           {status === 'loading' && (
-            <p style={{ color: 'var(--color-text-secondary)' }}>Проверяем ссылку...</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>{t('ui.proveryaem_ssylku')}</p>
           )}
           {status === 'ok' && (
             <>
-              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>Почта подтверждена</h2>
-              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>
-                Аккаунт активирован. Войдите, чтобы продолжить настройку.
-              </p>
-              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>Войти</button>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.pochta_podtverzhdena')}</h2>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>{t('ui.akkaunt_aktivirovan_voydite_chtoby_prodolzhit')}</p>
+              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>{t('ui.voyti')}</button>
             </>
           )}
           {status === 'error' && (
             <>
-              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>Ссылка недействительна</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.ssylka_nedeystvitelna')}</h2>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>
                 Возможно, она устарела или уже использована. Запросите новое письмо в приложении.
               </p>
-              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>Вернуться в приложение</button>
+              <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>{t('ui.vernutsya_v_prilozhenie')}</button>
             </>
           )}
         </div>

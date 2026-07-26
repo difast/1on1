@@ -1,4 +1,5 @@
-// Единый индикатор загрузки — тот самый крутящийся кружок, что используется на
+
+import { useTranslation } from 'react-i18next'// Единый индикатор загрузки — тот самый крутящийся кружок, что используется на
 // странице авторизации (кнопки «Входим…», «Отправляем…»). Вынесен в общий модуль,
 // чтобы весь интерфейс (веб и админка) переиспользовал ОДИН компонент, а не плодил
 // собственные варианты. Использует глобальный keyframe `spin` из styles/index.css.
@@ -7,11 +8,12 @@
 // как на кнопках авторизации. Проп `tone="accent"` даёт синий кружок на светлом
 // фоне (для вторичных кнопок и инлайновых мест).
 export default function Spinner({ size = 16, tone = 'light', style }) {
+  const { t } = useTranslation()
   const isLight = tone === 'light'
   return (
     <span
       role="status"
-      aria-label="Загрузка"
+      aria-label={t('ui.zagruzka_3')}
       style={{
         display: 'inline-block',
         width: size,

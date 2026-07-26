@@ -65,7 +65,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const { data } = await startCall(meetingId, user.id)
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: meetingId })
-    } catch { toast('Не удалось начать созвон', 'error') }
+    } catch { toast(t('ui.ne_udalos_nachat_sozvon'), 'error') }
     finally { setCallLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -90,7 +90,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         }, 12000)
       }
       poll()
-    } catch { toast('Не удалось загрузить запись', 'error') }
+    } catch { toast(t('ui.ne_udalos_zagruzit_zapis'), 'error') }
     finally { setUploadLoading(prev => ({ ...prev, [meetingId]: false })) }
   }
 
@@ -220,7 +220,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       setCallResult(data)
       setCallStep('done')
       loadMyMeetings()
-    } catch { toast('Не удалось создать созвон', 'error') }
+    } catch { toast(t('ui.ne_udalos_sozdat_sozvon'), 'error') }
     finally { setCallModalLoading(false) }
   }
 
@@ -234,7 +234,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       const roomName = data.room_name || data.room_url?.split('/').pop()
       setActiveCall({ room_name: roomName, room_url: data.room_url, meeting_id: data.meeting_id })
       loadMyMeetings()
-    } catch { toast('Не удалось создать созвон', 'error') }
+    } catch { toast(t('ui.ne_udalos_sozdat_sozvon'), 'error') }
     finally { setMemberCallLoading(prev => ({ ...prev, [memberId]: false })) }
   }
 
@@ -444,7 +444,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     } catch {
       setMyTasks(prev => prev.filter(t => t.id !== tempId))
       setMyTaskForm({ title, due_date: myTaskForm.due_date || '', open: true, loading: false })
-      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+      toast(t('ui.ne_udalos_dobavit_zadachu_poprobuyte_esche'), 'error')
     }
   }
 
@@ -546,7 +546,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       // Откат: убираем временную задачу и возвращаем текст в форму.
       setMemberTasks((prev) => ({ ...prev, [memberId]: (prev[memberId] || []).filter(t => t.id !== tempId) }))
       setTaskForms((prev) => ({ ...prev, [memberId]: { title, due_date: form.due_date || '', loading: false, open: true } }))
-      toast('Не удалось добавить задачу. Попробуйте ещё раз.', 'error')
+      toast(t('ui.ne_udalos_dobavit_zadachu_poprobuyte_esche'), 'error')
     }
   }
 
@@ -714,22 +714,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {meetingStatusLabel(m.status)}
             </span>
             {m.group_id && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
-                Групповая
-              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>{t('ui.gruppovaya')}</span>
             )}
             {m.is_rescheduled && !['cancelled','declined'].includes(m.status) && (
-              <span style={{ fontSize: 10, fontWeight: 700, color: '#2554D4', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>
-                ↻ Перенесена
-              </span>
+              <span style={{ fontSize: 10, fontWeight: 700, color: '#2554D4', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>{t('ui.perenesena_2')}</span>
             )}
           </div>
           {!isRequest && !['completed', 'cancelled', 'declined'].includes(m.status) && (
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0, position: 'relative' }}>
               <button onClick={() => setCalPopup(calPopup === m.id ? null : m.id)} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, background: 'linear-gradient(135deg,#2554D4,#4f46e5)', color: '#fff', border: 'none', borderRadius: 6, cursor: 'pointer', padding: '4px 10px' }}>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                В календарь
-              </button>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="12" rx="2" stroke="white" strokeWidth="1.4"/><path d="M1.5 6h13M5 1v3M11 1v3" stroke="white" strokeWidth="1.3" strokeLinecap="round"/></svg>{t('ui.v_kalendar')}</button>
               {calPopup === m.id && (
                 <div style={{ position: 'absolute', top: '110%', right: 0, zIndex: 100, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,0.12)', padding: 6, display: 'flex', flexDirection: 'column', gap: 2, minWidth: 170 }}>
                   <button onClick={() => openGcal(m, memberName)} style={{ textAlign: 'left', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)', borderRadius: 6 }}
@@ -737,17 +731,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     onMouseLeave={e => e.currentTarget.style.background='none'}>Google Calendar</button>
                   <button onClick={() => downloadICS(m, memberName)} style={{ textAlign: 'left', padding: '8px 12px', border: 'none', background: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 500, color: 'var(--color-text-primary)', borderRadius: 6 }}
                     onMouseEnter={e => e.currentTarget.style.background='var(--color-bg)'}
-                    onMouseLeave={e => e.currentTarget.style.background='none'}>Яндекс Календарь</button>
+                    onMouseLeave={e => e.currentTarget.style.background='none'}>{t('ui.yandeks_kalendar')}</button>
                 </div>
               )}
-              <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Провели</button>
-              <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>Отменить</button>
+              <button onClick={() => handleUpdateMeetingStatus(m.id, 'completed')} style={{ fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#16a34a', border: '1px solid #bbf7d0', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>{t('ui.proveli')}</button>
+              <button onClick={() => handleUpdateMeetingStatus(m.id, 'cancelled')} style={{ fontSize: 11, fontWeight: 600, background: '#fff1f2', color: '#be123c', border: '1px solid #fecdd3', borderRadius: 6, cursor: 'pointer', padding: '3px 8px' }}>{t('ui.otmenit')}</button>
             </div>
           )}
           {isRequest && (
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', flexShrink: 0 }}>
-              <button onClick={() => handleConfirmMeeting(m.id)} disabled={busy} className="btn btn-success btn-sm">Принять</button>
-              <button onClick={() => handleDeclineMeeting(m.id)} disabled={busy} className="btn btn-danger btn-sm">Отклонить</button>
+              <button onClick={() => handleConfirmMeeting(m.id)} disabled={busy} className="btn btn-success btn-sm">{t('ui.prinyat')}</button>
+              <button onClick={() => handleDeclineMeeting(m.id)} disabled={busy} className="btn btn-danger btn-sm">{t('ui.otklonit')}</button>
             </div>
           )}
           {isPast && !isRequest && (
@@ -755,7 +749,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               onClick={() => handleToggleMeetingNote(m)}
               style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: noteState?.expanded ? 'var(--color-accent)' : 'var(--color-text-secondary)', flexShrink: 0, padding: '4px 6px' }}
             >
-              {noteState?.expanded ? '↓ Заметки' : '→ Заметки'}{m.notes ? ' ·' : ''}
+              {noteState?.expanded ? t('ui.zametki') : t('ui.zametki_2')}{m.notes ? ' ·' : ''}
             </button>
           )}
           {isPast && !isRequest && !m.ai_summary && !isTg && (
@@ -769,9 +763,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button
                 onClick={() => handleOpenReschedule(m)}
                 style={{ fontSize: 12, fontWeight: 500, background: 'var(--color-surface)', color: 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 9px', flexShrink: 0 }}
-              >
-                Перенести
-              </button>
+              >{t('ui.perenesti')}</button>
               {/* Видеозвонки недоступны в Mini App (таблица) */}
               {!isTg && (
                 <button
@@ -808,8 +800,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           return (
             <div style={{ marginTop: 10, padding: '10px 14px', background: fb.covered ? 'var(--color-bg)' : '#fff8ed', border: `1px solid ${fb.covered ? 'var(--color-border)' : '#fcd9a5'}`, borderLeft: `3px solid ${fb.covered ? 'var(--color-success)' : '#f59e0b'}`, borderRadius: 8 }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: fb.covered ? 0 : 6 }}>
-                <p style={{ fontSize: 11, fontWeight: 700, color: fb.covered ? 'var(--color-success)' : '#b45309', letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>Пит: итог встречи</p>
-                <button type="button" onClick={dismiss} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>Скрыть</button>
+                <p style={{ fontSize: 11, fontWeight: 700, color: fb.covered ? 'var(--color-success)' : '#b45309', letterSpacing: '0.05em', textTransform: 'uppercase', margin: 0 }}>{t('ui.pit_itog_vstrechi')}</p>
+                <button type="button" onClick={dismiss} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>{t('ui.skryt')}</button>
               </div>
               <p style={{ fontSize: 13, color: 'var(--color-text-primary)', lineHeight: 1.6, margin: 0 }}>{fb.note}</p>
               {fb.missed.length > 0 && (
@@ -836,14 +828,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   })
 
   const MEETING_FILTERS = [
-    { key: 'all', label: 'Все' },
-    { key: 'scheduled', label: 'Запланированы' },
-    { key: 'confirmed', label: 'Подтверждены' },
-    { key: 'in_progress', label: 'Идут сейчас' },
-    { key: 'completed', label: 'Завершены' },
-    { key: 'rescheduled', label: 'Перенесены' },
-    { key: 'cancelled', label: 'Отменены' },
-    { key: 'declined', label: 'Отклонены' },
+    { key: 'all', label: t('common.all') },
+    { key: 'scheduled', label: t('ui.zaplanirovany') },
+    { key: 'confirmed', label: t('ui.podtverzhdeny') },
+    { key: 'in_progress', label: t('ui.idut_seychas') },
+    { key: 'completed', label: t('ui.zaversheny') },
+    { key: 'rescheduled', label: t('ui.pereneseny') },
+    { key: 'cancelled', label: t('ui.otmeneny') },
+    { key: 'declined', label: t('ui.otkloneny') },
   ]
   const meetingFilterCounts = {
     all: myMeetings.filter(m => m.status !== 'requested').length,
@@ -879,7 +871,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
-              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'development' ? 'Развитие команды' : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? 'Заметки' : activeView === 'integrations' ? 'Интеграции' : 'Аналитика'}
+              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'development' ? 'Развитие команды' : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? 'Заметки' : activeView === 'integrations' ? t('nav.integrations') : t('nav.analytics')}
             </h1>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
           </div>
@@ -887,32 +879,28 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {/* Spontaneous call — shown whenever the lead has any team, next to
                 'Создать команду' (was gated on selectedTeamId, which could lag). */}
             {teams.length > 0 && !isTg && (
-              <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>
-                Созвон
-              </button>
+              <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>{t('ui.sozvon')}</button>
             )}
-            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">
-              + Создать команду
-            </button>
+            <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent btn-sm">{t('ui.sozdat_komandu_2')}</button>
           </div>
         </div>
 
         {/* View tabs */}
         <div className="tabs" data-tour="views" style={{ width: 'fit-content', marginBottom: 24 }}>
           {[
-            { key: 'teams', label: 'Команды' },
+            { key: 'teams', label: t('ui.komandy') },
             // Параллельные существительные в строке вкладок: только эта вкладка
             // несла "Мои", ломая ряд Команды/Встречи/Задачи/Заметки/Аналитика.
-            { key: 'meetings', label: 'Встречи' },
-            { key: 'tasks', label: 'Задачи' },
-            { key: 'goals', label: 'Цели' },
-            { key: 'development', label: 'Развитие' },
+            { key: 'meetings', label: t('nav.meetings') },
+            { key: 'tasks', label: t('nav.tasks') },
+            { key: 'goals', label: t('nav.goals') },
+            { key: 'development', label: t('nav.development') },
             { key: 'oneai', label: 'ONE AI' },
-            { key: 'notes', label: 'Заметки' },
-            { key: 'analytics', label: 'Аналитика' },
+            { key: 'notes', label: t('nav.notes') },
+            { key: 'analytics', label: t('nav.analytics') },
             // Интеграции — рядом с настройками команды/организации (управление
             // календарями и исходящими вебхуками команды).
-            { key: 'integrations', label: 'Интеграции' },
+            { key: 'integrations', label: t('nav.integrations') },
           ].map(tab => (
             <button
               key={tab.key}
@@ -958,12 +946,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div style={{ maxWidth: 640, width: '100%', display: 'flex', flexDirection: 'column', gap: 20 }}>
             {/* General notes */}
             <div>
-              <p className="label" style={{ marginBottom: 12 }}>Общие заметки</p>
+              <p className="label" style={{ marginBottom: 12 }}>{t('ui.obschie_zametki')}</p>
               <div className="card" style={{ padding: 20, marginBottom: 10 }}>
                 <textarea
                   value={newNoteText}
                   onChange={e => setNewNoteText(e.target.value)}
-                  placeholder="Запишите мысль, наблюдение или идею..."
+                  placeholder={t('ui.zapishite_mysl_nablyudenie_ili_ideyu')}
                   className="input"
                   style={{ resize: 'vertical', minHeight: 88, fontSize: 14 }}
                   onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleCreateNote() }}
@@ -974,7 +962,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   className="btn btn-accent btn-sm"
                   style={{ marginTop: 10 }}
                 >
-                  {noteLoading ? 'Сохранение...' : '+ Добавить заметку'}
+                  {noteLoading ? t('ui.sohranenie') : t('ui.dobavit_zametku')}
                 </button>
               </div>
               {notes.length > 0 ? (
@@ -992,23 +980,23 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                         onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                        title="Удалить"
+                        title={t('ui.udalit')}
                       >✕</button>
                     </div>
                   ))}
                 </div>
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
-                  <p className="empty-title" style={{ fontSize: 14 }}>Нет общих заметок</p>
+                  <p className="empty-title" style={{ fontSize: 14 }}>{t('ui.net_obschih_zametok')}</p>
                   {/* Empty state should invite the first action, not read as a blank/bug */}
-                  <p className="empty-desc">Запишите мысль или договорённость — заметки видите только вы.</p>
+                  <p className="empty-desc">{t('ui.zapishite_mysl_ili_dogovorennost_zametki_vidit')}</p>
                 </div>
               )}
             </div>
 
             {/* Meeting notes */}
             <div>
-              <p className="label" style={{ marginBottom: 12 }}>Заметки по встречам</p>
+              <p className="label" style={{ marginBottom: 12 }}>{t('ui.zametki_po_vstrecham')}</p>
               {myMeetings.filter(m => m.notes).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {myMeetings.filter(m => m.notes).map(m => {
@@ -1047,8 +1035,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               ) : (
                 <div className="empty-state" style={{ padding: '20px 0' }}>
-                  <p className="empty-title" style={{ fontSize: 14 }}>Нет заметок по встречам</p>
-                  <p className="empty-desc">Добавляйте заметки к прошедшим встречам во вкладке «Мои встречи»</p>
+                  <p className="empty-title" style={{ fontSize: 14 }}>{t('ui.net_zametok_po_vstrecham')}</p>
+                  <p className="empty-desc">{t('ui.dobavlyayte_zametki_k_proshedshim_vstrecham_vo_2')}</p>
                 </div>
               )}
             </div>
@@ -1066,9 +1054,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <span className="badge badge-blue" style={{ marginLeft: 6, padding: '1px 6px', fontSize: 11 }}>{myTasks.filter(t => !t.completed).length}</span>
                 )}
               </button>
-              <button onClick={() => setTasksSubTab('members')} className={`tab${tasksSubTab === 'members' ? ' active' : ''}`}>
-                Задачи участников
-              </button>
+              <button onClick={() => setTasksSubTab('members')} className={`tab${tasksSubTab === 'members' ? ' active' : ''}`}>{t('ui.zadachi_uchastnikov')}</button>
             </div>
 
             {/* My tasks sub-tab */}
@@ -1079,7 +1065,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     type="text"
                     value={myTaskForm.title}
                     onChange={e => setMyTaskForm(f => ({ ...f, title: e.target.value }))}
-                    placeholder="Название задачи"
+                    placeholder={t('ui.nazvanie_zadachi')}
                     autoFocus
                     className="input"
                   />
@@ -1091,7 +1077,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     style={{ maxWidth: 200 }}
                   />
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button type="button" onClick={() => setMyTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">Отмена</button>
+                    <button type="button" onClick={() => setMyTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                     <button type="submit" disabled={myTaskForm.loading} className="btn btn-accent btn-sm">
                       {myTaskForm.loading ? '...' : 'Добавить'}
                     </button>
@@ -1100,11 +1086,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               )}
               {!myTaskForm.open && (
                 <div style={{ marginBottom: 12 }}>
-                  <button onClick={() => setMyTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">+ Задача</button>
+                  <button onClick={() => setMyTaskForm(f => ({ ...f, open: true }))} className="btn btn-accent btn-sm">{t('ui.zadacha_2')}</button>
                 </div>
               )}
               {myTasks.length === 0 ? (
-                <EmptyState title="Нет задач" desc="Добавьте личные задачи, которые видите только вы" />
+                <EmptyState title={t('ui.net_zadach')} desc="Добавьте личные задачи, которые видите только вы" />
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -1117,7 +1103,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   </div>
                   {myTasks.filter(t => myTaskFilter === 'all' ? true : myTaskFilter === 'open' ? !t.completed : t.completed).length === 0 ? (
                     <p style={{ fontSize: 14, color: 'var(--color-text-muted)', padding: '12px 0' }}>
-                      {myTaskFilter === 'open' ? 'Нет открытых задач' : 'Нет выполненных задач'}
+                      {myTaskFilter === 'open' ? t('ui.net_otkrytyh_zadach') : t('ui.net_vypolnennyh_zadach')}
                     </p>
                   ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1132,11 +1118,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             setEditingTask(null)
                           } catch {}
                         }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                          <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder={t('ui.nazvanie_zadachi')} />
                           <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
                           <div style={{ display: 'flex', gap: 6 }}>
-                            <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
-                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                            <button type="submit" className="btn btn-accent btn-sm">{t('ui.sohranit')}</button>
+                            <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                           </div>
                         </form>
                       ) : (
@@ -1149,7 +1135,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                               const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                               return (
                                 <p style={{ fontSize: 12, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                  {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                  {overdue ? t('ui.prosrocheno') : t('ui.do')}{new Date(task.due_date).toLocaleDateString('ru-RU')}
                                 </p>
                               )
                             })()}
@@ -1161,12 +1147,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             } catch {}
                           }} canMarkDone={true} />
                           <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                            style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4, lineHeight: 1 }} title={t('ui.redaktirovat')} aria-label={t('ui.redaktirovat')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                           <button onClick={() => handleDeleteMyTask(task.id)}
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                             onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                            title="Удалить">✕</button>
+                            title={t('ui.udalit')}>✕</button>
                           {!task.completed && (
                             <TaskAIHelper
                               task={task}
@@ -1197,7 +1183,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {tasksSubTab === 'members' && (
               <div>
                 {teams.length === 0 ? (
-                  <EmptyState title="Нет команд" desc="Создайте команду, чтобы видеть задачи участников" />
+                  <EmptyState title={t('ui.net_komand')} desc="Создайте команду, чтобы видеть задачи участников" />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -1209,9 +1195,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       ))}
                       {/* Совместная задача (Задача 4): одна задача на нескольких участников. */}
                       {teamDetail?.members?.filter(m => m.user_id !== user.id).length > 1 && (
-                        <button onClick={() => setCollabModal(true)} className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', fontWeight: 600 }}>
-                          + Совместная задача
-                        </button>
+                        <button onClick={() => setCollabModal(true)} className="btn btn-secondary btn-sm" style={{ marginLeft: 'auto', fontWeight: 600 }}>{t('ui.sovmestnaya_zadacha')}</button>
                       )}
                     </div>
                     {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
@@ -1239,7 +1223,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                           </button>
                           {expanded && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingLeft: 4 }}>
-                              {tasks === undefined && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Загрузка...</p>}
+                              {tasks === undefined && <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>{t('ui.zagruzka')}</p>}
                               {filteredTasks !== undefined && filteredTasks.map(task => (
                                 <div key={task.id} className="card" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                                   {editingTask?.id === task.id ? (
@@ -1251,11 +1235,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         setEditingTask(null)
                                       } catch {}
                                     }} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                                      <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder="Название задачи" />
+                                      <input autoFocus value={editingTask.title} onChange={e => setEditingTask(p => ({ ...p, title: e.target.value }))} className="input input-sm" placeholder={t('ui.nazvanie_zadachi')} />
                                       <input type="date" value={editingTask.due_date} onChange={e => setEditingTask(p => ({ ...p, due_date: e.target.value }))} className="input input-sm" style={{ maxWidth: 180 }} />
                                       <div style={{ display: 'flex', gap: 6 }}>
-                                        <button type="submit" className="btn btn-accent btn-sm">Сохранить</button>
-                                        <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">Отмена</button>
+                                        <button type="submit" className="btn btn-accent btn-sm">{t('ui.sohranit')}</button>
+                                        <button type="button" onClick={() => setEditingTask(null)} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                                       </div>
                                     </form>
                                   ) : (
@@ -1268,7 +1252,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                           const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                                           return (
                                             <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                              {overdue ? 'Просрочено · ' : 'до '}{new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                              {overdue ? t('ui.prosrocheno') : t('ui.do')}{new Date(task.due_date).toLocaleDateString('ru-RU')}
                                             </p>
                                           )
                                         })()}
@@ -1288,7 +1272,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         }} canMarkDone={true} />
                                       )}
                                       <button onClick={() => setEditingTask({ id: task.id, title: task.title || task.description || '', due_date: task.due_date?.slice(0, 10) || '' })}
-                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title="Редактировать" aria-label="Редактировать"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+                                        style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, flexShrink: 0, padding: 4 }} title={t('ui.redaktirovat')} aria-label={t('ui.redaktirovat')}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
                                       {!task.completed && !task.is_multi && (
                                         <TaskAIHelper
                                           task={task}
@@ -1314,7 +1298,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                               ))}
                               {filteredTasks !== undefined && filteredTasks.length === 0 && !taskForm.open && (
                                 <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '4px 0' }}>
-                                  {memberTaskFilter === 'open' ? 'Нет открытых задач' : memberTaskFilter === 'done' ? 'Нет выполненных задач' : 'Нет задач'}
+                                  {memberTaskFilter === 'open' ? 'Нет открытых задач' : memberTaskFilter === 'done' ? t('ui.net_vypolnennyh_zadach') : t('ui.net_zadach')}
                                 </p>
                               )}
                               {taskForm.open ? (
@@ -1323,7 +1307,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     type="text"
                                     value={taskForm.title || ''}
                                     onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], title: e.target.value } }))}
-                                    placeholder="Название задачи"
+                                    placeholder={t('ui.nazvanie_zadachi')}
                                     autoFocus
                                     className="input input-sm"
                                   />
@@ -1335,7 +1319,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     style={{ maxWidth: 180 }}
                                   />
                                   <div style={{ display: 'flex', gap: 8 }}>
-                                    <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm">Отмена</button>
+                                    <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                                     <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm">{taskForm.loading ? '...' : 'Добавить'}</button>
                                   </div>
                                 </form>
@@ -1343,9 +1327,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 <button
                                   onClick={() => openTaskForm(member.user_id)}
                                   style={{ fontSize: 13, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '4px 0' }}
-                                >
-                                  + Добавить задачу
-                                </button>
+                                >{t('ui.dobavit_zadachu')}</button>
                               )}
                             </div>
                           )}
@@ -1353,7 +1335,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       )
                     })}
                     {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                      <EmptyState title="Нет участников" desc="Добавьте участников в команду" />
+                      <EmptyState title={t('ui.net_uchastnikov')} desc="Добавьте участников в команду" />
                     )}
                   </div>
                 )}
@@ -1372,10 +1354,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             <div style={{ maxWidth: 720, width: '100%' }}>
               {/* Групповая встреча (Задача 4) + Предложения встреч (Задача 5) */}
               <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-                <button onClick={() => setShowGroupModal(true)} className="btn btn-accent btn-sm">+ Групповая встреча</button>
-                <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">Предложения встреч</button>
-                <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">Предложения задач</button>
-                <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">Взаимодействия</button>
+                <button onClick={() => setShowGroupModal(true)} className="btn btn-accent btn-sm">{t('ui.gruppovaya_vstrecha')}</button>
+                <button onClick={() => setShowProposals(true)} className="btn btn-secondary btn-sm">{t('ui.predlozheniya_vstrech')}</button>
+                <button onClick={() => { setTaskProposalPreset(null); setShowTaskProposals(true) }} className="btn btn-secondary btn-sm">{t('ui.predlozheniya_zadach')}</button>
+                <button onClick={() => setShowInteractions(true)} className="btn btn-secondary btn-sm">{t('ui.vzaimodeystviya')}</button>
               </div>
               {/* Status filter chips */}
               <div className="tabs" style={{ display: 'flex', gap: 6, marginBottom: 16 }}>
@@ -1409,7 +1391,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {meetingRequests.length > 0 && (
                 <div style={{ marginBottom: 20 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <p className="label">Запросы на встречу</p>
+                    <p className="label">{t('ui.zaprosy_na_vstrechu')}</p>
                     <span className="badge badge-amber">{meetingRequests.length}</span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1460,10 +1442,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                with nothing, so we show the 3 steps to the first value moment and a
                single primary CTA. Progressive disclosure — no overlay tour needed. */
             <div className="card" style={{ maxWidth: 520, margin: '8px auto', padding: '28px 26px', textAlign: 'left' }}>
-              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>Начните за 3 шага</h2>
-              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 18 }}>
-                Соберите команду и проведите первую встречу один-на-один.
-              </p>
+              <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 6 }}>{t('ui.nachnite_za_3_shaga')}</h2>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 18 }}>{t('ui.soberite_komandu_i_provedite_pervuyu_vstrechu')}</p>
               <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
                   ['Создайте команду', 'Дайте ей название — это ваше рабочее пространство.'],
@@ -1479,9 +1459,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   </li>
                 ))}
               </ol>
-              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent" style={{ fontWeight: 700 }}>
-                Создать команду
-              </button>
+              <button onClick={() => setShowCreateTeam(true)} className="btn btn-accent" style={{ fontWeight: 700 }}>{t('ui.sozdat_komandu')}</button>
             </div>
           )}
 
@@ -1539,7 +1517,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     background: member.is_online ? 'var(--color-success)' : 'var(--gray-300)',
                                     border: '2px solid var(--color-surface)',
                                     transition: 'background 0.3s',
-                                  }} title={member.is_online ? 'Онлайн' : 'Не в сети'} />
+                                  }} title={member.is_online ? t('ui.onlayn') : t('ui.ne_v_seti')} />
                                 )}
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
@@ -1554,7 +1532,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 onClick={() => setUserCardMember(member)}
                                 className="btn-icon"
                                 style={{ width: 28, height: 28, borderRadius: 7, fontSize: 14 }}
-                                title="Профиль"
+                                title={t('ui.profil')}
                               >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" style={{ width: 14, height: 14 }}>
                                   <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a.75.75 0 000 1.5h.253a.25.25 0 01.244.304l-.459 2.066A1.75 1.75 0 0010.747 15H11a.75.75 0 000-1.5h-.253a.25.25 0 01-.244-.304l.459-2.066A1.75 1.75 0 009.253 9H9z" clipRule="evenodd" />
@@ -1570,8 +1548,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginBottom: 12 }}>
                               {/* Задача 2: будущая назначенная встреча — «Ближайшая», прошедшая — «Последняя». */}
                               {member.last_meeting_date && new Date(member.last_meeting_date) >= new Date()
-                                ? 'Ближайшая встреча: '
-                                : 'Последняя встреча: '}
+                                ? t('ui.blizhayshaya_vstrecha')
+                                : t('ui.poslednyaya_vstrecha_2')}
                               <span style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>
                                 {member.last_meeting_date
                                   ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
@@ -1584,9 +1562,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 onClick={() => { setScheduleMember(member); setShowSchedule(true) }}
                                 className="btn btn-accent btn-sm"
                                 style={{ flex: 1 }}
-                              >
-                                Запланировать
-                              </button>
+                              >{t('ui.zaplanirovat')}</button>
                               <button
                                 onClick={() => handleMemberCardCall(member.user_id)}
                                 disabled={memberCallLoading[member.user_id]}
@@ -1625,9 +1601,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
                               {tasksExpanded && (
                                 <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                                  {tasks === undefined && <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Загрузка...</p>}
+                                  {tasks === undefined && <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.zagruzka')}</p>}
                                   {tasks !== undefined && tasks.length === 0 && !taskForm.open && (
-                                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Нет задач</p>
+                                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.net_zadach')}</p>
                                   )}
                                   {tasks !== undefined && tasks.map(task => {
                                     const st = task.status || 'in_progress'
@@ -1646,7 +1622,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                               const overdue = task.status !== 'done' && new Date(task.due_date) < new Date(new Date().toDateString())
                                               return (
                                                 <p style={{ fontSize: 11, color: overdue ? 'var(--color-danger)' : 'var(--color-text-muted)', marginTop: 2, fontWeight: overdue ? 600 : 400 }}>
-                                                  {overdue ? 'Просрочено · ' : 'до '}
+                                                  {overdue ? t('ui.prosrocheno') : t('ui.do')}
                                                   {new Date(task.due_date).toLocaleDateString('ru-RU')}
                                                 </p>
                                               )
@@ -1700,7 +1676,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         type="text"
                                         value={taskForm.title || ''}
                                         onChange={e => setTaskForms(prev => ({ ...prev, [member.user_id]: { ...prev[member.user_id], title: e.target.value } }))}
-                                        placeholder="Название задачи"
+                                        placeholder={t('ui.nazvanie_zadachi')}
                                         autoFocus
                                         className="input input-sm"
                                         style={{ fontSize: 12 }}
@@ -1713,9 +1689,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                         style={{ fontSize: 12 }}
                                       />
                                       <div style={{ display: 'flex', gap: 6 }}>
-                                        <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: 12 }}>
-                                          Отмена
-                                        </button>
+                                        <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: 12 }}>{t('ui.otmena')}</button>
                                         <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm" style={{ flex: 1, fontSize: 12 }}>
                                           {taskForm.loading ? '...' : 'Добавить'}
                                         </button>
@@ -1725,9 +1699,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                     <button
                                       onClick={() => openTaskForm(member.user_id)}
                                       style={{ fontSize: 12, color: 'var(--color-accent)', fontWeight: 500, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', marginTop: 2 }}
-                                    >
-                                      + Добавить задачу
-                                    </button>
+                                    >{t('ui.dobavit_zadachu')}</button>
                                   )}
                                 </div>
                               )}
@@ -1739,12 +1711,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   ) : (
                     <div className="empty-state">
                       <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
-                      <p className="empty-title">{searchQuery ? 'Участники не найдены' : 'Нет участников'}</p>
-                      <p className="empty-desc">{searchQuery ? 'Попробуйте изменить запрос' : 'Добавьте первого участника в команду'}</p>
+                      <p className="empty-title">{searchQuery ? t('ui.uchastniki_ne_naydeny') : t('ui.net_uchastnikov')}</p>
+                      <p className="empty-desc">{searchQuery ? t('ui.poprobuyte_izmenit_zapros') : t('ui.dobavte_pervogo_uchastnika_v_komandu')}</p>
                       {!searchQuery && (
-                        <button onClick={() => setShowAddMember(true)} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>
-                          + Добавить участника
-                        </button>
+                        <button onClick={() => setShowAddMember(true)} className="btn btn-accent btn-sm" style={{ marginTop: 16 }}>{t('ui.dobavit_uchastnika')}</button>
                       )}
                     </div>
                   )}
@@ -1777,19 +1747,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
       {showStartCall && (
         <Modal
-          title={callStep === 'done' ? 'Созвон начат' : 'Начать созвон'}
+          title={callStep === 'done' ? t('ui.sozvon_nachat') : t('meetings.startCall')}
           onClose={() => { setShowStartCall(false); setCallStep('type'); setCallResult(null); setRoomUrlCopied(false) }}
         >
           {/* Step 1: choose type */}
           {callStep === 'type' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>
-                Выберите тип созвона:
-              </p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>{t('ui.vyberite_tip_sozvona')}</p>
               <button
                 onClick={() => {
                   const all = (teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => m.user_id)
-                  if (all.length === 0) return toast('Нет участников в команде', 'error')
+                  if (all.length === 0) return toast(t('ui.net_uchastnikov_v_komande'), 'error')
                   handleStartSpontaneousCall(all, true)
                 }}
                 disabled={callModalLoading}
@@ -1802,8 +1770,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     <path d="M1 18c0-3.314 3.134-6 7-6s7 2.686 7 6" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>Общий созвон</div>
-                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Вся команда получит приглашение</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t('ui.obschiy_sozvon')}</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{t('ui.vsya_komanda_poluchit_priglashenie')}</div>
                 </div>
               </button>
               <button
@@ -1818,8 +1786,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     <path d="M2 19c0-2.8 2.24-5 5-5s5 2.2 5 5M11 19c0-2.8 2.24-5 5-5s4 1.5 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>Несколько участников</div>
-                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Выбрать нескольких из команды</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t('ui.neskolko_uchastnikov')}</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{t('ui.vybrat_neskolkih_iz_komandy')}</div>
                 </div>
               </button>
               <button
@@ -1833,14 +1801,12 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                     <path d="M3 20c0-4.418 3.582-8 8-8s8 3.582 8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 <div style={{ textAlign: 'left' }}>
-                  <div style={{ fontWeight: 700, fontSize: 14 }}>Индивидуальный</div>
-                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>Выбрать конкретного участника</div>
+                  <div style={{ fontWeight: 700, fontSize: 14 }}>{t('ui.individualnyy')}</div>
+                  <div style={{ fontSize: 12, opacity: 0.8, marginTop: 2 }}>{t('ui.vybrat_konkretnogo_uchastnika')}</div>
                 </div>
               </button>
               {callModalLoading && (
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center' }}>
-                  Создаём комнату и отправляем уведомления...
-                </p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center' }}>{t('ui.sozdaem_komnatu_i_otpravlyaem_uvedomleniya')}</p>
               )}
             </div>
           )}
@@ -1851,12 +1817,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button
                 onClick={() => setCallStep('type')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'left', padding: 0, marginBottom: 4 }}
-              >
-                ← Назад
-              </button>
-              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
-                Отметьте участников созвона:
-              </p>
+              >{t('ui.nazad')}</button>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>{t('ui.otmette_uchastnikov_sozvona')}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto' }}>
                 {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => {
                   const on = callSelected.includes(member.user_id)
@@ -1871,16 +1833,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   )
                 })}
                 {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                  <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>Нет участников в команде</p>
+                  <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>{t('ui.net_uchastnikov_v_komande')}</p>
                 )}
               </div>
               <button
-                onClick={() => { if (callSelected.length === 0) return toast('Выберите участников', 'error'); handleStartSpontaneousCall(callSelected, callSelected.length > 1) }}
+                onClick={() => { if (callSelected.length === 0) return toast(t('ui.vyberite_uchastnikov'), 'error'); handleStartSpontaneousCall(callSelected, callSelected.length > 1) }}
                 disabled={callModalLoading || callSelected.length === 0}
                 className="btn btn-accent"
                 style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                {callModalLoading ? <><Spinner size={15} /> Создаём...</> : `Начать созвон${callSelected.length ? ` (${callSelected.length})` : ''}`}
+                {callModalLoading ? <><Spinner size={15} />{t('ui.sozdaem')}</> : `Начать созвон${callSelected.length ? ` (${callSelected.length})` : ''}`}
               </button>
             </div>
           )}
@@ -1891,12 +1853,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <button
                 onClick={() => setCallStep('type')}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-secondary)', fontSize: 13, textAlign: 'left', padding: 0, marginBottom: 4 }}
-              >
-                ← Назад
-              </button>
-              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>
-                Выберите участника:
-              </p>
+              >{t('ui.nazad')}</button>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 4px' }}>{t('ui.vyberite_uchastnika_2')}</p>
               {teamDetail?.members?.filter(m => m.user_id !== user.id).map(member => (
                 <button
                   key={member.user_id}
@@ -1915,14 +1873,10 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </button>
               ))}
               {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>
-                  Нет участников в команде
-                </p>
+                <p style={{ fontSize: 14, color: 'var(--color-text-muted)', textAlign: 'center', padding: '12px 0' }}>{t('ui.net_uchastnikov_v_komande')}</p>
               )}
               {callModalLoading && (
-                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 4 }}>
-                  Создаём комнату и отправляем уведомления...
-                </p>
+                <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', marginTop: 4 }}>{t('ui.sozdaem_komnatu_i_otpravlyaem_uvedomleniya')}</p>
               )}
             </div>
           )}
@@ -1936,15 +1890,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <path d="M12 20l6 6 10-12" stroke="#4f46e5" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
               </div>
-              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', margin: 0 }}>
-                Комната создана! Участники получили уведомления.
-              </p>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', textAlign: 'center', margin: 0 }}>{t('ui.komnata_sozdana_uchastniki_poluchili_uvedomlen')}</p>
               <div style={{
                 background: 'var(--color-bg-secondary)',
                 borderRadius: 8, padding: '10px 14px',
                 border: '1px solid var(--color-border)',
               }}>
-                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>Ссылка-приглашение:</div>
+                <div style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 4 }}>{t('ui.ssylka_priglashenie')}</div>
                 <div style={{
                   fontSize: 13, color: 'var(--color-accent)', wordBreak: 'break-all',
                   fontFamily: 'monospace',
@@ -1959,7 +1911,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className={roomUrlCopied ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
                 style={{ gap: 8 }}
               >
-                {roomUrlCopied ? '✓ Скопировано!' : 'Копировать ссылку'}
+                {roomUrlCopied ? t('ui.skopirovano') : t('ui.kopirovat_ssylku')}
               </button>
               <button
                 onClick={() => {
@@ -1969,24 +1921,22 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 }}
                 className="btn btn-accent"
                 style={{ gap: 8, fontWeight: 700 }}
-              >
-                Начать созвон
-              </button>
+              >{t('ui.nachat_sozvon')}</button>
             </div>
           )}
         </Modal>
       )}
 
       {showCreateTeam && (
-        <Modal title="Создать команду" onClose={() => setShowCreateTeam(false)}>
+        <Modal title={t('ui.sozdat_komandu')} onClose={() => setShowCreateTeam(false)}>
           <form onSubmit={handleCreateTeam}>
             <div className="form-group">
-              <label className="form-label">Название команды</label>
-              <input type="text" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder="Например: Backend Team" className="input" autoFocus />
+              <label className="form-label">{t('ui.nazvanie_komandy')}</label>
+              <input type="text" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder={t('ui.naprimer_backend_team')} className="input" autoFocus />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-              <button type="button" onClick={() => setShowCreateTeam(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Создание...</> : 'Создать'}</button>
+              <button type="button" onClick={() => setShowCreateTeam(false)} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sozdanie')}</> : 'Создать'}</button>
             </div>
           </form>
         </Modal>
@@ -2093,30 +2043,26 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       {/* Этап 5: мягкая, полностью закрываемая рекомендация тарифа (только веб).
           Информационная ссылка на тарифы, без автоматических действий. */}
       {pricingHint && (
-        <Modal title="Рекомендация тарифа" onClose={dismissPricingHint}>
+        <Modal title={t('ui.rekomendaciya_tarifa')} onClose={dismissPricingHint}>
           <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 16px', lineHeight: 1.5 }}>
             Судя по размеру вашей компании, вам может подойти тариф {pricingHint.label}. Это лишь
             подсказка — посмотрите условия и решите сами.
           </p>
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={dismissPricingHint}>
-              Позже
-            </button>
+            <button className="btn btn-secondary" style={{ flex: 1 }} onClick={dismissPricingHint}>{t('ui.pozzhe')}</button>
             <button className="btn btn-accent" style={{ flex: 1 }}
-              onClick={() => { dismissPricingHint(); window.location.href = `/?upgrade=1&plan=${pricingHint.plan}` }}>
-              Посмотреть тарифы
-            </button>
+              onClick={() => { dismissPricingHint(); window.location.href = `/?upgrade=1&plan=${pricingHint.plan}` }}>{t('ui.posmotret_tarify')}</button>
           </div>
         </Modal>
       )}
 
       {showAddMember && (
-        <Modal title="Добавить участника" onClose={() => setShowAddMember(false)}>
+        <Modal title={t('ui.dobavit_uchastnika_2')} onClose={() => setShowAddMember(false)}>
           <form onSubmit={handleAddMember}>
             {[
-              { key: 'name', label: 'Имя *', placeholder: 'Иван Иванов', type: 'text' },
+              { key: 'name', label: t('ui.imya'), placeholder: t('ui.ivan_ivanov'), type: 'text' },
               { key: 'email', label: 'Email *', placeholder: 'ivan@company.com', type: 'email' },
-              { key: 'title', label: 'Должность', placeholder: 'Senior Engineer', type: 'text' },
+              { key: 'title', label: t('profile.position'), placeholder: 'Senior Engineer', type: 'text' },
             ].map(f => (
               <div key={f.key} className="form-group">
                 <label className="form-label">{f.label}</label>
@@ -2124,8 +2070,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               </div>
             ))}
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-              <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Добавление...</> : 'Добавить'}</button>
+              <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.dobavlenie')}</> : 'Добавить'}</button>
             </div>
           </form>
         </Modal>
@@ -2135,17 +2081,16 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <Modal title={`Встреча с ${scheduleMember.user_name}`} onClose={() => { setShowSchedule(false); setScheduleMember(null) }}>
           <form onSubmit={handleScheduleMeeting}>
             <div className="form-group">
-              <label className="form-label">Дата и время</label>
+              <label className="form-label">{t('ui.data_i_vremya')}</label>
               <input type="datetime-local" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} className="input" autoFocus />
             </div>
             <div className="form-group">
-              <label className="form-label">
-                Повестка <span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>(необязательно)</span>
+              <label className="form-label">{t('ui.povestka')}<span style={{ color: 'var(--color-text-muted)', fontWeight: 400 }}>{t('ui.neobyazatelno')}</span>
               </label>
               <textarea
                 value={scheduleAgenda}
                 onChange={e => setScheduleAgenda(e.target.value)}
-                placeholder="Темы для обсуждения..."
+                placeholder={t('ui.temy_dlya_obsuzhdeniya')}
                 className="input"
                 style={{ resize: 'none', minHeight: 80 }}
               />
@@ -2168,11 +2113,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 return (
                   <div style={{ marginTop: 10, padding: '12px 14px', background: 'var(--blue-50)', border: '1px solid var(--blue-200)', borderRadius: 10 }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.02em' }}>Пит подсказывает темы</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-accent)', letterSpacing: '0.02em' }}>{t('ui.pit_podskazyvaet_temy')}</span>
                       <button type="button" onClick={() => setCoachHidden(true)}
-                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>
-                        Скрыть
-                      </button>
+                        style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 12 }}>{t('ui.skryt')}</button>
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {sugg.map(s => (
@@ -2182,9 +2125,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{s.reason}</p>
                           </div>
                           <button type="button" onClick={() => add(s.line)}
-                            style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}>
-                            Добавить
-                          </button>
+                            style={{ flexShrink: 0, fontSize: 12, fontWeight: 600, color: 'var(--color-accent)', background: 'var(--color-surface)', border: '1px solid var(--blue-200)', borderRadius: 8, padding: '4px 10px', cursor: 'pointer' }}>{t('ui.dobavit')}</button>
                         </div>
                       ))}
                     </div>
@@ -2193,8 +2134,8 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               })()}
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
-              <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>Отмена</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} /> Сохранение...</> : 'Запланировать'}</button>
+              <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : 'Запланировать'}</button>
             </div>
           </form>
         </Modal>
@@ -2260,19 +2201,17 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           <div className="modal-header" style={{ paddingBottom: 12 }}>
             <div>
               <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
-                AI предлагает слоты
-              </span>
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>{t('ui.ai_predlagaet_sloty')}</span>
               <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
                 Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
               </p>
             </div>
-            <button className="modal-close" aria-label="Закрыть" onClick={() => setRescheduleModal(null)}>✕</button>
+            <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setRescheduleModal(null)}>✕</button>
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>
               <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#3B6EF0' }} />
-              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI подбирает слоты...</span>
+              <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.ai_podbiraet_sloty')}</span>
             </div>
           ) : slotsLocked ? (
             // Тарифное ограничение (Задача 3): мягкое сообщение + переход к тарифам.
@@ -2280,7 +2219,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5 }}>
                 {slotsLocked.message}
               </p>
-              <button onClick={() => openPricing(slotsLocked.min_plan || 'team')} className="btn btn-accent btn-sm">Посмотреть тарифы</button>
+              <button onClick={() => openPricing(slotsLocked.min_plan || 'team')} className="btn btn-accent btn-sm">{t('ui.posmotret_tarify')}</button>
             </div>
           ) : aiSlots.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -2316,7 +2255,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               })}
             </div>
           ) : (
-            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>Не удалось получить слоты</p>
+            <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '8px 0' }}>{t('ui.ne_udalos_poluchit_sloty')}</p>
           )}
         </div>
       </div>
@@ -2326,12 +2265,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 }
 
 function Modal({ title, onClose, children }) {
+  const { t } = useTranslation()
   return (
     <div className="overlay-center" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="modal">
         <div className="modal-header">
           <h3 className="modal-title">{title}</h3>
-          <button onClick={onClose} className="modal-close" aria-label="Закрыть">×</button>
+          <button onClick={onClose} className="modal-close" aria-label={t('ui.zakryt')}>×</button>
         </div>
         {children}
       </div>

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../../lib/i18n';
 import {
   Modal, View, Text, StyleSheet, TouchableOpacity, Pressable, TextInput, FlatList,
 } from 'react-native';
@@ -19,6 +20,7 @@ export function EntityPicker({
   onSelect: (id: number) => void;
   emptyText?: string;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [open, setOpen] = useState(false);
@@ -48,7 +50,7 @@ export function EntityPicker({
                 style={styles.search}
                 value={q}
                 onChangeText={setQ}
-                placeholder="Поиск по имени или ID"
+                placeholder={t('ui.poisk_po_imeni_ili_id')}
                 placeholderTextColor={colors.textMuted}
                 autoFocus
               />

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getAdminStats, getAdminAnalytics,
   getSupportTickets, markTicketRead, markAllTicketsRead, getSupportUnreadCount, adminReplyTicket,
@@ -43,6 +44,7 @@ function MiniBar({ value, max, color = 'var(--color-accent)' }) {
 }
 
 function MessageBubble({ msg }) {
+  const { t } = useTranslation()
   const isAdmin = msg.sender === 'admin'
   return (
     <div style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
@@ -55,7 +57,7 @@ function MessageBubble({ msg }) {
         border: isAdmin ? 'none' : '1px solid var(--color-border)',
         whiteSpace: 'pre-wrap', wordBreak: 'break-word',
       }}>
-        {!isAdmin && <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', margin: '0 0 3px' }}>Пользователь</p>}
+        {!isAdmin && <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted)', margin: '0 0 3px' }}>{t('ui.polzovatel')}</p>}
         {msg.body}
         <p style={{ fontSize: 10, margin: '3px 0 0', textAlign: 'right', color: isAdmin ? 'rgba(255,255,255,0.6)' : 'var(--color-text-muted)' }}>
           {new Date(msg.created_at).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
@@ -66,6 +68,7 @@ function MessageBubble({ msg }) {
 }
 
 export default function AdminDashboard({ onLogout }) {
+  const { t } = useTranslation()
   const [data, setData]             = useState(null)
   const [loading, setLoading]       = useState(true)
   const [tab, setTab]               = useState('users')
@@ -201,14 +204,14 @@ export default function AdminDashboard({ onLogout }) {
   }
 
   const handleDelete = async (userId) => {
-    if (!await confirmDialog({ title: 'Удалить пользователя?', message: 'Это действие необратимо.', confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_polzovatelya'), message: t('ui.eto_deystvie_neobratimo'), confirmText: 'Удалить', danger: true })) return
     await deleteUser(userId).catch(() => {})
     setData(d => ({ ...d, users: d.users.filter(u => u.id !== userId) }))
   }
 
   const handleOverride = async (userId, current) => {
     const enabled = !current
-    if (enabled && !await confirmDialog({ title: 'Выдать полный доступ?', message: 'Аккаунт получит все функции без подписки.', confirmText: 'Выдать' })) return
+    if (enabled && !await confirmDialog({ title: t('ui.vydat_polnyy_dostup'), message: t('ui.akkaunt_poluchit_vse_funkcii_bez_podpiski'), confirmText: 'Выдать' })) return
     await setUserOverride(userId, { enabled, note: enabled ? 'Выдано из админ-панели' : null }).catch(() => {})
     setData(d => ({ ...d, users: d.users.map(u => u.id === userId ? { ...u, billing_override: enabled } : u) }))
   }
@@ -225,7 +228,7 @@ export default function AdminDashboard({ onLogout }) {
       ? `сотруднику ${targetUser.name} (${targetUser.email})`
       : `всем активным пользователям (${allUsers.filter(u => !u.is_blocked).length})`
     if (!await confirmDialog({
-      title: 'Отправить уведомление?',
+      title: t('ui.otpravit_uvedomlenie'),
       message: `Уведомление «${broadcastForm.title.trim()}» будет отправлено ${scopeText}.`,
       confirmText: 'Отправить', cancelText: 'Отмена',
     })) return
@@ -262,7 +265,7 @@ export default function AdminDashboard({ onLogout }) {
   }
 
   const handleKbDelete = async (id) => {
-    if (!await confirmDialog({ title: 'Удалить статью?', confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_statyu_2'), confirmText: 'Удалить', danger: true })) return
     await deleteAdminArticle(id).catch(() => {})
     setArticles(prev => prev.filter(a => a.id !== id))
   }
@@ -296,31 +299,31 @@ export default function AdminDashboard({ onLogout }) {
           <span className="logo">OneOn<span className="accent">One</span></span>
           <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', background: 'var(--color-danger)', padding: '2px 8px', borderRadius: 6, letterSpacing: '0.08em' }}>ADMIN</span>
         </div>
-        <button onClick={onLogout} className="btn btn-secondary btn-sm">Выйти</button>
+        <button onClick={onLogout} className="btn btn-secondary btn-sm">{t('ui.vyyti')}</button>
       </header>
 
       <main className="admin-main" style={{ maxWidth: 1200, margin: '0 auto', padding: '32px 24px', width: '100%' }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 24 }}>Личный кабинет</h1>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 24 }}>{t('ui.lichnyy_kabinet')}</h1>
 
         {/* Tabs */}
         <div className="admin-tabs" style={{ display: 'flex', gap: 8, marginBottom: 28, flexWrap: 'wrap' }}>
-          <TabBtn id="users"      label="Пользователи" />
-          <TabBtn id="employees"  label="Сотрудники" />
-          <TabBtn id="tickets"    label="Обращения" badge={unreadTickets} />
-          <TabBtn id="broadcast"  label="Рассылка" />
-          <TabBtn id="manage"     label="Управление" />
-          <TabBtn id="analytics"  label="Аналитика" />
-          <TabBtn id="health"     label="Здоровье сервиса" />
-          <TabBtn id="kb"         label="База знаний" />
-          <TabBtn id="monetize"   label="Монетизация" />
-          <TabBtn id="billing"    label="Биллинг" />
-          <TabBtn id="metrics"    label="Инвест-метрики" />
+          <TabBtn id="users"      label={t('ui.polzovateli')} />
+          <TabBtn id="employees"  label={t('ui.sotrudniki')} />
+          <TabBtn id="tickets"    label={t('ui.obrascheniya')} badge={unreadTickets} />
+          <TabBtn id="broadcast"  label={t('ui.rassylka')} />
+          <TabBtn id="manage"     label={t('ui.upravlenie')} />
+          <TabBtn id="analytics"  label={t('ui.analitika')} />
+          <TabBtn id="health"     label={t('ui.zdorove_servisa')} />
+          <TabBtn id="kb"         label={t('ui.baza_znaniy')} />
+          <TabBtn id="monetize"   label={t('ui.monetizaciya')} />
+          <TabBtn id="billing"    label={t('ui.billing')} />
+          <TabBtn id="metrics"    label={t('ui.invest_metriki')} />
         </div>
 
         {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' && tab !== 'employees' ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
         ) : !data && tab === 'users' ? (
-          <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки</p>
+          <p style={{ color: 'var(--color-danger)' }}>{t('ui.oshibka_zagruzki')}</p>
         ) : (
           <>
             {/* ── ПОЛЬЗОВАТЕЛИ ── */}
@@ -328,11 +331,11 @@ export default function AdminDashboard({ onLogout }) {
               <div className="card" style={{ padding: '18px 20px' }}>
                 <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
                   <p style={{ fontWeight: 600, fontSize: 14, flex: 1, margin: 0 }}>Пользователи ({filteredUsers.length})</p>
-                  <input className="input input-sm" style={{ width: 200, maxWidth: '100%' }} placeholder="Поиск..." value={search} onChange={e => setSearch(e.target.value)} />
+                  <input className="input input-sm" style={{ width: 200, maxWidth: '100%' }} placeholder={t('ui.poisk')} value={search} onChange={e => setSearch(e.target.value)} />
                   <select className="input input-sm" style={{ width: 150 }} value={roleFilter} onChange={e => setRoleFilter(e.target.value)}>
-                    <option value="all">Все роли</option>
-                    <option value="team_lead">Тимлиды</option>
-                    <option value="member">Участники</option>
+                    <option value="all">{t('ui.vse_roli')}</option>
+                    <option value="team_lead">{t('ui.timlidy')}</option>
+                    <option value="member">{t('ui.uchastniki')}</option>
                   </select>
                 </div>
                 <div style={{ overflowX: 'auto' }}>
@@ -360,7 +363,7 @@ export default function AdminDashboard({ onLogout }) {
                           <tr key={u.id} style={{ borderBottom: '1px solid var(--color-border)', opacity: u.is_blocked ? 0.55 : 1 }}>
                             <Td muted>{u.id}</Td>
                             <Td>
-                              <div onClick={() => setDetailUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} title="Открыть детали">
+                              <div onClick={() => setDetailUser(u)} style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} title={t('ui.otkryt_detali')}>
                                 <div className={`avatar avatar-sm ${u.avatar ? '' : 'avatar-accent'}`} style={{ overflow: 'hidden' }}>
                                   {u.avatar
                                     ? <img src={u.avatar} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
@@ -380,10 +383,10 @@ export default function AdminDashboard({ onLogout }) {
                             <Td>
                               <span title={activeMs ? `Активность: ${new Date(activeMs).toLocaleString('ru-RU')}` : 'Активность аккаунта не зафиксирована'}>
                                 {lastMs > ago7
-                                  ? <span className="badge badge-green" style={{ fontSize: 11 }}>Активен</span>
+                                  ? <span className="badge badge-green" style={{ fontSize: 11 }}>{t('ui.aktiven')}</span>
                                   : lastMs > ago30
-                                    ? <span className="badge badge-amber" style={{ fontSize: 11 }}>Слабая</span>
-                                    : <span className="badge badge-red" style={{ fontSize: 11 }}>Неактивен</span>}
+                                    ? <span className="badge badge-amber" style={{ fontSize: 11 }}>{t('ui.slabaya')}</span>
+                                    : <span className="badge badge-red" style={{ fontSize: 11 }}>{t('ui.neaktiven')}</span>}
                               </span>
                             </Td>
                             <Td>
@@ -395,36 +398,32 @@ export default function AdminDashboard({ onLogout }) {
                                     color: u.is_blocked ? '#16a34a' : '#c2410c',
                                     borderColor: u.is_blocked ? '#bbf7d0' : '#fed7aa',
                                   }}>
-                                  {u.is_blocked ? 'Разблокировать' : 'Заблокировать'}
+                                  {u.is_blocked ? t('ui.razblokirovat') : t('ui.zablokirovat')}
                                 </button>
                                 <button
                                   onClick={() => handleOverride(u.id, u.billing_override)}
-                                  title="Полный доступ без подписки"
+                                  title={t('ui.polnyy_dostup_bez_podpiski')}
                                   style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap',
                                     background: u.billing_override ? '#eef2ff' : '#f8fafc',
                                     color: u.billing_override ? '#4f46e5' : '#64748b',
                                     borderColor: u.billing_override ? '#c7d2fe' : '#e2e8f0',
                                   }}>
-                                  {u.billing_override ? 'Полный доступ' : 'Выдать полный доступ'}
+                                  {u.billing_override ? t('billing.fullAccess') : t('ui.vydat_polnyy_dostup_2')}
                                 </button>
                                 <button
                                   onClick={() => setMgrEdit({ userId: u.id, managerId: '', saving: false })}
-                                  title="Назначить выделенного менеджера"
-                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', background: 'var(--color-bg)', color: 'var(--color-text-secondary)' }}>
-                                  Менеджер
-                                </button>
+                                  title={t('ui.naznachit_vydelennogo_menedzhera')}
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap', background: 'var(--color-bg)', color: 'var(--color-text-secondary)' }}>{t('ui.menedzher')}</button>
                                 <button
                                   onClick={() => handleDelete(u.id)}
-                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>
-                                  Удалить
-                                </button>
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>{t('ui.udalit')}</button>
                               </div>
                             </Td>
                           </tr>
                         )
                       })}
                       {filteredUsers.length === 0 && (
-                        <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Ничего не найдено</td></tr>
+                        <tr><td colSpan={9} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>{t('ui.nichego_ne_naydeno')}</td></tr>
                       )}
                     </tbody>
                   </table>
@@ -451,7 +450,7 @@ export default function AdminDashboard({ onLogout }) {
                     <p style={{ fontWeight: 600, fontSize: 14, margin: 0 }}>
                       Обращения {unreadTickets > 0 && <span style={{ background: '#ef4444', color: '#fff', fontSize: 11, borderRadius: 20, padding: '1px 6px', marginLeft: 4 }}>{unreadTickets}</span>}
                     </p>
-                    {unreadTickets > 0 && <button onClick={handleMarkAllRead} className="btn btn-secondary btn-sm" style={{ fontSize: 11 }}>Прочитать все</button>}
+                    {unreadTickets > 0 && <button onClick={handleMarkAllRead} className="btn btn-secondary btn-sm" style={{ fontSize: 11 }}>{t('ui.prochitat_vse')}</button>}
                   </div>
 
                   {ticketsLoading ? (
@@ -459,7 +458,7 @@ export default function AdminDashboard({ onLogout }) {
                   ) : tickets.length === 0 ? (
                     <div className="empty-state" style={{ padding: '32px 16px' }}>
                       <div className="empty-icon" style={{ width: 48, height: 48, fontSize: 22, background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="2" y="4" width="16" height="12" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><path d="M2 7l8 5 8-5" stroke="var(--color-text-muted)" strokeWidth="1.4"/></svg></div>
-                      <p className="empty-title" style={{ fontSize: 14 }}>Обращений нет</p>
+                      <p className="empty-title" style={{ fontSize: 14 }}>{t('ui.obrascheniy_net')}</p>
                     </div>
                   ) : tickets.map(t => (
                     <div
@@ -493,7 +492,7 @@ export default function AdminDashboard({ onLogout }) {
                   {!activeTicket ? (
                     <div className="empty-state" style={{ margin: 'auto' }}>
                       <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M3 5a2 2 0 012-2h12a2 2 0 012 2v9a2 2 0 01-2 2H7l-4 3V5z" stroke="var(--color-text-muted)" strokeWidth="1.4" strokeLinejoin="round"/></svg></div>
-                      <p className="empty-title">Выберите обращение</p>
+                      <p className="empty-title">{t('ui.vyberite_obraschenie')}</p>
                     </div>
                   ) : (
                     <>
@@ -501,9 +500,7 @@ export default function AdminDashboard({ onLogout }) {
                       <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--color-border)', flexShrink: 0 }}>
                         <div className="tickets-back-btn" style={{ display: 'none', marginBottom: 10 }}>
                           <button onClick={() => setActiveTicket(null)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', fontSize: 13, fontWeight: 600, padding: 0 }}>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                            Назад
-                          </button>
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8l4-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>{t('ui.nazad_2')}</button>
                         </div>
                         <p style={{ fontWeight: 700, fontSize: 15, margin: 0 }}>{activeTicket.subject}</p>
                         <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginTop: 4, flexWrap: 'wrap' }}>
@@ -525,7 +522,7 @@ export default function AdminDashboard({ onLogout }) {
                         <textarea
                           value={replyText}
                           onChange={e => setReplyText(e.target.value)}
-                          placeholder="Ответить пользователю..."
+                          placeholder={t('ui.otvetit_polzovatelyu')}
                           rows={2}
                           style={{ flex: 1, resize: 'none', fontSize: 13, padding: '7px 11px', border: '1.5px solid var(--color-border)', borderRadius: 8, outline: 'none', fontFamily: 'var(--font-sans)', background: 'var(--color-bg)' }}
                           onFocus={e => e.target.style.borderColor = 'var(--color-accent)'}
@@ -533,7 +530,7 @@ export default function AdminDashboard({ onLogout }) {
                           onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleReply(e) } }}
                         />
                         <button type="submit" disabled={replying || !replyText.trim()} className="btn btn-accent btn-sm" style={{ alignSelf: 'flex-end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                          {replying ? <><Spinner size={13} /> Ответ...</> : 'Ответить'}
+                          {replying ? <><Spinner size={13} />{t('ui.otvet')}</> : 'Ответить'}
                         </button>
                       </form>
                     </>
@@ -547,12 +544,12 @@ export default function AdminDashboard({ onLogout }) {
               analyticsLoading ? (
                 <div style={{ display: 'flex', justifyContent: 'center', padding: '64px 0' }}><div className="spinner" /></div>
               ) : !analytics ? (
-                <p style={{ color: 'var(--color-danger)' }}>Ошибка загрузки</p>
+                <p style={{ color: 'var(--color-danger)' }}>{t('ui.oshibka_zagruzki')}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                   {/* Funnel */}
                   <div className="card" style={{ padding: '20px 24px' }}>
-                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Воронка пользователей</p>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{t('ui.voronka_polzovateley')}</p>
                     {analytics.funnel.map((step, i) => {
                       const maxVal = analytics.funnel[0]?.value || 1
                       const pct = Math.round((step.value / maxVal) * 100)
@@ -572,11 +569,11 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Weekly growth */}
                   <div className="card" style={{ padding: '20px 24px' }}>
-                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>Рост по неделям (последние 8 недель)</p>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{t('ui.rost_po_nedelyam_poslednie_8_nedel')}</p>
                     <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
                       {/* Users chart */}
                       <div style={{ flex: 1, minWidth: 'min(200px, 100%)' }}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые пользователи</p>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('ui.novye_polzovateli')}</p>
                         {analytics.weekly_growth.map((w, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
                             <span style={{ fontSize: 11, color: 'var(--color-text-muted)', minWidth: 32 }}>{w.label}</span>
@@ -586,7 +583,7 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
                       {/* Meetings chart */}
                       <div style={{ flex: 1, minWidth: 'min(200px, 100%)' }}>
-                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Новые встречи</p>
+                        <p style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-muted)', marginBottom: 10, textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('ui.novye_vstrechi')}</p>
                         {analytics.weekly_growth.map((w, i) => (
                           <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 7 }}>
                             <span style={{ fontSize: 11, color: 'var(--color-text-muted)', minWidth: 32 }}>{w.label}</span>
@@ -599,10 +596,10 @@ export default function AdminDashboard({ onLogout }) {
 
                   {/* Retention */}
                   <div className="card" style={{ padding: '20px 24px' }}>
-                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>Retention по когортам</p>
+                    <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{t('ui.retention_po_kogortam')}</p>
                     <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>% пользователей, проведших хотя бы одну встречу в течение 7 дней после регистрации</p>
                     {analytics.retention.length === 0 ? (
-                      <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>Недостаточно данных</p>
+                      <p style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>{t('ui.nedostatochno_dannyh')}</p>
                     ) : analytics.retention.map((r, i) => (
                       <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
                         <span style={{ fontSize: 12, color: 'var(--color-text-muted)', minWidth: 52 }}>{r.label}</span>
@@ -620,28 +617,28 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'broadcast' && (
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 <div className="card" style={{ padding: '24px 26px', width: '100%', maxWidth: 500 }}>
-                  <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>Массовая рассылка</p>
-                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>Уведомление отправится в колокольчик с красной плашкой «Объявление»</p>
+                  <p style={{ fontWeight: 700, fontSize: 16, marginBottom: 6 }}>{t('ui.massovaya_rassylka')}</p>
+                  <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>{t('ui.uvedomlenie_otpravitsya_v_kolokolchik_s_krasno')}</p>
                   <form onSubmit={handleBroadcast} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Получатели</label>
+                      <label className="form-label">{t('ui.poluchateli')}</label>
                       <select className="input" value={broadcastForm.target} onChange={e => setBroadcastForm(f => ({ ...f, target: e.target.value }))}>
-                        <option value="all">Все пользователи</option>
+                        <option value="all">{t('ui.vse_polzovateli')}</option>
                         {allUsers.filter(u => !u.is_blocked).map(u => (
                           <option key={u.id} value={String(u.id)}>{u.name} ({u.email})</option>
                         ))}
                       </select>
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Заголовок *</label>
-                      <input className="input" value={broadcastForm.title} onChange={e => setBroadcastForm(f => ({ ...f, title: e.target.value }))} placeholder="Текст заголовка уведомления" required />
+                      <label className="form-label">{t('ui.zagolovok_2')}</label>
+                      <input className="input" value={broadcastForm.title} onChange={e => setBroadcastForm(f => ({ ...f, title: e.target.value }))} placeholder={t('ui.tekst_zagolovka_uvedomleniya')} required />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Текст сообщения</label>
-                      <textarea className="input" value={broadcastForm.body} onChange={e => setBroadcastForm(f => ({ ...f, body: e.target.value }))} placeholder="Дополнительный текст (необязательно)..." rows={4} style={{ minHeight: 100, resize: 'vertical' }} />
+                      <label className="form-label">{t('ui.tekst_soobscheniya')}</label>
+                      <textarea className="input" value={broadcastForm.body} onChange={e => setBroadcastForm(f => ({ ...f, body: e.target.value }))} placeholder={t('ui.dopolnitelnyy_tekst_neobyazatelno')} rows={4} style={{ minHeight: 100, resize: 'vertical' }} />
                     </div>
                     <button type="submit" disabled={broadcastSending} className="btn btn-accent" style={{ fontWeight: 700, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {broadcastSending ? <><Spinner size={15} /> Отправка...</> : 'Отправить уведомление'}
+                      {broadcastSending ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить уведомление'}
                     </button>
                     {broadcastResult && (
                       <div style={{
@@ -673,9 +670,9 @@ export default function AdminDashboard({ onLogout }) {
                   </form>
                 </div>
                 <div className="card" style={{ padding: '20px 22px', flex: 1, minWidth: 'min(240px, 100%)' }}>
-                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>Предпросмотр</p>
+                  <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 14 }}>{t('ui.predprosmotr')}</p>
                   <div style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderLeft: '3px solid #ef4444', borderRadius: 10, padding: '12px 14px' }}>
-                    <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: '#ef4444', color: '#fff', padding: '2px 7px', borderRadius: 4, marginBottom: 6 }}>ОБЪЯВЛЕНИЕ</span>
+                    <span style={{ display: 'inline-block', fontSize: 10, fontWeight: 700, letterSpacing: '0.08em', background: '#ef4444', color: '#fff', padding: '2px 7px', borderRadius: 4, marginBottom: 6 }}>{t('ui.obyavlenie')}</span>
                     <p style={{ fontWeight: 600, fontSize: 13, color: 'var(--color-text-primary)', margin: '0 0 3px' }}>{broadcastForm.title || 'Заголовок уведомления'}</p>
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>{broadcastForm.body || 'Текст сообщения'}</p>
                   </div>
@@ -687,15 +684,13 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'health' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Статус сервиса</p>
-                  <button className="btn btn-secondary btn-sm" onClick={() => { setHealthLoading(true); getServiceHealth().then(r => setHealth(r.data)).catch(() => setHealth({ error: true })).finally(() => setHealthLoading(false)) }}>
-                    Обновить
-                  </button>
+                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.status_servisa')}</p>
+                  <button className="btn btn-secondary btn-sm" onClick={() => { setHealthLoading(true); getServiceHealth().then(r => setHealth(r.data)).catch(() => setHealth({ error: true })).finally(() => setHealthLoading(false)) }}>{t('ui.obnovit')}</button>
                 </div>
                 {healthLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 64 }}><div className="spinner" /></div>
                 ) : !health ? null : health.error ? (
-                  <div className="card" style={{ padding: 20, color: 'var(--color-danger)' }}>Ошибка загрузки данных</div>
+                  <div className="card" style={{ padding: 20, color: 'var(--color-danger)' }}>{t('ui.oshibka_zagruzki_dannyh')}</div>
                 ) : (
                   <>
                     {/* Status cards */}
@@ -710,7 +705,7 @@ export default function AdminDashboard({ onLogout }) {
                             <div>
                               <p style={{ fontWeight: 700, fontSize: 14, margin: '0 0 2px', textTransform: 'capitalize' }}>{svc}</p>
                               <p style={{ fontSize: 12, color: dotColor, margin: 0, fontWeight: 600 }}>
-                                {ok ? 'Работает' : nc ? 'Не настроено' : 'Ошибка'}
+                                {ok ? 'Работает' : nc ? t('ui.ne_nastroeno') : t('ui.oshibka')}
                               </p>
                             </div>
                           </div>
@@ -720,15 +715,15 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Metrics */}
                     <div className="card" style={{ padding: '20px 22px' }}>
-                      <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>Метрики</p>
+                      <p style={{ fontWeight: 700, fontSize: 14, marginBottom: 16 }}>{t('ui.metriki')}</p>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(180px,100%), 1fr))', gap: 14 }}>
                         {[
-                          { label: 'Задержка БД', value: `${health.db_latency_ms} мс`, ok: health.db_latency_ms < 100 },
-                          { label: 'Время работы', value: `${Math.floor((health.uptime_seconds||0)/3600)}ч ${Math.floor(((health.uptime_seconds||0)%3600)/60)}м` },
-                          { label: 'Миграция БД', value: health.migration_rev || '—' },
-                          { label: 'Пользователей', value: health.stats?.users ?? '—' },
-                          { label: 'Встреч', value: health.stats?.meetings ?? '—' },
-                          { label: 'Открытых обращений', value: health.stats?.open_tickets ?? '—' },
+                          { label: t('ui.zaderzhka_bd'), value: `${health.db_latency_ms} мс`, ok: health.db_latency_ms < 100 },
+                          { label: t('ui.vremya_raboty'), value: `${Math.floor((health.uptime_seconds||0)/3600)}ч ${Math.floor(((health.uptime_seconds||0)%3600)/60)}м` },
+                          { label: t('ui.migraciya_bd'), value: health.migration_rev || '—' },
+                          { label: t('ui.polzovateley'), value: health.stats?.users ?? '—' },
+                          { label: t('ui.vstrech'), value: health.stats?.meetings ?? '—' },
+                          { label: t('ui.otkrytyh_obrascheniy'), value: health.stats?.open_tickets ?? '—' },
                         ].map(m => (
                           <div key={m.label} style={{ background: 'var(--color-bg)', borderRadius: 8, padding: '12px 14px', border: '1px solid var(--color-border)' }}>
                             <p style={{ fontSize: 11, color: 'var(--color-text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>{m.label}</p>
@@ -746,14 +741,14 @@ export default function AdminDashboard({ onLogout }) {
             {tab === 'monetize' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Монетизация</p>
-                  <span style={{ fontSize: 11, fontWeight: 700, background: '#f59e0b22', color: '#b45309', padding: '2px 10px', borderRadius: 20, border: '1px solid #fbbf24' }}>СКОРО</span>
+                  <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.monetizaciya')}</p>
+                  <span style={{ fontSize: 11, fontWeight: 700, background: '#f59e0b22', color: '#b45309', padding: '2px 10px', borderRadius: 20, border: '1px solid #fbbf24' }}>{t('ui.skoro')}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(min(280px,100%), 1fr))', gap: 16 }}>
                   {[
-                    { label: 'TP', title: 'Тарифные планы', desc: 'Управление тарифами: лимиты участников, встреч в месяц, функций. Создание и редактирование планов.' },
-                    { label: 'HP', title: 'История платежей', desc: 'Журнал всех платежей по пользователям и командам, статусы транзакций, экспорт.' },
-                    { label: 'PP', title: 'Пробный период', desc: 'Управление пробным доступом: продление, отзыв, просмотр истекающих триалов.' },
+                    { label: 'TP', title: t('ui.tarifnye_plany'), desc: 'Управление тарифами: лимиты участников, встреч в месяц, функций. Создание и редактирование планов.' },
+                    { label: 'HP', title: t('ui.istoriya_platezhey'), desc: t('ui.zhurnal_vseh_platezhey_po_polzovatelyam_i') },
+                    { label: 'PP', title: t('billing.trial'), desc: t('ui.upravlenie_probnym_dostupom_prodlenie_otzyv_pr') },
                   ].map(item => (
                     <div key={item.title} className="card" style={{ padding: '24px 22px', opacity: 0.72 }}>
                       <div style={{ width: 40, height: 40, borderRadius: 10, background: 'var(--color-bg)', border: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
@@ -761,9 +756,7 @@ export default function AdminDashboard({ onLogout }) {
                       </div>
                       <p style={{ fontWeight: 700, fontSize: 15, margin: '0 0 8px' }}>{item.title}</p>
                       <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0, lineHeight: 1.5 }}>{item.desc}</p>
-                      <div style={{ marginTop: 16, padding: '7px 14px', background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', fontWeight: 600, letterSpacing: '0.04em' }}>
-                        В разработке
-                      </div>
+                      <div style={{ marginTop: 16, padding: '7px 14px', background: 'var(--color-bg)', borderRadius: 8, border: '1px solid var(--color-border)', fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', fontWeight: 600, letterSpacing: '0.04em' }}>{t('ui.v_razrabotke')}</div>
                     </div>
                   ))}
                 </div>
@@ -773,7 +766,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* ── БИЛЛИНГ ── */}
             {tab === 'billing' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Подписки</p>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.podpiski')}</p>
                 {billingLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
                 ) : (
@@ -806,21 +799,21 @@ export default function AdminDashboard({ onLogout }) {
                               </Td>
                               <Td>
                                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-                                  <button onClick={() => setMgrEdit({ userId: s.subject_id, managerId: s.manager_id || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Менеджер</button>
-                                  <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>Продлить</button>
-                                  <button onClick={async () => { if (!await confirmDialog({ title: 'Отменить подписку?', confirmText: 'Отменить', danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Отменить</button>
+                                  <button onClick={() => setMgrEdit({ userId: s.subject_id, managerId: s.manager_id || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>{t('ui.menedzher')}</button>
+                                  <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>{t('ui.prodlit')}</button>
+                                  <button onClick={async () => { if (!await confirmDialog({ title: t('ui.otmenit_podpisku'), confirmText: 'Отменить', danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>{t('ui.otmenit')}</button>
                                 </div>
                               </Td>
                             </tr>
                           ))}
                           {subs.length === 0 && (
-                            <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Подписок пока нет</td></tr>
+                            <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>{t('ui.podpisok_poka_net')}</td></tr>
                           )}
                         </tbody>
                       </table>
                     </div>
 
-                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Платежи</p>
+                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.platezhi')}</p>
                     <div className="card" style={{ padding: 0, overflowX: 'auto' }}>
                       <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                         <thead>
@@ -845,32 +838,32 @@ export default function AdminDashboard({ onLogout }) {
                             </tr>
                           ))}
                           {paymentsList.length === 0 && (
-                            <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>Платежей пока нет</td></tr>
+                            <tr><td colSpan={6} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 13 }}>{t('ui.platezhey_poka_net')}</td></tr>
                           )}
                         </tbody>
                       </table>
                     </div>
                     {/* Реестр менеджеров: заводятся вручную, назначаются из списка.
                         Полный CRUD (роль, email, зона ответственности) — на вкладке «Сотрудники». */}
-                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Менеджеры</p>
+                    <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.menedzhery')}</p>
                     <div className="card" style={{ padding: 16 }}>
                       <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 12px' }}>
                         Быстрое добавление для назначения. Роли, email и зону ответственности можно
                         задать на вкладке «Сотрудники».
                       </p>
                       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: managers.length ? 14 : 0 }}>
-                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder="Имя менеджера" value={newMgr.name}
+                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder={t('ui.imya_menedzhera')} value={newMgr.name}
                           onChange={e => setNewMgr(m => ({ ...m, name: e.target.value }))} />
-                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder="Связь (Telegram / email / телефон)" value={newMgr.contact}
+                        <input className="input input-sm" style={{ flex: '1 1 160px' }} placeholder={t('ui.svyaz_telegram_email_telefon')} value={newMgr.contact}
                           onChange={e => setNewMgr(m => ({ ...m, contact: e.target.value }))} />
                         <button className="btn btn-sm btn-accent" disabled={!newMgr.name.trim()}
                           onClick={async () => {
-                            try { await createManager({ name: newMgr.name.trim(), contact: newMgr.contact.trim() || null }); setNewMgr({ name: '', contact: '' }); loadManagers(); toast('Менеджер добавлен', 'success') }
-                            catch { toast('Не удалось добавить', 'error') }
-                          }}>Добавить</button>
+                            try { await createManager({ name: newMgr.name.trim(), contact: newMgr.contact.trim() || null }); setNewMgr({ name: '', contact: '' }); loadManagers(); toast(t('ui.menedzher_dobavlen'), 'success') }
+                            catch { toast(t('ui.ne_udalos_dobavit'), 'error') }
+                          }}>{t('ui.dobavit')}</button>
                       </div>
                       {managers.length === 0 ? (
-                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '10px 0 0' }}>Менеджеров пока нет.</p>
+                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '10px 0 0' }}>{t('ui.menedzherov_poka_net')}</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                           {managers.map(m => {
@@ -886,8 +879,8 @@ export default function AdminDashboard({ onLogout }) {
                                   {m.contact && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.contact}</div>}
                                   {m.responsibility && <div style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{m.responsibility}</div>}
                                 </div>
-                                <button onClick={async () => { if (!await confirmDialog({ title: 'Удалить менеджера?', message: 'Он будет снят со всех назначений.', confirmText: 'Удалить', cancelText: 'Отмена', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
-                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>Удалить</button>
+                                <button onClick={async () => { if (!await confirmDialog({ title: t('ui.udalit_menedzhera'), message: t('ui.on_budet_snyat_so_vseh_naznacheniy'), confirmText: 'Удалить', cancelText: 'Отмена', danger: true })) return; await deleteManager(m.id).catch(() => {}); loadManagers(); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }}
+                                  style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>{t('ui.udalit')}</button>
                               </div>
                             )
                           })}
@@ -897,10 +890,10 @@ export default function AdminDashboard({ onLogout }) {
 
                     {/* Аудит лимитов перед включением жёсткого enforcement (Этап 1) */}
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
-                      <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Аудит лимитов</p>
+                      <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.audit_limitov')}</p>
                       {audit && (
                         <span className={`badge ${audit.enforce_enabled ? 'badge-green' : 'badge-gray'}`} style={{ fontSize: 11 }}>
-                          Enforcement: {audit.enforce_enabled ? 'включён' : 'выключен'}
+                          Enforcement: {audit.enforce_enabled ? t('ui.vklyuchen') : t('ui.vyklyuchen')}
                         </span>
                       )}
                     </div>
@@ -911,11 +904,9 @@ export default function AdminDashboard({ onLogout }) {
                         действующих клиентов (при необходимости выдайте им полный доступ или тариф).
                       </p>
                       {!audit ? (
-                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>Загрузка…</p>
+                        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: 0 }}>{t('ui.zagruzka_2')}</p>
                       ) : audit.count === 0 ? (
-                        <p style={{ fontSize: 13, color: 'var(--color-success, #15803d)', margin: 0, fontWeight: 600 }}>
-                          Превышений не найдено — включать enforcement безопасно.
-                        </p>
+                        <p style={{ fontSize: 13, color: 'var(--color-success, #15803d)', margin: 0, fontWeight: 600 }}>{t('ui.prevysheniy_ne_naydeno_vklyuchat_enforcement_b')}</p>
                       ) : (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                           {audit.accounts.map(a => (
@@ -928,7 +919,7 @@ export default function AdminDashboard({ onLogout }) {
                               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                                 {a.violations.map((v, i) => (
                                   <span key={i} className="badge badge-red" style={{ fontSize: 11 }}>
-                                    {v.kind === 'teams' ? 'Команды' : v.kind === 'members' ? 'Участники' : 'Встречи/мес'}: {v.actual} / лимит {v.limit}
+                                    {v.kind === 'teams' ? 'Команды' : v.kind === 'members' ? t('meetings.participants') : t('ui.vstrechi_mes')}: {v.actual} / лимит {v.limit}
                                   </span>
                                 ))}
                               </div>
@@ -949,7 +940,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* ── ИНВЕСТ-МЕТРИКИ ── */}
             {tab === 'metrics' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>Инвест-метрики</p>
+                <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.invest_metriki')}</p>
                 {metricsLoading || !metrics ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>
                 ) : (
@@ -998,23 +989,23 @@ export default function AdminDashboard({ onLogout }) {
               <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
                 {/* Form */}
                 <div className="card" style={{ padding: '20px 22px', width: '100%', maxWidth: 420 }}>
-                  <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{kbEditing ? 'Редактировать статью' : 'Новая статья'}</p>
+                  <p style={{ fontWeight: 700, fontSize: 15, marginBottom: 16 }}>{kbEditing ? t('ui.redaktirovat_statyu') : t('ui.novaya_statya_2')}</p>
                   <form onSubmit={handleKbSave} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Заголовок</label>
-                      <input className="input" value={kbForm.title} onChange={e => setKbForm(f => ({ ...f, title: e.target.value }))} placeholder="Название статьи" required />
+                      <label className="form-label">{t('ui.zagolovok')}</label>
+                      <input className="input" value={kbForm.title} onChange={e => setKbForm(f => ({ ...f, title: e.target.value }))} placeholder={t('ui.nazvanie_stati')} required />
                     </div>
                     <div className="form-group" style={{ marginBottom: 0 }}>
-                      <label className="form-label">Содержание</label>
-                      <textarea className="input" value={kbForm.content} onChange={e => setKbForm(f => ({ ...f, content: e.target.value }))} placeholder="Текст статьи..." rows={8} style={{ minHeight: 160, resize: 'vertical' }} />
+                      <label className="form-label">{t('ui.soderzhanie')}</label>
+                      <textarea className="input" value={kbForm.content} onChange={e => setKbForm(f => ({ ...f, content: e.target.value }))} placeholder={t('ui.tekst_stati')} rows={8} style={{ minHeight: 160, resize: 'vertical' }} />
                     </div>
                     {/* Порядок кнопок: основное действие первым, отмена — второй (задача 4). */}
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button type="submit" disabled={kbSaving} className="btn btn-accent btn-sm" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-                        {kbSaving ? <Spinner size={14} /> : kbEditing ? 'Сохранить' : 'Создать статью'}
+                        {kbSaving ? <Spinner size={14} /> : kbEditing ? t('common.save') : t('ui.sozdat_statyu')}
                       </button>
                       {kbEditing && (
-                        <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setKbEditing(null); setKbForm({ title: '', content: '' }) }}>Отмена</button>
+                        <button type="button" className="btn btn-secondary btn-sm" style={{ flex: 1 }} onClick={() => { setKbEditing(null); setKbForm({ title: '', content: '' }) }}>{t('ui.otmena')}</button>
                       )}
                     </div>
                   </form>
@@ -1027,8 +1018,8 @@ export default function AdminDashboard({ onLogout }) {
                   ) : articles.length === 0 ? (
                     <div className="empty-state">
                       <div className="empty-icon" style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}><svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="2" width="14" height="18" rx="2" stroke="var(--color-text-muted)" strokeWidth="1.4"/><line x1="7" y1="7" x2="15" y2="7" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="10.5" x2="15" y2="10.5" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/><line x1="7" y1="14" x2="11" y2="14" stroke="var(--color-text-muted)" strokeWidth="1.2" strokeLinecap="round"/></svg></div>
-                      <p className="empty-title">База знаний пуста</p>
-                      <p className="empty-desc">Создайте первую статью</p>
+                      <p className="empty-title">{t('ui.baza_znaniy_pusta')}</p>
+                      <p className="empty-desc">{t('ui.sozdayte_pervuyu_statyu')}</p>
                     </div>
                   ) : articles.map(a => (
                     <div key={a.id} className="card" style={{ padding: '14px 18px' }}>
@@ -1039,8 +1030,8 @@ export default function AdminDashboard({ onLogout }) {
                           <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '6px 0 0' }}>{new Date(a.created_at).toLocaleDateString('ru-RU')}</p>
                         </div>
                         <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                          <button onClick={() => { setKbEditing(a.id); setKbForm({ title: a.title, content: a.content || '' }) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>Изменить</button>
-                          <button onClick={() => handleKbDelete(a.id)} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', background: '#fff1f2', color: '#be123c', fontWeight: 600 }}>Удалить</button>
+                          <button onClick={() => { setKbEditing(a.id); setKbForm({ title: a.title, content: a.content || '' }) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', background: 'var(--color-bg)', color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('ui.izmenit')}</button>
+                          <button onClick={() => handleKbDelete(a.id)} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', background: '#fff1f2', color: '#be123c', fontWeight: 600 }}>{t('ui.udalit')}</button>
                         </div>
                       </div>
                     </div>
@@ -1065,21 +1056,19 @@ export default function AdminDashboard({ onLogout }) {
         <div className="overlay-center" onClick={() => !mgrEdit.saving && setMgrEdit(null)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 420 }}>
             <div className="modal-header">
-              <span className="modal-title">Выделенный менеджер</span>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setMgrEdit(null)} disabled={mgrEdit.saving}>✕</button>
+              <span className="modal-title">{t('ui.vydelennyy_menedzher')}</span>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setMgrEdit(null)} disabled={mgrEdit.saving}>✕</button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 16px' }}>
               Выберите менеджера из списка. Пользователь увидит его имя и способ связи в разделе «Мой тариф».
             </p>
             {managers.length === 0 ? (
-              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>
-                Список сотрудников пуст. Добавьте сотрудника на вкладке «Сотрудники».
-              </p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 16 }}>{t('ui.spisok_sotrudnikov_pust_dobavte_sotrudnika_na')}</p>
             ) : (
               <div className="form-group">
-                <label className="form-label">Сотрудник</label>
+                <label className="form-label">{t('ui.sotrudnik')}</label>
                 <select className="input" value={mgrEdit.managerId} onChange={e => setMgrEdit(m => ({ ...m, managerId: e.target.value }))}>
-                  <option value="">— не назначен —</option>
+                  <option value="">{t('ui.ne_naznachen')}</option>
                   {managers.map(m => {
                     const rl = { admin: 'Администратор', manager: 'Менеджер', support: 'Поддержка' }[m.role] || m.role
                     return <option key={m.id} value={m.id}>{m.name}{m.role ? ` · ${rl}` : ''}{m.contact ? ` · ${m.contact}` : ''}</option>
@@ -1107,13 +1096,13 @@ export default function AdminDashboard({ onLogout }) {
                   try {
                     await assignManager(mgrEdit.userId, mgrEdit.managerId ? Number(mgrEdit.managerId) : null)
                     const r = await getAdminSubscriptions(); setSubs(r.data)
-                    toast('Назначение обновлено', 'success')
+                    toast(t('ui.naznachenie_obnovleno'), 'success')
                     setMgrEdit(null)
-                  } catch { toast('Не удалось сохранить', 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
+                  } catch { toast(t('ui.ne_udalos_sohranit'), 'error'); setMgrEdit(m => ({ ...m, saving: false })) }
                 }}>
-                {mgrEdit.saving ? <><Spinner size={15} /> Сохранение…</> : 'Сохранить'}
+                {mgrEdit.saving ? <><Spinner size={15} />{t('ui.sohranenie_2')}</> : 'Сохранить'}
               </button>
-              <button className="btn btn-secondary" style={{ flex: 1 }} disabled={mgrEdit.saving} onClick={() => setMgrEdit(null)}>Отмена</button>
+              <button className="btn btn-secondary" style={{ flex: 1 }} disabled={mgrEdit.saving} onClick={() => setMgrEdit(null)}>{t('ui.otmena')}</button>
             </div>
           </div>
         </div>

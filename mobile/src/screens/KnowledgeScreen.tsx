@@ -8,9 +8,11 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { getKnowledgeArticles } from '../lib/api';
 
+import { useI18n } from '../lib/i18n';
 type Status = 'loading' | 'error' | 'ready';
 
 export default function KnowledgeScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
@@ -39,19 +41,19 @@ export default function KnowledgeScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>База знаний</Text>
+        <Text style={styles.headerTitle}>{t('ui.baza_znaniy')}</Text>
         <View style={{ width: 24 }} />
       </View>
 
       {status === 'loading' && <View style={styles.center}><ActivityIndicator color={colors.accent} /></View>}
-      {status === 'error' && <View style={styles.center}><Text style={styles.muted}>Не удалось загрузить. Попробуйте позже.</Text></View>}
+      {status === 'error' && <View style={styles.center}><Text style={styles.muted}>{t('ui.ne_udalos_zagruzit_poprobuyte_pozzhe')}</Text></View>}
 
       {status === 'ready' && (
         <ScrollView contentContainerStyle={styles.content}>
           {articles.length === 0 ? (
             <View style={styles.center}>
               <Ionicons name="book-outline" size={40} color={colors.textMuted} />
-              <Text style={[styles.muted, { marginTop: 12, textAlign: 'center' }]}>Статей пока нет.</Text>
+              <Text style={[styles.muted, { marginTop: 12, textAlign: 'center' }]}>{t('ui.statey_poka_net')}</Text>
             </View>
           ) : (
             articles.map((a) => {

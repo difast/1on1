@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../../lib/i18n';
 import {
   Modal, View, Text, StyleSheet, ScrollView, TouchableOpacity, Pressable,
   ActivityIndicator, Alert,
@@ -21,6 +22,7 @@ export function UserDetailModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const insets = useSafeAreaInsets();
@@ -73,7 +75,7 @@ export function UserDetailModal({
     if (newRole === role) return;
     setBusy(true);
     try { await updateUser(user.id, { role: newRole }); setRole(newRole); onChanged(); }
-    catch { Alert.alert('Ошибка', 'Не удалось сменить роль'); }
+    catch { Alert.alert(t('ui.oshibka'), 'Не удалось сменить роль'); }
     finally { setBusy(false); }
   };
 
@@ -82,18 +84,18 @@ export function UserDetailModal({
     try {
       if (blocked) await unblockUser(user.id); else await blockUser(user.id);
       setBlocked(!blocked); onChanged();
-    } catch { Alert.alert('Ошибка', 'Не удалось'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось'); }
     finally { setBusy(false); }
   };
 
   const handleDelete = () => {
-    Alert.alert('Удалить пользователя?', `${user.name} (id ${user.id}) будет удалён безвозвратно.`, [
-      { text: 'Отмена', style: 'cancel' },
+    Alert.alert(t('ui.udalit_polzovatelya'), `${user.name} (id ${user.id}) будет удалён безвозвратно.`, [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Удалить', style: 'destructive', onPress: async () => {
+        text: t('common.delete'), style: 'destructive', onPress: async () => {
           setBusy(true);
           try { await deleteUser(user.id); onChanged(); onClose(); }
-          catch { Alert.alert('Ошибка', 'Не удалось удалить'); setBusy(false); }
+          catch { Alert.alert(t('ui.oshibka'), 'Не удалось удалить'); setBusy(false); }
         },
       },
     ]);
@@ -112,14 +114,14 @@ export function UserDetailModal({
               <Text style={[styles.idBadge, { backgroundColor: colors.accentLight, color: colors.accent }]}>
                 {role === 'team_lead' ? 'Тимлид' : 'Участник'}
               </Text>
-              {blocked && <Text style={[styles.idBadge, { backgroundColor: colors.dangerBg, color: colors.danger }]}>Заблокирован</Text>}
+              {blocked && <Text style={[styles.idBadge, { backgroundColor: colors.dangerBg, color: colors.danger }]}>{t('ui.zablokirovan')}</Text>}
             </View>
 
             {loading ? <ActivityIndicator style={{ marginVertical: 20 }} color={colors.accent} /> : (
               <>
                 {/* Teams */}
                 <Text style={styles.section}>Команды ({teams.length})</Text>
-                {teams.length === 0 ? <Text style={styles.empty}>Не состоит в командах</Text> :
+                {teams.length === 0 ? <Text style={styles.empty}>{t('ui.ne_sostoit_v_komandah')}</Text> :
                   teams.map(t => (
                     <View key={t.id} style={styles.row}>
                       <Text style={styles.rowMain}>{t.name}</Text>
@@ -129,7 +131,7 @@ export function UserDetailModal({
 
                 {/* Meetings */}
                 <Text style={styles.section}>Встречи ({meetings.length})</Text>
-                {meetings.length === 0 ? <Text style={styles.empty}>Нет встреч</Text> :
+                {meetings.length === 0 ? <Text style={styles.empty}>{t('ui.net_vstrech')}</Text> :
                   meetings.slice(0, 20).map(m => (
                     <View key={m.id} style={styles.row}>
                       <Text style={styles.rowMain}>
@@ -141,7 +143,7 @@ export function UserDetailModal({
 
                 {/* Tasks */}
                 <Text style={styles.section}>Задачи ({tasks.length})</Text>
-                {tasks.length === 0 ? <Text style={styles.empty}>Нет задач</Text> :
+                {tasks.length === 0 ? <Text style={styles.empty}>{t('ui.net_zadach')}</Text> :
                   tasks.slice(0, 20).map(t => (
                     <View key={t.id} style={styles.row}>
                       <Text style={styles.rowMain} numberOfLines={1}>{t.title || t.description}</Text>
@@ -150,30 +152,30 @@ export function UserDetailModal({
                   ))}
 
                 {/* Role change */}
-                <Text style={styles.section}>Сменить роль</Text>
+                <Text style={styles.section}>{t('ui.smenit_rol')}</Text>
                 <View style={styles.roleRow}>
                   <TouchableOpacity
                     style={[styles.roleBtn, role === 'member' && styles.roleBtnActive]}
                     onPress={() => changeRole('member')} disabled={busy}
                   >
-                    <Text style={[styles.roleBtnText, role === 'member' && styles.roleBtnTextActive]}>Участник</Text>
+                    <Text style={[styles.roleBtnText, role === 'member' && styles.roleBtnTextActive]}>{t('ui.uchastnik')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.roleBtn, role === 'team_lead' && styles.roleBtnActive]}
                     onPress={() => changeRole('team_lead')} disabled={busy}
                   >
-                    <Text style={[styles.roleBtnText, role === 'team_lead' && styles.roleBtnTextActive]}>Тимлид</Text>
+                    <Text style={[styles.roleBtnText, role === 'team_lead' && styles.roleBtnTextActive]}>{t('ui.timlid')}</Text>
                   </TouchableOpacity>
                 </View>
 
                 {/* Danger actions */}
                 <View style={styles.actionRow}>
                   <TouchableOpacity style={[styles.blockBtn, blocked && styles.unblockBtn]} onPress={toggleBlock} disabled={busy}>
-                    <Text style={[styles.blockBtnText, blocked && styles.unblockBtnText]}>{blocked ? 'Разблокировать' : 'Заблокировать'}</Text>
+                    <Text style={[styles.blockBtnText, blocked && styles.unblockBtnText]}>{blocked ? t('ui.razblokirovat') : t('ui.zablokirovat')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity style={styles.deleteBtn} onPress={handleDelete} disabled={busy}>
                     <Ionicons name="trash-outline" size={16} color="#fff" />
-                    <Text style={styles.deleteBtnText}>Удалить</Text>
+                    <Text style={styles.deleteBtnText}>{t('ui.udalit')}</Text>
                   </TouchableOpacity>
                 </View>
               </>

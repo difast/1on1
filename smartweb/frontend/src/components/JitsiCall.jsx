@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { updateMeeting, uploadRecording } from '../api/client'
 
 const MIN_ANALYTICS_SECONDS = 600 // 10 minutes
@@ -10,6 +11,7 @@ function formatTime(s) {
 }
 
 export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
+  const { t } = useTranslation()
   const containerRef = useRef(null)
   const apiRef = useRef(null)
   const recorderRef = useRef(null)
@@ -216,7 +218,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
       }}>
         {/* Left: title + timer */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>Созвон</span>
+          <span style={{ color: '#fff', fontSize: 14, fontWeight: 600 }}>{t('ui.sozvon')}</span>
           {!loading && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               {/* Progress bar */}
@@ -233,7 +235,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
                 {formatTime(elapsed)}
               </span>
               {qualified
-                ? <span style={{ fontSize: 11, color: '#4ade80' }}>✓ аналитика</span>
+                ? <span style={{ fontSize: 11, color: '#4ade80' }}>{t('ui.analitika_2')}</span>
                 : <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.35)' }}>
                     {formatTime(MIN_ANALYTICS_SECONDS - elapsed)} до аналитики
                   </span>
@@ -252,9 +254,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
               borderRadius: 6, color: '#fff', fontSize: 12,
               padding: '5px 12px', cursor: 'pointer',
             }}
-          >
-            Открыть дашборд ↗
-          </button>
+          >{t('ui.otkryt_dashbord')}</button>
           <button
             onClick={() => handleCloseRef.current()}
             style={{
@@ -262,9 +262,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
               color: '#fff', fontSize: 12, padding: '5px 14px',
               cursor: 'pointer', fontWeight: 600,
             }}
-          >
-            Завершить
-          </button>
+          >{t('ui.zavershit')}</button>
         </div>
       </div>
 
@@ -276,9 +274,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
           position: 'absolute', top: 48, left: 0, right: 0, bottom: 0,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           color: '#9ca3af', fontSize: 15, pointerEvents: 'none',
-        }}>
-          Подключение к комнате...
-        </div>
+        }}>{t('ui.podklyuchenie_k_komnate')}</div>
       )}
 
       {uploadingRecording && (
@@ -286,9 +282,7 @@ export default function JitsiCall({ roomName, userName, meetingId, onClose }) {
           position: 'absolute', bottom: 20, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(0,0,0,0.85)', color: '#fff', fontSize: 13,
           padding: '8px 20px', borderRadius: 20, pointerEvents: 'none', whiteSpace: 'nowrap',
-        }}>
-          ⏳ Загружаем запись для анализа...
-        </div>
+        }}>{t('ui.zagruzhaem_zapis_dlya_analiza')}</div>
       )}
     </div>
   )

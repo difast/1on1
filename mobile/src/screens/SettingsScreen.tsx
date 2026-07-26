@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, Alert,
@@ -11,6 +12,7 @@ import { authChangePassword } from '../lib/api';
 import type { AppColors } from '../constants/colors';
 
 export default function SettingsScreen() {
+  const { t } = useI18n();
   const { colors, toggleTheme, isDark } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, signOut, enterAdmin, isAdmin, exitAdmin } = useAuth();
@@ -56,27 +58,27 @@ export default function SettingsScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Выйти', 'Вы уверены, что хотите выйти?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: signOut },
+    Alert.alert(t('ui.vyyti'), 'Вы уверены, что хотите выйти?', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('menu.logout'), style: 'destructive', onPress: signOut },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Настройки</Text>
+        <Text style={styles.headerTitle}>{t('ui.nastroyki')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         {/* Appearance */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Оформление</Text>
+          <Text style={styles.sectionLabel}>{t('ui.oformlenie')}</Text>
           <TouchableOpacity style={styles.row} onPress={toggleTheme} activeOpacity={0.7}>
             <View style={styles.rowIcon}><Ionicons name={isDark ? 'sunny-outline' : 'moon-outline'} size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>{isDark ? 'Светлая тема' : 'Тёмная тема'}</Text>
-              <Text style={styles.rowSub}>Сейчас: {isDark ? 'тёмная' : 'светлая'}</Text>
+              <Text style={styles.rowTitle}>{isDark ? t('ui.svetlaya_tema') : t('settings.darkTheme')}</Text>
+              <Text style={styles.rowSub}>Сейчас: {isDark ? t('ui.temnaya') : t('ui.svetlaya')}</Text>
             </View>
             <View style={[styles.toggle, isDark && styles.toggleOn]}>
               <View style={[styles.toggleThumb, isDark && styles.toggleThumbOn]} />
@@ -86,7 +88,7 @@ export default function SettingsScreen() {
 
         {/* Account */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Аккаунт</Text>
+          <Text style={styles.sectionLabel}>{t('ui.akkaunt')}</Text>
 
           <TouchableOpacity
             style={styles.row}
@@ -95,7 +97,7 @@ export default function SettingsScreen() {
           >
             <View style={styles.rowIcon}><Ionicons name="key-outline" size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>Сменить пароль</Text>
+              <Text style={styles.rowTitle}>{t('ui.smenit_parol')}</Text>
             </View>
             <Ionicons name={showPasswordSection ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
@@ -108,7 +110,7 @@ export default function SettingsScreen() {
                 <>
                   <TextInput
                     style={styles.input}
-                    placeholder="Текущий пароль"
+                    placeholder={t('ui.tekuschiy_parol')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdCurrent}
@@ -117,7 +119,7 @@ export default function SettingsScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Новый пароль (минимум 8, буквы и цифры)"
+                    placeholder={t('ui.novyy_parol_minimum_8_bukvy_i')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdNew}
@@ -126,7 +128,7 @@ export default function SettingsScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Подтвердите пароль"
+                    placeholder={t('ui.podtverdite_parol')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdConfirm}
@@ -139,7 +141,7 @@ export default function SettingsScreen() {
                     onPress={handleChangePassword}
                     disabled={pwdLoading}
                   >
-                    <Text style={styles.saveBtnText}>{pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}</Text>
+                    <Text style={styles.saveBtnText}>{pwdLoading ? t('ui.sohranenie') : t('ui.sohranit_parol')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -149,12 +151,12 @@ export default function SettingsScreen() {
 
         {/* Help */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Поддержка</Text>
-          <TouchableOpacity style={styles.row} onPress={() => Alert.alert('Помощь', 'Обратитесь к администратору или напишите в поддержку.')} activeOpacity={0.7}>
+          <Text style={styles.sectionLabel}>{t('ui.podderzhka')}</Text>
+          <TouchableOpacity style={styles.row} onPress={() => Alert.alert(t('ui.pomosch'), 'Обратитесь к администратору или напишите в поддержку.')} activeOpacity={0.7}>
             <View style={styles.rowIcon}><Ionicons name="help-circle-outline" size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
-              <Text style={styles.rowTitle}>Помощь</Text>
-              <Text style={styles.rowSub}>Справка и поддержка</Text>
+              <Text style={styles.rowTitle}>{t('ui.pomosch')}</Text>
+              <Text style={styles.rowSub}>{t('ui.spravka_i_podderzhka')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
@@ -162,12 +164,12 @@ export default function SettingsScreen() {
 
         {/* Admin */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Дополнительно</Text>
+          <Text style={styles.sectionLabel}>{t('ui.dopolnitelno')}</Text>
           {isAdmin ? (
             <TouchableOpacity style={styles.row} onPress={() => exitAdmin()} activeOpacity={0.7}>
               <View style={styles.rowIcon}><Ionicons name="shield-outline" size={18} color={colors.accent} /></View>
               <View style={styles.rowBody}>
-                <Text style={styles.rowTitle}>Выйти из режима администратора</Text>
+                <Text style={styles.rowTitle}>{t('ui.vyyti_iz_rezhima_administratora')}</Text>
               </View>
             </TouchableOpacity>
           ) : (
@@ -179,7 +181,7 @@ export default function SettingsScreen() {
               >
                 <View style={styles.rowIcon}><Ionicons name="shield-outline" size={18} color={colors.textSecondary} /></View>
                 <View style={styles.rowBody}>
-                  <Text style={styles.rowTitle}>Режим администратора</Text>
+                  <Text style={styles.rowTitle}>{t('ui.rezhim_administratora')}</Text>
                 </View>
                 <Ionicons name={showAdminSection ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
               </TouchableOpacity>
@@ -187,7 +189,7 @@ export default function SettingsScreen() {
                 <View style={styles.expandedBlock}>
                   <TextInput
                     style={styles.input}
-                    placeholder="Код администратора"
+                    placeholder={t('ui.kod_administratora')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     textContentType="password"
@@ -196,7 +198,7 @@ export default function SettingsScreen() {
                   />
                   {adminError ? <Text style={styles.errorText}>{adminError}</Text> : null}
                   <TouchableOpacity style={styles.saveBtn} onPress={handleAdminUnlock}>
-                    <Text style={styles.saveBtnText}>Войти как администратор</Text>
+                    <Text style={styles.saveBtnText}>{t('ui.voyti_kak_administrator')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -209,7 +211,7 @@ export default function SettingsScreen() {
           <TouchableOpacity style={[styles.row, styles.rowDanger]} onPress={handleLogout} activeOpacity={0.7}>
             <View style={styles.rowIcon}><Ionicons name="log-out-outline" size={18} color={colors.danger} /></View>
             <View style={styles.rowBody}>
-              <Text style={styles.rowTitleDanger}>Выйти</Text>
+              <Text style={styles.rowTitleDanger}>{t('ui.vyyti')}</Text>
             </View>
           </TouchableOpacity>
         </View>

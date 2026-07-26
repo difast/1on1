@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // Единый переиспользуемый редактор фото профиля: загрузка файла + позиция (сдвиг)
 // + масштаб (зум) + кадрирование в круглой рамке аватара. Используется и при
@@ -14,6 +15,7 @@ const OUT = 256    // размер итогового аватара (px)
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)) }
 
 export default function AvatarCropModal({ open, onSave, onClose, title = 'Фото профиля', saving = false }) {
+  const { t } = useTranslation()
   const [imageSrc, setImageSrc] = useState(null)
   const [img, setImg] = useState(null)        // загруженный Image
   const [zoom, setZoom] = useState(1)
@@ -124,17 +126,13 @@ export default function AvatarCropModal({ open, onSave, onClose, title = 'Фот
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, width: '92vw' }}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
-          <button className="modal-close" aria-label="Закрыть" onClick={onClose} disabled={busy}>×</button>
+          <button className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose} disabled={busy}>×</button>
         </div>
 
         {!img ? (
           <div style={{ padding: '24px 12px 20px', textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 18 }}>
-              Выберите изображение — затем можно сдвинуть и приблизить его перед сохранением.
-            </p>
-            <button type="button" className="btn btn-accent" onClick={() => fileRef.current?.click()}>
-              Выбрать файл
-            </button>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 18 }}>{t('ui.vyberite_izobrazhenie_zatem_mozhno_sdvinut_i')}</p>
+            <button type="button" className="btn btn-accent" onClick={() => fileRef.current?.click()}>{t('ui.vybrat_fayl')}</button>
           </div>
         ) : (
           <>
@@ -158,24 +156,20 @@ export default function AvatarCropModal({ open, onSave, onClose, title = 'Фот
                 }} />
               </div>
             </div>
-            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', margin: '0 0 6px' }}>
-              Перетащите фото, чтобы сдвинуть. Ползунок — масштаб.
-            </p>
+            <p style={{ fontSize: 12, color: 'var(--color-text-muted)', textAlign: 'center', margin: '0 0 6px' }}>{t('ui.peretaschite_foto_chtoby_sdvinut_polzunok_mass')}</p>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '2px 0 14px' }}>
-              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Масштаб</span>
+              <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.masshtab')}</span>
               <input
                 type="range" min={1} max={3} step={0.01} value={zoom}
                 onChange={(e) => onZoom(Number(e.target.value))}
-                style={{ flex: 1 }} aria-label="Масштаб"
+                style={{ flex: 1 }} aria-label={t('ui.masshtab')}
               />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button type="button" className="btn btn-accent" style={{ flex: 2 }} onClick={handleSave} disabled={busy}>
-                {busy ? 'Сохранение...' : 'Сохранить'}
+                {busy ? t('ui.sohranenie') : t('common.save')}
               </button>
-              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => fileRef.current?.click()} disabled={busy}>
-                Другое фото
-              </button>
+              <button type="button" className="btn btn-secondary" style={{ flex: 1 }} onClick={() => fileRef.current?.click()} disabled={busy}>{t('ui.drugoe_foto')}</button>
             </div>
           </>
         )}

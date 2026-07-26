@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
@@ -23,6 +24,7 @@ export function TaskAssignees({
   onChanged?: (updated: any) => void;
   contacts?: { user_id: number; name: string }[];
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [pickerFor, setPickerFor] = useState<number | null>(null);
@@ -49,7 +51,7 @@ export function TaskAssignees({
   return (
     <View style={styles.wrap}>
       <View style={styles.progressRow}>
-        <Text style={styles.progressLabel}>Участники</Text>
+        <Text style={styles.progressLabel}>{t('ui.uchastniki')}</Text>
         <View style={styles.barTrack}>
           <View style={[styles.barFill, { width: `${progress.percent}%` }]} />
         </View>
@@ -93,7 +95,7 @@ export function TaskAssignees({
 
       {/* Совместная работа (39.2/39.3): активность, комментарии, состав */}
       <TouchableOpacity onPress={() => setShowCollab(true)}>
-        <Text style={styles.collabLink}>Активность и комментарии</Text>
+        <Text style={styles.collabLink}>{t('ui.aktivnost_i_kommentarii')}</Text>
       </TouchableOpacity>
       <TaskCollabModal
         visible={showCollab}

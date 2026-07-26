@@ -82,7 +82,7 @@ export default function ProfileScreen() {
       const res = await telegramLink(user.id, tgCode.trim());
       setUser({ ...user, ...(res.user || {}) } as any);
       setShowTgLink(false); setTgCode('');
-      Alert.alert('Готово', 'Telegram привязан к аккаунту');
+      Alert.alert(t('ui.gotovo'), 'Telegram привязан к аккаунту');
     } catch (err: any) {
       setTgError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось привязать');
     } finally { setTgBusy(false); }
@@ -102,14 +102,14 @@ export default function ProfileScreen() {
       setUser({ ...user, ...payload } as any);
       setEditing(false);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить профиль');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить профиль');
     } finally { setSaving(false); }
   };
 
   const handleAvatarChange = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Нет доступа', 'Разрешите доступ к фото в настройках');
+      Alert.alert(t('ui.net_dostupa'), 'Разрешите доступ к фото в настройках');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
         await updateUser(user.id, { avatar: b64 });
         setUser({ ...user, avatar: b64 });
       } catch {
-        Alert.alert('Ошибка', 'Не удалось обновить фото');
+        Alert.alert(t('ui.oshibka'), 'Не удалось обновить фото');
       } finally { setUploadingAvatar(false); }
     }
   };
@@ -179,28 +179,27 @@ export default function ProfileScreen() {
     setResendLoading(true);
     try {
       await authResendConfirmation(user.id);
-      Alert.alert('Письмо отправлено', 'Проверьте почту и перейдите по ссылке.');
+      Alert.alert(t('ui.pismo_otpravleno'), 'Проверьте почту и перейдите по ссылке.');
     } catch {
-      Alert.alert('Ошибка', 'Не удалось отправить письмо. Попробуйте позже.');
+      Alert.alert(t('ui.oshibka'), 'Не удалось отправить письмо. Попробуйте позже.');
     } finally { setResendLoading(false); }
   };
 
   const handleLogout = () => {
-    Alert.alert('Выйти', 'Вы уверены?', [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Выйти', style: 'destructive', onPress: signOut },
+    Alert.alert(t('ui.vyyti'), 'Вы уверены?', [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('menu.logout'), style: 'destructive', onPress: signOut },
     ]);
   };
 
   const [deletingAccount, setDeletingAccount] = useState(false);
   const handleDeleteAccount = () => {
-    Alert.alert(
-      'Удалить аккаунт',
+    Alert.alert(t('ui.udalit_akkaunt'),
       'Это действие необратимо. Все ваши данные будут удалены.',
       [
-        { text: 'Отмена', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Удалить',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             if (!user) return;
@@ -214,7 +213,7 @@ export default function ProfileScreen() {
               await deleteUser(user.id);
               await signOut();
             } catch {
-              Alert.alert('Ошибка', 'Не удалось удалить аккаунт. Попробуйте позже.');
+              Alert.alert(t('ui.oshibka'), 'Не удалось удалить аккаунт. Попробуйте позже.');
             } finally { setDeletingAccount(false); }
           },
         },
@@ -265,7 +264,7 @@ export default function ProfileScreen() {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity style={styles.switchBtn} onPress={() => { setShowAddRole(v => !v); setAddRoleError(''); }}>
-                <Text style={styles.switchBtnText}>{showAddRole ? 'Отмена' : '+ Добавить роль'}</Text>
+                <Text style={styles.switchBtnText}>{showAddRole ? t('common.cancel') : t('ui.dobavit_rol')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -274,13 +273,13 @@ export default function ProfileScreen() {
             <View style={{ marginTop: 14 }}>
               {currentRole === 'member' ? (
                 <>
-                  <Text style={styles.addRoleHeader}>Добавить роль Тимлида</Text>
-                  <Text style={styles.fieldLabel}>Название команды</Text>
+                  <Text style={styles.addRoleHeader}>{t('ui.dobavit_rol_timlida')}</Text>
+                  <Text style={styles.fieldLabel}>{t('ui.nazvanie_komandy')}</Text>
                   <TextInput
                     style={styles.input}
                     value={newTeamName}
                     onChangeText={setNewTeamName}
-                    placeholder="Например: Backend Team"
+                    placeholder={t('ui.naprimer_backend_team')}
                     placeholderTextColor={colors.textMuted}
                     autoCapitalize="words"
                   />
@@ -294,13 +293,13 @@ export default function ProfileScreen() {
                     onPress={handleAddRole}
                     disabled={addRoleLoading}
                   >
-                    <Text style={styles.saveBtnText}>{addRoleLoading ? 'Создание...' : 'Создать команду'}</Text>
+                    <Text style={styles.saveBtnText}>{addRoleLoading ? t('ui.sozdanie') : t('onboarding.createTeam')}</Text>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
-                  <Text style={styles.addRoleHeader}>Добавить роль Участника</Text>
-                  <Text style={styles.fieldLabel}>Код приглашения</Text>
+                  <Text style={styles.addRoleHeader}>{t('ui.dobavit_rol_uchastnika')}</Text>
+                  <Text style={styles.fieldLabel}>{t('ui.kod_priglasheniya')}</Text>
                   <TextInput
                     style={styles.input}
                     value={inviteCode}
@@ -319,7 +318,7 @@ export default function ProfileScreen() {
                     onPress={handleAddRole}
                     disabled={addRoleLoading}
                   >
-                    <Text style={styles.saveBtnText}>{addRoleLoading ? 'Присоединение...' : 'Присоединиться'}</Text>
+                    <Text style={styles.saveBtnText}>{addRoleLoading ? t('ui.prisoedinenie') : t('meetings.join')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -332,7 +331,7 @@ export default function ProfileScreen() {
           {!editing ? (
             <>
               {([
-                { icon: 'briefcase-outline', label: 'Должность', value: user.title },
+                { icon: 'briefcase-outline', label: t('profile.position'), value: user.title },
                 { icon: 'paper-plane-outline', label: 'Telegram', value: user.telegram },
                 { icon: 'logo-linkedin', label: 'LinkedIn', value: user.linkedin },
                 { icon: 'logo-github', label: 'GitHub', value: user.github },
@@ -351,13 +350,13 @@ export default function ProfileScreen() {
               ))}
               <TouchableOpacity style={styles.editBtn} onPress={() => setEditing(true)}>
                 <Ionicons name="create-outline" size={16} color={colors.accent} />
-                <Text style={styles.editBtnText}>Редактировать</Text>
+                <Text style={styles.editBtnText}>{t('ui.redaktirovat')}</Text>
               </TouchableOpacity>
             </>
           ) : (
             <>
               {[
-                { key: 'title', label: 'Должность', placeholder: 'Senior Engineer' },
+                { key: 'title', label: t('profile.position'), placeholder: 'Senior Engineer' },
                 { key: 'telegram', label: 'Telegram', placeholder: '@username' },
                 { key: 'linkedin', label: 'LinkedIn', placeholder: 'linkedin.com/in/username' },
                 { key: 'github', label: 'GitHub', placeholder: 'github.com/username' },
@@ -379,7 +378,7 @@ export default function ProfileScreen() {
                   style={[styles.cancelBtn, { flex: 1 }]}
                   onPress={() => setEditing(false)}
                 >
-                  <Text style={styles.cancelBtnText}>Отмена</Text>
+                  <Text style={styles.cancelBtnText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.saveBtn, { flex: 1 }, saving && styles.btnDisabled]}
@@ -401,7 +400,7 @@ export default function ProfileScreen() {
               Подтвердите почту — это нужно для оформления платной подписки. Мы отправили ссылку на {user.email}.
             </Text>
             <TouchableOpacity onPress={handleResendConfirmation} disabled={resendLoading} style={styles.confirmEmailBtn}>
-              <Text style={styles.confirmEmailBtnText}>{resendLoading ? 'Отправляем...' : 'Отправить повторно'}</Text>
+              <Text style={styles.confirmEmailBtnText}>{resendLoading ? t('common.sending') : t('ui.otpravit_povtorno')}</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -428,7 +427,7 @@ export default function ProfileScreen() {
                 <>
                   <TextInput
                     style={styles.input}
-                    placeholder="Текущий пароль"
+                    placeholder={t('ui.tekuschiy_parol')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdCurrent}
@@ -437,7 +436,7 @@ export default function ProfileScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Новый пароль (минимум 8, буквы и цифры)"
+                    placeholder={t('ui.novyy_parol_minimum_8_bukvy_i')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdNew}
@@ -446,7 +445,7 @@ export default function ProfileScreen() {
                   />
                   <TextInput
                     style={styles.input}
-                    placeholder="Подтвердите пароль"
+                    placeholder={t('ui.podtverdite_parol')}
                     placeholderTextColor={colors.textMuted}
                     secureTextEntry
                     value={pwdConfirm}
@@ -459,7 +458,7 @@ export default function ProfileScreen() {
                     onPress={handleChangePassword}
                     disabled={pwdLoading}
                   >
-                    <Text style={styles.saveBtnText}>{pwdLoading ? 'Сохранение...' : 'Сохранить пароль'}</Text>
+                    <Text style={styles.saveBtnText}>{pwdLoading ? t('ui.sohranenie') : t('ui.sohranit_parol')}</Text>
                   </TouchableOpacity>
                 </>
               )}
@@ -513,12 +512,10 @@ export default function ProfileScreen() {
               </TouchableOpacity>
               {showTgLink && (
                 <View style={styles.expandedBlock}>
-                  <Text style={[styles.infoLabel, { textTransform: 'none', marginBottom: 8 }]}>
-                    Откройте бота в Telegram, отправьте /link и введите полученный код.
-                  </Text>
+                  <Text style={[styles.infoLabel, { textTransform: 'none', marginBottom: 8 }]}>{t('ui.otkroyte_bota_v_telegram_otpravte_link')}</Text>
                   <TextInput
                     style={styles.input}
-                    placeholder="Код из бота"
+                    placeholder={t('ui.kod_iz_bota')}
                     placeholderTextColor={colors.textMuted}
                     autoCapitalize="characters"
                     value={tgCode}
@@ -530,7 +527,7 @@ export default function ProfileScreen() {
                     onPress={handleTgLink}
                     disabled={tgBusy}
                   >
-                    <Text style={styles.saveBtnText}>{tgBusy ? 'Привязка...' : 'Привязать'}</Text>
+                    <Text style={styles.saveBtnText}>{tgBusy ? t('ui.privyazka') : t('ui.privyazat')}</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -549,7 +546,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="book-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>База знаний</Text>
+            <Text style={styles.menuRowTitle}>{t('ui.baza_znaniy')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -560,7 +557,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="pricetag-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Мой тариф</Text>
+            <Text style={styles.menuRowTitle}>{t('ui.moy_tarif')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -571,7 +568,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="business-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Организация</Text>
+            <Text style={styles.menuRowTitle}>{t('ui.organizaciya')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -582,7 +579,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="flag-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Цели</Text>
+            <Text style={styles.menuRowTitle}>{t('ui.celi')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -593,7 +590,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="trending-up-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>Развитие</Text>
+            <Text style={styles.menuRowTitle}>{t('ui.razvitie')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity

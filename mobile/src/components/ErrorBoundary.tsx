@@ -1,4 +1,5 @@
 import React from 'react';
+import { translate } from '../lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 
 interface Props { children: React.ReactNode }
@@ -22,12 +23,12 @@ export class ErrorBoundary extends React.Component<Props, State> {
     if (!this.state.hasError) return this.props.children;
     return (
       <View style={styles.root}>
-        <Text style={styles.title}>Что-то пошло не так</Text>
+        <Text style={styles.title}>{translate('ui.chto_to_poshlo_ne_tak')}</Text>
         <ScrollView style={styles.box} contentContainerStyle={{ padding: 12 }}>
           <Text style={styles.msg}>{this.state.message}</Text>
         </ScrollView>
         <TouchableOpacity style={styles.btn} onPress={this.reset}>
-          <Text style={styles.btnText}>Попробовать снова</Text>
+          <Text style={styles.btnText}>{translate('ui.poprobovat_snova')}</Text>
         </TouchableOpacity>
       </View>
     );

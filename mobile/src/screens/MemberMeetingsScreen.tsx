@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   RefreshControl, TextInput, Alert, Linking,
@@ -21,6 +22,7 @@ import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 
 export default function MemberMeetingsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user } = useAuth();
@@ -91,7 +93,7 @@ export default function MemberMeetingsScreen() {
       setMeetings(prev => prev.map(m => m.id === rescheduleMeetingId ? { ...m, scheduled_date: slot, is_rescheduled: true } : m));
       rescheduleSheetRef.current?.close();
     } catch {
-      Alert.alert('Ошибка', 'Не удалось перенести встречу');
+      Alert.alert(t('ui.oshibka'), 'Не удалось перенести встречу');
     } finally { setRescheduleLoading(false); }
   };
 
@@ -102,7 +104,7 @@ export default function MemberMeetingsScreen() {
       const data = await startCall(meetingId, user.id);
       await Linking.openURL(`${data.room_url}?t=${data.token}`);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось начать созвон');
+      Alert.alert(t('ui.oshibka'), 'Не удалось начать созвон');
     } finally {
       setCallLoading(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -164,7 +166,7 @@ export default function MemberMeetingsScreen() {
       }
       setExpandedNoteId(null);
     } catch {
-      Alert.alert('Ошибка', 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -194,14 +196,14 @@ export default function MemberMeetingsScreen() {
 
   const now = new Date();
   const FILTERS = [
-    { key: 'all', label: 'Все' },
-    { key: 'scheduled', label: 'Запланировано' },
-    { key: 'confirmed', label: 'Подтверждено' },
-    { key: 'in_progress', label: 'Идёт' },
-    { key: 'completed', label: 'Завершено' },
-    { key: 'rescheduled', label: 'Перенесено' },
-    { key: 'cancelled', label: 'Отменено' },
-    { key: 'declined', label: 'Отклонено' },
+    { key: 'all', label: t('common.all') },
+    { key: 'scheduled', label: t('ui.zaplanirovano') },
+    { key: 'confirmed', label: t('ui.podtverzhdeno') },
+    { key: 'in_progress', label: t('ui.idet') },
+    { key: 'completed', label: t('ui.zaversheno') },
+    { key: 'rescheduled', label: t('ui.pereneseno') },
+    { key: 'cancelled', label: t('ui.otmeneno') },
+    { key: 'declined', label: t('ui.otkloneno') },
   ];
   const filteredMeetings = statusFilter === 'all'
     ? meetings.filter(m => m.status !== 'requested')
@@ -225,49 +227,45 @@ export default function MemberMeetingsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Встречи</Text>
+        <Text style={styles.headerTitle}>{t('ui.vstrechi')}</Text>
         <View style={styles.headerRight}>
           <View style={styles.viewToggle}>
             <TouchableOpacity
               style={[styles.toggleBtn, !calendarView && styles.toggleBtnActive]}
               onPress={() => setCalendarView(false)}
             >
-              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>
-                Список
-              </Text>
+              <Text style={[styles.toggleBtnText, !calendarView && styles.toggleBtnTextActive]}>{t('ui.spisok')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.toggleBtn, calendarView && styles.toggleBtnActive]}
               onPress={() => setCalendarView(true)}
             >
-              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>
-                Неделя
-              </Text>
+              <Text style={[styles.toggleBtnText, calendarView && styles.toggleBtnTextActive]}>{t('ui.nedelya')}</Text>
             </TouchableOpacity>
           </View>
           <TouchableOpacity
             style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
             onPress={openInteractions}
           >
-            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Взаимодействия</Text>
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>{t('ui.vzaimodeystviya')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
             onPress={() => setShowProposals(true)}
           >
-            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Предложить</Text>
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>{t('ui.predlozhit')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.requestBtn, { backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.border }]}
             onPress={() => setShowTaskProposals(true)}
           >
-            <Text style={[styles.requestBtnText, { color: colors.accent }]}>Задачи</Text>
+            <Text style={[styles.requestBtnText, { color: colors.accent }]}>{t('ui.zadachi')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.requestBtn}
             onPress={() => bottomSheetRef.current?.expand()}
           >
-            <Text style={styles.requestBtnText}>+ Запросить</Text>
+            <Text style={styles.requestBtnText}>{t('ui.zaprosit')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -321,10 +319,10 @@ export default function MemberMeetingsScreen() {
         )}
 
         {filteredMeetings.length === 0 && meetings.length === 0 && (
-          <EmptyState icon="calendar-outline" title="Нет встреч" description="Запросите первую встречу с тимлидом" />
+          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description="Запросите первую встречу с тимлидом" />
         )}
         {filteredMeetings.length === 0 && meetings.length > 0 && (
-          <EmptyState icon="calendar-outline" title="Нет встреч" description="По выбранному фильтру встреч нет" />
+          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description="По выбранному фильтру встреч нет" />
         )}
 
         {calendarView ? (
@@ -333,7 +331,7 @@ export default function MemberMeetingsScreen() {
           <>
             {upcoming.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Предстоящие</Text>
+                <Text style={styles.sectionTitle}>{t('ui.predstoyaschie')}</Text>
                 {upcoming.map(m => (
                   <View key={m.id} style={styles.upcomingCard}>
                     <TouchableOpacity activeOpacity={0.8} onPress={() => goToDetail(m)}>
@@ -345,7 +343,7 @@ export default function MemberMeetingsScreen() {
                         onPress={() => openReschedule(m)}
                       >
                         <Ionicons name="calendar-outline" size={14} color={colors.accent} />
-                        <Text style={styles.rescheduleBtnText}>Перенести</Text>
+                        <Text style={styles.rescheduleBtnText}>{t('ui.perenesti')}</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[styles.callBtn, callLoading[m.id] && styles.btnDisabled]}
@@ -353,7 +351,7 @@ export default function MemberMeetingsScreen() {
                         disabled={callLoading[m.id]}
                       >
                         <Text style={styles.callBtnText}>
-                          {callLoading[m.id] ? 'Подключение...' : 'Начать созвон'}
+                          {callLoading[m.id] ? t('ui.podklyuchenie') : t('meetings.startCall')}
                         </Text>
                       </TouchableOpacity>
                     </View>
@@ -364,7 +362,7 @@ export default function MemberMeetingsScreen() {
 
             {past.length > 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Прошедшие</Text>
+                <Text style={styles.sectionTitle}>{t('ui.proshedshie')}</Text>
                 {past.map(m => {
                   const hasNote = notes.some((n: any) => n.meeting_id === m.id);
                   const isOpen = expandedNoteId === m.id;
@@ -391,13 +389,13 @@ export default function MemberMeetingsScreen() {
                             style={styles.noteInput}
                             value={draft}
                             onChangeText={v => setNoteDrafts(prev => ({ ...prev, [m.id]: v }))}
-                            placeholder="Добавьте заметку по встрече..."
+                            placeholder={t('ui.dobavte_zametku_po_vstreche')}
                             placeholderTextColor={colors.textMuted}
                             multiline autoFocus
                           />
                           <View style={styles.noteEditorRow}>
                             <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setExpandedNoteId(null)}>
-                              <Text style={styles.noteCancelText}>Закрыть</Text>
+                              <Text style={styles.noteCancelText}>{t('ui.zakryt')}</Text>
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={[styles.noteSaveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
@@ -427,17 +425,17 @@ export default function MemberMeetingsScreen() {
         handleIndicatorStyle={{ backgroundColor: colors.gray300 }}
       >
         <BottomSheetScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sheetTitle}>Запросить встречу</Text>
+          <Text style={styles.sheetTitle}>{t('ui.zaprosit_vstrechu')}</Text>
 
-          <Text style={styles.sheetLabel}>Дата и время</Text>
+          <Text style={styles.sheetLabel}>{t('ui.data_i_vremya')}</Text>
           <DateTimePickerField value={meetingDate} onChange={setMeetingDate} />
 
-          <Text style={styles.sheetLabel}>Тема (необязательно)</Text>
+          <Text style={styles.sheetLabel}>{t('ui.tema_neobyazatelno')}</Text>
           <BottomSheetTextInput
             style={[styles.sheetInput, { height: 80, textAlignVertical: 'top' }]}
             value={meetingTopic}
             onChangeText={setMeetingTopic}
-            placeholder="О чём хотите поговорить?"
+            placeholder={t('ui.o_chem_hotite_pogovorit')}
             placeholderTextColor={colors.textMuted}
             multiline
           />
@@ -447,14 +445,14 @@ export default function MemberMeetingsScreen() {
               style={[styles.sheetBtnSecondary, { flex: 1 }]}
               onPress={() => bottomSheetRef.current?.close()}
             >
-              <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+              <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.sheetBtn, { flex: 1 }, formLoading && styles.btnDisabled]}
               onPress={handleRequest}
               disabled={formLoading}
             >
-              <Text style={styles.sheetBtnText}>{formLoading ? 'Отправка...' : 'Запросить'}</Text>
+              <Text style={styles.sheetBtnText}>{formLoading ? t('ui.otpravka') : t('ui.zaprosit_2')}</Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>
@@ -470,13 +468,13 @@ export default function MemberMeetingsScreen() {
         handleIndicatorStyle={{ backgroundColor: colors.gray300 }}
       >
         <BottomSheetScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.sheetTitle}>Перенести встречу</Text>
+          <Text style={styles.sheetTitle}>{t('ui.perenesti_vstrechu')}</Text>
 
-          {slotsLoading && <Text style={{ color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>Пит подбирает слоты...</Text>}
+          {slotsLoading && <Text style={{ color: colors.textMuted, textAlign: 'center', marginBottom: 12 }}>{t('ui.pit_podbiraet_sloty')}</Text>}
 
           {aiSlots.length > 0 && (
             <View style={{ gap: 8, marginBottom: 14 }}>
-              <Text style={styles.sheetLabel}>Варианты от Пита</Text>
+              <Text style={styles.sheetLabel}>{t('ui.varianty_ot_pita')}</Text>
               {aiSlots.map(slot => (
                 <TouchableOpacity
                   key={slot}
@@ -490,7 +488,7 @@ export default function MemberMeetingsScreen() {
             </View>
           )}
 
-          <Text style={styles.sheetLabel}>Или введите своё время (ГГГГ-ММ-ДД ЧЧ:ММ)</Text>
+          <Text style={styles.sheetLabel}>{t('ui.ili_vvedite_svoe_vremya_gggg_mm')}</Text>
           <BottomSheetTextInput
             style={styles.sheetInput}
             value={customSlot}
@@ -501,14 +499,14 @@ export default function MemberMeetingsScreen() {
 
           <View style={styles.sheetRow}>
             <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={() => rescheduleSheetRef.current?.close()}>
-              <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+              <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.sheetBtn, { flex: 1 }, (!selectedSlot && !customSlot.trim() || rescheduleLoading) && styles.btnDisabled]}
               onPress={handleReschedule}
               disabled={!selectedSlot && !customSlot.trim() || rescheduleLoading}
             >
-              <Text style={styles.sheetBtnText}>{rescheduleLoading ? 'Сохранение...' : 'Перенести'}</Text>
+              <Text style={styles.sheetBtnText}>{rescheduleLoading ? t('ui.sohranenie') : t('meetings.reschedule')}</Text>
             </TouchableOpacity>
           </View>
         </BottomSheetScrollView>

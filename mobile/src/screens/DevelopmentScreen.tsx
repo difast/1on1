@@ -15,6 +15,7 @@ import type { AppColors } from '../constants/colors';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { Thread, GoalForm } from './GoalsScreen';
+import { useI18n } from '../lib/i18n';
 import {
   getDevelopment, getSkills, addUserSkill, updateUserSkill, deleteUserSkill,
   createDevStep, updateDevStep, deleteDevStep, addDevStepComment,
@@ -56,17 +57,18 @@ function SkillRow({ us, meId, colors, readOnly, onChanged, onRemoved }: {
   us: DevSkill; meId: number; colors: AppColors; readOnly?: boolean;
   onChanged: (s: DevSkill) => void; onRemoved: (id: number) => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [saving, setSaving] = useState(false);
   const patch = async (payload: any) => {
     setSaving(true);
     try { const s = await updateUserSkill(us.id, { actor_id: meId, ...payload }); onChanged(s); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
     finally { setSaving(false); }
   };
-  const remove = () => Alert.alert('Удалить навык?', undefined, [
-    { text: 'Отмена', style: 'cancel' },
-    { text: 'Удалить', style: 'destructive', onPress: async () => { try { await deleteUserSkill(us.id, meId); onRemoved(us.id); } catch {} } },
+  const remove = () => Alert.alert(t('ui.udalit_navyk'), undefined, [
+    { text: t('common.cancel'), style: 'cancel' },
+    { text: t('common.delete'), style: 'destructive', onPress: async () => { try { await deleteUserSkill(us.id, meId); onRemoved(us.id); } catch {} } },
   ]);
   const stepLevel = (d: number) => patch({ current_level: Math.max(1, Math.min(5, us.current_level + d)) });
 
@@ -85,18 +87,18 @@ function SkillRow({ us, meId, colors, readOnly, onChanged, onRemoved }: {
           {us.gap > 0 && <Text style={[styles.warnChip, { marginTop: 6 }]}>разрыв {us.gap}</Text>}
           {us.target_date && <Text style={[styles.muted, { marginTop: 6 }]}>Срок: {new Date(us.target_date).toLocaleDateString('ru-RU')}</Text>}
         </View>
-        {!readOnly && <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>Удалить</Text></TouchableOpacity>}
+        {!readOnly && <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>{t('ui.udalit')}</Text></TouchableOpacity>}
       </View>
       {!readOnly && (
         <View style={{ marginTop: 10, gap: 8 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            <Text style={styles.muted}>Текущий уровень</Text>
+            <Text style={styles.muted}>{t('ui.tekuschiy_uroven')}</Text>
             <TouchableOpacity style={styles.stepBtn} disabled={saving} onPress={() => stepLevel(-1)}><Ionicons name="remove" size={16} color={colors.textPrimary} /></TouchableOpacity>
             <Text style={styles.levelNum}>{us.current_level}</Text>
             <TouchableOpacity style={styles.stepBtn} disabled={saving} onPress={() => stepLevel(1)}><Ionicons name="add" size={16} color={colors.textPrimary} /></TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-            <Text style={styles.muted}>Желаемый</Text>
+            <Text style={styles.muted}>{t('ui.zhelaemyy')}</Text>
             {[0, ...LEVELS].map(l => (
               <TouchableOpacity key={l} disabled={saving} onPress={() => patch({ desired_level: l })}
                 style={[styles.levelChip, (us.desired_level || 0) === l && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
@@ -115,6 +117,7 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
   step: DevStep; meId: number; colors: AppColors; readOnly?: boolean; canFeedback?: boolean;
   onChanged: (s: DevStep) => void; onRemoved: (id: number) => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -122,13 +125,13 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
   const patch = async (payload: any) => {
     setSaving(true);
     try { const s = await updateDevStep(step.id, { actor_id: meId, ...payload }); onChanged(s); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
     finally { setSaving(false); }
   };
   const setProgress = (p: number) => patch({ progress: Math.max(0, Math.min(100, p)) });
-  const remove = () => Alert.alert('Удалить шаг?', undefined, [
-    { text: 'Отмена', style: 'cancel' },
-    { text: 'Удалить', style: 'destructive', onPress: async () => { try { await deleteDevStep(step.id, meId); onRemoved(step.id); } catch {} } },
+  const remove = () => Alert.alert(t('ui.udalit_shag'), undefined, [
+    { text: t('common.cancel'), style: 'cancel' },
+    { text: t('common.delete'), style: 'destructive', onPress: async () => { try { await deleteDevStep(step.id, meId); onRemoved(step.id); } catch {} } },
   ]);
 
   return (
@@ -140,8 +143,8 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
         {step.skill_name && <Text style={styles.chip}>Навык: {step.skill_name}</Text>}
         {step.goal_title && <Text style={[styles.chip, { color: colors.accent }]}>Цель: {step.goal_title}</Text>}
-        {step.assigned_by_lead && <Text style={[styles.chip, { color: '#7c3aed' }]}>Назначено руководителем</Text>}
-        {step.overdue && <Text style={styles.warnChip}>Просрочен</Text>}
+        {step.assigned_by_lead && <Text style={[styles.chip, { color: '#7c3aed' }]}>{t('ui.naznacheno_rukovoditelem')}</Text>}
+        {step.overdue && <Text style={styles.warnChip}>{t('ui.prosrochen')}</Text>}
       </View>
       {!!step.description && <Text style={[styles.muted, { marginTop: 6 }]}>{step.description}</Text>}
       {step.due_date && <Text style={[styles.muted, { marginTop: 4 }]}>Срок: {new Date(step.due_date).toLocaleDateString('ru-RU')}</Text>}
@@ -165,12 +168,12 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
           <TouchableOpacity style={styles.stepBtn} disabled={saving} onPress={() => setProgress(step.progress + 10)}><Ionicons name="add" size={16} color={colors.textPrimary} /></TouchableOpacity>
         </View>
       )}
-      {!readOnly && linked && <Text style={[styles.muted, { marginTop: 6 }]}>Статус ведётся связанной целью.</Text>}
+      {!readOnly && linked && <Text style={[styles.muted, { marginTop: 6 }]}>{t('ui.status_vedetsya_svyazannoy_celyu')}</Text>}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 10 }}>
         <TouchableOpacity onPress={() => setExpanded(v => !v)}><Text style={styles.link}>Обсуждение{step.comments?.length ? ` (${step.comments.length})` : ''}</Text></TouchableOpacity>
         <View style={{ flex: 1 }} />
-        {!readOnly && <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>Удалить</Text></TouchableOpacity>}
+        {!readOnly && <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>{t('ui.udalit')}</Text></TouchableOpacity>}
       </View>
       {expanded && (
         <Thread comments={step.comments || []} meId={meId} colors={colors} canFeedback={!!canFeedback}
@@ -182,12 +185,13 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
 
 // ── рекомендация ─────────────────────────────────────────────────────────────
 function RecCard({ rec, meId, colors, onChanged }: { rec: DevRecommendation; meId: number; colors: AppColors; onChanged: (r: DevRecommendation) => void }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [busy, setBusy] = useState(false);
   const act = async (action: string) => {
     setBusy(true);
     try { const r = await actOnDevRecommendation(rec.id, { actor_id: meId, action }); onChanged(r); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
     finally { setBusy(false); }
   };
   return (
@@ -200,11 +204,11 @@ function RecCard({ rec, meId, colors, onChanged }: { rec: DevRecommendation; meI
       <Text style={styles.title}>{rec.title}</Text>
       {!!rec.body && <Text style={[styles.muted, { marginTop: 4 }]}>{rec.body}</Text>}
       {rec.status !== 'new' ? (
-        <Text style={[styles.muted, { marginTop: 8 }]}>{rec.status === 'accepted' ? 'Принято — добавлено в план' : 'Отклонено'}</Text>
+        <Text style={[styles.muted, { marginTop: 8 }]}>{rec.status === 'accepted' ? t('ui.prinyato_dobavleno_v_plan') : t('ui.otkloneno')}</Text>
       ) : (
         <View style={{ flexDirection: 'row', gap: 8, marginTop: 10 }}>
-          <TouchableOpacity style={styles.primaryBtnSm} disabled={busy} onPress={() => act('accept')}><Text style={styles.primaryBtnSmText}>Принять</Text></TouchableOpacity>
-          <TouchableOpacity style={styles.secondaryBtnSm} disabled={busy} onPress={() => act('dismiss')}><Text style={styles.secondaryBtnSmText}>Отклонить</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtnSm} disabled={busy} onPress={() => act('accept')}><Text style={styles.primaryBtnSmText}>{t('ui.prinyat')}</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.secondaryBtnSm} disabled={busy} onPress={() => act('dismiss')}><Text style={styles.secondaryBtnSmText}>{t('ui.otklonit')}</Text></TouchableOpacity>
         </View>
       )}
     </View>
@@ -213,6 +217,7 @@ function RecCard({ rec, meId, colors, onChanged }: { rec: DevRecommendation; meI
 
 // ── экран сотрудника ─────────────────────────────────────────────────────────
 function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [dev, setDev] = useState<Development | null>(null);
   const [dict, setDict] = useState<any[]>([]);
@@ -238,26 +243,26 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
   const upRec = (r: DevRecommendation) => setDev(d => d && ({ ...d, recommendations: d.recommendations.map(x => x.id === r.id ? r : x) }));
 
   const addSkill = async () => {
-    if (!sName.trim()) { Alert.alert('Укажите навык'); return; }
+    if (!sName.trim()) { Alert.alert(t('ui.ukazhite_navyk')); return; }
     try {
       const s = await addUserSkill({ actor_id: meId, user_id: meId, skill_name: sName.trim(), category: sCat, current_level: sCur, desired_level: sDes || undefined });
       setDev(d => d && ({ ...d, skills: [...d.skills, s] })); setShowSkill(false); setSName(''); setSDes(0); setSCur(2);
-    } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
   };
   const addStep = async () => {
-    if (!stTitle.trim()) { Alert.alert('Укажите название шага'); return; }
+    if (!stTitle.trim()) { Alert.alert(t('ui.ukazhite_nazvanie_shaga')); return; }
     try {
       const s = await createDevStep({ actor_id: meId, user_id: meId, title: stTitle.trim(), skill_id: stSkill || undefined });
       setDev(d => d && ({ ...d, steps: [s, ...d.steps] })); setShowStep(false); setStTitle(''); setStSkill(null);
-    } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
   };
   const askAi = async () => {
     setAiBusy(true);
     try { const r = await aiDevRecommendation(meId, meId); setDev(d => d && ({ ...d, recommendations: [r, ...d.recommendations] })); }
     catch (e: any) {
       const detail = e?.response?.data?.detail || e?.response?.detail;
-      if (detail?.code === 'feature_locked') Alert.alert('Функция недоступна', detail.message);
-      else Alert.alert('Пит недоступен', typeof detail === 'string' ? detail : 'Попробуйте позже');
+      if (detail?.code === 'feature_locked') Alert.alert(t('ui.funkciya_nedostupna'), detail.message);
+      else Alert.alert(t('ui.pit_nedostupen'), typeof detail === 'string' ? detail : 'Попробуйте позже');
     } finally { setAiBusy(false); }
   };
 
@@ -271,12 +276,12 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
 
       {/* Навыки */}
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Навыки</Text>
-        {!showSkill && <TouchableOpacity onPress={() => setShowSkill(true)}><Text style={styles.link}>+ Навык</Text></TouchableOpacity>}
+        <Text style={styles.sectionTitle}>{t('ui.navyki')}</Text>
+        {!showSkill && <TouchableOpacity onPress={() => setShowSkill(true)}><Text style={styles.link}>{t('ui.navyk')}</Text></TouchableOpacity>}
       </View>
       {showSkill && (
         <View style={styles.formCard}>
-          <TextInput style={styles.input} placeholder="Название навыка" placeholderTextColor={colors.textMuted} value={sName} onChangeText={setSName} />
+          <TextInput style={styles.input} placeholder={t('ui.nazvanie_navyka')} placeholderTextColor={colors.textMuted} value={sName} onChangeText={setSName} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {CATEGORIES.map(c => (
               <TouchableOpacity key={c} onPress={() => setSCat(c)} style={[styles.levelChip, sCat === c && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
@@ -285,55 +290,55 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
             ))}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Text style={styles.muted}>Текущий</Text>
+            <Text style={styles.muted}>{t('ui.tekuschiy')}</Text>
             {LEVELS.map(l => <TouchableOpacity key={l} onPress={() => setSCur(l)} style={[styles.levelChip, sCur === l && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, sCur === l && { color: colors.accent }]}>{l}</Text></TouchableOpacity>)}
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Text style={styles.muted}>Желаемый</Text>
+            <Text style={styles.muted}>{t('ui.zhelaemyy')}</Text>
             {[0, ...LEVELS].map(l => <TouchableOpacity key={l} onPress={() => setSDes(l)} style={[styles.levelChip, sDes === l && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, sDes === l && { color: colors.accent }]}>{l === 0 ? '—' : l}</Text></TouchableOpacity>)}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowSkill(false)}><Text style={styles.secondaryBtnText}>Отмена</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.primaryBtn} onPress={addSkill}><Text style={styles.primaryBtnText}>Добавить</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowSkill(false)}><Text style={styles.secondaryBtnText}>{t('ui.otmena')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.primaryBtn} onPress={addSkill}><Text style={styles.primaryBtnText}>{t('ui.dobavit')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
-      {dev.skills.length === 0 && !showSkill && <EmptyState icon="ribbon-outline" title="Навыки не заданы" description="Добавьте навык и укажите уровни." />}
+      {dev.skills.length === 0 && !showSkill && <EmptyState icon="ribbon-outline" title={t('ui.navyki_ne_zadany')} description="Добавьте навык и укажите уровни." />}
       {dev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} colors={colors} onChanged={upSkill} onRemoved={(id) => upSkill(s, id)} />)}
 
       {/* План */}
       <View style={styles.sectionHead}>
         <Text style={styles.sectionTitle}>План развития · {dev.plan_progress}%</Text>
-        {!showStep && <TouchableOpacity onPress={() => setShowStep(true)}><Text style={styles.link}>+ Шаг</Text></TouchableOpacity>}
+        {!showStep && <TouchableOpacity onPress={() => setShowStep(true)}><Text style={styles.link}>{t('ui.shag')}</Text></TouchableOpacity>}
       </View>
       {showStep && (
         <View style={styles.formCard}>
-          <TextInput style={styles.input} placeholder="Название шага" placeholderTextColor={colors.textMuted} value={stTitle} onChangeText={setStTitle} />
+          <TextInput style={styles.input} placeholder={t('ui.nazvanie_shaga')} placeholderTextColor={colors.textMuted} value={stTitle} onChangeText={setStTitle} />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
-            <TouchableOpacity onPress={() => setStSkill(null)} style={[styles.levelChip, stSkill === null && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, stSkill === null && { color: colors.accent }]}>Без навыка</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setStSkill(null)} style={[styles.levelChip, stSkill === null && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, stSkill === null && { color: colors.accent }]}>{t('ui.bez_navyka')}</Text></TouchableOpacity>
             {dev.skills.map(s => <TouchableOpacity key={s.id} onPress={() => setStSkill(s.skill_id)} style={[styles.levelChip, stSkill === s.skill_id && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, stSkill === s.skill_id && { color: colors.accent }]}>{s.skill_name}</Text></TouchableOpacity>)}
           </View>
           <View style={{ flexDirection: 'row', gap: 8 }}>
-            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowStep(false)}><Text style={styles.secondaryBtnText}>Отмена</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.primaryBtn} onPress={addStep}><Text style={styles.primaryBtnText}>Добавить</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowStep(false)}><Text style={styles.secondaryBtnText}>{t('ui.otmena')}</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.primaryBtn} onPress={addStep}><Text style={styles.primaryBtnText}>{t('ui.dobavit')}</Text></TouchableOpacity>
           </View>
         </View>
       )}
-      {dev.steps.length === 0 && !showStep && <EmptyState icon="footsteps-outline" title="План пуст" description="Добавьте первый шаг развития." />}
+      {dev.steps.length === 0 && !showStep && <EmptyState icon="footsteps-outline" title={t('ui.plan_pust')} description="Добавьте первый шаг развития." />}
       {dev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} colors={colors} canFeedback={false} onChanged={upStep} onRemoved={(id) => upStep(s, id)} />)}
 
       {/* Рекомендации */}
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Рекомендации</Text>
-        <TouchableOpacity disabled={aiBusy} onPress={askAi}><Text style={styles.link}>{aiBusy ? 'Пит думает…' : 'Спросить Пита'}</Text></TouchableOpacity>
+        <Text style={styles.sectionTitle}>{t('ui.rekomendacii')}</Text>
+        <TouchableOpacity disabled={aiBusy} onPress={askAi}><Text style={styles.link}>{aiBusy ? t('ui.pit_dumaet') : t('pit.ask')}</Text></TouchableOpacity>
       </View>
-      {openRecs.length === 0 && <EmptyState icon="bulb-outline" title="Рекомендаций нет" description="Задайте желаемые уровни — появятся рекомендации по разрыву." />}
+      {openRecs.length === 0 && <EmptyState icon="bulb-outline" title={t('ui.rekomendaciy_net')} description="Задайте желаемые уровни — появятся рекомендации по разрыву." />}
       {openRecs.map(r => <RecCard key={r.id} rec={r} meId={meId} colors={colors} onChanged={upRec} />)}
 
       {/* Учебные цели (единая модель с «Целями») */}
       <View style={styles.sectionHead}>
-        <Text style={styles.sectionTitle}>Учебные цели</Text>
-        {!showLearn && <TouchableOpacity onPress={() => setShowLearn(true)}><Text style={styles.link}>+ Учебная цель</Text></TouchableOpacity>}
+        <Text style={styles.sectionTitle}>{t('ui.uchebnye_celi')}</Text>
+        {!showLearn && <TouchableOpacity onPress={() => setShowLearn(true)}><Text style={styles.link}>{t('ui.uchebnaya_cel')}</Text></TouchableOpacity>}
       </View>
       {showLearn && (
         <GoalForm colors={colors} submitLabel="Создать учебную цель" titlePlaceholder="Например: Пройти курс по системному дизайну"
@@ -343,7 +348,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
             setDev(d => d && ({ ...d, learning_goals: [g, ...(d.learning_goals || [])] })); setShowLearn(false);
           }} />
       )}
-      {(dev.learning_goals || []).length === 0 && !showLearn && <EmptyState icon="school-outline" title="Учебных целей нет" description="Создайте учебную цель — она появится и во вкладке «Цели»." />}
+      {(dev.learning_goals || []).length === 0 && !showLearn && <EmptyState icon="school-outline" title={t('ui.uchebnyh_celey_net')} description="Создайте учебную цель — она появится и во вкладке «Цели»." />}
       {(dev.learning_goals || []).map(g => (
         <View key={g.id} style={styles.card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -353,7 +358,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
           <View style={{ marginTop: 8, height: 8, backgroundColor: colors.surface2, borderRadius: 999, overflow: 'hidden' }}>
             <View style={{ width: `${g.progress}%`, height: '100%', backgroundColor: g.progress >= 100 ? colors.success : colors.accent }} />
           </View>
-          <Text style={[styles.muted, { marginTop: 6 }]}>Прогресс и статус ведутся во вкладке «Цели».</Text>
+          <Text style={[styles.muted, { marginTop: 6 }]}>{t('ui.progress_i_status_vedutsya_vo_vkladke')}</Text>
         </View>
       ))}
     </ScrollView>
@@ -362,6 +367,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
 
 // ── экран тимлида ────────────────────────────────────────────────────────────
 function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [teams, setTeams] = useState<any[]>([]);
   const [teamId, setTeamId] = useState<number | null>(null);
@@ -382,24 +388,24 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
     if (!teamId) { setData(null); setLoading(false); return; }
     setLoading(true);
     try { const d = await getTeamDevelopment(teamId, meId); setData(d); }
-    catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); setData(null); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); setData(null); }
     finally { setLoading(false); }
   }, [teamId, meId]);
   useEffect(() => { load(); }, [load]);
 
   const openMember = async (uid: number) => {
     setOpenUid(uid); setMemberDev(null); setShowAssign(false);
-    try { const d = await getDevelopment(uid, meId); setMemberDev(d); } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Нет доступа'); setOpenUid(null); }
+    try { const d = await getDevelopment(uid, meId); setMemberDev(d); } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Нет доступа'); setOpenUid(null); }
   };
   const upMemberStep = (s: DevStep) => setMemberDev(d => d && ({ ...d, steps: d.steps.map(x => x.id === s.id ? s : x) }));
 
   const assign = async () => {
-    if (!asgTitle.trim() || !openUid) { Alert.alert('Укажите направление'); return; }
+    if (!asgTitle.trim() || !openUid) { Alert.alert(t('ui.ukazhite_napravlenie')); return; }
     try {
       await createDevRecommendation({ actor_id: meId, user_id: openUid, title: asgTitle.trim(), skill_id: asgSkill || undefined, target_level: asgLevel || undefined });
-      Alert.alert('Готово', 'Направление назначено — сотрудник получит уведомление');
+      Alert.alert(t('ui.gotovo'), 'Направление назначено — сотрудник получит уведомление');
       setAsgTitle(''); setAsgLevel(0); setAsgSkill(null); setShowAssign(false); load();
-    } catch (e: any) { Alert.alert('Ошибка', e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
   };
 
   const members = data?.members || [];
@@ -408,36 +414,36 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
     const m = members.find(x => x.user_id === openUid);
     return (
       <ScrollView contentContainerStyle={styles.content}>
-        <TouchableOpacity onPress={() => { setOpenUid(null); setMemberDev(null); }}><Text style={styles.link}>← К обзору команды</Text></TouchableOpacity>
+        <TouchableOpacity onPress={() => { setOpenUid(null); setMemberDev(null); }}><Text style={styles.link}>{t('ui.k_obzoru_komandy')}</Text></TouchableOpacity>
         <Text style={[styles.sectionTitle, { fontSize: 16, marginTop: 8 }]}>Развитие: {m?.user_name}</Text>
 
         {!showAssign ? (
-          <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowAssign(true)}><Text style={styles.primaryBtnText}>Назначить направление роста</Text></TouchableOpacity>
+          <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowAssign(true)}><Text style={styles.primaryBtnText}>{t('ui.naznachit_napravlenie_rosta')}</Text></TouchableOpacity>
         ) : (
           <View style={styles.formCard}>
-            <TextInput style={styles.input} placeholder="Направление роста" placeholderTextColor={colors.textMuted} value={asgTitle} onChangeText={setAsgTitle} />
+            <TextInput style={styles.input} placeholder={t('ui.napravlenie_rosta')} placeholderTextColor={colors.textMuted} value={asgTitle} onChangeText={setAsgTitle} />
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-              <Text style={styles.muted}>Навык</Text>
+              <Text style={styles.muted}>{t('ui.navyk_2')}</Text>
               <TouchableOpacity onPress={() => setAsgSkill(null)} style={[styles.levelChip, asgSkill === null && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, asgSkill === null && { color: colors.accent }]}>—</Text></TouchableOpacity>
               {memberDev.skills.map(s => <TouchableOpacity key={s.id} onPress={() => setAsgSkill(s.skill_id)} style={[styles.levelChip, asgSkill === s.skill_id && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, asgSkill === s.skill_id && { color: colors.accent }]}>{s.skill_name}</Text></TouchableOpacity>)}
             </View>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
-              <Text style={styles.muted}>Целевой уровень</Text>
+              <Text style={styles.muted}>{t('ui.celevoy_uroven')}</Text>
               {[0, ...LEVELS].map(l => <TouchableOpacity key={l} onPress={() => setAsgLevel(l)} style={[styles.levelChip, asgLevel === l && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}><Text style={[styles.levelChipText, asgLevel === l && { color: colors.accent }]}>{l === 0 ? '—' : l}</Text></TouchableOpacity>)}
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowAssign(false)}><Text style={styles.secondaryBtnText}>Отмена</Text></TouchableOpacity>
-              <TouchableOpacity style={styles.primaryBtn} onPress={assign}><Text style={styles.primaryBtnText}>Назначить</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.secondaryBtn} onPress={() => setShowAssign(false)}><Text style={styles.secondaryBtnText}>{t('ui.otmena')}</Text></TouchableOpacity>
+              <TouchableOpacity style={styles.primaryBtn} onPress={assign}><Text style={styles.primaryBtnText}>{t('ui.naznachit')}</Text></TouchableOpacity>
             </View>
           </View>
         )}
 
-        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>Навыки</Text>
-        {memberDev.skills.length === 0 && <Text style={styles.muted}>Навыки не заданы.</Text>}
+        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.navyki')}</Text>
+        {memberDev.skills.length === 0 && <Text style={styles.muted}>{t('ui.navyki_ne_zadany_2')}</Text>}
         {memberDev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} colors={colors} readOnly onChanged={() => {}} onRemoved={() => {}} />)}
 
-        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>План развития</Text>
-        {memberDev.steps.length === 0 && <Text style={styles.muted}>План пуст.</Text>}
+        <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.plan_razvitiya')}</Text>
+        {memberDev.steps.length === 0 && <Text style={styles.muted}>{t('ui.plan_pust_2')}</Text>}
         {memberDev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} colors={colors} readOnly canFeedback onChanged={upMemberStep} onRemoved={() => {}} />)}
       </ScrollView>
     );
@@ -453,18 +459,18 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
         </View>
       )}
       {loading && <Spinner />}
-      {!loading && members.length === 0 && <EmptyState icon="people-outline" title="Нет данных развития" description="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
+      {!loading && members.length === 0 && <EmptyState icon="people-outline" title={t('ui.net_dannyh_razvitiya')} description="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
       {!loading && members.map(m => (
         <View key={m.user_id} style={styles.card}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
             <View style={styles.avatar}><Text style={styles.avatarText}>{(m.user_name || '?').slice(0, 1).toUpperCase()}</Text></View>
             <Text style={styles.title}>{m.user_name}</Text>
-            <TouchableOpacity style={{ marginLeft: 'auto' }} onPress={() => openMember(m.user_id)}><Text style={styles.link}>Открыть</Text></TouchableOpacity>
+            <TouchableOpacity style={{ marginLeft: 'auto' }} onPress={() => openMember(m.user_id)}><Text style={styles.link}>{t('ui.otkryt')}</Text></TouchableOpacity>
           </View>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
             <Text style={styles.chip}>Навыков: {m.skills.length}</Text>
             <Text style={styles.chip}>План: {m.plan_progress}%</Text>
-            {!m.has_active_plan && <Text style={styles.warnChip}>Нет активного плана</Text>}
+            {!m.has_active_plan && <Text style={styles.warnChip}>{t('ui.net_aktivnogo_plana')}</Text>}
             {m.overdue_steps > 0 && <Text style={[styles.warnChip, { color: colors.danger }]}>Просрочено: {m.overdue_steps}</Text>}
             {m.gaps > 0 && <Text style={styles.chip}>Разрывов: {m.gaps}</Text>}
           </View>
@@ -476,6 +482,7 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
 
 // ── корневой экран ───────────────────────────────────────────────────────────
 export default function DevelopmentScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { user, activeRole } = useAuth();
@@ -487,7 +494,7 @@ export default function DevelopmentScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={{ width: 28 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isLead ? 'Развитие команды' : 'Развитие'}</Text>
+        <Text style={styles.headerTitle}>{isLead ? t('ui.razvitie_komandy') : t('nav.development')}</Text>
         <View style={{ width: 28 }} />
       </View>
       {user && (isLead ? <LeadDevelopment meId={user.id} colors={colors} /> : <MemberDevelopment meId={user.id} colors={colors} />)}

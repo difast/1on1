@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getMemberAnalytics, getMyMoodSeries } from '../api/client'
 import { useIsTelegram } from '../lib/surface'
 
@@ -55,14 +56,13 @@ function ProgressBar({ value, max = 100, color, delay = 0 }) {
 // разрыв линии, а НЕ ноль. Ось строится по непрерывному диапазону дат, точки без
 // данных получают y=null (разрыв). Динамика вычисляется по краям ряда.
 function CheckinMoodChart({ points }) {
+  const { t } = useTranslation()
   const [animated, setAnimated] = useState(false)
   useEffect(() => { const t = setTimeout(() => setAnimated(true), 250); return () => clearTimeout(t) }, [points])
 
   const valid = points.filter(p => p.y !== null && p.y !== undefined)
   if (valid.length === 0) return (
-    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-      Пока нет отметок настроения за выбранный период
-    </p>
+    <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.poka_net_otmetok_nastroeniya_za_vybrannyy')}</p>
   )
 
   const W = 500, H = 110
@@ -114,10 +114,10 @@ function CheckinMoodChart({ points }) {
         ))}
       </svg>
       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-        {valid.length === 1 && <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Первая отметка — график продолжит строиться с каждым днём</span>}
-        {valid.length >= 2 && trendDir === 'down' && <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>Настроение снижается</span>}
-        {valid.length >= 2 && trendDir === 'up' && <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>Настроение растёт</span>}
-        {valid.length >= 2 && trendDir === 'flat' && <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Настроение стабильно</span>}
+        {valid.length === 1 && <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.pervaya_otmetka_grafik_prodolzhit_stroitsya_s')}</span>}
+        {valid.length >= 2 && trendDir === 'down' && <span style={{ fontSize: 13, color: '#ef4444', fontWeight: 600 }}>{t('ui.nastroenie_snizhaetsya')}</span>}
+        {valid.length >= 2 && trendDir === 'up' && <span style={{ fontSize: 13, color: '#22c55e', fontWeight: 600 }}>{t('ui.nastroenie_rastet')}</span>}
+        {valid.length >= 2 && trendDir === 'flat' && <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.nastroenie_stabilno')}</span>}
       </div>
     </div>
   )
@@ -161,6 +161,7 @@ function CompareRow({ label, cur, prev, unit = '', invert = false }) {
 }
 
 export default function MemberAnalytics({ user, teamId }) {
+  const { t } = useTranslation()
   const isTg = useIsTelegram()  // Mini App: только сводка, без графиков
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -216,8 +217,8 @@ export default function MemberAnalytics({ user, teamId }) {
   if (!data) return (
     <div className="empty-state">
       <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
-      <p className="empty-title">Нет данных для аналитики</p>
-      <p className="empty-desc">Данные появятся после проведения встреч</p>
+      <p className="empty-title">{t('ui.net_dannyh_dlya_analitiki')}</p>
+      <p className="empty-desc">{t('ui.dannye_poyavyatsya_posle_provedeniya_vstrech')}</p>
     </div>
   )
 
@@ -229,27 +230,23 @@ export default function MemberAnalytics({ user, teamId }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 860, width: '100%' }}>
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-        <StatCard value={data.meetings_last_90} label="Встреч за 90 дней" accent delay={0} />
-        <StatCard value={data.days_since_last} suffix=" дн." label="Последняя встреча" danger={data.days_since_last >= 14} delay={100} />
-        <StatCard value={data.task_completion_pct} suffix="%" label="Задач выполнено" accent={data.task_completion_pct >= 70} danger={data.task_completion_pct !== null && data.task_completion_pct < 40} delay={200} />
-        <StatCard value={data.open_tasks} label="Открытых задач" warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
-        <StatCard value={data.closed_last_30} label="Закрыто за 30 дн." delay={400} />
+        <StatCard value={data.meetings_last_90} label={t('ui.vstrech_za_90_dney')} accent delay={0} />
+        <StatCard value={data.days_since_last} suffix=" дн." label={t('ui.poslednyaya_vstrecha')} danger={data.days_since_last >= 14} delay={100} />
+        <StatCard value={data.task_completion_pct} suffix="%" label={t('ui.zadach_vypolneno')} accent={data.task_completion_pct >= 70} danger={data.task_completion_pct !== null && data.task_completion_pct < 40} delay={200} />
+        <StatCard value={data.open_tasks} label={t('ui.otkrytyh_zadach')} warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
+        <StatCard value={data.closed_last_30} label={t('ui.zakryto_za_30_dn')} delay={400} />
       </div>
 
       {/* Сравнение с собственным прошлым периодом (31.3) — только свои данные,
           доступно и в Mini App (числа без графиков). */}
       {data.compare && (
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 6 }}>
-            Динамика к прошлому периоду
-          </p>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 10 }}>
-            Последние 30 дней в сравнении с предыдущими 30
-          </p>
-          <CompareRow label="Закрыто задач" cur={data.compare.closed_tasks_30} prev={data.compare.closed_tasks_prev_30} />
-          <CompareRow label="Встреч" cur={data.compare.meetings_30} prev={data.compare.meetings_prev_30} />
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 6 }}>{t('ui.dinamika_k_proshlomu_periodu')}</p>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 10 }}>{t('ui.poslednie_30_dney_v_sravnenii_s')}</p>
+          <CompareRow label={t('ui.zakryto_zadach')} cur={data.compare.closed_tasks_30} prev={data.compare.closed_tasks_prev_30} />
+          <CompareRow label={t('ui.vstrech')} cur={data.compare.meetings_30} prev={data.compare.meetings_prev_30} />
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0' }}>
-            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Настроение (15 дн. vs пред. 15)</span>
+            <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.nastroenie_15_dn_vs_pred_15')}</span>
             <span style={{
               fontSize: 13, fontWeight: 700,
               color: data.compare.mood_delta_15d == null ? 'var(--color-text-muted)'
@@ -267,18 +264,18 @@ export default function MemberAnalytics({ user, teamId }) {
           (4.1/4.2) — только свои данные. Числа доступны и в Mini App. */}
       {data.development && (
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>Развитие</p>
+          <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.razvitie')}</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <StatCard value={data.development.avg_current_level ?? 0} label="Средний уровень" delay={0} />
-            <StatCard value={data.development.gaps} label="Навыков с разрывом" warning={data.development.gaps > 0} delay={80} />
-            <StatCard value={data.development.plan?.plan_progress ?? 0} suffix="%" label="Прогресс плана" accent delay={160} />
-            <StatCard value={data.development.plan?.overdue_steps ?? 0} label="Просрочено шагов" danger={(data.development.plan?.overdue_steps ?? 0) > 0} delay={240} />
-            <StatCard value={data.development.learning_goals?.achieved ?? 0} label="Учебных целей достигнуто" delay={320} />
+            <StatCard value={data.development.avg_current_level ?? 0} label={t('ui.sredniy_uroven')} delay={0} />
+            <StatCard value={data.development.gaps} label={t('ui.navykov_s_razryvom')} warning={data.development.gaps > 0} delay={80} />
+            <StatCard value={data.development.plan?.plan_progress ?? 0} suffix="%" label={t('ui.progress_plana')} accent delay={160} />
+            <StatCard value={data.development.plan?.overdue_steps ?? 0} label={t('ui.prosrocheno_shagov')} danger={(data.development.plan?.overdue_steps ?? 0) > 0} delay={240} />
+            <StatCard value={data.development.learning_goals?.achieved ?? 0} label={t('ui.uchebnyh_celey_dostignuto')} delay={320} />
           </div>
           {data.development.compare && (
             <div style={{ marginTop: 12 }}>
-              <CompareRow label="Рост уровней (квартал)" cur={data.development.compare.levelups_quarter} prev={data.development.compare.levelups_prev_quarter} />
-              <CompareRow label="Шагов выполнено (квартал)" cur={data.development.compare.steps_done_quarter} prev={data.development.compare.steps_done_prev_quarter} />
+              <CompareRow label={t('ui.rost_urovney_kvartal')} cur={data.development.compare.levelups_quarter} prev={data.development.compare.levelups_prev_quarter} />
+              <CompareRow label={t('ui.shagov_vypolneno_kvartal')} cur={data.development.compare.steps_done_quarter} prev={data.development.compare.steps_done_prev_quarter} />
             </div>
           )}
         </div>
@@ -292,7 +289,7 @@ export default function MemberAnalytics({ user, teamId }) {
       <div className="card" style={{ padding: '18px 20px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
           <div>
-            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>Моё настроение</p>
+            <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{t('ui.moe_nastroenie')}</p>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
               {data.mood_checkin_avg != null ? `Средний балл: ${data.mood_checkin_avg}/5 · ` : ''}
               опрос и быстрая оценка — единая шкала 1–5
@@ -320,7 +317,7 @@ export default function MemberAnalytics({ user, teamId }) {
         {moodLoading ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: '32px 0' }}><div className="spinner" /></div>
         ) : moodPeriod === 'range' && !(customRange.start && customRange.end) ? (
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Выберите начало и конец периода</p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.vyberite_nachalo_i_konec_perioda')}</p>
         ) : moodSeries && moodSeries.series && moodSeries.series.length > 0 ? (
           <CheckinMoodChart points={buildContinuousAxis(moodSeries.series, moodSeries.start, moodSeries.end)} />
         ) : (
@@ -333,14 +330,14 @@ export default function MemberAnalytics({ user, teamId }) {
       <div className="grid-2-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {/* Who initiates */}
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Кто инициирует встречи</p>
+          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>{t('ui.kto_iniciiruet_vstrechi')}</p>
           {total === 0
-            ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Нет данных</p>
+            ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.net_dannyh')}</p>
             : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>Тимлид</span>
+                    <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.timlid')}</span>
                     <span style={{ fontSize: 13, fontWeight: 700 }}>{data.lead_initiated} ({leadPct}%)</span>
                   </div>
                   <ProgressBar value={leadPct} color="var(--color-accent)" delay={0} />
@@ -358,12 +355,12 @@ export default function MemberAnalytics({ user, teamId }) {
 
         {/* Tasks breakdown */}
         <div className="card" style={{ padding: '18px 20px' }}>
-          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>Задачи</p>
+          <p style={{ fontWeight: 600, fontSize: 14, marginBottom: 16 }}>{t('ui.zadachi')}</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[
-              { label: 'Открытых', val: data.open_tasks, badge: data.open_tasks >= 5 ? 'badge-red' : 'badge-gray' },
-              { label: 'Выполнено всего', val: data.completed_tasks, badge: 'badge-green' },
-              { label: 'Закрыто за 30 дн.', val: data.closed_last_30, badge: 'badge-blue' },
+              { label: t('ui.otkrytyh'), val: data.open_tasks, badge: data.open_tasks >= 5 ? 'badge-red' : 'badge-gray' },
+              { label: t('ui.vypolneno_vsego'), val: data.completed_tasks, badge: 'badge-green' },
+              { label: t('ui.zakryto_za_30_dn'), val: data.closed_last_30, badge: 'badge-blue' },
             ].map(({ label, val, badge }) => (
               <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{label}</span>
@@ -373,7 +370,7 @@ export default function MemberAnalytics({ user, teamId }) {
             {data.task_completion_pct !== null && (
               <div style={{ marginTop: 4 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>% выполнения</span>
+                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.vypolneniya')}</span>
                   <span style={{ fontSize: 13, fontWeight: 700, color: taskColor }}>{data.task_completion_pct}%</span>
                 </div>
                 <ProgressBar value={data.task_completion_pct} color={taskColor} delay={200} />
@@ -385,9 +382,7 @@ export default function MemberAnalytics({ user, teamId }) {
 
       {/* Meetings per week */}
       <div className="card" style={{ padding: '18px 20px' }}>
-        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>
-          Встречи по неделям
-        </p>
+        <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)', marginBottom: 14 }}>{t('ui.vstrechi_po_nedelyam')}</p>
         {(() => {
           const weeks = data.meetings_per_week || []
           const max = Math.max(...weeks.map(w => w.count), 1)

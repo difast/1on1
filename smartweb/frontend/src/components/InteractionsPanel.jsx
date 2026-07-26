@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   getInteractions, createInteraction, acceptInteraction, declineInteraction,
   replyInteraction, closeInteraction,
@@ -25,6 +26,7 @@ const OUTCOME_LABEL = { decision: 'Решение принято', needs_meeting
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
 
 export default function InteractionsPanel({ currentUser, contacts = [], tasks = [], teamId, onClose, onChanged }) {
+  const { t } = useTranslation()
   useEscapeKey(onClose)
   const [items, setItems] = useState(null)
   const [tab, setTab] = useState('inbox')       // inbox | all | new
@@ -65,16 +67,16 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
     try {
       await replyInteraction(it.id, currentUser.id, replyText.trim())
       setReplyFor(null); setReplyText(''); load(); onChanged?.()
-    } catch { toast('Не удалось отправить ответ', 'error') }
+    } catch { toast(t('ui.ne_udalos_otpravit_otvet'), 'error') }
     finally { setBusyId(null) }
   }
 
   const submitNew = async (e) => {
     e.preventDefault()
-    if (ntype === 'recommendation' && !subjectUser) { toast('Выберите, кого рекомендуете', 'error'); return }
-    if (ntype === 'discussion' && participants.length === 0) { toast('Выберите участников обсуждения', 'error'); return }
-    if (['collab_proposal', 'help_offer', 'consultation'].includes(ntype) && !toUser) { toast('Выберите получателя', 'error'); return }
-    if (!topic.trim()) { toast('Укажите тему', 'error'); return }
+    if (ntype === 'recommendation' && !subjectUser) { toast(t('ui.vyberite_kogo_rekomenduete'), 'error'); return }
+    if (ntype === 'discussion' && participants.length === 0) { toast(t('ui.vyberite_uchastnikov_obsuzhdeniya'), 'error'); return }
+    if (['collab_proposal', 'help_offer', 'consultation'].includes(ntype) && !toUser) { toast(t('ui.vyberite_poluchatelya'), 'error'); return }
+    if (!topic.trim()) { toast(t('ui.ukazhite_temu'), 'error'); return }
     setCreating(true)
     try {
       await createInteraction({
@@ -86,7 +88,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
         topic: topic.trim(), context: context.trim() || null,
         desired_format: ntype === 'consultation' ? format : null,
       })
-      toast('Взаимодействие создано', 'success')
+      toast(t('ui.vzaimodeystvie_sozdano'), 'success')
       setTopic(''); setContext(''); setToUser(''); setParticipants([]); setSubjectUser(''); setTaskId('')
       setTab('all'); load(); onChanged?.()
     } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Не удалось создать', 'error') }
@@ -108,7 +110,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
           <p style={{ fontWeight: 700, fontSize: 14, margin: '2px 0 0', color: 'var(--color-text-primary)' }}>{it.topic || '(без темы)'}</p>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{otherLabel(it)}</p>
           {it.context && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>{it.context}</p>}
-          {it.desired_format && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Формат: {it.desired_format === 'call' ? 'созвон' : 'письменный ответ'}</p>}
+          {it.desired_format && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</p>}
           {it.outcome && <p style={{ fontSize: 12, color: '#15803d', margin: '2px 0 0', fontWeight: 600 }}>Итог: {OUTCOME_LABEL[it.outcome] || it.outcome}</p>}
         </div>
         <span className={`badge ${STATUS_BADGE[it.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
@@ -140,8 +142,8 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {it.type !== 'discussion' && (
             <>
-              <button className="btn btn-accent btn-sm" disabled={busyId === it.id} onClick={() => act(acceptInteraction, it.id)}>Принять</button>
-              <button className="btn btn-danger btn-sm" disabled={busyId === it.id} onClick={() => act(declineInteraction, it.id)}>Отклонить</button>
+              <button className="btn btn-accent btn-sm" disabled={busyId === it.id} onClick={() => act(acceptInteraction, it.id)}>{t('ui.prinyat')}</button>
+              <button className="btn btn-danger btn-sm" disabled={busyId === it.id} onClick={() => act(declineInteraction, it.id)}>{t('ui.otklonit')}</button>
             </>
           )}
         </div>
@@ -149,9 +151,9 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       {canReply(it) && it.status !== 'declined' && (
         replyFor === it.id ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <textarea className="input" rows={2} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder="Ваш ответ..." />
+            <textarea className="input" rows={2} value={replyText} onChange={e => setReplyText(e.target.value)} placeholder={t('ui.vash_otvet')} />
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn btn-secondary btn-sm" onClick={() => { setReplyFor(null); setReplyText('') }}>Отмена</button>
+              <button className="btn btn-secondary btn-sm" onClick={() => { setReplyFor(null); setReplyText('') }}>{t('ui.otmena')}</button>
               <button className="btn btn-accent btn-sm" disabled={busyId === it.id} onClick={() => doReply(it)} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                 {busyId === it.id ? <Spinner size={14} /> : null} Ответить
               </button>
@@ -159,11 +161,11 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
           </div>
         ) : (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button className="btn btn-secondary btn-sm" onClick={() => { setReplyFor(it.id); setReplyText('') }}>Ответить</button>
+            <button className="btn btn-secondary btn-sm" onClick={() => { setReplyFor(it.id); setReplyText('') }}>{t('ui.otvetit')}</button>
             {it.type === 'discussion' && it.from_user_id === currentUser.id && it.status !== 'completed' && (
               <>
-                <button className="btn btn-accent btn-sm" disabled={busyId === it.id} onClick={() => act(closeInteraction, it.id, 'decision')}>Решение принято</button>
-                <button className="btn btn-secondary btn-sm" disabled={busyId === it.id} onClick={() => act(closeInteraction, it.id, 'needs_meeting')}>Нужна встреча</button>
+                <button className="btn btn-accent btn-sm" disabled={busyId === it.id} onClick={() => act(closeInteraction, it.id, 'decision')}>{t('ui.reshenie_prinyato')}</button>
+                <button className="btn btn-secondary btn-sm" disabled={busyId === it.id} onClick={() => act(closeInteraction, it.id, 'needs_meeting')}>{t('ui.nuzhna_vstrecha')}</button>
               </>
             )}
           </div>
@@ -181,9 +183,9 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       <div style={{ height: 58, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 20px', borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface)', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span className="logo">OneOn<span className="accent">One</span></span>
-          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>/ Взаимодействия</span>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>{t('ui.vzaimodeystviya_2')}</span>
         </div>
-        <button onClick={onClose} className="btn btn-secondary btn-sm">Закрыть</button>
+        <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt')}</button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, padding: '12px 20px 0', maxWidth: 720, width: '100%', margin: '0 auto' }}>
@@ -196,16 +198,16 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
         {tab === 'new' ? (
           <form onSubmit={submitNew} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Тип взаимодействия</label>
+              <label className="form-label">{t('ui.tip_vzaimodeystviya')}</label>
               <select className="input" value={ntype} onChange={e => setNtype(e.target.value)}>
                 {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
               </select>
             </div>
             {needsRecipient && (
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Получатель</label>
+                <label className="form-label">{t('ui.poluchatel')}</label>
                 <select className="input" value={toUser} onChange={e => setToUser(e.target.value)}>
-                  <option value="">— выберите —</option>
+                  <option value="">{t('ui.vyberite')}</option>
                   {contacts.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
                 </select>
               </div>
@@ -213,16 +215,16 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
             {isRecommend && (
               <>
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Кого рекомендуете (эксперт)</label>
+                  <label className="form-label">{t('ui.kogo_rekomenduete_ekspert')}</label>
                   <select className="input" value={subjectUser} onChange={e => setSubjectUser(e.target.value)}>
-                    <option value="">— выберите —</option>
+                    <option value="">{t('ui.vyberite')}</option>
                     {contacts.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group" style={{ margin: 0 }}>
-                  <label className="form-label">Кому рекомендуете (необязательно)</label>
+                  <label className="form-label">{t('ui.komu_rekomenduete_neobyazatelno')}</label>
                   <select className="input" value={toUser} onChange={e => setToUser(e.target.value)}>
-                    <option value="">— вся команда увидит в профиле —</option>
+                    <option value="">{t('ui.vsya_komanda_uvidit_v_profile')}</option>
                     {contacts.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
                   </select>
                 </div>
@@ -230,7 +232,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
             )}
             {isDiscussion && (
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Участники обсуждения</label>
+                <label className="form-label">{t('ui.uchastniki_obsuzhdeniya')}</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 180, overflowY: 'auto' }}>
                   {contacts.map(c => (
                     <label key={c.user_id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 10px', borderRadius: 8, border: '1px solid var(--color-border)', background: participants.includes(String(c.user_id)) ? 'var(--blue-50)' : 'var(--color-bg)', cursor: 'pointer' }}>
@@ -243,39 +245,39 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
             )}
             {['collab_proposal', 'help_offer'].includes(ntype) && tasks.length > 0 && (
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Связать с задачей {ntype === 'collab_proposal' ? '(обязательно для совместной работы)' : '(необязательно)'}</label>
+                <label className="form-label">Связать с задачей {ntype === 'collab_proposal' ? t('ui.obyazatelno_dlya_sovmestnoy_raboty') : t('ui.neobyazatelno')}</label>
                 <select className="input" value={taskId} onChange={e => setTaskId(e.target.value)}>
-                  <option value="">— без задачи —</option>
+                  <option value="">{t('ui.bez_zadachi')}</option>
                   {tasks.map(t => <option key={t.id} value={t.id}>{t.title}</option>)}
                 </select>
               </div>
             )}
             {ntype === 'consultation' && (
               <div className="form-group" style={{ margin: 0 }}>
-                <label className="form-label">Желаемый формат</label>
+                <label className="form-label">{t('ui.zhelaemyy_format')}</label>
                 <select className="input" value={format} onChange={e => setFormat(e.target.value)}>
-                  <option value="text">Письменный ответ</option>
-                  <option value="call">Созвон</option>
+                  <option value="text">{t('ui.pismennyy_otvet')}</option>
+                  <option value="call">{t('ui.sozvon')}</option>
                 </select>
               </div>
             )}
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Тема</label>
-              <input className="input" value={topic} onChange={e => setTopic(e.target.value)} placeholder="Кратко о сути" />
+              <label className="form-label">{t('ui.tema')}</label>
+              <input className="input" value={topic} onChange={e => setTopic(e.target.value)} placeholder={t('ui.kratko_o_suti')} />
             </div>
             <div className="form-group" style={{ margin: 0 }}>
-              <label className="form-label">Контекст (необязательно)</label>
-              <textarea className="input" rows={3} value={context} onChange={e => setContext(e.target.value)} placeholder="Подробности" />
+              <label className="form-label">{t('ui.kontekst_neobyazatelno')}</label>
+              <textarea className="input" rows={3} value={context} onChange={e => setContext(e.target.value)} placeholder={t('ui.podrobnosti')} />
             </div>
             <button type="submit" disabled={creating} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {creating ? <><Spinner size={15} /> Отправка...</> : 'Создать'}
+              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Создать'}
             </button>
           </form>
         ) : items === null ? (
           <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}><div className="spinner" /></div>
         ) : (() => {
           const list = tab === 'inbox' ? incoming : all
-          if (list.length === 0) return <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 14, padding: '40px 0' }}>{tab === 'inbox' ? 'Нет входящих, ожидающих ответа' : 'Взаимодействий пока нет'}</p>
+          if (list.length === 0) return <p style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 14, padding: '40px 0' }}>{tab === 'inbox' ? t('ui.net_vhodyaschih_ozhidayuschih_otveta') : t('ui.vzaimodeystviy_poka_net')}</p>
           return <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>{list.map(renderCard)}</div>
         })()}
       </div>

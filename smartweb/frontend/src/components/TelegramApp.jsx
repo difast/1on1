@@ -13,6 +13,7 @@ import LeadDashboard from './LeadDashboard'
 import MemberDashboard from './MemberDashboard'
 import Onboarding from './Onboarding'
 
+import { useTranslation } from 'react-i18next'
 function Centered({ children }) {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, background: 'var(--color-bg)', textAlign: 'center' }}>
@@ -22,6 +23,7 @@ function Centered({ children }) {
 }
 
 export default function TelegramApp() {
+  const { t } = useTranslation()
   const [state, setState] = useState('loading')  // loading | no-telegram | error | ready
   const [user, setUser] = useState(null)
 
@@ -64,7 +66,7 @@ export default function TelegramApp() {
   if (state === 'no-telegram') {
     return (
       <Centered>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Откройте в Telegram</h2>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{t('ui.otkroyte_v_telegram')}</h2>
         <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
           Эта страница — мини-приложение Telegram. Откройте его через бота @oneononehq_bot.
         </p>
@@ -75,10 +77,8 @@ export default function TelegramApp() {
   if (state === 'error' || !user) {
     return (
       <Centered>
-        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>Не удалось войти</h2>
-        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-          Попробуйте переоткрыть приложение из бота.
-        </p>
+        <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{t('ui.ne_udalos_voyti')}</h2>
+        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>{t('ui.poprobuyte_pereotkryt_prilozhenie_iz_bota')}</p>
       </Centered>
     )
   }

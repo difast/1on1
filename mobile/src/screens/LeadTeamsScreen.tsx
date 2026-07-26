@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   TextInput, RefreshControl, Alert,
@@ -38,6 +39,7 @@ const STATUS_BADGE_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
 type SheetType = 'createTeam' | 'addMember' | 'scheduleMeeting' | 'addTask' | null;
 
 export default function LeadTeamsScreen() {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const STATUS_BORDER: Record<string, string> = {
@@ -130,14 +132,14 @@ export default function LeadTeamsScreen() {
       const note = await createNote({ user_id: user.id, content: noteText.trim() });
       setNotes(prev => [note, ...prev]);
       setNoteText(''); setShowNoteForm(false);
-    } catch { Alert.alert('Ошибка', 'Не удалось создать заметку'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать заметку'); }
     finally { setNoteLoading(false); }
   };
 
   const handleDeleteNote = (id: number) => {
-    Alert.alert('Удалить заметку?', undefined, [
-      { text: 'Отмена', style: 'cancel' },
-      { text: 'Удалить', style: 'destructive', onPress: async () => {
+    Alert.alert(t('ui.udalit_zametku'), undefined, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try { await deleteNote(id); setNotes(prev => prev.filter(n => n.id !== id)); } catch {}
       }},
     ]);
@@ -155,7 +157,7 @@ export default function LeadTeamsScreen() {
       await updateNote(editingNoteId, { content: editNoteText.trim() });
       setNotes(prev => prev.map(n => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
       setEditingNoteId(null);
-    } catch { Alert.alert('Ошибка', 'Не удалось сохранить'); }
+    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить'); }
     finally { setEditNoteLoading(false); }
   };
 
@@ -301,11 +303,11 @@ export default function LeadTeamsScreen() {
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Мои команды</Text>
+        <Text style={styles.headerTitle}>{t('ui.moi_komandy')}</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           <NotificationBell />
           <TouchableOpacity style={styles.addBtn} onPress={() => openSheet('createTeam')}>
-            <Text style={styles.addBtnText}>+ Создать</Text>
+            <Text style={styles.addBtnText}>{t('ui.sozdat')}</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -318,9 +320,9 @@ export default function LeadTeamsScreen() {
         {/* Notes section */}
         <View style={styles.notesSection}>
           <View style={styles.notesSectionHeader}>
-            <Text style={styles.notesSectionTitle}>Мои заметки</Text>
+            <Text style={styles.notesSectionTitle}>{t('ui.moi_zametki')}</Text>
             <TouchableOpacity onPress={() => setShowNoteForm(s => !s)}>
-              <Text style={styles.notesAddLink}>{showNoteForm ? 'Закрыть' : '+ Добавить'}</Text>
+              <Text style={styles.notesAddLink}>{showNoteForm ? t('common.close') : t('ui.dobavit')}</Text>
             </TouchableOpacity>
           </View>
           {showNoteForm && (
@@ -329,14 +331,14 @@ export default function LeadTeamsScreen() {
                 style={styles.noteInput}
                 value={noteText}
                 onChangeText={setNoteText}
-                placeholder="Введите заметку..."
+                placeholder={t('ui.vvedite_zametku')}
                 placeholderTextColor={colors.textMuted}
                 multiline
                 autoFocus
               />
               <View style={{ flexDirection: 'row', gap: 8 }}>
                 <TouchableOpacity style={styles.noteCancelBtn} onPress={() => { setShowNoteForm(false); setNoteText(''); }}>
-                  <Text style={styles.noteCancelText}>Отмена</Text>
+                  <Text style={styles.noteCancelText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.noteSaveBtn, (!noteText.trim() || noteLoading) && { opacity: 0.5 }]}
@@ -348,7 +350,7 @@ export default function LeadTeamsScreen() {
             </View>
           )}
           {notes.length === 0 && !showNoteForm ? (
-            <Text style={styles.notesEmpty}>Нет заметок. Нажмите «+ Добавить»</Text>
+            <Text style={styles.notesEmpty}>{t('ui.net_zametok_nazhmite_dobavit')}</Text>
           ) : (
             notes.filter((n: any) => !n.meeting_id).slice(0, 5).map(n => (
               editingNoteId === n.id ? (
@@ -362,7 +364,7 @@ export default function LeadTeamsScreen() {
                   />
                   <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity style={styles.noteCancelBtn} onPress={() => setEditingNoteId(null)}>
-                      <Text style={styles.noteCancelText}>Отмена</Text>
+                      <Text style={styles.noteCancelText}>{t('ui.otmena')}</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.noteSaveBtn, (!editNoteText.trim() || editNoteLoading) && { opacity: 0.5 }]}
@@ -404,7 +406,7 @@ export default function LeadTeamsScreen() {
 
         {/* Empty state */}
         {teams.length === 0 && (
-          <EmptyState icon="people-outline" title="Нет команд" description="Создайте первую команду, чтобы начать" />
+          <EmptyState icon="people-outline" title={t('ui.net_komand')} description="Создайте первую команду, чтобы начать" />
         )}
 
         {/* Team detail */}
@@ -416,15 +418,15 @@ export default function LeadTeamsScreen() {
                 <Ionicons name="link-outline" size={20} color={colors.accent} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.inviteLabel}>Код приглашения</Text>
+                <Text style={styles.inviteLabel}>{t('ui.kod_priglasheniya')}</Text>
                 <Text style={styles.inviteCode}>{teamDetail.invite_code}</Text>
               </View>
               <View style={{ gap: 6 }}>
                 <TouchableOpacity style={styles.copyBtn} onPress={handleCopyInvite}>
-                  <Text style={styles.copyBtnText}>{copied ? '✓ Скопировано' : 'Скопировать'}</Text>
+                  <Text style={styles.copyBtnText}>{copied ? t('ui.skopirovano_2') : t('ui.skopirovat')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.addMemberBtn} onPress={() => openSheet('addMember')}>
-                  <Text style={styles.addMemberBtnText}>+ Участника</Text>
+                  <Text style={styles.addMemberBtnText}>{t('ui.uchastnika')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.newCodeBtn, regenerating && styles.btnDisabled]}
@@ -441,7 +443,7 @@ export default function LeadTeamsScreen() {
               style={styles.memberSearchInput}
               value={memberSearch}
               onChangeText={setMemberSearch}
-              placeholder="Поиск участников..."
+              placeholder={t('ui.poisk_uchastnikov_2')}
               placeholderTextColor={colors.textMuted}
             />
 
@@ -449,16 +451,16 @@ export default function LeadTeamsScreen() {
             {allMembers.length === 0 ? (
               <EmptyState
                 icon="person-outline"
-                title="Нет участников"
+                title={t('ui.net_uchastnikov')}
                 description="Добавьте первого участника в команду"
               >
                 <TouchableOpacity style={[styles.addBtn, { marginTop: 16 }]} onPress={() => openSheet('addMember')}>
-                  <Text style={styles.addBtnText}>+ Добавить участника</Text>
+                  <Text style={styles.addBtnText}>{t('ui.dobavit_uchastnika')}</Text>
                 </TouchableOpacity>
               </EmptyState>
             ) : members.length === 0 ? (
               <View style={{ padding: 16, alignItems: 'center' }}>
-                <Text style={{ color: colors.textMuted, fontSize: 13 }}>Участники не найдены</Text>
+                <Text style={{ color: colors.textMuted, fontSize: 13 }}>{t('ui.uchastniki_ne_naydeny')}</Text>
               </View>
             ) : (
               members.map((member: any) => {
@@ -491,8 +493,8 @@ export default function LeadTeamsScreen() {
                           Бэкенд теперь возвращает last_meeting_date включая будущие,
                           поэтому назначенная встреча больше не показывается как «Не было». */}
                       {member.last_meeting_date && new Date(member.last_meeting_date) >= new Date()
-                        ? 'Ближайшая встреча: '
-                        : 'Последняя встреча: '}
+                        ? t('ui.blizhayshaya_vstrecha')
+                        : t('ui.poslednyaya_vstrecha_2')}
                       <Text style={{ fontWeight: '500', color: colors.textPrimary }}>
                         {member.last_meeting_date
                           ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
@@ -504,7 +506,7 @@ export default function LeadTeamsScreen() {
                       style={styles.scheduleBtn}
                       onPress={() => { setScheduleMember(member); openSheet('scheduleMeeting'); }}
                     >
-                      <Text style={styles.scheduleBtnText}>Запланировать встречу</Text>
+                      <Text style={styles.scheduleBtnText}>{t('ui.zaplanirovat_vstrechu')}</Text>
                     </TouchableOpacity>
 
                     {/* Tasks */}
@@ -523,13 +525,13 @@ export default function LeadTeamsScreen() {
 
                     {tasksExpanded && (
                       <View style={styles.tasksList}>
-                        {tasks === undefined && <Text style={styles.tasksLoading}>Загрузка...</Text>}
+                        {tasks === undefined && <Text style={styles.tasksLoading}>{t('ui.zagruzka')}</Text>}
                         {tasks?.map((task: any) => {
                           const st: string = task.status ?? (task.completed ? 'done' : 'in_progress');
                           const TASK_STATUS: Record<string, { label: string; color: string; bg: string }> = {
-                            in_progress: { label: 'В работе', color: colors.warning, bg: colors.warningBg },
-                            blocked: { label: 'Блок', color: colors.danger, bg: colors.dangerBg },
-                            review: { label: 'Ревью', color: colors.accent, bg: colors.accentLight },
+                            in_progress: { label: t('tasks.statusInProgress'), color: colors.warning, bg: colors.warningBg },
+                            blocked: { label: t('ui.blok'), color: colors.danger, bg: colors.dangerBg },
+                            review: { label: t('ui.revyu'), color: colors.accent, bg: colors.accentLight },
                             done: { label: '✓', color: colors.success, bg: colors.successBg },
                           };
                           const stCfg = TASK_STATUS[st] ?? TASK_STATUS.in_progress;
@@ -557,7 +559,7 @@ export default function LeadTeamsScreen() {
                         <TouchableOpacity
                           onPress={() => { setTaskMember(member); openSheet('addTask'); }}
                         >
-                          <Text style={styles.addTaskBtn}>+ Добавить задачу</Text>
+                          <Text style={styles.addTaskBtn}>{t('ui.dobavit_zadachu')}</Text>
                         </TouchableOpacity>
                       </View>
                     )}
@@ -584,25 +586,25 @@ export default function LeadTeamsScreen() {
         <BottomSheetScrollView contentContainerStyle={styles.sheetContent} keyboardShouldPersistTaps="handled">
           {sheetType === 'createTeam' && (
             <>
-              <Text style={styles.sheetTitle}>Создать команду</Text>
-              <Text style={styles.sheetLabel}>Название команды</Text>
+              <Text style={styles.sheetTitle}>{t('ui.sozdat_komandu')}</Text>
+              <Text style={styles.sheetLabel}>{t('ui.nazvanie_komandy')}</Text>
               <BottomSheetTextInput
                 style={styles.sheetInput}
                 value={newTeamName}
                 onChangeText={setNewTeamName}
-                placeholder="Например: Backend Team"
+                placeholder={t('ui.naprimer_backend_team')}
                 placeholderTextColor={colors.textMuted}
               />
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
-                  <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+                  <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sheetBtn, { flex: 1 }, formLoading && styles.btnDisabled]}
                   onPress={handleCreateTeam}
                   disabled={formLoading}
                 >
-                  <Text style={styles.sheetBtnText}>{formLoading ? 'Создание...' : 'Создать'}</Text>
+                  <Text style={styles.sheetBtnText}>{formLoading ? t('ui.sozdanie') : t('common.create')}</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -610,7 +612,7 @@ export default function LeadTeamsScreen() {
 
           {sheetType === 'addMember' && (
             <>
-              <Text style={styles.sheetTitle}>Добавить участника</Text>
+              <Text style={styles.sheetTitle}>{t('ui.dobavit_uchastnika_2')}</Text>
               <Text style={styles.sheetLabel}>Email *</Text>
               <BottomSheetTextInput
                 style={styles.sheetInput}
@@ -621,7 +623,7 @@ export default function LeadTeamsScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
-              <Text style={styles.sheetHint}>Участник должен быть зарегистрирован в приложении</Text>
+              <Text style={styles.sheetHint}>{t('ui.uchastnik_dolzhen_byt_zaregistrirovan_v_priloz')}</Text>
               {addMemberError ? (
                 <View style={styles.sheetErrorBox}>
                   <Text style={styles.sheetErrorText}>{addMemberError}</Text>
@@ -629,14 +631,14 @@ export default function LeadTeamsScreen() {
               ) : null}
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
-                  <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+                  <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sheetBtn, { flex: 1 }, formLoading && styles.btnDisabled]}
                   onPress={handleAddMember}
                   disabled={formLoading}
                 >
-                  <Text style={styles.sheetBtnText}>{formLoading ? 'Добавление...' : 'Добавить'}</Text>
+                  <Text style={styles.sheetBtnText}>{formLoading ? t('ui.dobavlenie') : t('common.add')}</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -645,18 +647,18 @@ export default function LeadTeamsScreen() {
           {sheetType === 'scheduleMeeting' && scheduleMember && (
             <>
               <Text style={styles.sheetTitle}>Встреча с {scheduleMember.user_name}</Text>
-              <Text style={styles.sheetLabel}>Дата и время</Text>
+              <Text style={styles.sheetLabel}>{t('ui.data_i_vremya')}</Text>
               <DateTimePickerField value={scheduleDate} onChange={setScheduleDate} />
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
-                  <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+                  <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sheetBtn, { flex: 1 }, formLoading && styles.btnDisabled]}
                   onPress={handleScheduleMeeting}
                   disabled={formLoading}
                 >
-                  <Text style={styles.sheetBtnText}>{formLoading ? 'Сохранение...' : 'Запланировать'}</Text>
+                  <Text style={styles.sheetBtnText}>{formLoading ? t('ui.sohranenie') : t('ui.zaplanirovat')}</Text>
                 </TouchableOpacity>
               </View>
             </>
@@ -665,15 +667,15 @@ export default function LeadTeamsScreen() {
           {sheetType === 'addTask' && taskMember && (
             <>
               <Text style={styles.sheetTitle}>Задача для {taskMember.user_name}</Text>
-              <Text style={styles.sheetLabel}>Название задачи</Text>
+              <Text style={styles.sheetLabel}>{t('ui.nazvanie_zadachi')}</Text>
               <BottomSheetTextInput
                 style={styles.sheetInput}
                 value={newTaskTitle}
                 onChangeText={setNewTaskTitle}
-                placeholder="Что нужно сделать?"
+                placeholder={t('ui.chto_nuzhno_sdelat_2')}
                 placeholderTextColor={colors.textMuted}
               />
-              <Text style={styles.sheetLabel}>Срок (ГГГГ-ММ-ДД, необязательно)</Text>
+              <Text style={styles.sheetLabel}>{t('ui.srok_gggg_mm_dd_neobyazatelno_2')}</Text>
               <BottomSheetTextInput
                 style={styles.sheetInput}
                 value={newTaskDue}
@@ -685,7 +687,7 @@ export default function LeadTeamsScreen() {
               {/* Совместная задача: добавить соисполнителей с их частями работы */}
               {allMembers.filter((m: any) => m.user_id !== taskMember.user_id).length > 0 && (
                 <>
-                  <Text style={styles.sheetLabel}>Соисполнители (совместная задача, необязательно)</Text>
+                  <Text style={styles.sheetLabel}>{t('ui.soispolniteli_sovmestnaya_zadacha_neobyazateln')}</Text>
                   {allMembers.filter((m: any) => m.user_id !== taskMember.user_id).map((m: any) => {
                     const on = coAssignees[m.user_id] !== undefined;
                     return (
@@ -718,14 +720,14 @@ export default function LeadTeamsScreen() {
 
               <View style={styles.sheetRow}>
                 <TouchableOpacity style={[styles.sheetBtnSecondary, { flex: 1 }]} onPress={closeSheet}>
-                  <Text style={styles.sheetBtnSecondaryText}>Отмена</Text>
+                  <Text style={styles.sheetBtnSecondaryText}>{t('ui.otmena')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.sheetBtn, { flex: 1 }, formLoading && styles.btnDisabled]}
                   onPress={handleCreateTask}
                   disabled={formLoading}
                 >
-                  <Text style={styles.sheetBtnText}>{formLoading ? 'Добавление...' : 'Добавить'}</Text>
+                  <Text style={styles.sheetBtnText}>{formLoading ? t('ui.dobavlenie') : t('common.add')}</Text>
                 </TouchableOpacity>
               </View>
             </>

@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useI18n } from '../lib/i18n';
 import {
   Modal, View, Text, TouchableOpacity, StyleSheet, ScrollView, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
@@ -29,6 +30,7 @@ export function MeetingProposalsModal({
   teamId?: number | null;
   onChanged?: () => void;
 }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [tab, setTab] = useState<'inbox' | 'all' | 'new'>('inbox');
@@ -56,29 +58,29 @@ export function MeetingProposalsModal({
   const act = async (fn: (id: number, uid: number) => Promise<any>, id: number) => {
     setBusyId(id);
     try { await fn(id, currentUser.id); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
     finally { setBusyId(null); }
   };
 
   const doCounter = async (id: number) => {
-    if (!counterTime) { Alert.alert('Укажите время', 'Выберите новое время встречи'); return; }
+    if (!counterTime) { Alert.alert(t('ui.ukazhite_vremya'), 'Выберите новое время встречи'); return; }
     setBusyId(id);
     try {
       await counterProposal(id, currentUser.id, counterTime);
       setCounterFor(null); setCounterTime(''); load(); onChanged?.();
-    } catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось отправить'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить'); }
     finally { setBusyId(null); }
   };
 
   const submitNew = async () => {
-    if (!toUser) { Alert.alert('Выберите получателя'); return; }
-    if (!when) { Alert.alert('Укажите время'); return; }
+    if (!toUser) { Alert.alert(t('ui.vyberite_poluchatelya')); return; }
+    if (!when) { Alert.alert(t('ui.ukazhite_vremya')); return; }
     setCreating(true);
     try {
       await createProposal({ from_user_id: currentUser.id, to_user_id: toUser, proposed_time: when, topic: topic.trim() || null, team_id: teamId ?? null });
       setToUser(null); setTopic(''); setWhen('');
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert('Ошибка', err?.response?.detail || 'Не удалось отправить предложение'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить предложение'); }
     finally { setCreating(false); }
   };
 
@@ -114,27 +116,27 @@ export function MeetingProposalsModal({
 
         {mineTurn && (counterFor === p.id ? (
           <View style={{ marginTop: 8, gap: 8 }}>
-            <Text style={styles.label}>Предложить другое время</Text>
+            <Text style={styles.label}>{t('ui.predlozhit_drugoe_vremya')}</Text>
             <DateTimePickerField value={counterTime} onChange={setCounterTime} />
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <TouchableOpacity style={[styles.btnSecondary, { flex: 1 }]} onPress={() => { setCounterFor(null); setCounterTime(''); }}>
-                <Text style={styles.btnSecondaryText}>Отмена</Text>
+                <Text style={styles.btnSecondaryText}>{t('ui.otmena')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.btnPrimary, { flex: 1 }]} disabled={busyId === p.id} onPress={() => doCounter(p.id)}>
-                {busyId === p.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Отправить</Text>}
+                {busyId === p.id ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.otpravit')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
         ) : (
           <View style={styles.actionsRow}>
             <TouchableOpacity style={styles.btnPrimary} disabled={busyId === p.id} onPress={() => act(acceptProposal, p.id)}>
-              <Text style={styles.btnPrimaryText}>Принять</Text>
+              <Text style={styles.btnPrimaryText}>{t('ui.prinyat')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnSecondary} disabled={busyId === p.id} onPress={() => { setCounterFor(p.id); setCounterTime(''); }}>
-              <Text style={styles.btnSecondaryText}>Другое время</Text>
+              <Text style={styles.btnSecondaryText}>{t('ui.drugoe_vremya')}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.btnDanger} disabled={busyId === p.id} onPress={() => act(declineProposal, p.id)}>
-              <Text style={styles.btnDangerText}>Отклонить</Text>
+              <Text style={styles.btnDangerText}>{t('ui.otklonit')}</Text>
             </TouchableOpacity>
           </View>
         ))}
@@ -147,7 +149,7 @@ export function MeetingProposalsModal({
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Предложения встреч</Text>
+          <Text style={styles.headerTitle}>{t('ui.predlozheniya_vstrech')}</Text>
           <TouchableOpacity onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
         </View>
 
@@ -163,7 +165,7 @@ export function MeetingProposalsModal({
           {tab === 'new' ? (
             <View style={{ gap: 14 }}>
               <View>
-                <Text style={styles.label}>Кому</Text>
+                <Text style={styles.label}>{t('ui.komu')}</Text>
                 <ScrollView style={{ maxHeight: 180 }}>
                   {contacts.map(c => (
                     <TouchableOpacity key={c.user_id} style={[styles.pick, toUser === c.user_id && styles.pickActive]} onPress={() => setToUser(c.user_id)}>
@@ -171,26 +173,26 @@ export function MeetingProposalsModal({
                       {toUser === c.user_id && <Ionicons name="checkmark-circle" size={20} color={colors.accent} />}
                     </TouchableOpacity>
                   ))}
-                  {contacts.length === 0 && <Text style={styles.hint}>Нет доступных участников</Text>}
+                  {contacts.length === 0 && <Text style={styles.hint}>{t('ui.net_dostupnyh_uchastnikov')}</Text>}
                 </ScrollView>
               </View>
               <View>
-                <Text style={styles.label}>Тема</Text>
-                <TextInput style={styles.input} value={topic} onChangeText={setTopic} placeholder="О чём встреча" placeholderTextColor={colors.textMuted} />
+                <Text style={styles.label}>{t('ui.tema')}</Text>
+                <TextInput style={styles.input} value={topic} onChangeText={setTopic} placeholder={t('ui.o_chem_vstrecha')} placeholderTextColor={colors.textMuted} />
               </View>
               <View>
-                <Text style={styles.label}>Предлагаемое время</Text>
+                <Text style={styles.label}>{t('ui.predlagaemoe_vremya')}</Text>
                 <DateTimePickerField value={when} onChange={setWhen} />
               </View>
               <TouchableOpacity style={styles.btnPrimaryWide} disabled={creating} onPress={submitNew}>
-                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>Отправить предложение</Text>}
+                {creating ? <ActivityIndicator size="small" color="#fff" /> : <Text style={styles.btnPrimaryText}>{t('ui.otpravit_predlozhenie')}</Text>}
               </TouchableOpacity>
             </View>
           ) : proposals === null ? (
             <ActivityIndicator size="large" color={colors.accent} style={{ marginTop: 40 }} />
           ) : (() => {
             const list = tab === 'inbox' ? incoming : mine;
-            if (list.length === 0) return <Text style={styles.emptyList}>{tab === 'inbox' ? 'Нет предложений, ожидающих ответа' : 'Предложений пока нет'}</Text>;
+            if (list.length === 0) return <Text style={styles.emptyList}>{tab === 'inbox' ? t('ui.net_predlozheniy_ozhidayuschih_otveta') : t('ui.predlozheniy_poka_net')}</Text>;
             return list.map(renderCard);
           })()}
         </ScrollView>

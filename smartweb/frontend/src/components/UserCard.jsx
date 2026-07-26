@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getUserStats, getUserRecommendations, getUserCard } from '../api/client'
 
 export default function UserCard({ user, teamId, organization: orgProp = null, onClose, onCreateMeeting, onStartCall, onProposeTask }) {
+  const { t } = useTranslation()
   const [stats, setStats] = useState(null)
   const [recs, setRecs] = useState([])  // рекомендации об участнике (39.7), видны команде
   const [card, setCard] = useState(null)  // полные данные карточки (контакты/соцсети/фото/организация)
@@ -42,7 +44,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
   const initial = (name || '?').charAt(0).toUpperCase()
 
   const roleBadge = {
-    team_lead: { label: 'Тимлид', cls: 'bg-indigo-100 text-indigo-700' },
+    team_lead: { label: t('profile.roleLead'), cls: 'bg-indigo-100 text-indigo-700' },
     member: { label: 'Участник', cls: 'bg-gray-100 text-gray-600' },
   }
   const badge = roleBadge[role] || { label: role, cls: 'bg-gray-100 text-gray-600' }
@@ -87,21 +89,15 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
           <div style={{ display: 'flex', gap: 8, marginBottom: 18, flexWrap: 'wrap' }}>
             {onCreateMeeting && (
               <button onClick={() => { onCreateMeeting({ id: uid, name }); onClose?.() }}
-                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-                Создать встречу
-              </button>
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>{t('ui.sozdat_vstrechu')}</button>
             )}
             {onStartCall && (
               <button onClick={() => { onStartCall({ id: uid, name }); onClose?.() }}
-                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
-                Позвонить
-              </button>
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'var(--color-surface)', color: 'var(--color-text-primary)', cursor: 'pointer' }}>{t('ui.pozvonit')}</button>
             )}
             {onProposeTask && (
               <button onClick={() => { onProposeTask({ id: uid, name }); onClose?.() }}
-                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer' }}>
-                Предложить задачу
-              </button>
+                style={{ flex: '1 1 30%', fontSize: 12, fontWeight: 600, padding: '8px 6px', borderRadius: 8, border: '1px solid var(--color-accent)', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer' }}>{t('ui.predlozhit_zadachu')}</button>
             )}
           </div>
         )}
@@ -109,7 +105,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
         {/* Организация (одна на команду; видна коллегам по команде) */}
         {organization?.name && (
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '10px 14px', marginBottom: 16 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>Организация</p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 3 }}>{t('ui.organizaciya')}</p>
             <p style={{ fontSize: 14, fontWeight: 600, color: '#0f172a', margin: 0 }}>{organization.name}</p>
             {organization.industry && <p style={{ fontSize: 12, color: '#64748b', margin: '2px 0 0' }}>{organization.industry}</p>}
           </div>
@@ -118,9 +114,9 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 20 }}>
           {[
-            { value: stats?.meetings, label: 'Встреч', color: '#4f46e5', bg: '#eef2ff' },
-            { value: stats?.teams, label: 'Команд', color: '#0891b2', bg: '#ecfeff' },
-            { value: stats?.tasks_done, label: 'Задач', color: '#16a34a', bg: '#f0fdf4' },
+            { value: stats?.meetings, label: t('ui.vstrech'), color: '#4f46e5', bg: '#eef2ff' },
+            { value: stats?.teams, label: t('ui.komand'), color: '#0891b2', bg: '#ecfeff' },
+            { value: stats?.tasks_done, label: t('ui.zadach'), color: '#16a34a', bg: '#f0fdf4' },
           ].map(s => (
             <div key={s.label} style={{ background: s.bg, borderRadius: 12, padding: '10px 6px', textAlign: 'center' }}>
               <p style={{ fontSize: 20, fontWeight: 800, color: s.color, lineHeight: 1.1 }}>
@@ -141,7 +137,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
                 @{telegram.replace(/^@/, '')}
               </a>
             ) : (
-              <span className="text-sm text-gray-300">не указан</span>
+              <span className="text-sm text-gray-300">{t('ui.ne_ukazan')}</span>
             )}
           </div>
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
@@ -152,7 +148,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
                 {linkedin}
               </a>
             ) : (
-              <span className="text-sm text-gray-300">не указан</span>
+              <span className="text-sm text-gray-300">{t('ui.ne_ukazan')}</span>
             )}
           </div>
           <div className="flex items-center gap-3 py-2 border-t border-gray-100">
@@ -163,7 +159,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
                 {github}
               </a>
             ) : (
-              <span className="text-sm text-gray-300">не указан</span>
+              <span className="text-sm text-gray-300">{t('ui.ne_ukazan')}</span>
             )}
           </div>
         </div>
@@ -171,9 +167,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
         {/* Рекомендации об участнике (39.7) — видны всей команде */}
         {recs.length > 0 && (
           <div style={{ marginTop: 8 }}>
-            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>
-              Рекомендации как эксперта
-            </p>
+            <p style={{ fontSize: 10, fontWeight: 700, color: 'var(--color-text-muted, #64748b)', textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{t('ui.rekomendacii_kak_eksperta')}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {recs.map(r => (
                 <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>

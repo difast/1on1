@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { getTaskAIAdvice, createSubtasks } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 import { parseFeatureLock, openPricing, featureLockMessage } from '../lib/featureLock'
 
 export default function TaskAIHelper({ task, role = 'member', userId = null, onSubtasksAdded }) {
+  const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   useEscapeKey(() => setOpen(false), open)  // keyboard escape hatch
   const [loading, setLoading] = useState(false)
@@ -61,7 +63,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
     <>
       <button
         onClick={handleOpen}
-        title="AI-подсказка по задаче"
+        title={t('ui.ai_podskazka_po_zadache')}
         style={{
           width: 32, height: 32, borderRadius: '50%',
           background: 'linear-gradient(135deg, #3B6EF0, #2554D4, #3b82f6)',
@@ -75,7 +77,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
         }}
         onMouseEnter={e => { e.currentTarget.style.transform = 'scale(1.2)'; e.currentTarget.style.boxShadow = '0 0 20px rgba(59,110,240,0.8)' }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 0 12px rgba(59,110,240,0.5)' }}
-        aria-label="AI-помощник по задаче"
+        aria-label={t('ui.ai_pomoschnik_po_zadache')}
       >
         <svg width="18" height="18" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg>
       </button>
@@ -86,12 +88,10 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
             <div className="modal-header" style={{ paddingBottom: 12 }}>
               <div>
                 <span className="modal-title" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>
-                  AI-помощник
-                </span>
-                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>Конкретные шаги по выполнению задачи</p>
+                  <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>{t('ui.ai_pomoschnik')}</span>
+                <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.konkretnye_shagi_po_vypolneniyu_zadachi')}</p>
               </div>
-              <button className="modal-close" aria-label="Закрыть" onClick={() => setOpen(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}>✕</button>
             </div>
 
             <div style={{ background: 'linear-gradient(135deg, #f5f3ff, #E0EAFF)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, border: '1px solid #ddd6fe' }}>
@@ -103,7 +103,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
             {loading ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '20px 0' }}>
                 <div className="spinner" style={{ borderColor: '#ddd6fe', borderTopColor: '#3B6EF0' }} />
-                <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>AI анализирует задачу...</span>
+                <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.ai_analiziruet_zadachu')}</span>
               </div>
             ) : steps ? (
               <>
@@ -127,11 +127,9 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                       transition: 'all 0.2s',
                     }}
                   >
-                    {added ? '✓ Добавлено!' : adding ? 'Добавление...' : '+ Добавить подзадачи'}
+                    {added ? '✓ Добавлено!' : adding ? t('ui.dobavlenie') : t('ui.dobavit_podzadachi')}
                   </button>
-                  <button onClick={fetchSteps} style={{ padding: '9px 14px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                    Обновить
-                  </button>
+                  <button onClick={fetchSteps} style={{ padding: '9px 14px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('ui.obnovit')}</button>
                 </div>
               </>
             ) : locked ? (
@@ -143,12 +141,12 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                 <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.5, maxWidth: 320 }}>
                   {locked.message || featureLockMessage(locked.feature_label, locked.min_plan_name)}
                 </p>
-                <button onClick={() => openPricing(locked.min_plan || 'team')} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, padding: '9px 20px', cursor: 'pointer' }}>Посмотреть тарифы</button>
+                <button onClick={() => openPricing(locked.min_plan || 'team')} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 10, color: 'white', fontSize: 13, fontWeight: 700, padding: '9px 20px', cursor: 'pointer' }}>{t('ui.posmotret_tarify')}</button>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, padding: '16px 0' }}>
-                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>Не удалось получить подсказку. Проверьте соединение.</p>
-                <button onClick={fetchSteps} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 700, padding: '7px 18px', cursor: 'pointer' }}>Повторить</button>
+                <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0 }}>{t('ui.ne_udalos_poluchit_podskazku_proverte_soedinen')}</p>
+                <button onClick={fetchSteps} style={{ background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', border: 'none', borderRadius: 8, color: 'white', fontSize: 12, fontWeight: 700, padding: '7px 18px', cursor: 'pointer' }}>{t('ui.povtorit')}</button>
               </div>
             )}
           </div>

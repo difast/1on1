@@ -100,7 +100,7 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (submittingRef.current) return;
     setError(''); setNeedConfirm(false); setResendState('');
-    if (!email.trim()) { setError('Введите email'); return; }
+    if (!email.trim()) { setError(t('ui.vvedite_email')); return; }
     submittingRef.current = true;
     setLoading(true);
     try {
@@ -131,7 +131,7 @@ export default function LoginScreen() {
   const handleRegister = async () => {
     if (submittingRef.current) return;
     setError('');
-    if (!email.trim()) { setError('Введите email'); return; }
+    if (!email.trim()) { setError(t('ui.vvedite_email')); return; }
     if (password !== confirmPassword) { setError(t('validation.passwordMismatch')); return; }
     const pw = passwordProblem(password);
     if (pw) { setError(pw); return; }
@@ -157,7 +157,7 @@ export default function LoginScreen() {
 
   const handleForgot = async () => {
     setError('');
-    if (!email.trim()) { setError('Введите email'); return; }
+    if (!email.trim()) { setError(t('ui.vvedite_email')); return; }
     setLoading(true);
     try {
       await forgotPassword(email);
@@ -167,7 +167,7 @@ export default function LoginScreen() {
 
   const handleAdminLogin = async () => {
     setError('');
-    if (adminCode.trim() !== ADMIN_CODE) { setError('Неверный код администратора'); return; }
+    if (adminCode.trim() !== ADMIN_CODE) { setError(t('ui.nevernyy_kod_administratora')); return; }
     await enterAdmin();
   };
 
@@ -193,7 +193,7 @@ export default function LoginScreen() {
             style={[styles.btn, styles.btnSecondary, { flex: 0 }]}
             onPress={() => { setMode('login'); setError(''); setPassword(''); setConfirmPassword(''); setNeedConfirm(true); }}
           >
-            <Text style={[styles.btnText, { color: colors.textPrimary }]}>Войти</Text>
+            <Text style={[styles.btnText, { color: colors.textPrimary }]}>{t('ui.voyti')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.btn, { flex: 1 }, !provider.url && styles.btnDisabled]}
@@ -214,11 +214,9 @@ export default function LoginScreen() {
           <Ionicons name="mail-outline" size={28} color={colors.accent} />
         </View>
         <Text style={styles.emailTitle}>{t('auth.checkEmailTitle')}</Text>
-        <Text style={styles.emailDesc}>Если для этого адреса есть аккаунт с паролем, мы отправили ссылку на</Text>
+        <Text style={styles.emailDesc}>{t('ui.esli_dlya_etogo_adresa_est_akkaunt')}</Text>
         <Text style={styles.emailAddress}>{email}</Text>
-        <Text style={styles.emailHint}>
-          Откройте ссылку из письма и задайте новый пароль. Ссылка действует 1 час.
-        </Text>
+        <Text style={styles.emailHint}>{t('ui.otkroyte_ssylku_iz_pisma_i_zadayte')}</Text>
         <TouchableOpacity style={styles.btn} onPress={() => { setMode('login'); setError(''); }}>
           <Text style={styles.btnText}>{t('auth.backToLogin')}</Text>
         </TouchableOpacity>
@@ -276,7 +274,7 @@ export default function LoginScreen() {
           <ScrollView contentContainerStyle={styles.root} keyboardShouldPersistTaps="always">
             <View style={styles.logoWrap}>
               <Text style={styles.logo}>OneOn<Text style={styles.logoAccent}>One</Text></Text>
-              <Text style={styles.logoSub}>Панель администратора</Text>
+              <Text style={styles.logoSub}>{t('ui.panel_administratora')}</Text>
             </View>
             <View style={styles.card}>
               <View style={styles.adminHeader}>
@@ -286,7 +284,7 @@ export default function LoginScreen() {
                 <Text style={styles.adminTitle}>{t('auth.adminLogin')}</Text>
               </View>
               <View style={styles.field}>
-                <Text style={styles.label}>Код администратора</Text>
+                <Text style={styles.label}>{t('ui.kod_administratora')}</Text>
                 <TextInput
                   style={styles.input}
                   value={adminCode}
@@ -304,13 +302,13 @@ export default function LoginScreen() {
                 <View style={styles.errorBox}><Text style={styles.errorText}>{error}</Text></View>
               ) : null}
               <TouchableOpacity style={styles.btn} onPress={handleAdminLogin}>
-                <Text style={styles.btnText}>Войти</Text>
+                <Text style={styles.btnText}>{t('ui.voyti')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.backLink}
                 onPress={() => { setMode('login'); setError(''); setAdminCode(''); }}
               >
-                <Text style={styles.backLinkText}>← Назад</Text>
+                <Text style={styles.backLinkText}>{t('ui.nazad')}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>

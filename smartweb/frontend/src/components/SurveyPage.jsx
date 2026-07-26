@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import { getSurveyConfig, submitSurvey, skipSurvey } from '../api/client'
 
@@ -13,6 +14,7 @@ import { getSurveyConfig, submitSurvey, skipSurvey } from '../api/client'
  * пользователя (onboarding_survey_done=true) — App уводит дальше, к выбору роли.
  */
 export default function SurveyPage({ user, onDone }) {
+  const { t } = useTranslation()
   const [questions, setQuestions] = useState(null)  // null=loading, []=ошибка/пусто
   const [step, setStep] = useState(0)
   const [answers, setAnswers] = useState({})        // { qkey: [optKey, ...] }
@@ -68,7 +70,7 @@ export default function SurveyPage({ user, onDone }) {
       const { data } = await submitSurvey(user.id, finalAnswers)
       onDone(data)
     } catch {
-      setError('Не удалось сохранить ответы. Попробуйте ещё раз или пропустите.')
+      setError(t('ui.ne_udalos_sohranit_otvety_poprobuyte_esche'))
       setBusy('')
     }
   }
@@ -86,7 +88,7 @@ export default function SurveyPage({ user, onDone }) {
       const { data } = await skipSurvey(user.id)
       onDone(data)
     } catch {
-      setError('Не удалось выполнить действие. Попробуйте ещё раз.')
+      setError(t('ui.ne_udalos_vypolnit_deystvie_poprobuyte_esche'))
       setBusy('')
     }
   }
@@ -183,7 +185,7 @@ export default function SurveyPage({ user, onDone }) {
                 borderRadius: 12, cursor: busy ? 'default' : 'pointer', fontSize: 14, fontWeight: 600,
               }}
             >
-              {busy === 'skip' ? 'Пропускаем...' : 'Пропустить'}
+              {busy === 'skip' ? t('ui.propuskaem') : t('common.skip')}
             </button>
             <button
               type="button"
@@ -198,8 +200,8 @@ export default function SurveyPage({ user, onDone }) {
               }}
             >
               {busy === 'submit'
-                ? (<><Spinner size={15} /> Сохраняем...</>)
-                : (step < total - 1 ? 'Далее' : 'Завершить')}
+                ? (<><Spinner size={15} />{t('ui.sohranyaem')}</>)
+                : (step < total - 1 ? t('common.next') : t('ui.zavershit'))}
             </button>
           </div>
         </div>

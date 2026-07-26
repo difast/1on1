@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import Spinner from '../lib/Spinner'
 import EmptyState from './EmptyState'
 import { toast } from '../lib/ui'
@@ -23,6 +24,7 @@ const SECTION_HINT = {
 const NEEDS_MEMBER = ['employee_analysis', 'feedback_prep']
 
 export default function OneAI({ user }) {
+  const { t } = useTranslation()
   const meId = user.id
   const [sections, setSections] = useState(null)
   const [active, setActive] = useState(null)
@@ -57,7 +59,7 @@ export default function OneAI({ user }) {
   useEffect(() => { if (sections && sections.some(s => NEEDS_MEMBER.includes(s.key))) loadMembers() }, [sections, loadMembers])
 
   const run = async () => {
-    if (NEEDS_MEMBER.includes(active) && !targetUser) { toast('Выберите сотрудника', 'error'); return }
+    if (NEEDS_MEMBER.includes(active) && !targetUser) { toast(t('ui.vyberite_sotrudnika'), 'error'); return }
     setLoading(true); setResult(null)
     try {
       const { data } = await oneAiQuery({
@@ -79,7 +81,7 @@ export default function OneAI({ user }) {
     <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', alignItems: 'flex-start' }}>
       {/* Разделы */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220, flex: '0 0 230px' }}>
-        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Разделы ONE AI</p>
+        <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{t('ui.razdely_one_ai')}</p>
         {sections.map(s => (
           <button key={s.key} onClick={() => { setActive(s.key); setResult(null); setMessage('') }}
             style={{
@@ -102,14 +104,14 @@ export default function OneAI({ user }) {
             </div>
             {NEEDS_MEMBER.includes(active) && (
               <select className="input" value={targetUser} onChange={e => setTargetUser(e.target.value)}>
-                <option value="">Выберите сотрудника…</option>
+                <option value="">{t('ui.vyberite_sotrudnika_2')}</option>
                 {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             )}
             <textarea className="input" rows={2} value={message} onChange={e => setMessage(e.target.value)}
-              placeholder="Уточните запрос (необязательно): например, за последний месяц" style={{ resize: 'vertical' }} />
+              placeholder={t('ui.utochnite_zapros_neobyazatelno_naprimer_za_pos')} style={{ resize: 'vertical' }} />
             <div>
-              <button className="btn btn-accent" onClick={run} disabled={loading}>{loading ? 'ONE AI анализирует…' : 'Запросить анализ'}</button>
+              <button className="btn btn-accent" onClick={run} disabled={loading}>{loading ? t('ui.one_ai_analiziruet') : t('ui.zaprosit_analiz')}</button>
             </div>
           </div>
         )}
@@ -136,7 +138,7 @@ export default function OneAI({ user }) {
         )}
 
         {!result && !loading && (
-          <EmptyState title="ONE AI готов к анализу" desc="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
+          <EmptyState title={t('ui.one_ai_gotov_k_analizu')} desc="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
         )}
       </div>
     </div>
