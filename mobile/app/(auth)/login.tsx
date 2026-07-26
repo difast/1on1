@@ -421,18 +421,10 @@ export default function LoginScreen() {
                 : <Text style={styles.btnText}>{mode === 'login' ? 'Войти →' : 'Зарегистрироваться →'}</Text>}
             </TouchableOpacity>
 
-            {mode === 'login' && (
-              <TouchableOpacity
-                style={{ alignItems: 'center', marginTop: 14 }}
-                onPress={() => { setMode('forgot'); setError(''); }}
-              >
-                <Text style={styles.adminLinkText}>Забыли пароль?</Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Соц-вход: Яндекс ID. Дополняет email/пароль, не заменяет его. */}
+            {/* Соц-вход: Яндекс ID — сразу под кнопкой обычного входа.
+                Дополняет email/пароль, не заменяет его. */}
             {yandexEnabled && (
-              <View style={{ marginTop: 20 }}>
+              <View style={{ marginTop: 16 }}>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
                   <Text style={styles.dividerText}>или</Text>
@@ -440,6 +432,16 @@ export default function LoginScreen() {
                 </View>
                 <YandexLoginButton onError={setError} />
               </View>
+            )}
+
+            {/* Ниже кнопок входа: восстановление пароля и админ-вход */}
+            {mode === 'login' && (
+              <TouchableOpacity
+                style={{ alignItems: 'center', marginTop: 16 }}
+                onPress={() => { setMode('forgot'); setError(''); }}
+              >
+                <Text style={styles.adminLinkText}>Забыли пароль?</Text>
+              </TouchableOpacity>
             )}
 
             <TouchableOpacity

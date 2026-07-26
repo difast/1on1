@@ -357,34 +357,14 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                   : (mode === 'login' ? 'Войти →' : 'Зарегистрироваться →')}
               </button>
 
-              {mode === 'login' && (
-                <div style={{ textAlign: 'center', marginTop: 12 }}>
-                  <button
-                    type="button"
-                    onClick={() => { setMode('forgot'); setError('') }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-muted)' }}
-                  >
-                    Забыли пароль?
-                  </button>
-                </div>
-              )}
-
-              <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 14, lineHeight: 1.5 }}>
-                {mode === 'register' ? 'Регистрируясь' : 'Продолжая'}, вы даёте{' '}
-                <button
-                  type="button"
-                  onClick={() => setShowConsent(true)}
-                  style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
-                >
-                  согласие на обработку персональных данных
-                </button>.
-              </p>
             </form>
 
-            {/* Соц-вход: Яндекс ID и Telegram. Оба дополняют email/пароль, не
-                заменяют его. Каждый показывается, только если настроен. */}
+            {/* Соц-вход: Яндекс ID и Telegram — сразу под кнопкой обычного
+                входа. Порядок способов: email/пароль, Яндекс ID, Telegram.
+                Оба дополняют email/пароль, не заменяют его, и показываются
+                только если настроены. */}
             {(yandexEnabled || (tgConfig?.enabled && tgConfig.bot_username)) && (
-              <div style={{ marginTop: 20 }}>
+              <div style={{ marginTop: 16 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
                   <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
                   <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>или</span>
@@ -405,6 +385,30 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                 )}
               </div>
             )}
+
+            {/* Ниже кнопок входа: восстановление пароля, согласие, админ-вход */}
+            {mode === 'login' && (
+              <div style={{ textAlign: 'center', marginTop: 16 }}>
+                <button
+                  type="button"
+                  onClick={() => { setMode('forgot'); setError('') }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-muted)' }}
+                >
+                  Забыли пароль?
+                </button>
+              </div>
+            )}
+
+            <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 14, lineHeight: 1.5 }}>
+              {mode === 'register' ? 'Регистрируясь' : 'Продолжая'}, вы даёте{' '}
+              <button
+                type="button"
+                onClick={() => setShowConsent(true)}
+                style={{ background: 'none', border: 'none', padding: 0, color: 'var(--color-accent)', cursor: 'pointer', fontSize: 12, textDecoration: 'underline' }}
+              >
+                согласие на обработку персональных данных
+              </button>.
+            </p>
 
             {/* Admin link */}
             <div style={{ textAlign: 'center', marginTop: 18 }}>
