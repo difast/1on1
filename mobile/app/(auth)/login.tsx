@@ -9,6 +9,8 @@ import { useAuth } from '../../src/context/auth';
 import { useTheme } from '../../src/context/theme';
 import type { AppColors } from '../../src/constants/colors';
 import { mailProviderFor } from '../../src/lib/mailProviders';
+import YandexLoginButton from '../../src/components/YandexLoginButton';
+import { yandexAuthConfig } from '../../src/lib/api';
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin' | 'confirm_sent';
 
@@ -40,7 +42,14 @@ export default function LoginScreen() {
   // повторной отправки письма прямо под ошибкой.
   const [needConfirm, setNeedConfirm] = useState(false);
   const [resendState, setResendState] = useState<'' | 'sending' | 'sent'>('');
+  // Вход через Yandex ID — дополнительный способ рядом с email/паролем.
+  // Кнопку показываем, только если способ настроен на бэкенде.
+  const [yandexEnabled, setYandexEnabled] = useState(false);
   const submittingRef = useRef(false);
+
+  React.useEffect(() => {
+    yandexAuthConfig().then(r => setYandexEnabled(!!r?.enabled)).catch(() => setYandexEnabled(false));
+  }, []);
 
   // Reset submitting state if session disappears (e.g. sign-out while loading)
   React.useEffect(() => {
@@ -421,6 +430,18 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
 
+            {/* Соц-вход: Яндекс ID. Дополняет email/пароль, не заменяет его. */}
+            {yandexEnabled && (
+              <View style={{ marginTop: 20 }}>
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <Text style={styles.dividerText}>или</Text>
+                  <View style={styles.dividerLine} />
+                </View>
+                <YandexLoginButton onError={setError} />
+              </View>
+            )}
+
             <TouchableOpacity
               style={styles.adminLink}
               onPress={() => { setMode('admin'); setError(''); }}
@@ -490,6 +511,10 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   btnText: { fontSize: 15, fontWeight: '600', color: '#fff' },
   warnBox: { backgroundColor: '#fff8ed', borderColor: '#fcd9a5' },
   warnText: { fontSize: 13, color: '#7c4a03' },
+
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
+  dividerLine: { flex: 1, height: 1, backgroundColor: c.border },
+  dividerText: { fontSize: 12, color: c.textMuted },
 
   adminLink: { alignItems: 'center', marginTop: 18 },
   adminLinkText: { fontSize: 12, color: c.textMuted },

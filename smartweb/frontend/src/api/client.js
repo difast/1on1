@@ -270,6 +270,12 @@ export const authResetPassword = (token, new_password) => api.post('/auth/reset-
 export const authChangePassword = (data) => api.post('/auth/change-password', data)
 export const authAddEmail = (userId, email) => api.post('/auth/add-email', { user_id: userId, email })
 
+// Вход через Yandex ID. Отдельный OAuth-поток входа (скоупы login:*), не
+// связанный с подключением Яндекс Календаря (интеграции ниже).
+export const getYandexAuthConfig = () => api.get('/auth/yandex/config')
+export const getYandexAuthUrl = (params) => api.get('/auth/yandex/authorize', { params })
+export const completeYandexAuth = (code, state) => api.post('/auth/yandex/callback', { code, state })
+
 // Онбординг-опросник (после подтверждения почты, до выбора роли)
 export const getSurveyConfig = () => api.get('/survey/config')
 export const submitSurvey = (userId, answers) => api.post('/survey/submit', { user_id: userId, answers })
