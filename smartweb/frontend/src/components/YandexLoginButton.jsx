@@ -2,7 +2,8 @@ import { useState } from 'react'
 import { getYandexAuthUrl } from '../api/client'
 
 /*
- * Кнопка «Войти через Яндекс ID» по брендовым гайдлайнам Yandex ID.
+ * Кнопка «Войти с Яндекс ID» по брендовым гайдлайнам Yandex ID (официальная
+ * формулировка; сокращать «Яндекс ID» нельзя).
  *
  * Разрешённые варианты оформления: фирменный красный (#FC3F1D, основной),
  * чёрный и белый. Логотип-бейдж всегда контрастен фону, вокруг него сохраняется
@@ -41,7 +42,7 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
       type="button"
       onClick={start}
       disabled={loading || disabled}
-      aria-label="Войти через Яндекс ID"
+      aria-label="Войти с Яндекс ID"
       style={{
         width: '100%',
         minHeight: 44,
@@ -77,7 +78,7 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
       >
         Я
       </span>
-      {loading ? 'Открываем Яндекс ID...' : 'Войти через Яндекс ID'}
+      {loading ? 'Открываем Яндекс ID...' : 'Войти с Яндекс ID'}
     </button>
   )
 }
