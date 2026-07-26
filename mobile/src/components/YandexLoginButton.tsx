@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Text, TouchableOpacity, StyleSheet, View, Linking, ActivityIndicator } from 'react-native';
+import { Text, Pressable, StyleSheet, View, Linking, ActivityIndicator } from 'react-native';
 import { yandexAuthUrl } from '../lib/api';
 
 /*
  * Кнопка «Войти с Яндекс ID» для мобильного приложения (официальная
  * формулировка Yandex ID; сокращать «Яндекс ID» нельзя).
  *
- * Оформление — по брендовым гайдлайнам Yandex ID: фирменный красный #FC3F1D
- * (разрешены также чёрный и белый варианты), логотип-бейдж с фирменной «Я» в
- * контрастном круге, защитное поле вокруг логотипа, скругление и пропорции не
- * меняются, формулировка не сокращается.
+ * Оформление — по брендовым гайдлайнам Yandex ID: фирменный красный (основной),
+ * разрешённые варианты — чёрный и белый; логотип-бейдж, его пропорции, радиус и
+ * защитное поле не меняются. Высота, скругление и кегль совпадают с основной
+ * кнопкой входа на экране, чтобы способы входа не выглядели вразнобой.
+ * Состояние нажатия — затемнение фирменного цвета (как в оформлении Yandex ID).
  *
  * Поток входа нативный: обычный веб-редирект OAuth не возвращает пользователя в
  * приложение, поэтому бэкенд отдаёт URL согласия с redirect URI на схему
@@ -18,10 +19,12 @@ import { yandexAuthUrl } from '../lib/api';
  */
 type Variant = 'red' | 'black' | 'white';
 
-const BRAND: Record<Variant, { bg: string; text: string; border: string; badgeBg: string; badgeFg: string }> = {
-  red:   { bg: '#FC3F1D', text: '#FFFFFF', border: 'transparent', badgeBg: '#FFFFFF', badgeFg: '#FC3F1D' },
-  black: { bg: '#000000', text: '#FFFFFF', border: 'transparent', badgeBg: '#FFFFFF', badgeFg: '#000000' },
-  white: { bg: '#FFFFFF', text: '#000000', border: '#DCDEE0',     badgeBg: '#FC3F1D', badgeFg: '#FFFFFF' },
+const BRAND: Record<Variant, {
+  bg: string; bgPressed: string; text: string; border: string; badgeBg: string; badgeFg: string;
+}> = {
+  red:   { bg: '#FC3F1D', bgPressed: '#D92C0E', text: '#FFFFFF', border: 'transparent', badgeBg: '#FFFFFF', badgeFg: '#FC3F1D' },
+  black: { bg: '#000000', bgPressed: '#1F1F1F', text: '#FFFFFF', border: 'transparent', badgeBg: '#FFFFFF', badgeFg: '#000000' },
+  white: { bg: '#FFFFFF', bgPressed: '#ECEEF0', text: '#000000', border: '#DCDEE0',     badgeBg: '#FC3F1D', badgeFg: '#FFFFFF' },
 };
 
 export default function YandexLoginButton({
@@ -47,13 +50,17 @@ export default function YandexLoginButton({
   };
 
   return (
-    <TouchableOpacity
+    <Pressable
       accessibilityRole="button"
       accessibilityLabel="Войти с Яндекс ID"
-      activeOpacity={0.85}
+      accessibilityState={{ disabled: loading || disabled, busy: loading }}
       onPress={start}
       disabled={loading || disabled}
-      style={[styles.btn, { backgroundColor: c.bg, borderColor: c.border }, (loading || disabled) && styles.disabled]}
+      style={({ pressed }) => [
+        styles.btn,
+        { backgroundColor: pressed ? c.bgPressed : c.bg, borderColor: c.border },
+        (loading || disabled) && styles.disabled,
+      ]}
     >
       <View style={[styles.badge, { backgroundColor: c.badgeBg }]}>
         <Text style={[styles.badgeText, { color: c.badgeFg }]}>Я</Text>
@@ -61,22 +68,24 @@ export default function YandexLoginButton({
       {loading
         ? <ActivityIndicator size="small" color={c.text} />
         : <Text style={[styles.label, { color: c.text }]}>Войти с Яндекс ID</Text>}
-    </TouchableOpacity>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   btn: {
+    // Высота и скругление — как у основной кнопки входа (paddingVertical 14 +
+    // строка 15/20 даёт те же 48 pt).
     minHeight: 48,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 10,                 // защитное поле у логотипа
-    paddingHorizontal: 16,
+    paddingHorizontal: 18,
     borderRadius: 10,
     borderWidth: 1,
   },
-  disabled: { opacity: 0.7 },
+  disabled: { opacity: 0.6 },
   badge: {
     width: 22, height: 22, borderRadius: 11,
     alignItems: 'center', justifyContent: 'center',

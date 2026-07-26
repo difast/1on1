@@ -299,6 +299,46 @@ h4 { font-size: 1rem; }
 .btn-success { background: var(--color-success-bg); color: var(--color-success); border: 1px solid #86EFAC; }
 .btn-success:hover { background: #DCFCE7; border-color: #4ADE80; }
 
+/* Вход через Yandex ID. Фирменный красный (основной), чёрный и белый — три
+   разрешённых гайдлайнами варианта; логотип-бейдж, его пропорции, радиус и
+   защитное поле заданы гайдлайнами и не меняются. Всё остальное — геометрия,
+   переходы, состояния наведения и нажатия — общее с прочими кнопками (.btn),
+   чтобы блок способов входа выглядел цельно. */
+.btn-yandex {
+  background: #FC3F1D; color: #FFFFFF; border: 1px solid transparent;
+  box-shadow: 0 4px 20px rgba(252, 63, 29, 0.22);
+}
+.btn-yandex:hover {
+  background: #EC3313; box-shadow: 0 8px 32px rgba(252, 63, 29, 0.32);
+  transform: translateY(-1px);
+}
+.btn-yandex:active { background: #D92C0E; transform: scale(0.96) translateY(0); }
+/* Общий осветляющий оверлей .btn отключаем: на фирменном красном наведение
+   передаётся затемнением фона — как в оформлении самих кнопок Yandex ID. */
+.btn-yandex:hover::after, .btn-yandex:active::after { background: transparent; }
+.btn-yandex:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+
+.btn-yandex-black { background: #000000; box-shadow: var(--shadow-sm); }
+.btn-yandex-black:hover { background: #1F1F1F; box-shadow: var(--shadow-md); }
+.btn-yandex-black:active { background: #000000; }
+
+.btn-yandex-white {
+  background: #FFFFFF; color: #000000; border-color: #DCDEE0; box-shadow: var(--shadow-xs);
+}
+.btn-yandex-white:hover { background: #F5F6F7; border-color: #C9CCD1; box-shadow: var(--shadow-sm); }
+.btn-yandex-white:active { background: #ECEEF0; }
+
+/* Логотип-бейдж: круг фиксированных пропорций с фирменной «Я» внутри. */
+.btn-yandex-badge {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'YS Text', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 15px; font-weight: 700; line-height: 22px;
+  flex-shrink: 0; background: #FFFFFF; color: #FC3F1D;
+}
+.btn-yandex-black .btn-yandex-badge { background: #FFFFFF; color: #000000; }
+.btn-yandex-white .btn-yandex-badge { background: #FC3F1D; color: #FFFFFF; }
+
 .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: var(--radius-sm); }
 .btn-lg { padding: 13px 24px; font-size: 16px; border-radius: var(--radius-lg); }
 .btn-xl { padding: 16px 32px; font-size: 17px; border-radius: var(--radius-lg); }
