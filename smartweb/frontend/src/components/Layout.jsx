@@ -330,7 +330,13 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
   // Механизм общий (lib/overlay) — новые оверлеи подключаются одной строкой.
   useExclusiveOverlay('user-menu', showUserMenu, () => setShowUserMenu(false))
   useExclusiveOverlay('notifications', showNotifications, () => setShowNotifications(false))
-  useExclusiveOverlay('lang-menu', showLangMenu, () => setShowLangMenu(false))
+  // Список языков — НЕ самостоятельный оверлей: он раскрывается внутри меню
+  // профиля. Если подключить его к взаимному исключению, его открытие закроет
+  // родительское меню профиля вместе с самим списком, и выбрать язык будет
+  // невозможно. Взаимное исключение обеспечивает родительское меню.
+  useEffect(() => {
+    if (!showUserMenu) setShowLangMenu(false)
+  }, [showUserMenu])
 
   useEffect(() => {
     const timer = setInterval(() => {

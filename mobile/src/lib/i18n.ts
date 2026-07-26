@@ -56,6 +56,9 @@ const emit = () => listeners.forEach((l) => l());
 // Асинхронно подхватываем сохранённый выбор.
 AsyncStorage.getItem(STORAGE_KEY)
   .then((v) => {
+    // Если пользователь успел переключить язык до того, как чтение из хранилища
+    // завершилось, его выбор важнее сохранённого — не перетираем.
+    if (explicit) return;
     if (v === 'ru' || v === 'en' || v === 'kz') {
       current = v;
       explicit = true;
