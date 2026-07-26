@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
+import YandexLoginButton from './YandexLoginButton'
 import Spinner from '../lib/Spinner'
 import ConfirmEmailModal from './ConfirmEmailModal'
 import {
-  getTelegramConfig, telegramCallback,
+  getTelegramConfig, telegramCallback, getYandexAuthConfig,
   authLogin, authRegister, authForgotPassword, adminLogin, authResendConfirmation,
 } from '../api/client'
 
@@ -38,6 +39,9 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const [adminPwd, setAdminPwd] = useState('')
   const [tgConfig, setTgConfig] = useState(null)  // { bot_username, enabled }
   const [tgLoading, setTgLoading] = useState(false)
+  // Вход через Yandex ID — дополнительный способ рядом с email/паролем и
+  // Telegram. Кнопка показывается, только если способ настроен на бэкенде.
+  const [yandexEnabled, setYandexEnabled] = useState(false)
   // Модальное окно подтверждения почты после успешной регистрации (Задача 2).
   // Пока оно открыто, пользователь НЕ в кабинете: токен не выдан.
   const [confirmEmail, setConfirmEmail] = useState('')
@@ -48,6 +52,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
   useEffect(() => {
     getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
+    getYandexAuthConfig().then(r => setYandexEnabled(!!r.data?.enabled)).catch(() => setYandexEnabled(false))
   }, [])
 
   // Колбэк официального виджета: отправляем подписанные данные на бэкенд для
@@ -374,15 +379,23 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
               </p>
             </form>
 
-            {/* Вход через Telegram — дополняет email/пароль, не заменяет (Этап 3) */}
-            {tgConfig?.enabled && tgConfig.bot_username && (
+            {/* Соц-вход: Яндекс ID и Telegram. Оба дополняют email/пароль, не
+                заменяют его. Каждый показывается, только если настроен. */}
+            {(yandexEnabled || (tgConfig?.enabled && tgConfig.bot_username)) && (
               <div style={{ marginTop: 20 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
                   <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
                   <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>или</span>
                   <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
                 </div>
-                <TelegramLoginButton botUsername={tgConfig.bot_username} onAuth={handleTelegramWidget} />
+                {yandexEnabled && (
+                  <div style={{ marginBottom: tgConfig?.enabled && tgConfig.bot_username ? 12 : 0 }}>
+                    <YandexLoginButton onError={setError} />
+                  </div>
+                )}
+                {tgConfig?.enabled && tgConfig.bot_username && (
+                  <TelegramLoginButton botUsername={tgConfig.bot_username} onAuth={handleTelegramWidget} />
+                )}
                 {tgLoading && (
                   <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)', marginTop: 10 }}>
                     Входим через Telegram...

@@ -19,6 +19,10 @@ class User(Base):
     # Telegram ID — отдельный идентификатор для входа через бота/виджет.
     # Уникальный, nullable: привязка есть не у всех пользователей.
     telegram_id = Column(BigInteger, unique=True, nullable=True)
+    # Yandex ID — стабильный идентификатор провайдера для входа через Яндекс.
+    # Уникальный, nullable: привязка есть не у всех. Матчинг пользователя идёт
+    # именно по нему, а не по email (email в Яндексе можно сменить).
+    yandex_id = Column(String(64), unique=True, nullable=True)
     linkedin = Column(String(255), nullable=True)
     github = Column(String(255), nullable=True)
     calendar_token = Column(Text, nullable=True)

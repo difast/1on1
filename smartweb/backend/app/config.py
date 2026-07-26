@@ -83,6 +83,20 @@ class Settings(BaseSettings):
     # По умолчанию — app_web_url + /?integrations=1.
     integrations_return_url: str = ""
 
+    # --- Вход через Yandex ID (вход/регистрация, НЕ календарь). ---
+    # Поток отдельный от календарной интеграции: другой набор скоупов
+    # (login:email login:info login:avatar вместо calendar.events) и другой
+    # redirect URI (/auth/yandex/callback). Креды по умолчанию берутся те же,
+    # что у календаря (yandex_client_*); если для входа заведено отдельное
+    # приложение Yandex OAuth — задать YANDEX_LOGIN_CLIENT_ID/SECRET.
+    yandex_login_client_id: str = ""
+    yandex_login_client_secret: str = ""
+    # Redirect URI веба. По умолчанию — app_web_url + /auth/yandex/callback.
+    yandex_login_redirect_uri: str = ""
+    # Redirect URI мобильного приложения: deep-link на схему приложения.
+    # Обычный веб-редирект в приложении не работает — возврат идёт по схеме.
+    yandex_login_mobile_redirect_uri: str = "oneonone://auth/yandex/callback"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -105,5 +119,25 @@ class Settings(BaseSettings):
     @property
     def smtp_sender(self) -> str:
         return self.smtp_from or self.smtp_user
+
+    # --- Yandex ID (вход): креды и redirect URI с откатом на календарные ---
+
+    @property
+    def yandex_login_id(self) -> str:
+        return self.yandex_login_client_id or self.yandex_client_id
+
+    @property
+    def yandex_login_secret(self) -> str:
+        return self.yandex_login_client_secret or self.yandex_client_secret
+
+    @property
+    def yandex_login_web_redirect(self) -> str:
+        """Redirect URI страницы входа на вебе (/auth/yandex/callback).
+        Должен быть зарегистрирован в приложении Yandex OAuth отдельно от
+        redirect URI календарной интеграции."""
+        if self.yandex_login_redirect_uri:
+            return self.yandex_login_redirect_uri
+        base = (self.app_web_url or "").rstrip("/")
+        return f"{base}/auth/yandex/callback" if base else ""
 
 settings = Settings()

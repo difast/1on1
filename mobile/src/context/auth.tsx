@@ -41,6 +41,9 @@ interface AuthContextType {
   enterAdmin: () => Promise<void>;
   exitAdmin: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  // Вход по уже выданному сервером JWT (Yandex ID): токен и профиль приходят
+  // из /auth/yandex/callback, пароль в этом потоке не участвует.
+  signInWithToken: (token: string, u: AppUser) => Promise<void>;
   // Регистрация не входит в кабинет: возвращает email для окна подтверждения.
   signUp: (email: string, password: string) => Promise<{ email: string }>;
   forgotPassword: (email: string) => Promise<void>;
@@ -66,6 +69,7 @@ const AuthContext = createContext<AuthContextType>({
   enterAdmin: async () => {},
   exitAdmin: async () => {},
   signIn: async () => {},
+  signInWithToken: async () => {},
   signUp: async () => ({ email: '' }),
   forgotPassword: async () => {},
   resendConfirmation: async () => {},
@@ -177,6 +181,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await applyUser(u);
   };
 
+  // Вход через Yandex ID: сервер уже проверил code/state и выдал наш JWT
+  // (та же выдача токена, что у email- и Telegram-входа) — сохраняем сессию.
+  const signInWithToken = async (token: string, u: AppUser) => {
+    setProfileError(null);
+    await setToken(token);
+    setSession({ token, email: u?.email ?? '' });
+    await applyUser(u);
+  };
+
   const signUp = async (email: string, password: string) => {
     setProfileError(null);
     const clean = email.trim();
@@ -241,7 +254,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin,
-      signIn, signUp, forgotPassword, resendConfirmation, signOut, retryProfile,
+      signIn, signInWithToken, signUp, forgotPassword, resendConfirmation, signOut, retryProfile,
     }}>
       {children}
     </AuthContext.Provider>

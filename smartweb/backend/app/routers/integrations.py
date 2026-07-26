@@ -4,10 +4,6 @@
 не возвращаются клиенту и не пишутся в логи. Синхронизация встреч работает через
 общий слой calendar_sync (Google и Яндекс — две реализации одного интерфейса).
 """
-import base64
-import hashlib
-import hmac
-import json
 import logging
 import secrets
 from datetime import datetime
@@ -17,13 +13,13 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.config import settings
 from app.models.integration import (
     CalendarIntegration, WebhookSubscription, WebhookDelivery,
 )
 from app.models.team import Team
 from app.utils.auth import get_current_user
 from app.services import crypto
+from app.services import oauth_state
 from app.services.calendar_base import get_calendar_provider, SUPPORTED_PROVIDERS, CalendarAuthError
 from app.services import webhooks as webhook_service
 
@@ -39,26 +35,11 @@ COMING_SOON = [
 
 
 # ── OAuth state (защита от CSRF, привязка к пользователю) ──────────────────────
+# Сам механизм живёт в services/oauth_state.py — общий для календарей и входа
+# через Yandex ID. Формат state не менялся.
 
-def _make_state(user_id: int, provider: str) -> str:
-    payload = json.dumps({"u": user_id, "p": provider, "n": secrets.token_hex(8)})
-    mac = hmac.new(settings.secret_key.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
-    return base64.urlsafe_b64encode(f"{payload}.{mac}".encode()).decode()
-
-
-def _read_state(state: str, provider: str) -> int | None:
-    try:
-        raw = base64.urlsafe_b64decode(state.encode()).decode()
-        payload, mac = raw.rsplit(".", 1)
-        expected = hmac.new(settings.secret_key.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
-        if not hmac.compare_digest(expected, mac):
-            return None
-        data = json.loads(payload)
-        if data.get("p") != provider:
-            return None
-        return int(data.get("u"))
-    except Exception:
-        return None
+_make_state = oauth_state.make_state
+_read_state = oauth_state.read_state
 
 
 def _calendar_status(db: Session, user_id: int) -> list[dict]:

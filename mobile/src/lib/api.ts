@@ -381,6 +381,16 @@ export const authResendConfirmationByEmail = (email: string) =>
 export const authChangePassword = (data: { user_id: number; current_password: string; new_password: string }) =>
   req<any>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) });
 
+// Вход через Yandex ID. Эндпоинты общие с вебом; в приложении отличается
+// только redirect URI — deep-link на схему приложения (platform=mobile).
+export const yandexAuthConfig = () => req<{ enabled: boolean }>('/auth/yandex/config');
+export const yandexAuthUrl = (platform: 'mobile' | 'web' = 'mobile') =>
+  req<{ url: string; state: string }>(`/auth/yandex/authorize?platform=${platform}`);
+export const yandexAuthCallback = (code: string, state: string) =>
+  req<{ status: string; token: string; user: any }>('/auth/yandex/callback', {
+    method: 'POST', body: JSON.stringify({ code, state }),
+  });
+
 // Telegram: привязка аккаунта по коду из бота
 export const telegramLink = (user_id: number, code: string) =>
   req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });

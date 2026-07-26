@@ -19,6 +19,8 @@ class UserOut(BaseModel):
     title: Optional[str]
     telegram: Optional[str]
     telegram_id: Optional[int] = None
+    # Привязан ли Yandex ID — фронт по этому полю может показать статус входа.
+    yandex_id: Optional[str] = None
     linkedin: Optional[str]
     github: Optional[str]
     avatar: Optional[str]
