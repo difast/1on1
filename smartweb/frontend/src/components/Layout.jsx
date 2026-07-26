@@ -12,7 +12,7 @@ import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { useExclusiveOverlay } from '../lib/overlay'
 import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
-import { SUPPORTED_LANGS } from '../i18n'
+import { SUPPORTED_LANGS, setExplicitLang } from '../i18n'
 import { useSurface } from '../lib/surface'
 
 const TOAST_META = {
@@ -44,15 +44,19 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       const { data } = await telegramLink(currentUser.id, tgCode.trim())
       onUserUpdate?.(data.user)
       setShowTgModal(false); setTgCode('')
-      toast('Telegram привязан к аккаунту', 'success')
+      toast(t('profile.telegramLinked'), 'success')
     } catch (err) {
-      setTgErr(err?.response?.data?.detail || 'Не удалось привязать')
+      setTgErr(err?.response?.data?.detail || t('profile.telegramLinkFailed'))
     } finally { setTgBusy(false) }
   }
   // Смена языка: применяем сразу + сохраняем в профиль, чтобы не определять
   // заново при следующем визите (Этап 6). i18next сам кладёт выбор в localStorage.
   const changeLanguage = (code) => {
     i18n.changeLanguage(code)
+    // Явный выбор: с этого момента автоопределение по браузеру не применяется
+    // ни в этом визите, ни в следующих (ни на вебе, ни в приложении — язык
+    // синхронизируется через профиль).
+    setExplicitLang(code)
     setShowLangMenu(false)
     if (currentUser?.id) {
       updateUser(currentUser.id, { preferred_language: code }).catch(() => {})
@@ -775,10 +779,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 )}
                 {/* Тумблер = «тёмная тема вкл»: привычная модель dark mode switch. */}
                 <MenuItemBtn icon={isDark ? <IconMoon /> : <IconSun />} onClick={toggleDark} right={<Toggle on={isDark} />}>
-                  Тема оформления
+                  {t('menu.theme')}
                 </MenuItemBtn>
                 <MenuItemBtn icon={<IconHelpHint />} onClick={toggleCoaching} right={<Toggle on={coachOn} />}>
-                  Подсказки Пита
+                  {t('menu.hints')}
                 </MenuItemBtn>
                 {/* Переключатель языка (Этап 6). Раскрывается на месте — три локали. */}
                 <MenuItemBtn
@@ -810,8 +814,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <MenuDivider />
 
                 {/* 3. Режим работы — смена представления, а не настройка */}
-                <MenuItemBtn icon={<IconSwitch />} subtext="Переключить представление" onClick={requestSwitchRole}>
-                  {switchingRole ? 'Переключение…' : currentUser?.role === 'team_lead' ? 'Войти как участник' : 'Войти как тимлид'}
+                <MenuItemBtn icon={<IconSwitch />} subtext={t('menu.switchView')} onClick={requestSwitchRole}>
+                  {switchingRole ? t('menu.switching') : currentUser?.role === 'team_lead' ? t('menu.enterAsMember') : t('menu.enterAsLead')}
                 </MenuItemBtn>
                 <MenuDivider />
 
@@ -1273,7 +1277,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           {editing && (
             <form onSubmit={handleSaveProfile} style={{ padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10, flex: 1 }}>
               {[
-                { key: 'title', label: 'Должность', placeholder: 'Senior Engineer' },
+                { key: 'title', label: t('profile.position'), placeholder: 'Senior Engineer' },
                 { key: 'telegram', label: 'Telegram', placeholder: '@username' },
                 { key: 'linkedin', label: 'LinkedIn', placeholder: 'username или URL' },
                 { key: 'github', label: 'GitHub', placeholder: 'username' },

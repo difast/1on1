@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, setToken, clearToken } from '../lib/authToken';
+import { setLang, type Lang } from '../lib/i18n';
 import { authLogin, authRegister, authMe, authForgotPassword, authResendConfirmationByEmail, joinTeam, createTeam } from '../lib/api';
 
 export interface AppUser {
@@ -115,6 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Разложить загруженного пользователя по состоянию (роль/кэш).
   const applyUser = async (data: AppUser) => {
+    // Язык интерфейса — из профиля: выбор, сделанный на любом клиенте (веб,
+    // приложение, Mini App, бот), применяется здесь и считается явным, поэтому
+    // автоопределение по локали устройства его больше не перекрывает.
+    const pl = (data as any)?.preferred_language;
+    if (pl === 'ru' || pl === 'en' || pl === 'kz') setLang(pl as Lang);
     const [savedActiveRole, hasBoth] = await Promise.all([
       AsyncStorage.getItem(ACTIVE_ROLE_KEY),
       AsyncStorage.getItem(BOTH_ROLES_KEY),

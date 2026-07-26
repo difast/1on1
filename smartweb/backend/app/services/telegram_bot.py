@@ -20,6 +20,7 @@ from app.models.task import Task
 from app.models.knowledge import KnowledgeArticle
 from app.models.telegram import TelegramBotState
 from app.services import telegram as tg
+from app.services import i18n
 
 STATUS_LABELS = {"in_progress": "В работе", "review": "На ревью", "blocked": "Блокер", "done": "Готово"}
 # Подписи на кнопках смены статуса: основное действие сформулировано явно.
@@ -49,11 +50,32 @@ def _menu_kb() -> dict:
          {"text": "База знаний", "callback_data": "cmd:knowledge"}],
         [{"text": "Спросить Пита", "callback_data": "cmd:ask"},
          {"text": "Поддержка", "callback_data": "cmd:support"}],
+        [{"text": "Язык / Language / Тіл", "callback_data": "cmd:language"}],
     ]
     web = _web_url()
     if web:
         rows.append([{"text": "Открыть приложение", "web_app": {"url": f"{web}/telegram"}}])
     return {"inline_keyboard": rows}
+
+
+def _cmd_language(db, chat_id, user) -> None:
+    """Выбор языка (/language). Язык сохраняется в профиль, поэтому применяется
+    и в вебе, и в приложении, и в ответах бота — одно значение на аккаунт."""
+    if not user:
+        tg.send_message(chat_id, i18n.t("bot.language.needAccount"))
+        return
+    lang = i18n.user_lang(user)
+    rows = [[{"text": label, "callback_data": f"lang:{code}"}]
+            for code, label in (("ru", "Русский"), ("en", "English"), ("kz", "Қазақша"))]
+    tg.send_message(chat_id, i18n.t("bot.language.title", lang), reply_markup={"inline_keyboard": rows})
+
+
+def _set_language(db, chat_id, user, code: str) -> None:
+    """Сохранить выбранный язык в профиль пользователя (явный выбор)."""
+    code = i18n.normalize_lang(code)
+    user.preferred_language = code
+    db.commit()
+    tg.send_message(chat_id, i18n.t("bot.language.changed", code))
 
 
 def _kb(rows) -> dict:
@@ -421,6 +443,10 @@ def _handle_callback(db, cq):
             tg.answer_callback(cq_id)
             tg.send_message(chat_id, f"Контакт {m.name if m else ''}: {contact}")
 
+        elif data.startswith("lang:"):
+            tg.answer_callback(cq_id)
+            _set_language(db, chat_id, user, data.split(":", 1)[1])
+
         elif data.startswith("cmd:"):
             # Кнопки меню запускают те же команды.
             cmd = data.split(":", 1)[1]
@@ -441,6 +467,8 @@ def _handle_callback(db, cq):
                 tg.send_message(chat_id, "Вопрос ассистенту: отправьте сообщение /ask и текст, например: /ask как подготовиться к встрече.")
             elif cmd == "support":
                 _cmd_support(db, chat_id, user)
+            elif cmd == "language":
+                _cmd_language(db, chat_id, user)
         else:
             tg.answer_callback(cq_id)
     except Exception:
@@ -530,6 +558,8 @@ def handle_update(db: Session, update: dict) -> None:
         _cmd_mood(db, chat_id, user)
     elif text.startswith("/risks"):
         _cmd_risks(db, chat_id, user)
+    elif text.startswith("/language"):
+        _cmd_language(db, chat_id, user)
     elif text.startswith("/support"):
         _cmd_support(db, chat_id, user)
     elif text.startswith("/knowledge"):
@@ -537,6 +567,6 @@ def handle_update(db: Session, update: dict) -> None:
     elif text.startswith("/ask"):
         _cmd_ask(db, chat_id, user, arg_after("/ask"))
     elif text.startswith("/"):
-        tg.send_message(chat_id, "Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /menu.")
+        tg.send_message(chat_id, "Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /language, /menu.")
     else:
         _cmd_ask(db, chat_id, user, text)

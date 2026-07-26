@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { setToken } from '../lib/auth'
 import { completeYandexAuth } from '../api/client'
 
@@ -10,6 +11,7 @@ import { completeYandexAuth } from '../api/client'
  * уходим в продукт: профиль уже заполнен (email, имя, аватар).
  */
 export default function YandexAuthCallbackPage() {
+  const { t } = useTranslation()
   const [status, setStatus] = useState('loading')  // loading | error
   const [message, setMessage] = useState('')
 
@@ -20,7 +22,7 @@ export default function YandexAuthCallbackPage() {
     const err = params.get('error')
     if (err || !code || !state) {
       setStatus('error')
-      setMessage(err ? 'Вход через Яндекс ID отменён.' : 'Не хватает данных авторизации.')
+      setMessage(err ? t('auth.yandexCancelled') : t('auth.missingParams'))
       return
     }
     completeYandexAuth(code, state)
@@ -34,7 +36,7 @@ export default function YandexAuthCallbackPage() {
       .catch((e) => {
         setStatus('error')
         const detail = e?.response?.data?.detail
-        setMessage(detail?.message || (typeof detail === 'string' ? detail : 'Не удалось войти через Яндекс ID.'))
+        setMessage(detail?.message || (typeof detail === 'string' ? detail : t('auth.yandexFailed')))
       })
   }, [])
 
@@ -44,14 +46,14 @@ export default function YandexAuthCallbackPage() {
         <span className="logo" style={{ fontSize: 24 }}>OneOn<span className="accent">One</span></span>
         <div style={{ marginTop: 24 }}>
           {status === 'loading' && (
-            <p style={{ color: 'var(--color-text-secondary)' }}>Завершаем вход через Яндекс ID...</p>
+            <p style={{ color: 'var(--color-text-secondary)' }}>{t('auth.yandexFinishing')}</p>
           )}
           {status === 'error' && (
             <>
-              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>Не удалось войти</h2>
+              <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('auth.yandexFailedTitle')}</h2>
               <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>{message}</p>
               <button onClick={() => { window.location.href = '/' }} className="btn btn-accent" style={{ width: '100%' }}>
-                Вернуться ко входу
+                {t('auth.backToLogin')}
               </button>
             </>
           )}

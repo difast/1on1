@@ -225,8 +225,8 @@ export default function ProfileScreen() {
   if (!user) return null;
 
   const currentRole = activeRole ?? user.role;
-  const roleLabel = currentRole === 'team_lead' ? t('role.lead') : t('role.member');
-  const otherRoleLabel = currentRole === 'team_lead' ? t('role.member') : t('role.lead');
+  const roleLabel = currentRole === 'team_lead' ? t('profile.roleLead') : t('profile.roleMember');
+  const otherRoleLabel = currentRole === 'team_lead' ? t('profile.roleMember') : t('profile.roleLead');
 
   return (
     <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
@@ -256,7 +256,7 @@ export default function ProfileScreen() {
 
         {/* Role management */}
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>{t('role.title')}</Text>
+          <Text style={styles.sectionLabel}>{t('profile.role')}</Text>
           <View style={styles.roleRow}>
             <Text style={styles.roleValue}>{roleLabel}</Text>
             {hasBothRoles ? (
@@ -417,7 +417,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="key-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('settings.changePassword')}</Text>
+            <Text style={styles.menuRowTitle}>{t('menu.changePassword')}</Text>
             <Ionicons name={showPassword ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
           </TouchableOpacity>
           {showPassword && (
@@ -508,7 +508,7 @@ export default function ProfileScreen() {
                 <View style={styles.menuIconWrap}>
                   <Ionicons name="paper-plane-outline" size={18} color={colors.textSecondary} />
                 </View>
-                <Text style={styles.menuRowTitle}>{t('settings.linkTelegram')}</Text>
+                <Text style={styles.menuRowTitle}>{t('profile.linkTelegram')}</Text>
                 <Ionicons name={showTgLink ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
               </TouchableOpacity>
               {showTgLink && (
@@ -540,7 +540,7 @@ export default function ProfileScreen() {
 
         {/* Help */}
         <View style={styles.menuSection}>
-          <Text style={styles.menuSectionLabel}>{t('help.title')}</Text>
+          <Text style={styles.menuSectionLabel}>{t('settings.help')}</Text>
           <TouchableOpacity
             style={styles.menuRow}
             onPress={() => router.push('/knowledge' as any)}
@@ -615,7 +615,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="bar-chart-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('help.analytics')}</Text>
+            <Text style={styles.menuRowTitle}>{t('nav.analytics')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -626,7 +626,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="notifications-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('help.notifications')}</Text>
+            <Text style={styles.menuRowTitle}>{t('nav.notifications')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -637,7 +637,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="sparkles-outline" size={18} color={colors.accent} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('help.assistant')}</Text>
+            <Text style={styles.menuRowTitle}>{t('nav.assistant')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -648,7 +648,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('help.support')}</Text>
+            <Text style={styles.menuRowTitle}>{t('nav.support')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -659,7 +659,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="document-text-outline" size={18} color={colors.textSecondary} />
             </View>
-            <Text style={styles.menuRowTitle}>{t('help.documents')}</Text>
+            <Text style={styles.menuRowTitle}>{t('settings.documents')}</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
@@ -670,7 +670,7 @@ export default function ProfileScreen() {
             <View style={styles.menuIconWrap}>
               <Ionicons name="log-out-outline" size={18} color={colors.danger} />
             </View>
-            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>{t('account.logout')}</Text>
+            <Text style={[styles.menuRowTitle, { color: colors.danger }]}>{t('menu.logout')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.menuRow, deletingAccount && styles.btnDisabled]}
@@ -682,7 +682,7 @@ export default function ProfileScreen() {
               <Ionicons name="trash-outline" size={18} color={colors.danger} />
             </View>
             <Text style={[styles.menuRowTitle, { color: colors.danger }]}>
-              {deletingAccount ? t('account.deleting') : t('account.delete')}
+              {deletingAccount ? t('profile.deleting') : t('profile.deleteAccount')}
             </Text>
           </TouchableOpacity>
         </View>

@@ -8,7 +8,7 @@ import { SurfaceContext } from '../lib/surface'
 import { initData, initViewport, applyTheme, isTelegram } from '../lib/telegram'
 import { telegramMiniAppAuth } from '../api/client'
 import { setToken } from '../lib/auth'
-import i18n from '../i18n'
+import i18n, { setExplicitLang } from '../i18n'
 import LeadDashboard from './LeadDashboard'
 import MemberDashboard from './MemberDashboard'
 import Onboarding from './Onboarding'
@@ -38,8 +38,14 @@ export default function TelegramApp() {
         // Сохраняем наш JWT, чтобы api-клиент слал Bearer на все запросы (Этап 8).
         if (data.token) setToken(data.token)
         setUser(data.user)
+        // Язык из профиля — явный выбор пользователя (сделанный на любом
+        // клиенте). Mini App использует тот же переключатель, что и веб:
+        // он живёт в меню профиля общего компонента Layout.
         if (data.user?.preferred_language) {
-          try { i18n.changeLanguage(data.user.preferred_language) } catch {}
+          try {
+            i18n.changeLanguage(data.user.preferred_language)
+            setExplicitLang(data.user.preferred_language)
+          } catch { /* приватный режим хранилища */ }
         }
         setState('ready')
       } catch {
