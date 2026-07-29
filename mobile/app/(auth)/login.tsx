@@ -196,7 +196,7 @@ export default function LoginScreen() {
             onPress={openMailApp}
             disabled={!provider.url}
           >
-            <Text style={styles.btnText}>{provider.label}</Text>
+            <Text style={styles.btnText}>{t(provider.labelKey)}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

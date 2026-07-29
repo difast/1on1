@@ -6,25 +6,25 @@
  * без ссылки на конкретный сервис (url = null).
  */
 const PROVIDERS = {
-  'gmail.com': { label: 'Открыть Gmail', url: 'https://mail.google.com/' },
-  'googlemail.com': { label: 'Открыть Gmail', url: 'https://mail.google.com/' },
-  'yandex.ru': { label: 'Открыть Яндекс Почту', url: 'https://mail.yandex.ru/' },
-  'yandex.com': { label: 'Открыть Яндекс Почту', url: 'https://mail.yandex.ru/' },
-  'ya.ru': { label: 'Открыть Яндекс Почту', url: 'https://mail.yandex.ru/' },
-  'mail.ru': { label: 'Открыть Mail.ru', url: 'https://e.mail.ru/' },
-  'bk.ru': { label: 'Открыть Mail.ru', url: 'https://e.mail.ru/' },
-  'inbox.ru': { label: 'Открыть Mail.ru', url: 'https://e.mail.ru/' },
-  'list.ru': { label: 'Открыть Mail.ru', url: 'https://e.mail.ru/' },
-  'outlook.com': { label: 'Открыть Outlook', url: 'https://outlook.live.com/mail/' },
-  'hotmail.com': { label: 'Открыть Outlook', url: 'https://outlook.live.com/mail/' },
-  'live.com': { label: 'Открыть Outlook', url: 'https://outlook.live.com/mail/' },
-  'icloud.com': { label: 'Открыть iCloud Mail', url: 'https://www.icloud.com/mail/' },
-  'me.com': { label: 'Открыть iCloud Mail', url: 'https://www.icloud.com/mail/' },
-  'proton.me': { label: 'Открыть Proton Mail', url: 'https://mail.proton.me/' },
-  'protonmail.com': { label: 'Открыть Proton Mail', url: 'https://mail.proton.me/' },
+  'gmail.com': { labelKey: 'ui.otkryt_gmail', url: 'https://mail.google.com/' },
+  'googlemail.com': { labelKey: 'ui.otkryt_gmail', url: 'https://mail.google.com/' },
+  'yandex.ru': { labelKey: 'ui.otkryt_yandeks_pochtu', url: 'https://mail.yandex.ru/' },
+  'yandex.com': { labelKey: 'ui.otkryt_yandeks_pochtu', url: 'https://mail.yandex.ru/' },
+  'ya.ru': { labelKey: 'ui.otkryt_yandeks_pochtu', url: 'https://mail.yandex.ru/' },
+  'mail.ru': { labelKey: 'ui.otkryt_mail_ru', url: 'https://e.mail.ru/' },
+  'bk.ru': { labelKey: 'ui.otkryt_mail_ru', url: 'https://e.mail.ru/' },
+  'inbox.ru': { labelKey: 'ui.otkryt_mail_ru', url: 'https://e.mail.ru/' },
+  'list.ru': { labelKey: 'ui.otkryt_mail_ru', url: 'https://e.mail.ru/' },
+  'outlook.com': { labelKey: 'ui.otkryt_outlook', url: 'https://outlook.live.com/mail/' },
+  'hotmail.com': { labelKey: 'ui.otkryt_outlook', url: 'https://outlook.live.com/mail/' },
+  'live.com': { labelKey: 'ui.otkryt_outlook', url: 'https://outlook.live.com/mail/' },
+  'icloud.com': { labelKey: 'ui.otkryt_icloud_mail', url: 'https://www.icloud.com/mail/' },
+  'me.com': { labelKey: 'ui.otkryt_icloud_mail', url: 'https://www.icloud.com/mail/' },
+  'proton.me': { labelKey: 'ui.otkryt_proton_mail', url: 'https://mail.proton.me/' },
+  'protonmail.com': { labelKey: 'ui.otkryt_proton_mail', url: 'https://mail.proton.me/' },
 }
 
-const NEUTRAL = { label: 'Открыть почту', url: null }
+const NEUTRAL = { labelKey: 'ui.otkryt_pochtu', url: null }
 
 export function mailProviderFor(email) {
   const domain = String(email || '').split('@')[1]?.trim().toLowerCase()

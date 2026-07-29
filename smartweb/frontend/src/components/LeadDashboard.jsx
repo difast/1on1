@@ -794,7 +794,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           пер-встречно. Так повестка работает дальше, а не остаётся мёртвым полем.
         */}
         {isPast && !isRequest && coachingEnabled(user.id) && !coachDismissed.has(m.id) && (() => {
-          const fb = buildMeetingFeedback({ agenda: m.agenda, transcript: m.call_transcript, summary: m.ai_summary })
+          const fb = buildMeetingFeedback({ agenda: m.agenda, transcript: m.call_transcript, summary: m.ai_summary }, t)
           if (!fb) return null
           const dismiss = () => setCoachDismissed(prev => new Set(prev).add(m.id))
           return (
@@ -2106,7 +2106,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 const sugg = buildAgendaSuggestions({
                   member: scheduleMember,
                   tasks: memberTasks[scheduleMember.user_id] || [],
-                })
+                }, t)
                 void coachTick
                 if (sugg.length === 0) return null
                 const add = (line) => setScheduleAgenda(prev => prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`)

@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 
-const DAY_NAMES = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
-const MONTH_SHORT = ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек']
-const MONTH_FULL  = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь']
+// Названия дней и месяцев хранятся ключами словаря — подпись берётся
+// на месте отрисовки, поэтому меняется вместе с языком интерфейса.
+const DAY_KEYS = ['ui.pn', 'ui.vt', 'ui.sr', 'ui.cht', 'ui.pt', 'ui.sb', 'ui.vs']
+const MONTH_SHORT_KEYS = ['ui.yanv', 'ui.fev', 'ui.mar', 'ui.apr', 'ui.may_2', 'ui.iyun_2', 'ui.iyul_2', 'ui.avg', 'ui.sen', 'ui.okt', 'ui.noya', 'ui.dek']
+const MONTH_FULL_KEYS = ['ui.yanvar', 'ui.fevral', 'ui.mart', 'ui.aprel', 'ui.may', 'ui.iyun', 'ui.iyul', 'ui.avgust', 'ui.sentyabr', 'ui.oktyabr', 'ui.noyabr', 'ui.dekabr']
 
 function getMonday(offset = 0) {
   const now = new Date()
@@ -70,7 +72,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
         .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
     : meetings.filter(m => { const d = new Date(m.scheduled_date); return d >= weekStart && d < weekEnd })
         .sort((a, b) => new Date(b.scheduled_date) - new Date(a.scheduled_date))
-  const weekLabel = `${days[0].getDate()} ${MONTH_SHORT[days[0].getMonth()]} — ${days[6].getDate()} ${MONTH_SHORT[days[6].getMonth()]}`
+  const weekLabel = `${days[0].getDate()} ${t(MONTH_SHORT_KEYS[days[0].getMonth()])} — ${days[6].getDate()} ${t(MONTH_SHORT_KEYS[days[6].getMonth()])}`
 
   // ── MONTH VIEW data ──
   const monthGrid = getMonthGrid(monthYear.year, monthYear.month)
@@ -170,7 +172,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
                   opacity: isPast ? 0.65 : 1, transition: 'all 0.15s',
                   display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
                 }}>
-                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: isSel ? 'rgba(255,255,255,0.7)' : 'var(--color-text-muted)' }}>{DAY_NAMES[i]}</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: isSel ? 'rgba(255,255,255,0.7)' : 'var(--color-text-muted)' }}>{t(DAY_KEYS[i])}</span>
                   <span style={{ fontSize: 14, fontWeight: 700, color: isSel ? '#fff' : isToday ? 'var(--color-accent)' : 'var(--color-text-primary)', lineHeight: 1.1 }}>{day.getDate()}</span>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: 2, minHeight: 8 }}>
                     {dm.slice(0, 3).map((_, j) => (
@@ -187,7 +189,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
         {visibleMeetings.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p className="label">
-              {selectedDay ? `${selectedDay.getDate()} ${MONTH_SHORT[selectedDay.getMonth()]}` : t('ui.vstrechi_na_etoy_nedele')}
+              {selectedDay ? `${selectedDay.getDate()} ${t(MONTH_SHORT_KEYS[selectedDay.getMonth()])}` : t('ui.vstrechi_na_etoy_nedele')}
             </p>
             {visibleMeetings.map(m => renderCard(m))}
           </div>
@@ -205,7 +207,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
             <button onClick={goMonthPrev} className="btn btn-secondary btn-sm" style={{ padding: '4px 12px', fontSize: 18, lineHeight: 1 }}>‹</button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                {MONTH_FULL[monthYear.month]} {monthYear.year}
+                {t(MONTH_FULL_KEYS[monthYear.month])} {monthYear.year}
               </span>
               {!isCurrentMonthAndYear && (
                 <button onClick={goMonthToday} className="btn btn-ghost btn-sm" style={{ fontSize: 11, padding: '3px 8px' }}>{t('ui.segodnya')}</button>
@@ -216,7 +218,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
 
           {/* Day name headers */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
-            {DAY_NAMES.map(d => (
+            {DAY_KEYS.map(dk => (
               <div key={d} style={{ textAlign: 'center', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--color-text-muted)', padding: '4px 0' }}>
                 {d}
               </div>
@@ -260,7 +262,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
         {selectedDay && (
           monthVisibleMeetings.length > 0 ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <p className="label">{selectedDay.getDate()} {MONTH_SHORT[selectedDay.getMonth()]}</p>
+              <p className="label">{selectedDay.getDate()} {t(MONTH_SHORT_KEYS[selectedDay.getMonth()])}</p>
               {monthVisibleMeetings.map(m => renderCard(m))}
             </div>
           ) : (

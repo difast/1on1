@@ -204,7 +204,7 @@ export default function MeetingDetailScreen() {
   const isFinal = ['declined', 'cancelled', 'completed'].includes(meeting.status);
   const isPast = meeting.status === 'completed' || (scheduledAt ? scheduledAt < new Date() : false);
   const feedback = (coachOn && !coachHidden && isPast)
-    ? buildMeetingFeedback(meeting.agenda, meeting.call_transcript, meeting.ai_summary)
+    ? buildMeetingFeedback(meeting.agenda, meeting.call_transcript, meeting.ai_summary, t)
     : null;
   // The lead can accept/decline incoming requests; both sides can reschedule a live meeting.
   const canAct = !isFinal;

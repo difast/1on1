@@ -2,15 +2,15 @@
 
 Файл генерируется скриптом `tools/i18n-inventory.py` — не редактируйте вручную.
 
-В словарях (`ru.json`): **1867** ключей.
+В словарях (`ru.json`): **1868** ключей.
 
 Ниже — строки с кириллицей, которые ещё захардкожены в коде и не вынесены
 в словари, сгруппированные по разделам продукта.
 
 | Клиент | Осталось строк |
 |---|---|
-| Веб | 618 |
-| Мобильное приложение | 586 |
+| Веб | 562 |
+| Мобильное приложение | 524 |
 | Бэкенд (письма, бот, уведомления) | 650 |
 
 ## Юридические документы — 521
@@ -18,14 +18,22 @@
 - `smartweb/frontend/src/lib/legalDocs.js` — 263: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; <h3>1. ОБЩИЕ ПОЛОЖЕНИЯ</h3><p>1.1. Настоящее Пользовательско
 - `mobile/src/lib/legalDocs.ts` — 258: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; 1. ОБЩИЕ ПОЛОЖЕНИЯ
 
-## Прочее — 485
+## Прочее — 400
 
 - `smartweb/backend/app/services/ai_context.py` — 69: в работе; заблокирована; на проверке
 - `smartweb/backend/app/services/plans.py` — 44: 1-на-1 встречи; Предложения встреч; Задачи
-- `smartweb/frontend/src/lib/coaching.js` — 38: участником; Это первая встреча 1-на-1 — фундамент дальнейших отношений.; Договориться об ожиданиях, целях и комфортной частоте встреч
-- `mobile/src/lib/coaching.ts` — 37: Это первая встреча 1-на-1 — фундамент дальнейших отношений.; Договориться об ожиданиях, целях и комфортной частоте встреч; ,
+- `smartweb/frontend/src/lib/coaching.js` — 32: ,
       reason: lastMeetingDays !== null
-        ? `Последня
+        ? `Последня; ),
+      line: `Спросить, как дела и что изменилось с прошло; ,
+      reason: openOverdue.length === 1
+        ? `Задача «
+- `mobile/src/lib/coaching.ts` — 30: ,
+      reason: lastMeetingDays !== null
+        ? `Последня; ,
+      reason: openOverdue.length === 1
+        ? `Задача «; ).slice(0, 40)}» просрочена.`
+        : `${openOverdue.lengt
 - `smartweb/backend/app/routers/goal.py` — 29: Доступ только от своего имени; if ps and pe and pe > ps:
         total = (pe - ps).total_se; Некорректный статус
 - `smartweb/backend/app/services/plan_change.py` — 25: :
@@ -34,11 +42,7 @@
 
 
 d; Сейчас у вас команд: {len(teams)}, а новый тариф допускает {; Лишние команды нужно будет удалить или объединить.
-- `mobile/src/components/DateTimePickerField.tsx` — 20: Пн; Вт; Ср
 - `smartweb/backend/app/prompts.py` — 20: Ты {role_ctx} в IT-команде.\n; Задача: \"{title}\". Статус: {status_label}.{due_ctx}\n; Составь ровно 4 конкретных последовательных шага выполнения 
-- `mobile/src/components/WeekCalendar.tsx` — 19: Пн; Вт; Ср
-- `smartweb/frontend/src/lib/mailProviders.js` — 17: Открыть Gmail; Открыть Gmail; Открыть Яндекс Почту
-- `mobile/src/lib/mailProviders.ts` — 17: Открыть Gmail; Открыть Gmail; Открыть Яндекс Почту
 - `smartweb/backend/app/routers/proposal.py` — 14: ,
         awaiting_user_id=data.to_user_id,   # ждём ответа ; Участник; Предложение встречи
 - `smartweb/backend/app/services/entitlements.py` — 12: Эта функция; Функция «{label}» пока недоступна — {COMING_SOON_LABEL.lower; Функция «{label}» недоступна во время пробного периода.
@@ -120,6 +124,7 @@ def _matches(sub: WebhookSubscription, event_type: str)
 - `smartweb/frontend/src/components/ResetPasswordPage.jsx` — 1: )
     if (!/[A-Za-zА-Яа-я]/.test(p) // !/\d/.test(p)) return
 - `smartweb/frontend/src/lib/Spinner.jsx` — 1: // Единый индикатор загрузки — тот самый крутящийся кружок, 
+- `mobile/src/components/DateTimePickerField.tsx` — 1: Выберите дату и время
 - `mobile/src/components/admin/UserDetailModal.tsx` — 1: onRequestClose={onClose}>
       <Pressable style={styles.bac
 - `mobile/src/lib/api.ts` — 1: Превышено время ожидания
@@ -182,9 +187,8 @@ const ICON_COLORS = {
 - `smartweb/backend/app/models/task_proposal.py` — 1: ), nullable=False)
     action = Column(String(20), nullable=
 
-## Встречи — 93
+## Встречи — 62
 
-- `smartweb/frontend/src/components/MeetingCalendar.jsx` — 31: Пн; Вт; Ср
 - `mobile/src/components/MeetingProposalsModal.tsx` — 12: Ожидает ответа; Принято; Отклонено
 - `smartweb/frontend/src/components/MeetingProposals.jsx` — 11: Ожидает ответа; Принято; Отклонено
 - `mobile/app/meeting-detail.tsx` — 9: Ожидает; Запрос; Запланирована
@@ -311,10 +315,6 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 - `smartweb/backend/app/routers/assistant.py` — 2: \n\n=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===\n{context}\n=== КОНЕЦ К; AI временно недоступен, попробуйте ещё раз
 - `smartweb/frontend/src/components/PitAssistant.jsx` — 1: Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросам
 
-## Кабинет тимлида — 20
-
-- `smartweb/frontend/src/components/LeadDashboard.jsx` — 20: В работе; Блокер; На ревью
-
 ## Уведомления — 20
 
 - `smartweb/backend/app/services/notification_service.py` — 17: Встреча запланирована; {lead_name} назначил встречу на {when}; Запрос на встречу
@@ -322,6 +322,10 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 - `mobile/src/screens/NotificationsScreen.tsx` — 1: ]}>
       <View style={styles.header}>
         <View style={
+
+## Кабинет тимлида — 19
+
+- `smartweb/frontend/src/components/LeadDashboard.jsx` — 19: В работе; Блокер; На ревью
 
 ## Настроение — 18
 
@@ -405,13 +409,13 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 
 - `smartweb/backend/app/services/mailer.py` — 5: SMTP не настроен (нет SMTP_HOST/SMTP_USER в окружении); Письмо отправлено: %s -> %s; Ошибка отправки письма '%s' на %s: %s
 
-## Кабинет участника — 4
+## Кабинет участника — 3
 
-- `smartweb/frontend/src/components/MemberDashboard.jsx` — 4: )
+- `smartweb/frontend/src/components/MemberDashboard.jsx` — 3: )
 
   const [meetings, setMeetings] = useState([])
-  const [s; style={{ marginBottom: 24, display: 'flex', alignItems: 'cen; disabled={moodFilledToday}
-              style={moodFilledTo
+  const [s; disabled={moodFilledToday}
+              style={moodFilledTo; style={{ flex: 1, display: 'inline-flex', alignItems: 'cente
 
 ## Профиль и настройки — 3
 

@@ -109,7 +109,7 @@ export default function LeadMeetingsScreen() {
       .map((m: any) => new Date(m.scheduled_date || m.scheduled_at).getTime())
       .filter((t: number) => !isNaN(t));
     const lastMeetingDate = past.length ? new Date(Math.max(...past)).toISOString() : null;
-    return buildAgendaSuggestions({ last_meeting_date: lastMeetingDate }, []);
+    return buildAgendaSuggestions({ last_meeting_date: lastMeetingDate }, [], t);
   }, [coachOn, coachHidden, createMemberId, meetings]);
 
   const addAgendaLine = (line: string) =>

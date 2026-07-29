@@ -55,10 +55,11 @@ function daysBetween(dateStr) {
  * потом мягкие напоминания. Максимум три подсказки, чтобы не превращать поле
  * в стену текста.
  */
-export function buildAgendaSuggestions({ member, tasks = [] } = {}) {
+// Перевод передаёт вызывающий компонент: подсказки формируются на языке интерфейса.
+export function buildAgendaSuggestions({ member, tasks = [] } = {}, t = (k) => k) {
   if (!member) return []
   const out = []
-  const name = (member.user_name || '').split(' ')[0] || 'участником'
+  const name = (member.user_name || '').split(' ')[0] || t('ui.uchastnikom')
 
   const openOverdue = (tasks || []).filter(t => {
     if (t.status === 'done' || t.completed) return false
@@ -73,8 +74,8 @@ export function buildAgendaSuggestions({ member, tasks = [] } = {}) {
   if (!member.last_meeting_date) {
     out.push({
       id: 'first-meeting',
-      reason: 'Это первая встреча 1-на-1 — фундамент дальнейших отношений.',
-      line: 'Договориться об ожиданиях, целях и комфортной частоте встреч',
+      reason: t('ui.eto_pervaya_vstrecha_1_na_1'),
+      line: t('ui.dogovoritsya_ob_ozhidaniyah_celyah_i_komfortno'),
     })
   }
 
@@ -84,7 +85,7 @@ export function buildAgendaSuggestions({ member, tasks = [] } = {}) {
       id: 'overdue-meeting',
       reason: lastMeetingDays !== null
         ? `Последняя встреча была ${lastMeetingDays} дн. назад — дольше обычного.`
-        : 'Встреч давно не было.',
+        : t('ui.vstrech_davno_ne_bylo'),
       line: `Спросить, как дела и что изменилось с прошлого разговора`,
     })
   }
@@ -106,8 +107,8 @@ export function buildAgendaSuggestions({ member, tasks = [] } = {}) {
   if (out.length === 0 && member.status_color === 'yellow') {
     out.push({
       id: 'progress-check',
-      reason: 'Скоро плановая встреча — хороший момент свериться по прогрессу.',
-      line: 'Свериться по прогрессу задач с прошлой встречи',
+      reason: t('ui.skoro_planovaya_vstrecha_horoshiy_moment_sveri'),
+      line: t('ui.sveritsya_po_progressu_zadach_s_proshloy'),
     })
   }
 
@@ -139,7 +140,7 @@ function keywords(line) {
  *
  * Возвращает null, если сверять нечего (нет повестки или нет расшифровки).
  */
-export function buildMeetingFeedback({ agenda, transcript, summary } = {}) {
+export function buildMeetingFeedback({ agenda, transcript, summary } = {}, t = (k) => k) {
   if (!agenda || !agenda.trim()) return null
   const haystack = `${transcript || ''} ${summary || ''}`.toLowerCase()
   if (!haystack.trim()) return null
@@ -156,11 +157,11 @@ export function buildMeetingFeedback({ agenda, transcript, summary } = {}) {
   }
 
   if (missed.length === 0) {
-    return { covered: true, missed: [], note: 'Похоже, вся запланированная повестка была затронута.' }
+    return { covered: true, missed: [], note: t('ui.pohozhe_vsya_zaplanirovannaya_povestka_byla_za') }
   }
   return {
     covered: false,
     missed: missed.slice(0, 3),
-    note: 'Судя по расшифровке, эти темы из повестки, возможно, не обсудили. Стоит перенести их на следующую встречу.',
+    note: t('ui.sudya_po_rasshifrovke_eti_temy_iz'),
   }
 }

@@ -75,10 +75,10 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
             className="btn btn-accent"
             onClick={openMail}
             disabled={!provider.url}
-            title={provider.url ? provider.label : t('ui.otkroyte_vash_pochtovyy_yaschik')}
+            title={provider.url ? t(provider.labelKey) : t('ui.otkroyte_vash_pochtovyy_yaschik')}
             style={{ flex: 1 }}
           >
-            {provider.label}
+            {t(provider.labelKey)}
           </button>
         </div>
       </div>
