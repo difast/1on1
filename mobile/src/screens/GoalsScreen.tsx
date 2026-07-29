@@ -21,13 +21,9 @@ import {
   type Goal, type GoalComment, type TeamGoals,
 } from '../lib/api';
 
-const STATUS_LABEL: Record<string, string> = {
-  not_started: 'Не начата',
-  in_progress: 'В работе',
-  at_risk: 'Под риском',
-  achieved: 'Достигнута',
-  failed: 'Не достигнута',
-};
+// Подпись статуса цели — из словаря по ключу (failed -> missed).
+const goalStatusLabel = (t: (k: string) => string, st: string) =>
+  t(`labels.goalStatus.${st === 'failed' ? 'missed' : st}`);
 const OPEN_STATUSES = ['not_started', 'in_progress', 'at_risk'];
 const SELECTABLE = ['not_started', 'in_progress', 'at_risk', 'achieved', 'failed'];
 
@@ -62,18 +58,19 @@ function quarterOptions() {
   return opts;
 }
 
-function periodText(g: Goal) {
+function periodText(t: (k: string, v?: any) => string, g: Goal) {
   if (g.period_label) return g.period_label;
-  if (g.period_end) return `до ${new Date(g.period_end).toLocaleDateString('ru-RU')}`;
-  return 'Без срока';
+  if (g.period_end) return t('labels.until', { v1: new Date(g.period_end).toLocaleDateString() });
+  return t('labels.noDeadline');
 }
 
 // ── общие мелкие компоненты ─────────────────────────────────────────────────
 function StatusBadge({ status, colors }: { status: string; colors: AppColors }) {
+  const { t } = useI18n();
   const sc = statusColors(colors)[status] || statusColors(colors).not_started;
   return (
     <View style={{ backgroundColor: sc.bg, borderColor: sc.bd, borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3 }}>
-      <Text style={{ color: sc.fg, fontSize: 12, fontWeight: '600' }}>{STATUS_LABEL[status] || status}</Text>
+      <Text style={{ color: sc.fg, fontSize: 12, fontWeight: '600' }}>{goalStatusLabel(t, status)}</Text>
     </View>
   );
 }
@@ -211,7 +208,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.goalTitle}>{goal.title}</Text>
-          <Text style={styles.goalPeriod}>{periodText(goal)}</Text>
+          <Text style={styles.goalPeriod}>{periodText(t, goal)}</Text>
         </View>
         <StatusBadge status={goal.status} colors={colors} />
       </View>
@@ -249,7 +246,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
 
       {/* Статус — вручную сотрудником */}
       <TouchableOpacity style={styles.statusRow} onPress={() => setStatusOpen(v => !v)} disabled={saving}>
-        <Text style={styles.statusRowLabel}>Статус: {STATUS_LABEL[goal.status]}</Text>
+        <Text style={styles.statusRowLabel}>{t('common.status')}: {goalStatusLabel(t, goal.status)}</Text>
         <Ionicons name={statusOpen ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
       </TouchableOpacity>
       {statusOpen && (
@@ -257,7 +254,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
           {SELECTABLE.map(s => (
             <TouchableOpacity key={s} onPress={() => { setStatusOpen(false); patch({ status: s }); }}
               style={[styles.statusOption, goal.status === s && { backgroundColor: colors.accentLight }]}>
-              <Text style={{ color: goal.status === s ? colors.accent : colors.textPrimary, fontSize: 13 }}>{STATUS_LABEL[s]}</Text>
+              <Text style={{ color: goal.status === s ? colors.accent : colors.textPrimary, fontSize: 13 }}>{goalStatusLabel(t, s)}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -265,7 +262,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
 
       {suggestDiffers && (
         <View style={styles.hintRow}>
-          <Text style={styles.hintText}>По прогрессу и сроку статус ближе к «{STATUS_LABEL[goal.suggested_status!]}».</Text>
+          <Text style={styles.hintText}>По прогрессу и сроку статус ближе к «{goalStatusLabel(t, goal.suggested_status!)}».</Text>
           <TouchableOpacity onPress={() => patch({ status: goal.suggested_status })} disabled={saving}>
             <Text style={styles.hintApply}>{t('ui.primenit')}</Text>
           </TouchableOpacity>
@@ -344,6 +341,7 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
 function TeamGoalCardRO({ goal, meId, colors, onChanged }: {
   goal: Goal; meId: number; colors: AppColors; onChanged: (g: Goal) => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const sc = statusColors(colors)[goal.status] || statusColors(colors).not_started;
@@ -352,7 +350,7 @@ function TeamGoalCardRO({ goal, meId, colors, onChanged }: {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 10 }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.goalTitle}>{goal.title}</Text>
-          <Text style={styles.goalPeriod}>{periodText(goal)} · ведёт тимлид</Text>
+          <Text style={styles.goalPeriod}>{periodText(t, goal)} · {t('labels.ledByLead')}</Text>
         </View>
         <StatusBadge status={goal.status} colors={colors} />
       </View>
@@ -448,6 +446,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
 function LeadGoalCard({ goal, meId, colors, onCommented }: {
   goal: Goal; meId: number; colors: AppColors; onCommented: (g: Goal) => void;
 }) {
+  const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const [expanded, setExpanded] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -467,7 +466,7 @@ function LeadGoalCard({ goal, meId, colors, onCommented }: {
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
         <View style={{ flex: 1 }}>
           <Text style={styles.subTitle}>{goal.title}</Text>
-          <Text style={styles.goalPeriod}>{periodText(goal)}</Text>
+          <Text style={styles.goalPeriod}>{periodText(t, goal)}</Text>
         </View>
         <StatusBadge status={goal.status} colors={colors} />
       </View>

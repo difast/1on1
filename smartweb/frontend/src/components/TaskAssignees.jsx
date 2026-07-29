@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import TaskStatusSelect, { StatusIcon, STATUS_LABEL } from './TaskStatusSelect'
+import TaskStatusSelect, { StatusIcon, statusLabel } from './TaskStatusSelect'
 import { updateTaskAssignee } from '../api/client'
 import TaskCollabModal from './TaskCollabModal'
 
@@ -79,7 +79,7 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
                   background: 'var(--color-bg)', border: '1px solid var(--color-border)',
                 }}>
                   <StatusIcon type={st} size={14} />
-                  {STATUS_LABEL[st] || t('tasks.statusInProgress')}
+                  {statusLabel(t, st)}
                 </span>
               )}
             </div>

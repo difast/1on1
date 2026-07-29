@@ -8,11 +8,13 @@ import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
 import useEscapeKey from '../lib/useEscapeKey'
 
-const ACTION_LABEL = {
-  created: 'создал(а) задачу', status_changed: 'изменил(а) статус',
-  assignee_added: 'добавил(а) исполнителя', assignee_removed: 'удалил(а) исполнителя',
-  commented: 'оставил(а) комментарий', collab_joined: 'присоединил(ся) к работе',
+// События ленты — ключи словаря: лента читается на языке интерфейса.
+const ACTION_KEY = {
+  created: 'created', status_changed: 'statusChanged',
+  assignee_added: 'assigneeAdded', assignee_removed: 'assigneeRemoved',
+  commented: 'commented', collab_joined: 'joined',
 }
+const actionLabel = (t, a) => (ACTION_KEY[a] ? t(`labels.collabEvent.${ACTION_KEY[a]}`) : a)
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
 
 /*
@@ -97,7 +99,7 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
                 <div key={a.id} style={{ display: 'flex', gap: 8, fontSize: 13 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent)', marginTop: 6, flexShrink: 0 }} />
                   <div>
-                    <span style={{ fontWeight: 600 }}>{a.actor_name || t('ui.uchastnik')}</span> <span style={{ color: 'var(--color-text-secondary)' }}>{ACTION_LABEL[a.action] || a.action}</span>
+                    <span style={{ fontWeight: 600 }}>{a.actor_name || t('ui.uchastnik')}</span> <span style={{ color: 'var(--color-text-secondary)' }}>{actionLabel(t, a.action)}</span>
                     {a.detail && a.action !== 'created' && <span style={{ color: 'var(--color-text-muted)' }}> — {a.detail}</span>}
                     <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>{fmt(a.created_at)}</p>
                   </div>

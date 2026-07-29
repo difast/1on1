@@ -15,15 +15,16 @@ import useEscapeKey from '../lib/useEscapeKey'
  * полноэкранные разделы, чтобы паттерн навигации был единым.
  */
 
-function timeAgo(dateStr) {
+// Относительное время — из словаря: единицы и порядок слов различаются по языкам.
+function timeAgo(t, dateStr) {
   if (!dateStr) return ''
   const d = Math.floor((Date.now() - new Date(dateStr)) / 86400000)
-  if (d <= 0) return 'сегодня'
-  if (d === 1) return 'вчера'
-  if (d < 7) return `${d} дн. назад`
-  if (d < 30) return `${Math.floor(d / 7)} нед. назад`
-  if (d < 365) return `${Math.floor(d / 30)} мес. назад`
-  return `${Math.floor(d / 365)} г. назад`
+  if (d <= 0) return t('labels.today')
+  if (d === 1) return t('labels.yesterday')
+  if (d < 7) return t('labels.daysAgo', { v1: d })
+  if (d < 30) return t('labels.weeksAgo', { v1: Math.floor(d / 7) })
+  if (d < 365) return t('labels.monthsAgo', { v1: Math.floor(d / 30) })
+  return t('labels.yearsAgo', { v1: Math.floor(d / 365) })
 }
 
 // Первый абзац как аннотация в списке.
@@ -103,7 +104,7 @@ export default function KnowledgeBasePage({ onClose }) {
               {selected.title}
             </h1>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 28px' }}>
-              Обновлено {timeAgo(selected.updated_at)}
+              {t('labels.updated')} {timeAgo(t, selected.updated_at)}
             </p>
             {selected.content
               ? <div style={{ fontSize: 15.5, color: 'var(--color-text-primary)', lineHeight: 1.75, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{selected.content}</div>
@@ -171,7 +172,7 @@ export default function KnowledgeBasePage({ onClose }) {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)', margin: '0 0 4px' }}>{a.title}</p>
                         {a.content && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>{excerpt(a.content)}</p>}
-                        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Обновлено {timeAgo(a.updated_at)}</p>
+                        <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>{t('labels.updated')} {timeAgo(t, a.updated_at)}</p>
                       </div>
                       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
                     </button>

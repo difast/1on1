@@ -19,7 +19,7 @@ const ADMIN_CODE = '1on12026';
 
 // Бэкенд отдаёт понятные русские сообщения в detail — показываем как есть.
 function translateError(msg: any): string {
-  return typeof msg === 'string' ? msg : 'Произошла ошибка';
+  return typeof msg === 'string' ? msg : translate('labels.somethingWentWrong');
 }
 
 function passwordProblem(pw: string): string {

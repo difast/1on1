@@ -3,7 +3,7 @@ import { useI18n } from '../lib/i18n';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
-import { StatusPicker, STATUS_LABEL, TaskStatus } from './StatusPicker';
+import { StatusPicker, statusLabel, TaskStatus } from './StatusPicker';
 import { Status3DIcon } from './Status3DIcon';
 import { TaskCollabModal } from './TaskCollabModal';
 import { updateTaskAssignee } from '../lib/api';
@@ -78,10 +78,10 @@ export function TaskAssignees({
                 onPress={() => setPickerFor(a.id)}
                 activeOpacity={0.7}
               >
-                <Text style={styles.statusBtnText}>{STATUS_LABEL[st]}</Text>
+                <Text style={styles.statusBtnText}>{statusLabel(t, st)}</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.statusReadonly}>{STATUS_LABEL[st]}</Text>
+              <Text style={styles.statusReadonly}>{statusLabel(t, st)}</Text>
             )}
             <StatusPicker
               visible={pickerFor === a.id}

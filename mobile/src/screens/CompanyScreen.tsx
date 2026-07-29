@@ -20,16 +20,16 @@ const EMPTY_FORM = {
   legal_address: '', industry: '', management: '', status: '', size: '', data: null as any,
 };
 
-const FIELD_DEFS: { key: keyof typeof EMPTY_FORM; label: string; numeric?: boolean }[] = [
-  { key: 'name', label: 'Название' },
-  { key: 'inn', label: 'ИНН / БИН' },
-  { key: 'kpp', label: 'КПП' },
-  { key: 'ogrn', label: 'ОГРН' },
-  { key: 'legal_address', label: 'Юридический адрес' },
-  { key: 'industry', label: 'Отрасль' },
-  { key: 'management', label: 'Руководитель' },
-  { key: 'status', label: 'Статус' },
-  { key: 'size', label: 'Размер (сотрудников)', numeric: true },
+const FIELD_DEFS: { key: keyof typeof EMPTY_FORM; labelKey: string; numeric?: boolean }[] = [
+  { key: 'name', labelKey: 'company.name' },
+  { key: 'inn', labelKey: 'company.taxId' },
+  { key: 'kpp', labelKey: 'company.kpp' },
+  { key: 'ogrn', labelKey: 'company.ogrn' },
+  { key: 'legal_address', labelKey: 'company.address' },
+  { key: 'industry', labelKey: 'company.industry' },
+  { key: 'management', labelKey: 'company.director' },
+  { key: 'status', labelKey: 'company.status' },
+  { key: 'size', labelKey: 'company.size', numeric: true },
 ];
 
 export default function CompanyScreen() {
@@ -235,7 +235,7 @@ export default function CompanyScreen() {
             <>
               {FIELD_DEFS.map((f) => (
                 <View key={f.key as string} style={{ marginBottom: 12 }}>
-                  <Text style={styles.fieldLabel}>{f.label}{f.key === 'name' ? ' *' : ''}</Text>
+                  <Text style={styles.fieldLabel}>{t(f.labelKey)}{f.key === 'name' ? ' *' : ''}</Text>
                   <TextInput
                     style={styles.input}
                     value={String(form[f.key] ?? '')}

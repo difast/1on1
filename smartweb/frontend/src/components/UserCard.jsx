@@ -172,7 +172,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
               {recs.map(r => (
                 <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0 }}>{r.topic || t('ui.ekspert')}</p>
-                  <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>от {r.from_user_name || 'коллеги'}</p>
+                  <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>от {r.from_user_name || t('labels.colleagues')}</p>
                 </div>
               ))}
             </div>

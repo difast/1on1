@@ -25,8 +25,7 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
     if (advice) { setAdvice(''); return; }
     setLoading(true);
     try {
-      const prompt = t('ui.timlid_vidit_signal_riska_po_uchastniku', { v1: signal.member_name, v2: getFlagDesc(signal) })
-        + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`;
+      const prompt = t('labels.burnoutAdvicePrompt', { v1: signal.member_name, v2: getFlagDesc(t, signal) });
       const res = await assistantChat([{ role: 'user', content: prompt }]) as any;
       setAdvice(res.reply ?? t('ui.ne_udalos_poluchit_sovet'));
     } catch { setAdvice(t('ui.ne_udalos_poluchit_sovet_poprobuyte_pozzhe')); }
@@ -41,9 +40,9 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
         </View>
         <View style={{ flex: 1, minWidth: 0 }}>
           <Text style={styles.riskMember}>{signal.member_name}</Text>
-          <Text style={styles.riskDesc}>{getFlagDesc(signal)}</Text>
+          <Text style={styles.riskDesc}>{getFlagDesc(t, signal)}</Text>
         </View>
-        <StatusBadge label={getFlagLabel(signal)} variant={variant} />
+        <StatusBadge label={getFlagLabel(t, signal)} variant={variant} />
       </View>
       <TouchableOpacity style={styles.aiBtn} onPress={getAdvice} disabled={loading} activeOpacity={0.8}>
         {loading
@@ -243,7 +242,7 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
                 {(ms.warning_flags ?? []).map((f: string, i: number) => (
                   <StatusBadge
                     key={i}
-                    label={getFlagLabel({ type: f, days: ms.days_since_last, count: ms.open_tasks })}
+                    label={getFlagLabel(t, { type: f, days: ms.days_since_last, count: ms.open_tasks })}
                     variant={getFlagVariant({ type: f })}
                   />
                 ))}
@@ -371,17 +370,17 @@ function MoodSparkline({ trend }: { trend: string[] }) {
   );
 }
 
-function getFlagDesc(s: any): string {
-  if (s.type === 'no_meeting_14_days') return `${s.days ?? '14+'} дн. без встречи`;
-  if (s.type === 'mood_declining') return 'Настроение ухудшается';
-  if (s.type === 'many_incomplete_tasks') return `${s.count} незакрытых задач`;
+function getFlagDesc(t: (k: string, v?: any) => string, s: any): string {
+  if (s.type === 'no_meeting_14_days') return t('labels.daysNoMeeting', { v1: s.days ?? '14+' });
+  if (s.type === 'mood_declining') return t('labels.risk.moodDown');
+  if (s.type === 'many_incomplete_tasks') return t('labels.openTasksCount', { v1: s.count });
   return s.type;
 }
 
-function getFlagLabel(s: any): string {
-  if (s.type === 'no_meeting_14_days') return 'Нет встречи';
-  if (s.type === 'mood_declining') return 'Настроение ↓';
-  if (s.type === 'many_incomplete_tasks') return 'Задачи';
+function getFlagLabel(t: (k: string) => string, s: any): string {
+  if (s.type === 'no_meeting_14_days') return t('labels.risk.noMeeting');
+  if (s.type === 'mood_declining') return t('labels.risk.moodArrowDown');
+  if (s.type === 'many_incomplete_tasks') return t('labels.risk.tasks');
   return s.type;
 }
 

@@ -16,15 +16,16 @@ import {
 import { getCoaching, buildMeetingFeedback } from '../src/lib/coaching';
 import type { AppColors } from '../src/constants/colors';
 
-const STATUS_LABEL: Record<string, string> = {
-  pending: 'Ожидает',
-  requested: 'Запрос',
-  scheduled: 'Запланирована',
-  confirmed: 'Подтверждена',
-  in_progress: 'Идёт',
-  declined: 'Отклонена',
-  completed: 'Завершена',
-  cancelled: 'Отменена',
+// Подпись статуса — ключ словаря, текст собирается на языке интерфейса.
+const STATUS_KEY: Record<string, string> = {
+  pending: 'awaiting',
+  requested: 'request',
+  scheduled: 'scheduled',
+  confirmed: 'confirmed',
+  in_progress: 'live_short',
+  declined: 'declined',
+  completed: 'completed',
+  cancelled: 'cancelled',
 };
 const STATUS_COLOR: Record<string, string> = {
   pending: '#F59E0B',
@@ -190,7 +191,7 @@ export default function MeetingDetailScreen() {
   const rawDate = meeting.scheduled_date ?? meeting.scheduled_at;
   const scheduledAt = rawDate ? new Date(rawDate) : null;
   const statusColor = STATUS_COLOR[meeting.status] ?? colors.textMuted;
-  const statusLabel = STATUS_LABEL[meeting.status] ?? meeting.status;
+  const statusLabel = STATUS_KEY[meeting.status] ? t(`labels.meetingStatus.${STATUS_KEY[meeting.status]}`) : meeting.status;
   const isUpcoming = scheduledAt && scheduledAt > new Date();
 
   // Show the *other* participant's real name (resolved from the users list).

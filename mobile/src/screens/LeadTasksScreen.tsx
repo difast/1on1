@@ -22,11 +22,12 @@ import { parseFeatureLock, openPricing } from '../lib/featureLock';
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
 
-const STATUS_CONFIG: Record<TaskStatus, { short: string }> = {
-  in_progress: { short: 'В работе' },
-  blocked: { short: 'Блок' },
-  review: { short: 'Ревью' },
-  done: { short: '' },
+// Короткая подпись статуса — из словаря; пустая у «готово» (значок вместо текста).
+const STATUS_SHORT_KEY: Record<TaskStatus, string> = {
+  in_progress: 'labels.taskStatus.in_progress',
+  blocked: 'labels.taskStatusShort.blocked',
+  review: 'labels.taskStatusShort.review',
+  done: '',
 };
 
 function getStatus(task: any): TaskStatus {
@@ -529,7 +530,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
       ) : (
         <TouchableOpacity style={[styles.statusBadge, { backgroundColor: sc.bg, borderColor: sc.border, flexDirection: 'row', alignItems: 'center', gap: 6 }]} onPress={() => setPickerOpen(true)} activeOpacity={0.7}>
           <Status3DIcon status={st} size={16} />
-          <Text style={[styles.statusText, { color: sc.text }]}>{STATUS_CONFIG[st].short}</Text>
+          <Text style={[styles.statusText, { color: sc.text }]}>{STATUS_SHORT_KEY[st] ? t(STATUS_SHORT_KEY[st]) : ''}</Text>
         </TouchableOpacity>
       )}
       {onDel && (

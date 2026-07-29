@@ -5,9 +5,11 @@ import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
 import useEscapeKey from '../lib/useEscapeKey'
 
-const STATUS_LABEL = { pending: 'Ожидает ответа', accepted: 'Принято', declined: 'Отклонено' }
+// Статусы и события — ключи словаря: подпись собирается на языке интерфейса.
+const statusLabel = (t, st) => t(`labels.interactionStatus.${st === 'pending' ? 'sent' : st}`, { defaultValue: st })
 const STATUS_BADGE = { pending: 'badge-amber', accepted: 'badge-green', declined: 'badge-red' }
-const ACTION_LABEL = { proposed: 'предложил(а) встречу', countered: 'предложил(а) другое время', accepted: 'принял(а)', declined: 'отклонил(а)' }
+const ACTION_KEY = { proposed: 'proposed', countered: 'counter', accepted: 'accepted', declined: 'declined' }
+const actionLabel = (t, a) => (ACTION_KEY[a] ? t(`labels.proposalEvent.${ACTION_KEY[a]}`) : a)
 
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
 
@@ -105,7 +107,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
             </p>
           </div>
           <span className={`badge ${STATUS_BADGE[p.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-            {iAmAwaited ? t('ui.vash_hod') : STATUS_LABEL[p.status] || p.status}
+            {iAmAwaited ? t('ui.vash_hod') : statusLabel(t, p.status)}
           </span>
         </div>
 
@@ -119,7 +121,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderLeft: '2px solid var(--color-border)', paddingLeft: 10 }}>
             {p.events.map(e => (
               <p key={e.id} style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
-                <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || t('ui.uchastnik')}</b> {ACTION_LABEL[e.action] || e.action}
+                <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || t('ui.uchastnik')}</b> {actionLabel(t, e.action)}
                 {e.proposed_time ? ` (${fmt(e.proposed_time)})` : ''} · {fmt(e.created_at)}
               </p>
             ))}

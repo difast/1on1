@@ -3,15 +3,19 @@ import { View, Text, StyleSheet } from 'react-native';
 import { StatusBadge } from './StatusBadge';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
+import { useI18n } from '../lib/i18n';
 
-const STATUS_LABEL: Record<string, string> = {
-  scheduled: 'Запланирована',
-  confirmed: 'Подтверждена',
-  completed: 'Завершена',
-  cancelled: 'Отменена',
-  declined: 'Отклонена',
-  requested: 'Запрошена',
+// Подпись статуса встречи — ключ словаря; текст собирается на языке интерфейса.
+const STATUS_KEY: Record<string, string> = {
+  scheduled: 'scheduled',
+  confirmed: 'confirmed',
+  completed: 'completed',
+  cancelled: 'cancelled',
+  declined: 'declined',
+  requested: 'requested',
 };
+export const meetingStatusLabel = (t: (k: string) => string, st: string) =>
+  (STATUS_KEY[st] ? t(`labels.meetingStatus.${STATUS_KEY[st]}`) : st);
 
 const STATUS_VARIANT: Record<string, 'blue' | 'green' | 'amber' | 'red' | 'gray'> = {
   scheduled: 'blue',
@@ -29,6 +33,7 @@ interface MeetingItemProps {
 }
 
 export function MeetingItem({ meeting, subtitle, right }: MeetingItemProps) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const date = new Date(meeting.scheduled_date);
@@ -59,7 +64,7 @@ export function MeetingItem({ meeting, subtitle, right }: MeetingItemProps) {
 
       <View style={styles.right}>
         <StatusBadge
-          label={STATUS_LABEL[meeting.status] ?? meeting.status}
+          label={meetingStatusLabel(t, meeting.status)}
           variant={STATUS_VARIANT[meeting.status] ?? 'gray'}
         />
         {right}
@@ -123,4 +128,4 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
 });
 
 // exposed for reuse
-export { STATUS_LABEL, STATUS_VARIANT };
+export { STATUS_VARIANT };

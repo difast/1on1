@@ -170,11 +170,12 @@ function moodTrend(trend) {
   return { arrow: '→', color: 'var(--color-text-muted)' }
 }
 
+// Возвращаем ключ статуса, подпись собирает вызывающий через t().
 function memberStatus(s) {
   const nFlags = s.warning_flags.length
-  if (nFlags === 0 && (s.days_since_last === null || s.days_since_last < 10)) return { label: 'ОК', cls: 'badge-green' }
-  if (nFlags >= 2 || (s.days_since_last !== null && s.days_since_last >= 14)) return { label: 'Срочно', cls: 'badge-red' }
-  return { label: 'Скоро', cls: 'badge-amber' }
+  if (nFlags === 0 && (s.days_since_last === null || s.days_since_last < 10)) return { key: 'ok', cls: 'badge-green' }
+  if (nFlags >= 2 || (s.days_since_last !== null && s.days_since_last >= 14)) return { key: 'urgent', cls: 'badge-red' }
+  return { key: 'soon', cls: 'badge-amber' }
 }
 
 function MemberRow({ s, delay }) {
@@ -195,7 +196,7 @@ function MemberRow({ s, delay }) {
         </div>
       </td>
       <td style={{ padding: '11px 14px', fontSize: 13, textAlign: 'center', color: s.days_since_last >= 14 ? 'var(--color-danger)' : 'var(--color-text-primary)', fontWeight: s.days_since_last >= 14 ? 700 : 400 }}>
-        {s.days_since_last !== null ? `${s.days_since_last} дн.` : '—'}
+        {s.days_since_last !== null ? t('labels.days', { v1: s.days_since_last }) : '—'}
       </td>
       <td style={{ padding: '11px 14px', fontSize: 13, textAlign: 'center', color: 'var(--color-text-primary)' }}>
         {s.meetings_last_30}
@@ -219,7 +220,7 @@ function MemberRow({ s, delay }) {
         ) : <span style={{ color: 'var(--color-text-muted)', fontSize: 13 }}>—</span>}
       </td>
       <td style={{ padding: '11px 14px', textAlign: 'center' }}>
-        <span className={`badge ${status.cls}`} style={{ fontSize: 11 }}>{status.label}</span>
+        <span className={`badge ${status.cls}`} style={{ fontSize: 11 }}>{t(`labels.risk.${status.key}`)}</span>
       </td>
     </tr>
   )
@@ -233,17 +234,16 @@ function RiskCard({ s, delay }) {
   const [loading, setLoading] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t) }, [delay])
   const reasons = []
-  if (s.warning_flags.includes('no_meeting_14_days')) reasons.push(`${s.days_since_last ?? '14+'} дн. без встречи`)
+  if (s.warning_flags.includes('no_meeting_14_days')) reasons.push(t('labels.daysNoMeeting', { v1: s.days_since_last ?? '14+' }))
   if (s.warning_flags.includes('mood_declining')) reasons.push(t('ui.nastroenie_padaet'))
-  if (s.warning_flags.includes('many_incomplete_tasks')) reasons.push(`${s.open_tasks} незакрытых задач`)
+  if (s.warning_flags.includes('many_incomplete_tasks')) reasons.push(t('labels.openTasksCount', { v1: s.open_tasks }))
   const isUrgent = s.days_since_last >= 21 || s.warning_flags.length >= 2
 
   const getAdvice = async () => {
     if (advice) { setAdvice(''); return }
     setLoading(true)
     try {
-      const prompt = `Тимлид видит сигнал риска по участнику "${s.name}": ${reasons.join(', ') || t('ui.risk_vygoraniya')}. `
-        + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`
+      const prompt = t('labels.burnoutAdvicePrompt', { v1: s.name, v2: reasons.join(', ') || t('ui.risk_vygoraniya') })
       const { data } = await pitChat([{ role: 'user', content: prompt }])
       setAdvice(data.reply || t('ui.ne_udalos_poluchit_sovet'))
     } catch { setAdvice(t('ui.ne_udalos_poluchit_sovet_poprobuyte_pozzhe')) }
@@ -509,10 +509,10 @@ export default function LeadAnalytics({ user }) {
       ws['!ref'] = `${XLSX.utils.encode_cell({ r: 0, c: 0 })}:${XLSX.utils.encode_cell({ r: maxR, c: maxC })}`
     }
 
-    const FLAG_RU = {
-      no_meeting_14_days: (s) => `${s.days_since_last ?? '14+'} дн. без встречи`,
+    const FLAG_TEXT = {
+      no_meeting_14_days: (s) => t('labels.daysNoMeeting', { v1: s.days_since_last ?? '14+' }),
       mood_declining: () => t('ui.nastroenie_padaet'),
-      many_incomplete_tasks: (s) => `${s.open_tasks} незакрытых задач`,
+      many_incomplete_tasks: (s) => t('labels.openTasksCount', { v1: s.open_tasks }),
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -672,7 +672,7 @@ export default function LeadAnalytics({ user }) {
     addMerge(ws2, curRow, curRow, 0, 7)
     ws2['!rows'].push({ hpt: 28 })
     curRow++
-    sc(ws2, curRow, 0, `Каждая карточка — полная аналитика по одному участнику`, { font: { sz: 10, italic: true, color: { rgb: '94A3B8' } }, alignment: { horizontal: 'left' } })
+    sc(ws2, curRow, 0, t('labels.exportCardHint'), { font: { sz: 10, italic: true, color: { rgb: '94A3B8' } }, alignment: { horizontal: 'left' } })
     addMerge(ws2, curRow, curRow, 0, 7)
     ws2['!rows'].push({ hpt: 16 })
     curRow++
@@ -728,9 +728,9 @@ export default function LeadAnalytics({ user }) {
 
       // ── Tasks detail row
       sc(ws2, curRow, 0, t('nav.tasks'), S.cardLbl)
-      sc(ws2, curRow, 1, `Выполнено: ${s.completed_tasks ?? 0}`, S.data('center'))
-      sc(ws2, curRow, 2, `Открыто: ${s.open_tasks ?? 0}`, S.data('center'))
-      sc(ws2, curRow, 3, `Всего: ${s.total_tasks ?? 0}`, S.data('center'))
+      sc(ws2, curRow, 1, `${t('labels.exportDone')}: ${s.completed_tasks ?? 0}`, S.data('center'))
+      sc(ws2, curRow, 2, `${t('labels.exportOpen')}: ${s.open_tasks ?? 0}`, S.data('center'))
+      sc(ws2, curRow, 3, `${t('labels.exportTotal')}: ${s.total_tasks ?? 0}`, S.data('center'))
       ws2['!rows'].push({ hpt: 18 })
       curRow++
 
@@ -747,7 +747,7 @@ export default function LeadAnalytics({ user }) {
       // ── Warning flags row
       if (flags.length > 0) {
         sc(ws2, curRow, 0, t('ui.flagi_riska'), { ...S.cardLbl, fill: { fgColor: { rgb: 'FEE2E2' } } })
-        const flagStr = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
+        const flagStr = flags.map(f => FLAG_TEXT[f]?.(s) || f).join(', ')
         sc(ws2, curRow, 1, flagStr, { font: { sz: 10, bold: true, color: { rgb: RED } }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brdB('FECACA') })
         addMerge(ws2, curRow, curRow, 1, 7)
         ws2['!rows'].push({ hpt: 18 })
@@ -794,7 +794,7 @@ export default function LeadAnalytics({ user }) {
       atRisk.forEach((s, i) => {
         const flags = s.warning_flags || []
         const isUrgent = s.days_since_last >= 21 || flags.length >= 2
-        const reasons = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
+        const reasons = flags.map(f => FLAG_TEXT[f]?.(s) || f).join(', ')
         const a = i % 2 ? S.dataAlt : S.data
         sc(ws3, r3, 0, s.name, { ...a('left', true), ...(isUrgent ? { fill: { fgColor: { rgb: 'FFF1F2' } } } : {}) })
         sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + t('ui.dn') : '—', isUrgent ? S.urgent : S.danger)
@@ -835,7 +835,7 @@ export default function LeadAnalytics({ user }) {
       r3++
     } else {
       signals.forEach((sig, i) => {
-        const detail = sig.days != null ? `${sig.days} дн.` : sig.count != null ? t('ui.zadach_3', { v1: sig.count }) : ''
+        const detail = sig.days != null ? t('labels.days', { v1: sig.days }) : sig.count != null ? t('ui.zadach_3', { v1: sig.count }) : ''
         const a = i % 2 ? S.dataAlt : S.data
         sc(ws3, r3, 0, sigTypeRu[sig.type] || sig.type, { ...a('left'), font: { sz: 10, bold: true, color: { rgb: AMBER } } })
         sc(ws3, r3, 1, sig.member_name || '', a('left', true))
@@ -995,7 +995,7 @@ export default function LeadAnalytics({ user }) {
       const dur = (a, l) => {
         if (!a || !l) return '—'
         const m = Math.round((new Date(l) - new Date(a)) / 60000)
-        return `${Math.floor(m / 60)}ч ${m % 60}м`
+        return t('labels.hoursMinutes', { v1: Math.floor(m / 60), v2: m % 60 })
       }
       checkins.forEach((c, i) => {
         const a = i % 2 ? S.dataAlt : S.data
@@ -1292,7 +1292,7 @@ export default function LeadAnalytics({ user }) {
             <thead>
               <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
                 {[t('ui.uchastnik'), t('ui.bez_vstrechi'), t('ui.za_mesyac_2'), t('nav.mood'), t('ui.zadach_2'), t('common.status')].map(h => (
-                  <th key={h} style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: h === 'Участник' ? 'left' : 'center' }}>
+                  <th key={h} style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: h === t('ui.uchastnik') ? 'left' : 'center' }}>
                     {h}
                   </th>
                 ))}
@@ -1344,7 +1344,7 @@ export default function LeadAnalytics({ user }) {
         const dur = (a, l) => {
           if (!a || !l) return '—'
           const m = Math.round((new Date(l) - new Date(a)) / 60000)
-          return `${Math.floor(m / 60)}ч ${m % 60}м`
+          return t('labels.hoursMinutes', { v1: Math.floor(m / 60), v2: m % 60 })
         }
         return (
           <div className="card" style={{ padding: '18px 20px' }}>

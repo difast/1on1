@@ -5,14 +5,15 @@ import Spinner from '../lib/Spinner'
 import { useState, useEffect } from 'react'
 import { getKnowledgeArticles, createKnowledgeArticle, updateKnowledgeArticle, deleteKnowledgeArticle } from '../api/client'
 
-function timeAgo(dateStr) {
+// Относительное время собираем из словаря: единицы и порядок слов разные в ru/en/kz.
+function timeAgo(t, dateStr) {
   const diff = Date.now() - new Date(dateStr)
   const d = Math.floor(diff / 86400000)
-  if (d === 0) return 'сегодня'
-  if (d === 1) return 'вчера'
-  if (d < 7) return `${d} дн. назад`
-  if (d < 30) return `${Math.floor(d / 7)} нед. назад`
-  return `${Math.floor(d / 30)} мес. назад`
+  if (d === 0) return t('labels.today')
+  if (d === 1) return t('labels.yesterday')
+  if (d < 7) return t('labels.daysAgo', { v1: d })
+  if (d < 30) return t('labels.weeksAgo', { v1: Math.floor(d / 7) })
+  return t('labels.monthsAgo', { v1: Math.floor(d / 30) })
 }
 
 export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
@@ -99,7 +100,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
           )}
         </div>
         <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginBottom: 20 }}>
-          Обновлено {timeAgo(selected.updated_at)}
+          {t('labels.updated')} {timeAgo(t, selected.updated_at)}
         </p>
         {selected.content
           ? <div style={{ fontSize: 14, color: 'var(--color-text-primary)', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{selected.content}</div>
@@ -221,7 +222,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
                   </p>
                 )}
                 <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 5 }}>
-                  {timeAgo(a.updated_at)}
+                  {timeAgo(t, a.updated_at)}
                 </p>
               </div>
               {canEdit && (

@@ -3,11 +3,12 @@ import { useTranslation } from 'react-i18next'
 import { submitMood, getMoodToday } from '../api/client'
 import useEscapeKey from '../lib/useEscapeKey'
 
+// Вопросы опроса — ключи словаря: формулировки на языке участника.
 const QUESTIONS = [
-  { id: 'overall', label: 'Как прошёл день?', placeholder: 'Расскажите в нескольких словах...', required: true },
-  { id: 'energy', label: 'Что давало вам энергию?', placeholder: 'Задачи, общение, достижения...', required: false },
-  { id: 'blocker', label: 'Что мешало работе?', placeholder: 'Блокеры, усталость, отвлечения...', required: false },
-  { id: 'team', label: 'Хотите что-то донести до команды?', placeholder: 'Анонимно — тимлид увидит обобщённо...', required: false },
+  { id: 'overall', key: 'q1', required: true },
+  { id: 'energy', key: 'q2', required: false },
+  { id: 'blocker', key: 'q3', required: false },
+  { id: 'team', key: 'q4', required: false },
 ]
 
 const todayKey = () => `mood_submitted_${new Date().toDateString()}`
@@ -167,12 +168,12 @@ export default function MoodPrompt({ teamId, user }) {
                   {QUESTIONS.map(q => (
                     <div key={q.id} className="form-group" style={{ marginBottom: 0 }}>
                       <label className="form-label" style={{ fontSize: 13 }}>
-                        {q.label}{q.required && <span style={{ color: 'var(--color-danger)', marginLeft: 3 }}>*</span>}
+                        {t(`moodPrompt.${q.key}`)}{q.required && <span style={{ color: 'var(--color-danger)', marginLeft: 3 }}>*</span>}
                       </label>
                       <textarea
                         value={answers[q.id]}
                         onChange={e => setAnswers(prev => ({ ...prev, [q.id]: e.target.value }))}
-                        placeholder={q.placeholder}
+                        placeholder={t(`moodPrompt.${q.key}ph`)}
                         rows={q.id === 'overall' ? 3 : 2}
                         className="input"
                         style={{ resize: 'none', fontSize: 13, lineHeight: 1.5 }}

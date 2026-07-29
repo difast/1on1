@@ -1,6 +1,7 @@
 import { Platform, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { updateUser } from './api';
+import { translate } from './i18n';
 
 // Lazy-require so that an OLD build (OTA-updated but WITHOUT the
 // expo-notifications native module) degrades gracefully instead of crashing.
@@ -29,7 +30,7 @@ async function ensureAndroidChannel() {
   if (Platform.OS !== 'android' || !Notifications?.setNotificationChannelAsync) return;
   try {
     await Notifications.setNotificationChannelAsync('default', {
-      name: 'Уведомления',
+      name: translate('labels.notifications'),
       importance: Notifications.AndroidImportance?.MAX ?? 5,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#6366F1',

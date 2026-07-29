@@ -8,12 +8,9 @@ import { Status3DIcon } from './Status3DIcon';
 
 export type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
-export const STATUS_LABEL: Record<TaskStatus, string> = {
-  in_progress: 'В работе',
-  blocked: 'Заблокирована',
-  review: 'На ревью',
-  done: 'Готово',
-};
+// Подпись статуса задачи берётся из словаря по ключу (labels.taskStatus.*).
+export const statusLabel = (t: (k: string) => string, st: TaskStatus | string) =>
+  t(`labels.taskStatus.${st}`);
 
 const STATUS_ORDER: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
 
@@ -51,7 +48,7 @@ export function StatusPicker({
             >
               <Status3DIcon status={s} size={24} />
               <Text style={[styles.rowText, current === s && { color: tint[s], fontWeight: '700' }]}>
-                {STATUS_LABEL[s]}
+                {statusLabel(t, s)}
               </Text>
               {current === s && <Ionicons name="checkmark" size={18} color={tint[s]} />}
             </TouchableOpacity>
