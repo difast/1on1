@@ -68,7 +68,7 @@ export function TaskAssignees({
           <View key={a.id} style={styles.assigneeRow}>
             <Status3DIcon status={st} size={18} />
             <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.assigneeName}>{a.user_name || `#${a.user_id}`}{mine ? ' (вы)' : ''}</Text>
+              <Text style={styles.assigneeName}>{a.user_name || `#${a.user_id}`}{mine ? t('ui.vy_2') : ''}</Text>
               {!!a.part_description && <Text style={styles.assigneePart}>{a.part_description}</Text>}
             </View>
             {canEdit ? (

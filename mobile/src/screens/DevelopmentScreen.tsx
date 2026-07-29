@@ -63,7 +63,7 @@ function SkillRow({ us, meId, colors, readOnly, onChanged, onRemoved }: {
   const patch = async (payload: any) => {
     setSaving(true);
     try { const s = await updateUserSkill(us.id, { actor_id: meId, ...payload }); onChanged(s); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
     finally { setSaving(false); }
   };
   const remove = () => Alert.alert(t('ui.udalit_navyk'), undefined, [
@@ -125,7 +125,7 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
   const patch = async (payload: any) => {
     setSaving(true);
     try { const s = await updateDevStep(step.id, { actor_id: meId, ...payload }); onChanged(s); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
     finally { setSaving(false); }
   };
   const setProgress = (p: number) => patch({ progress: Math.max(0, Math.min(100, p)) });
@@ -191,7 +191,7 @@ function RecCard({ rec, meId, colors, onChanged }: { rec: DevRecommendation; meI
   const act = async (action: string) => {
     setBusy(true);
     try { const r = await actOnDevRecommendation(rec.id, { actor_id: meId, action }); onChanged(r); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
     finally { setBusy(false); }
   };
   return (
@@ -247,14 +247,14 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
     try {
       const s = await addUserSkill({ actor_id: meId, user_id: meId, skill_name: sName.trim(), category: sCat, current_level: sCur, desired_level: sDes || undefined });
       setDev(d => d && ({ ...d, skills: [...d.skills, s] })); setShowSkill(false); setSName(''); setSDes(0); setSCur(2);
-    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
   };
   const addStep = async () => {
     if (!stTitle.trim()) { Alert.alert(t('ui.ukazhite_nazvanie_shaga')); return; }
     try {
       const s = await createDevStep({ actor_id: meId, user_id: meId, title: stTitle.trim(), skill_id: stSkill || undefined });
       setDev(d => d && ({ ...d, steps: [s, ...d.steps] })); setShowStep(false); setStTitle(''); setStSkill(null);
-    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
   };
   const askAi = async () => {
     setAiBusy(true);
@@ -262,7 +262,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
     catch (e: any) {
       const detail = e?.response?.data?.detail || e?.response?.detail;
       if (detail?.code === 'feature_locked') Alert.alert(t('ui.funkciya_nedostupna'), detail.message);
-      else Alert.alert(t('ui.pit_nedostupen'), typeof detail === 'string' ? detail : 'Попробуйте позже');
+      else Alert.alert(t('ui.pit_nedostupen'), typeof detail === 'string' ? detail : t('ui.poprobuyte_pozzhe'));
     } finally { setAiBusy(false); }
   };
 
@@ -272,7 +272,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
   return (
     <ScrollView contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.accent} />}>
-      <Text style={styles.intro}>Ваш путь развития: навыки с уровнями, план и рекомендации. Тимлид видит развитие и может назначить направление роста.</Text>
+      <Text style={styles.intro}>{t('ui.vash_put_razvitiya_navyki_s_urovnyami')}</Text>
 
       {/* Навыки */}
       <View style={styles.sectionHead}>
@@ -303,7 +303,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
           </View>
         </View>
       )}
-      {dev.skills.length === 0 && !showSkill && <EmptyState icon="ribbon-outline" title={t('ui.navyki_ne_zadany')} description="Добавьте навык и укажите уровни." />}
+      {dev.skills.length === 0 && !showSkill && <EmptyState icon="ribbon-outline" title={t('ui.navyki_ne_zadany')} description={t('ui.dobavte_navyk_i_ukazhite_urovni')} />}
       {dev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} colors={colors} onChanged={upSkill} onRemoved={(id) => upSkill(s, id)} />)}
 
       {/* План */}
@@ -324,7 +324,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
           </View>
         </View>
       )}
-      {dev.steps.length === 0 && !showStep && <EmptyState icon="footsteps-outline" title={t('ui.plan_pust')} description="Добавьте первый шаг развития." />}
+      {dev.steps.length === 0 && !showStep && <EmptyState icon="footsteps-outline" title={t('ui.plan_pust')} description={t('ui.dobavte_pervyy_shag_razvitiya')} />}
       {dev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} colors={colors} canFeedback={false} onChanged={upStep} onRemoved={(id) => upStep(s, id)} />)}
 
       {/* Рекомендации */}
@@ -332,7 +332,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
         <Text style={styles.sectionTitle}>{t('ui.rekomendacii')}</Text>
         <TouchableOpacity disabled={aiBusy} onPress={askAi}><Text style={styles.link}>{aiBusy ? t('ui.pit_dumaet') : t('pit.ask')}</Text></TouchableOpacity>
       </View>
-      {openRecs.length === 0 && <EmptyState icon="bulb-outline" title={t('ui.rekomendaciy_net')} description="Задайте желаемые уровни — появятся рекомендации по разрыву." />}
+      {openRecs.length === 0 && <EmptyState icon="bulb-outline" title={t('ui.rekomendaciy_net')} description={t('ui.zadayte_zhelaemye_urovni_poyavyatsya_rekomenda')} />}
       {openRecs.map(r => <RecCard key={r.id} rec={r} meId={meId} colors={colors} onChanged={upRec} />)}
 
       {/* Учебные цели (единая модель с «Целями») */}
@@ -341,14 +341,14 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
         {!showLearn && <TouchableOpacity onPress={() => setShowLearn(true)}><Text style={styles.link}>{t('ui.uchebnaya_cel')}</Text></TouchableOpacity>}
       </View>
       {showLearn && (
-        <GoalForm colors={colors} submitLabel="Создать учебную цель" titlePlaceholder="Например: Пройти курс по системному дизайну"
+        <GoalForm colors={colors} submitLabel={t('ui.sozdat_uchebnuyu_cel')} titlePlaceholder={t('ui.naprimer_proyti_kurs_po_sistemnomu_dizaynu')}
           onCancel={() => setShowLearn(false)}
           onCreate={async (p) => {
             const g = await createGoal({ user_id: meId, goal_kind: 'learning', ...p } as any);
             setDev(d => d && ({ ...d, learning_goals: [g, ...(d.learning_goals || [])] })); setShowLearn(false);
           }} />
       )}
-      {(dev.learning_goals || []).length === 0 && !showLearn && <EmptyState icon="school-outline" title={t('ui.uchebnyh_celey_net')} description="Создайте учебную цель — она появится и во вкладке «Цели»." />}
+      {(dev.learning_goals || []).length === 0 && !showLearn && <EmptyState icon="school-outline" title={t('ui.uchebnyh_celey_net')} description={t('ui.sozdayte_uchebnuyu_cel_ona_poyavitsya_i')} />}
       {(dev.learning_goals || []).map(g => (
         <View key={g.id} style={styles.card}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -388,14 +388,14 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
     if (!teamId) { setData(null); setLoading(false); return; }
     setLoading(true);
     try { const d = await getTeamDevelopment(teamId, meId); setData(d); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); setData(null); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); setData(null); }
     finally { setLoading(false); }
   }, [teamId, meId]);
   useEffect(() => { load(); }, [load]);
 
   const openMember = async (uid: number) => {
     setOpenUid(uid); setMemberDev(null); setShowAssign(false);
-    try { const d = await getDevelopment(uid, meId); setMemberDev(d); } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Нет доступа'); setOpenUid(null); }
+    try { const d = await getDevelopment(uid, meId); setMemberDev(d); } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.net_dostupa')); setOpenUid(null); }
   };
   const upMemberStep = (s: DevStep) => setMemberDev(d => d && ({ ...d, steps: d.steps.map(x => x.id === s.id ? s : x) }));
 
@@ -403,9 +403,9 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
     if (!asgTitle.trim() || !openUid) { Alert.alert(t('ui.ukazhite_napravlenie')); return; }
     try {
       await createDevRecommendation({ actor_id: meId, user_id: openUid, title: asgTitle.trim(), skill_id: asgSkill || undefined, target_level: asgLevel || undefined });
-      Alert.alert(t('ui.gotovo'), 'Направление назначено — сотрудник получит уведомление');
+      Alert.alert(t('ui.gotovo'), t('ui.napravlenie_naznacheno_sotrudnik_poluchit_uved'));
       setAsgTitle(''); setAsgLevel(0); setAsgSkill(null); setShowAssign(false); load();
-    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos')); }
   };
 
   const members = data?.members || [];
@@ -459,7 +459,7 @@ function LeadDevelopment({ meId, colors }: { meId: number; colors: AppColors }) 
         </View>
       )}
       {loading && <Spinner />}
-      {!loading && members.length === 0 && <EmptyState icon="people-outline" title={t('ui.net_dannyh_razvitiya')} description="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
+      {!loading && members.length === 0 && <EmptyState icon="people-outline" title={t('ui.net_dannyh_razvitiya')} description={t('ui.kak_tolko_sotrudniki_dobavyat_navyki_i')} />}
       {!loading && members.map(m => (
         <View key={m.user_id} style={styles.card}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>

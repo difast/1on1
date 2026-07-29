@@ -26,7 +26,7 @@ const STATUS_CONFIG: Record<TaskStatus, { short: string }> = {
   in_progress: { short: 'В работе' },
   blocked: { short: 'Блок' },
   review: { short: 'Ревью' },
-  done: { short: '✓' },
+  done: { short: '' },
 };
 
 function getStatus(task: any): TaskStatus {
@@ -156,7 +156,7 @@ export default function LeadTasksScreen() {
     } catch {
       setTasks(prev => prev.filter(t => t.id !== tempId));
       setFormTitle(title); setFormDue(due_date || ''); setShowForm(true);
-      Alert.alert(t('ui.oshibka'), 'Не удалось создать задачу');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_zadachu'));
     }
     finally { setFormLoading(false); }
   };
@@ -208,7 +208,7 @@ export default function LeadTasksScreen() {
             onPress={() => setShowForm(s => !s)}
           >
             <Text style={[styles.addBtnText, showForm && styles.addBtnTextActive]}>
-              {showForm ? '✕' : '+ Задача'}
+              {showForm ? '' : t('ui.zadacha_2')}
             </Text>
           </TouchableOpacity>
         )}
@@ -262,7 +262,7 @@ export default function LeadTasksScreen() {
               </View>
             )}
             {tasks.length === 0 && !showForm && (
-              <EmptyState icon="document-text-outline" title={t('ui.net_lichnyh_zadach')} description="Добавьте задачи для себя" />
+              <EmptyState icon="document-text-outline" title={t('ui.net_lichnyh_zadach')} description={t('ui.dobavte_zadachi_dlya_sebya')} />
             )}
             {active.length > 0 && (
               <View style={styles.section}>
@@ -283,7 +283,7 @@ export default function LeadTasksScreen() {
           <>
             {teamsLoading && <Spinner />}
             {!teamsLoading && teams.length === 0 && (
-              <EmptyState icon="people-outline" title={t('ui.net_komand')} description="Создайте команду чтобы добавлять участников" />
+              <EmptyState icon="people-outline" title={t('ui.net_komand')} description={t('ui.sozdayte_komandu_chtoby_dobavlyat_uchastnikov')} />
             )}
             {teams.map((team: any) => {
               const members = (team.members || []).filter((m: any) => m.user_id !== user!.id);
@@ -456,7 +456,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
           { text: t('ui.tarify'), onPress: openPricing },
         ]);
       } else {
-        Alert.alert(t('ui.oshibka'), 'Не удалось получить AI советы');
+        Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_poluchit_ai_sovety'));
       }
     }
     finally { setAiLoading(false); }
@@ -467,7 +467,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
     await updateSubtask(sub.id, { completed: newCompleted });
     const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
     setSubtasks(updated);
-    // All subtasks checked → mark the task done (not "cycle", which landed on "Блок")
+    // All subtasks checked → mark the task done (not "cycle", which landed on t('ui.blok'))
     if (newCompleted && updated.length > 0 && updated.every(s => s.completed) && st !== 'done') {
       onSetStatus('done');
     }
@@ -503,7 +503,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
               <TouchableOpacity style={[styles.aiBtn, { borderColor: aiLoading ? colors.border : colors.accent, backgroundColor: colors.accentLight }]} onPress={onAI} disabled={aiLoading}>
                 <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
                 <Text style={[styles.aiBtnText, { color: colors.accent }]}>
-                  {aiLoading ? 'AI генерирует...' : aiSteps.length > 0 ? t('ui.sbrosit_ai_shagi') : t('ui.ai_sovety_4_shaga')}
+                  {aiLoading ? t('ui.ai_generiruet') : aiSteps.length > 0 ? t('ui.sbrosit_ai_shagi') : t('ui.ai_sovety_4_shaga')}
                 </Text>
               </TouchableOpacity>
             )}
@@ -534,7 +534,7 @@ function TaskRow({ task, onSetStatus, onDel, onTaskUpdated, role = 'lead', conta
       )}
       {onDel && (
         <TouchableOpacity onPress={onDel} style={styles.deleteBtn}>
-          <Text style={styles.deleteBtnText}>✕</Text>
+          <Ionicons name="close" size={14} color={colors.danger} />
         </TouchableOpacity>
       )}
       <StatusPicker

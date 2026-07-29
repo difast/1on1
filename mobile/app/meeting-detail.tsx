@@ -73,7 +73,7 @@ export default function MeetingDetailScreen() {
     } catch {
       // Встреча могла быть удалена или стать недоступной (устаревшее
       // уведомление) — понятное сообщение вместо пустого экрана.
-      Alert.alert(t('ui.vstrecha_nedostupna'), 'Эта встреча удалена или у вас нет к ней доступа.');
+      Alert.alert(t('ui.vstrecha_nedostupna'), t('ui.eta_vstrecha_udalena_ili_u_vas'));
       router.back();
     } finally { setLoading(false); }
   }, [params.id]);
@@ -127,7 +127,7 @@ export default function MeetingDetailScreen() {
     try {
       await confirmMeeting(meeting.id);
       setMeeting((prev: any) => ({ ...prev, status: 'confirmed' }));
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось подтвердить встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_podtverdit_vstrechu')); }
     finally { setActionLoading(false); }
   };
 
@@ -137,7 +137,7 @@ export default function MeetingDetailScreen() {
     try {
       await declineMeeting(meeting.id);
       setMeeting((prev: any) => ({ ...prev, status: 'declined' }));
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось отклонить встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otklonit_vstrechu')); }
     finally { setActionLoading(false); }
   };
 
@@ -147,7 +147,7 @@ export default function MeetingDetailScreen() {
     // Accept "YYYY-MM-DD HH:MM" or "YYYY-MM-DDTHH:MM"
     const iso = slot.replace(' ', 'T');
     if (isNaN(new Date(iso).getTime())) {
-      Alert.alert(t('ui.nevernaya_data'), 'Формат: ГГГГ-ММ-ДД ЧЧ:ММ');
+      Alert.alert(t('ui.nevernaya_data'), t('ui.format_gggg_mm_dd_chch_mm'));
       return;
     }
     setActionLoading(true);
@@ -156,7 +156,7 @@ export default function MeetingDetailScreen() {
       setMeeting((prev: any) => ({ ...prev, scheduled_date: iso, is_rescheduled: true, status: prev.status === 'declined' || prev.status === 'cancelled' ? 'scheduled' : prev.status }));
       setShowReschedule(false);
       setNewDate('');
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось перенести встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_perenesti_vstrechu')); }
     finally { setActionLoading(false); }
   };
 
@@ -173,7 +173,7 @@ export default function MeetingDetailScreen() {
         setNotes(prev => [...prev, n]);
       }
       setNoteText('');
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_zametku')); }
     finally { setNoteLoading(false); }
   };
 
@@ -199,7 +199,7 @@ export default function MeetingDetailScreen() {
   const otherName =
     usersMap[otherId]?.name
     ?? meeting.member_name ?? meeting.lead_name ?? meeting.participant_name
-    ?? (otherId ? `Участник #${otherId}` : 'Участник');
+    ?? (otherId ? t('ui.uchastnik_4', { v1: otherId }) : t('ui.uchastnik'));
 
   const isFinal = ['declined', 'cancelled', 'completed'].includes(meeting.status);
   const isPast = meeting.status === 'completed' || (scheduledAt ? scheduledAt < new Date() : false);
@@ -346,7 +346,7 @@ export default function MeetingDetailScreen() {
                     onPress={handleReschedule}
                     disabled={!newDate.trim() || actionLoading}
                   >
-                    <Text style={styles.noteSaveText}>{actionLoading ? '...' : 'Перенести'}</Text>
+                    <Text style={styles.noteSaveText}>{actionLoading ? '...' : t('meetings.reschedule')}</Text>
                   </TouchableOpacity>
                 </View>
               </View>

@@ -132,6 +132,6 @@ class NotificationService:
         return self.create_notification(
             user_id=user_id,
             type="burnout_alert",
-            title=f"⚠️ {member_name} перенёс встречу {reschedule_count} раз",
+            title=f"️ {member_name} перенёс встречу {reschedule_count} раз",
             body="Рассмотрите возможность личного общения",
         )

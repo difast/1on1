@@ -133,7 +133,7 @@ export async function executePitAction(
         assigned_by: user.id,
         team_id: member?.teamId || null,
       });
-      return `✓ Задача «${action.text}» создана для ${who}`;
+      return `Задача «${action.text}» создана для ${who}`;
     }
 
     // schedule_meeting — no time was supplied, default to tomorrow 10:00.
@@ -147,8 +147,8 @@ export async function executePitAction(
       scheduled_date: when.toISOString(),
       agenda: action.text || undefined,
     });
-    return `✓ Встреча с ${who} запланирована на ${when.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
+    return `Встреча с ${who} запланирована на ${when.toLocaleString('ru-RU', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}`;
   } catch {
-    return `⚠ Не удалось выполнить действие для ${who}. Попробуйте ещё раз или обратитесь в поддержку.`;
+    return `Не удалось выполнить действие для ${who}. Попробуйте ещё раз или обратитесь в поддержку.`;
   }
 }

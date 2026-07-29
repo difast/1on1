@@ -85,16 +85,16 @@ export default function AdminScreen() {
   const mgNotify = (msg: string) => { setMgMsg(msg); setTimeout(() => setMgMsg(''), 3500); };
 
   const handleCreateTeam = async () => {
-    if (!mgTeamName.trim() || !mgTeamLead) { mgNotify('Укажите название и тимлида'); return; }
+    if (!mgTeamName.trim() || !mgTeamLead) { mgNotify(t('ui.ukazhite_nazvanie_i_timlida')); return; }
     setMgBusy(true);
     try {
       await createTeam({ name: mgTeamName.trim(), team_lead_id: mgTeamLead });
-      setMgTeamName(''); setMgTeamLead(null); mgNotify('✓ Команда создана');
-    } catch { mgNotify('Ошибка создания команды'); } finally { setMgBusy(false); }
+      setMgTeamName(''); setMgTeamLead(null); mgNotify(t('ui.komanda_sozdana'));
+    } catch { mgNotify(t('ui.oshibka_sozdaniya_komandy')); } finally { setMgBusy(false); }
   };
 
   const handleCreateTask = async () => {
-    if (!mgTaskTitle.trim() || !mgTaskAssignee) { mgNotify('Укажите задачу и исполнителя'); return; }
+    if (!mgTaskTitle.trim() || !mgTaskAssignee) { mgNotify(t('ui.ukazhite_zadachu_i_ispolnitelya')); return; }
     setMgBusy(true);
     try {
       await createTask({
@@ -103,13 +103,13 @@ export default function AdminScreen() {
         assigned_by: mgTaskAssignee,
         team_id: mgTaskTeam ?? null,
       });
-      setMgTaskTitle(''); setMgTaskAssignee(null); setMgTaskTeam(null); mgNotify('✓ Задача создана');
-    } catch { mgNotify('Ошибка создания задачи'); } finally { setMgBusy(false); }
+      setMgTaskTitle(''); setMgTaskAssignee(null); setMgTaskTeam(null); mgNotify(t('ui.zadacha_sozdana'));
+    } catch { mgNotify(t('ui.oshibka_sozdaniya_zadachi')); } finally { setMgBusy(false); }
   };
 
   const handleCreateMeeting = async () => {
     const team = mgTeamsData.find(t => t.id === mgMeetTeam);
-    if (!team || !mgMeetMember || !mgMeetDate) { mgNotify('Выберите команду, участника и дату'); return; }
+    if (!team || !mgMeetMember || !mgMeetDate) { mgNotify(t('ui.vyberite_komandu_uchastnika_i_datu')); return; }
     setMgBusy(true);
     try {
       await createMeeting({
@@ -118,8 +118,8 @@ export default function AdminScreen() {
         member_id: mgMeetMember,
         scheduled_date: mgMeetDate,
       });
-      setMgMeetTeam(null); setMgMeetMember(null); setMgMeetDate(''); mgNotify('✓ Встреча создана');
-    } catch { mgNotify('Ошибка создания встречи'); } finally { setMgBusy(false); }
+      setMgMeetTeam(null); setMgMeetMember(null); setMgMeetDate(''); mgNotify(t('ui.vstrecha_sozdana'));
+    } catch { mgNotify(t('ui.oshibka_sozdaniya_vstrechi')); } finally { setMgBusy(false); }
   };
 
   const loadStats = useCallback(async () => {
@@ -167,7 +167,7 @@ export default function AdminScreen() {
         ...prev,
         users: prev.users.map((x: any) => x.id === u.id ? { ...x, is_blocked: !u.is_blocked } : x),
       }));
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось изменить статус'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_izmenit_status')); }
   };
 
   const openTicket = (t: any) => {
@@ -184,7 +184,7 @@ export default function AdminScreen() {
       setTickets(prev => prev.map(t => t.id === updated.id ? updated : t));
       setReplyText('');
       setTimeout(() => ticketScrollRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить ответ'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otpravit_otvet')); }
     finally { setReplying(false); }
   };
 
@@ -202,7 +202,7 @@ export default function AdminScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert(t('ui.vyyti_iz_admin_paneli'), 'Вернуться к обычному входу?', [
+    Alert.alert(t('ui.vyyti_iz_admin_paneli'), t('ui.vernutsya_k_obychnomu_vhodu'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('menu.logout'), style: 'destructive', onPress: () => exitAdmin() },
     ]);
@@ -309,7 +309,7 @@ export default function AdminScreen() {
 
               <View style={styles.usersHint}>
                 <Ionicons name="hand-left-outline" size={14} color={colors.accent} />
-                <Text style={styles.usersHintText}>Нажмите на пользователя — откроются детали, команды, встречи, задачи и управление (роль, блок, удаление).</Text>
+                <Text style={styles.usersHintText}>{t('ui.nazhmite_na_polzovatelya_otkroyutsya_detali_ko')}</Text>
               </View>
               <Text style={styles.sectionLabel}>Пользователи ({filtered.length})</Text>
               {filtered.map((u: any) => (
@@ -326,7 +326,7 @@ export default function AdminScreen() {
                     <View style={styles.userMeta}>
                       <View style={styles.idChip}><Text style={styles.idChipText}>ID {u.id}</Text></View>
                       <View style={[styles.roleBadge, u.role === 'team_lead' ? styles.roleLead : styles.roleMember]}>
-                        <Text style={styles.roleBadgeText}>{u.role === 'team_lead' ? 'Тимлид' : 'Участник'}</Text>
+                        <Text style={styles.roleBadgeText}>{u.role === 'team_lead' ? t('profile.roleLead') : t('ui.uchastnik')}</Text>
                       </View>
                       <Text style={styles.userStat}>{u.meetings_count} встр · {u.tasks_count} зад</Text>
                     </View>
@@ -383,7 +383,7 @@ export default function AdminScreen() {
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.polzovatel')}</Text><Text style={styles.userInfoV}>{activeTicket.user_name}</Text></View>
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>ID</Text><Text style={styles.userInfoV}>{activeTicket.user_id}</Text></View>
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>Email</Text><Text style={styles.userInfoV} numberOfLines={1}>{activeTicket.user_email}</Text></View>
-                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.rol')}</Text><Text style={styles.userInfoV}>{activeTicket.user_role === 'team_lead' ? 'Тимлид' : activeTicket.user_role === 'member' ? 'Участник' : activeTicket.user_role}</Text></View>
+                  <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.rol')}</Text><Text style={styles.userInfoV}>{activeTicket.user_role === 'team_lead' ? t('profile.roleLead') : activeTicket.user_role === 'member' ? t('ui.uchastnik') : activeTicket.user_role}</Text></View>
                   <View style={styles.userInfoRow}><Text style={styles.userInfoK}>{t('ui.obraschenie')}</Text><Text style={styles.userInfoV}>#{activeTicket.id}{activeTicket.created_at ? ` · ${new Date(activeTicket.created_at).toLocaleDateString('ru-RU')}` : ''}</Text></View>
                 </View>
                 <View style={[styles.bubble, styles.bubbleUser]}>
@@ -475,14 +475,14 @@ export default function AdminScreen() {
                 </View>
 
                 {mgMsg ? (
-                  <View style={mgMsg.startsWith('✓') ? styles.successBanner : styles.errorBox}>
-                    <Text style={mgMsg.startsWith('✓') ? styles.successBannerText : styles.errorText}>{mgMsg}</Text>
+                  <View style={mgMsg.startsWith('') ? styles.successBanner : styles.errorBox}>
+                    <Text style={mgMsg.startsWith('') ? styles.successBannerText : styles.errorText}>{mgMsg}</Text>
                   </View>
                 ) : null}
 
                 {(() => {
                   const userItems = (stats?.users ?? []).map((u: any) => ({ id: u.id, label: u.name, sub: `${u.email} · ${u.role === 'team_lead' ? t('ui.timlid') : t('ui.uchastnik_3')}` }));
-                  const teamItems = mgTeamsData.map((t: any) => ({ id: t.id, label: t.name, sub: `тимлид #${t.team_lead_id}` }));
+                  const teamItems = mgTeamsData.map((t: any) => ({ id: t.id, label: t.name, sub: t('ui.timlid_2', { v1: t.team_lead_id }) }));
                   const meetTeam = mgTeamsData.find((t: any) => t.id === mgMeetTeam);
                   const memberItems = (meetTeam?.members ?? []).map((m: any) => ({ id: m.user_id, label: m.user_name, sub: m.role }));
                   return (
@@ -503,15 +503,15 @@ export default function AdminScreen() {
                       <TextInput style={styles.input} value={mgTaskTitle} onChangeText={setMgTaskTitle} placeholder={t('ui.tekst_zadachi')} placeholderTextColor={colors.textMuted} />
                     </View>
                     <EntityPicker label={t('ui.ispolnitel')} placeholder={t('ui.vyberite_polzovatelya')} valueId={mgTaskAssignee} items={userItems} onSelect={setMgTaskAssignee} />
-                    <EntityPicker label={t('ui.komanda_neobyazatelno')} placeholder={t('ui.bez_komandy')} valueId={mgTaskTeam} items={teamItems} onSelect={setMgTaskTeam} emptyText="Команды не загружены" />
+                    <EntityPicker label={t('ui.komanda_neobyazatelno')} placeholder={t('ui.bez_komandy')} valueId={mgTaskTeam} items={teamItems} onSelect={setMgTaskTeam} emptyText={t('ui.komandy_ne_zagruzheny')} />
                     <TouchableOpacity style={[styles.submitBtn, mgBusy && styles.btnDisabled]} onPress={handleCreateTask} disabled={mgBusy}>
                       <Text style={styles.submitBtnText}>{t('ui.sozdat_zadachu')}</Text>
                     </TouchableOpacity>
 
                     {/* Create meeting */}
                     <Text style={[styles.sectionLabel, { marginTop: 18 }]}>{t('ui.sozdat_vstrechu')}</Text>
-                    <EntityPicker label={t('ui.komanda')} placeholder={t('ui.vyberite_komandu')} valueId={mgMeetTeam} items={teamItems} onSelect={(id) => { setMgMeetTeam(id); setMgMeetMember(null); }} emptyText="Команды не загружены" />
-                    <EntityPicker label={t('ui.uchastnik')} placeholder={mgMeetTeam ? t('ui.vyberite_uchastnika_3') : t('ui.snachala_vyberite_komandu')} valueId={mgMeetMember} items={memberItems} onSelect={setMgMeetMember} emptyText="В команде нет участников" />
+                    <EntityPicker label={t('ui.komanda')} placeholder={t('ui.vyberite_komandu')} valueId={mgMeetTeam} items={teamItems} onSelect={(id) => { setMgMeetTeam(id); setMgMeetMember(null); }} emptyText={t('ui.komandy_ne_zagruzheny')} />
+                    <EntityPicker label={t('ui.uchastnik')} placeholder={mgMeetTeam ? t('ui.vyberite_uchastnika_3') : t('ui.snachala_vyberite_komandu')} valueId={mgMeetMember} items={memberItems} onSelect={setMgMeetMember} emptyText={t('ui.v_komande_net_uchastnikov')} />
                     <View style={styles.field}><Text style={styles.label}>{t('ui.data_i_vremya')}</Text>
                       <DateTimePickerField value={mgMeetDate} onChange={setMgMeetDate} />
                     </View>

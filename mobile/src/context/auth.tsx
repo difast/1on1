@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, setToken, clearToken } from '../lib/authToken';
-import { setLang, type Lang } from '../lib/i18n';
+import { setLang, translate, type Lang } from '../lib/i18n';
 import { authLogin, authRegister, authMe, authForgotPassword, authResendConfirmationByEmail, joinTeam, createTeam } from '../lib/api';
 
 export interface AppUser {
@@ -154,7 +154,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (cached) {
         try { setUserState(JSON.parse(cached)); } catch {}
       } else {
-        setProfileError(err?.response?.detail ?? err?.message ?? 'Сервер временно недоступен. Попробуйте позже.');
+        setProfileError(err?.response?.detail ?? err?.message ?? translate('errors.network'));
       }
       return 'error';
     }

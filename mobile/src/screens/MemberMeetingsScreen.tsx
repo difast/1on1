@@ -93,7 +93,7 @@ export default function MemberMeetingsScreen() {
       setMeetings(prev => prev.map(m => m.id === rescheduleMeetingId ? { ...m, scheduled_date: slot, is_rescheduled: true } : m));
       rescheduleSheetRef.current?.close();
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось перенести встречу');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_perenesti_vstrechu'));
     } finally { setRescheduleLoading(false); }
   };
 
@@ -104,7 +104,7 @@ export default function MemberMeetingsScreen() {
       const data = await startCall(meetingId, user.id);
       await Linking.openURL(`${data.room_url}?t=${data.token}`);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось начать созвон');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_nachat_sozvon'));
     } finally {
       setCallLoading(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -166,7 +166,7 @@ export default function MemberMeetingsScreen() {
       }
       setExpandedNoteId(null);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_zametku'));
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -319,10 +319,10 @@ export default function MemberMeetingsScreen() {
         )}
 
         {filteredMeetings.length === 0 && meetings.length === 0 && (
-          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description="Запросите первую встречу с тимлидом" />
+          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description={t('ui.zaprosite_pervuyu_vstrechu_s_timlidom')} />
         )}
         {filteredMeetings.length === 0 && meetings.length > 0 && (
-          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description="По выбранному фильтру встреч нет" />
+          <EmptyState icon="calendar-outline" title={t('ui.net_vstrech')} description={t('ui.po_vybrannomu_filtru_vstrech_net')} />
         )}
 
         {calendarView ? (
@@ -401,7 +401,7 @@ export default function MemberMeetingsScreen() {
                               style={[styles.noteSaveBtn, (!draft.trim() || saving) && styles.btnDisabled]}
                               onPress={() => handleSaveNote(m.id)} disabled={!draft.trim() || saving}
                             >
-                              <Text style={styles.noteSaveText}>{saving ? '...' : 'Сохранить'}</Text>
+                              <Text style={styles.noteSaveText}>{saving ? '...' : t('common.save')}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>

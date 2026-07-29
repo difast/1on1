@@ -27,7 +27,7 @@ const STATUS_CONFIG: Record<TaskStatus, { label: string; short: string }> = {
   in_progress: { label: 'В работе', short: 'В работе' },
   blocked: { label: 'Блокер', short: 'Блок' },
   review: { label: 'На ревью', short: 'Ревью' },
-  done: { label: 'Готово', short: '✓' },
+  done: { label: 'Готово', short: '' },
 };
 
 function getTaskStatus(task: any): TaskStatus {
@@ -108,7 +108,7 @@ export default function MemberTasksScreen() {
     } catch {
       setTasks(prev => prev.filter(t => t.id !== tempId));
       setFormTitle(title); setFormDue(due_date || ''); setShowForm(true);
-      Alert.alert(t('ui.oshibka'), 'Не удалось создать задачу');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_zadachu'));
     } finally { setFormLoading(false); }
   };
 
@@ -149,7 +149,7 @@ export default function MemberTasksScreen() {
           onPress={() => setShowForm(s => !s)}
         >
           <Text style={[styles.addBtnText, showForm && styles.addBtnTextActive]}>
-            {showForm ? '✕' : '+ Задача'}
+            {showForm ? '' : t('ui.zadacha_2')}
           </Text>
         </TouchableOpacity>
       </View>
@@ -214,7 +214,7 @@ export default function MemberTasksScreen() {
         )}
 
         {tasks.length === 0 && !showForm && (
-          <EmptyState icon="checkmark-circle-outline" title={t('ui.net_zadach')} description="Создайте личную задачу или ждите от тимлида" />
+          <EmptyState icon="checkmark-circle-outline" title={t('ui.net_zadach')} description={t('ui.sozdayte_lichnuyu_zadachu_ili_zhdite_ot')} />
         )}
 
         {active.length > 0 && (
@@ -314,7 +314,7 @@ function TaskRow({
           { text: t('ui.tarify'), onPress: openPricing },
         ]);
       } else {
-        Alert.alert(t('ui.oshibka'), 'Не удалось получить AI советы');
+        Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_poluchit_ai_sovety'));
       }
     } finally { setAiLoading(false); }
   };
@@ -326,7 +326,7 @@ function TaskRow({
       const updated = subtasks.map(s => s.id === sub.id ? { ...s, completed: newCompleted } : s);
       setSubtasks(updated);
       // When every subtask is checked, the parent task is done — update it
-      // directly (don't "cycle" the status, that previously landed on "Блок").
+      // directly (don't "cycle" the status, that previously landed on t('ui.blok')).
       if (newCompleted && updated.length > 0 && updated.every(s => s.completed) && status !== 'done') {
         onSetStatus('done');
       }
@@ -383,7 +383,7 @@ function TaskRow({
         )}
         {onDelete && (
           <TouchableOpacity onPress={onDelete} style={styles.deleteBtn}>
-            <Text style={styles.deleteBtnText}>✕</Text>
+            <Ionicons name="close" size={14} color={colors.danger} />
           </TouchableOpacity>
         )}
       </TouchableOpacity>
@@ -412,7 +412,7 @@ function TaskRow({
             >
               <Ionicons name="sparkles-outline" size={14} color={colors.accent} />
               <Text style={styles.aiBtnText}>
-                {aiLoading ? 'AI генерирует шаги...' : aiSteps.length > 0 ? t('ui.sbrosit_ai_shagi') : t('ui.ai_sovety_4_shaga')}
+                {aiLoading ? t('ui.ai_generiruet_shagi') : aiSteps.length > 0 ? t('ui.sbrosit_ai_shagi') : t('ui.ai_sovety_4_shaga')}
               </Text>
             </TouchableOpacity>
           )}

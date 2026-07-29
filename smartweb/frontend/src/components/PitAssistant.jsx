@@ -130,7 +130,7 @@ export default function PitAssistant() {
       setInput('')
     } catch (err) {
       const detail = err?.response?.data?.detail
-      alert(typeof detail === 'string' ? detail : 'Не удалось отправить обращение')
+      alert(typeof detail === 'string' ? detail : t('ui.ne_udalos_otpravit_obraschenie'))
     } finally { setLoading(false) }
   }
 
@@ -147,7 +147,7 @@ export default function PitAssistant() {
       // прав). Клиент больше НЕ строит тяжёлый контекст перед каждым запросом —
       // это убирает N сетевых обращений до ответа Пита (ускорение).
       const { data } = await pitChat(newMessages.filter(m => m.role !== 'system'), '', currentUser?.id)
-      const rawReply = data.reply || 'Нет ответа'
+      const rawReply = data.reply || t('ui.net_otveta')
 
       const { clean, actions } = parsePitActions(rawReply)
       let reply = clean || rawReply
@@ -170,8 +170,8 @@ export default function PitAssistant() {
         setMessages(prev => [...prev, { role: 'assistant', content: fl.message, locked: fl }])
       } else {
         const detail = err?.response?.data?.detail
-        const text = (detail && typeof detail === 'string') ? detail : (err?.message || 'неизвестная ошибка')
-        setMessages(prev => [...prev, { role: 'assistant', content: `Не удалось получить ответ. ${text}` }])
+        const text = (detail && typeof detail === 'string') ? detail : (err?.message || t('ui.neizvestnaya_oshibka'))
+        setMessages(prev => [...prev, { role: 'assistant', content: t('ui.ne_udalos_poluchit_otvet', { v1: text }) }])
       }
     } finally {
       setLoading(false)
@@ -225,7 +225,7 @@ export default function PitAssistant() {
             <button
               onClick={() => setOpen(false)}
               style={{ background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', cursor: 'pointer', width: 28, height: 28, borderRadius: 8, fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-            >✕</button>
+            ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
           </div>
 
           {/* Support panel */}
@@ -240,7 +240,7 @@ export default function PitAssistant() {
                 ))}
               </div>
               {activeTicketId === null ? (
-                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>Опишите проблему в поле ниже и отправьте — обращение попадёт в поддержку. Ответ придёт сюда же.</p>
+                <p style={{ fontSize: 13, color: '#64748b', lineHeight: 1.5 }}>{t('ui.opishite_problemu_v_pole_nizhe_i')}</p>
               ) : (() => {
                 const t = tickets.find(x => x.id === activeTicketId)
                 if (!t) return null
@@ -307,7 +307,7 @@ export default function PitAssistant() {
               value={input}
               onChange={e => setInput(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend() } }}
-              placeholder={mode === 'support' ? (activeTicketId ? t('ui.vash_otvet_v_podderzhku') : t('ui.opishite_problemu')) : 'Спросите Пита...'}
+              placeholder={mode === 'support' ? (activeTicketId ? t('ui.vash_otvet_v_podderzhku') : t('ui.opishite_problemu')) : t('ui.sprosite_pita')}
               disabled={loading}
               style={{
                 flex: 1, padding: '9px 13px', borderRadius: 12,

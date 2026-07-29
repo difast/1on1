@@ -58,7 +58,7 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
     try {
       await addTaskAssignee(task.id, { user_id: Number(addUser), actor_id: currentUser.id })
       setAddUser(''); await refreshTask(); loadActivity()
-    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Не удалось добавить', 'error') }
+    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : t('ui.ne_udalos_dobavit'), 'error') }
     finally { setBusy(false) }
   }
 
@@ -67,7 +67,7 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
     try {
       await removeTaskAssigneeById(task.id, assigneeId, currentUser.id)
       await refreshTask(); loadActivity()
-    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Не удалось удалить', 'error') }
+    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : t('errors.deleteFailed'), 'error') }
     finally { setBusy(false) }
   }
 
@@ -79,11 +79,11 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
             <span className="modal-title">{t('ui.sovmestnaya_rabota')}</span>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{localTask.title}</p>
           </div>
-          <button className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
+          <button className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
 
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-          {[['activity', 'Активность'], ['comments', 'Комментарии'], ['members', 'Состав']].map(([k, l]) => (
+          {[['activity', t('ui.aktivnost')], ['comments', t('ui.kommentarii')], ['members', t('ui.sostav')]].map(([k, l]) => (
             <button key={k} onClick={() => setTab(k)} className={tab === k ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>{l}</button>
           ))}
         </div>
@@ -97,7 +97,7 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
                 <div key={a.id} style={{ display: 'flex', gap: 8, fontSize: 13 }}>
                   <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--color-accent)', marginTop: 6, flexShrink: 0 }} />
                   <div>
-                    <span style={{ fontWeight: 600 }}>{a.actor_name || 'Участник'}</span> <span style={{ color: 'var(--color-text-secondary)' }}>{ACTION_LABEL[a.action] || a.action}</span>
+                    <span style={{ fontWeight: 600 }}>{a.actor_name || t('ui.uchastnik')}</span> <span style={{ color: 'var(--color-text-secondary)' }}>{ACTION_LABEL[a.action] || a.action}</span>
                     {a.detail && a.action !== 'created' && <span style={{ color: 'var(--color-text-muted)' }}> — {a.detail}</span>}
                     <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0 }}>{fmt(a.created_at)}</p>
                   </div>
@@ -112,14 +112,14 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
                 comments.length === 0 ? <p style={{ fontSize: 13, color: 'var(--color-text-muted)', textAlign: 'center', padding: 12 }}>{t('ui.kommentariev_poka_net')}</p> :
                 comments.map(c => (
                   <div key={c.id} style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 10, padding: '8px 12px' }}>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-secondary)', margin: 0 }}>{c.author_name || 'Участник'} · {fmt(c.created_at)}</p>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-secondary)', margin: 0 }}>{c.author_name || t('ui.uchastnik')} · {fmt(c.created_at)}</p>
                     <p style={{ fontSize: 13.5, color: 'var(--color-text-primary)', margin: '2px 0 0', whiteSpace: 'pre-wrap' }}>{c.body}</p>
                   </div>
                 ))}
               <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                 <textarea className="input" rows={2} value={commentText} onChange={e => setCommentText(e.target.value)} placeholder={t('ui.kommentariy_po_zadache')} style={{ flex: 1 }} />
                 <button className="btn btn-accent btn-sm" disabled={sending || !commentText.trim()} onClick={send} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  {sending ? <Spinner size={14} /> : 'Отправить'}
+                  {sending ? <Spinner size={14} /> : t('common.send')}
                 </button>
               </div>
             </div>
@@ -146,7 +146,7 @@ export default function TaskCollabModal({ task, currentUser, canManage = false, 
                     {addable.map(c => <option key={c.user_id} value={c.user_id}>{c.name}</option>)}
                   </select>
                   <button className="btn btn-accent btn-sm" disabled={busy || !addUser} onClick={doAdd} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    {busy ? <Spinner size={14} /> : 'Добавить'}
+                    {busy ? <Spinner size={14} /> : t('common.add')}
                   </button>
                 </div>
               )}

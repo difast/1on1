@@ -181,7 +181,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
       setCreatedUser(resultUser)
       setStep(3)
     } catch (err) {
-      setError(err?.response?.data?.detail || err?.message || 'Ошибка сервера')
+      setError(err?.response?.data?.detail || err?.message || t('ui.oshibka_servera'))
     } finally { setLoading(false) }
   }
 
@@ -273,12 +273,12 @@ export default function Onboarding({ email, existingUser, onComplete }) {
             <div style={glass}>
               <button onClick={() => setStep(1)} style={{ background:'none',border:'none',color:'rgba(255,255,255,0.45)',cursor:'pointer',fontSize:13,marginBottom:16,padding:0,display:'flex',alignItems:'center',gap:4 }}>{t('ui.nazad')}</button>
               <h2 style={{ fontSize:20,fontWeight:700,color:'#fff',marginBottom:4 }}>
-                {role === 'team_lead' ? 'Тимлид' : 'Участник'}
+                {role === 'team_lead' ? t('profile.roleLead') : t('ui.uchastnik')}
               </h2>
               <p style={{ fontSize:14,color:'rgba(255,255,255,0.45)',marginBottom:22 }}>{t('ui.rasskazhite_nemnogo_o_sebe')}</p>
               <form onSubmit={handleProfileSubmit}>
                 {[
-                  { label:t('ui.imya'),      val:name,      set:setName,     ph:'Иван Иванов',       req:true },
+                  { label:t('ui.imya'),      val:name,      set:setName,     ph:t('ui.ivan_ivanov'),       req:true },
                   { label:t('profile.position'),  val:title,     set:setTitle,    ph:'Senior Engineer' },
                   { label:'Telegram',   val:telegram,  set:setTelegram, ph:'@username' },
                   { label:'LinkedIn',   val:linkedin,  set:setLinkedin, ph:'linkedin.com/in/...' },
@@ -315,7 +315,7 @@ export default function Onboarding({ email, existingUser, onComplete }) {
                   boxShadow:'0 4px 16px rgba(37,84,212,0.35)',transition:'all 0.2s',
                   display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,
                 }}>
-                  {loading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : 'Далее →'}
+                  {loading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : t('ui.dalee')}
                 </button>
               </form>
             </div>

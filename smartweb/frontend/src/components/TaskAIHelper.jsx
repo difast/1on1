@@ -91,7 +91,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                   <span style={{ width: 28, height: 28, borderRadius: '50%', background: 'linear-gradient(135deg, #3B6EF0, #2554D4)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><svg width="15" height="15" viewBox="0 0 24 24" fill="#fff" aria-hidden="true"><path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8z"/></svg></span>{t('ui.ai_pomoschnik')}</span>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.konkretnye_shagi_po_vypolneniyu_zadachi')}</p>
               </div>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
 
             <div style={{ background: 'linear-gradient(135deg, #f5f3ff, #E0EAFF)', borderRadius: 10, padding: '10px 14px', marginBottom: 16, border: '1px solid #ddd6fe' }}>
@@ -127,7 +127,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                       transition: 'all 0.2s',
                     }}
                   >
-                    {added ? '✓ Добавлено!' : adding ? t('ui.dobavlenie') : t('ui.dobavit_podzadachi')}
+                    {added ? 'Добавлено!' : adding ? t('ui.dobavlenie') : t('ui.dobavit_podzadachi')}
                   </button>
                   <button onClick={fetchSteps} style={{ padding: '9px 14px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('ui.obnovit')}</button>
                 </div>

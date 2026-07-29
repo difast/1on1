@@ -125,7 +125,7 @@ export function Thread({
             borderColor: colors.border,
           }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-              <Text style={styles.bubbleAuthor}>{cm.author_name || 'Участник'}</Text>
+              <Text style={styles.bubbleAuthor}>{cm.author_name || t('ui.uchastnik')}</Text>
               {isFb && <Text style={styles.fbTag}>Итоговая оценка{cm.rating != null ? ` · ${cm.rating}/5` : ''}</Text>}
             </View>
             <Text style={styles.bubbleBody}>{cm.body}</Text>
@@ -185,7 +185,7 @@ function OwnGoalCard({ goal, meId, colors, onChanged, onRemoved }: {
   const patch = async (payload: any) => {
     setSaving(true);
     try { const g = await updateGoal(goal.id, { actor_id: meId, ...payload }); onChanged(g); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось сохранить'); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('errors.saveFailed')); }
     finally { setSaving(false); }
   };
 
@@ -309,7 +309,7 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
       const opt = qOpts.find(o => o.value === period) || qOpts[0];
       await onCreate({ title: title.trim(), description: desc.trim() || null, period_label: opt.label, period_start: opt.period_start, period_end: opt.period_end });
       setTitle(''); setDesc(''); setPeriod(qOpts[0].value);
-    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось создать цель'); }
+    } catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos_sozdat_cel')); }
     finally { setCreating(false); }
   };
 
@@ -333,7 +333,7 @@ export function GoalForm({ colors, submitLabel, titlePlaceholder, onCreate, onCa
           <Text style={styles.formBtnSecondaryText}>{t('ui.otmena')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={[styles.formBtnPrimary, creating && { opacity: 0.6 }]} onPress={submit} disabled={creating}>
-          <Text style={styles.formBtnPrimaryText}>{creating ? 'Создаём…' : submitLabel}</Text>
+          <Text style={styles.formBtnPrimaryText}>{creating ? t('ui.sozdaem_2') : submitLabel}</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -413,7 +413,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
         </>
       )}
 
-      <Text style={styles.intro}>Ставьте личные цели на квартал и регулярно отмечайте прогресс. Тимлид видит ваши цели и может оставить обратную связь.</Text>
+      <Text style={styles.intro}>{t('ui.stavte_lichnye_celi_na_kvartal_i')}</Text>
 
       {!showForm && (
         <TouchableOpacity style={styles.primaryBtn} onPress={() => setShowForm(true)}>
@@ -422,7 +422,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       )}
 
       {showForm && (
-        <GoalForm colors={colors} submitLabel="Создать" titlePlaceholder="Название цели"
+        <GoalForm colors={colors} submitLabel={t('common.create')} titlePlaceholder={t('ui.nazvanie_celi')}
           onCancel={() => setShowForm(false)}
           onCreate={async (p) => {
             const g = await createGoal({ user_id: meId, ...p });
@@ -432,7 +432,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       )}
 
       {goals.length === 0 && !showForm && teamGoals.length === 0 && (
-        <EmptyState icon="flag-outline" title={t('ui.celey_poka_net')} description="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
+        <EmptyState icon="flag-outline" title={t('ui.celey_poka_net')} description={t('ui.sozdayte_pervuyu_cel_na_tekuschiy_kvartal')} />
       )}
 
       {active.length > 0 && <Text style={styles.sectionTitle}>{t('ui.moi_celi')}</Text>}
@@ -516,7 +516,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
     if (!teamId) { setData(null); setTeamGoals([]); setLoading(false); return; }
     setLoading(true);
     try { const d = await getTeamGoals(teamId, meId); setData(d); }
-    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || 'Не удалось загрузить цели'); setData(null); }
+    catch (e: any) { Alert.alert(t('ui.oshibka'), e?.response?.detail || t('ui.ne_udalos_zagruzit_celi')); setData(null); }
     finally { setLoading(false); }
     try { const tg = await getTeamSharedGoals(teamId, meId); setTeamGoals(tg || []); }
     catch { setTeamGoals([]); }
@@ -564,7 +564,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
             )}
           </View>
           {showTeamForm && (
-            <GoalForm colors={colors} submitLabel="Создать командную цель" titlePlaceholder="Например: Сократить время ответа клиенту до 2 часов"
+            <GoalForm colors={colors} submitLabel={t('ui.sozdat_komandnuyu_cel')} titlePlaceholder={t('ui.naprimer_sokratit_vremya_otveta_klientu_do')}
               onCancel={() => setShowTeamForm(false)}
               onCreate={async (p) => {
                 const g = await createGoal({ user_id: meId, scope: 'team', team_id: teamId, ...p });
@@ -582,13 +582,13 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
       <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.lichnye_celi_sotrudnikov')}</Text>
 
       {totalGoals > 0 && (
-        <Text style={styles.summary}>Всего целей: {totalGoals}{attention > 0 ? `  ·  требуют внимания: ${attention}` : ''}</Text>
+        <Text style={styles.summary}>Всего целей: {totalGoals}{attention > 0 ? t('ui.trebuyut_vnimaniya', { v1: attention }) : ''}</Text>
       )}
 
       {loading && <Spinner />}
 
       {!loading && members.length === 0 && (
-        <EmptyState icon="flag-outline" title={t('ui.v_komande_poka_net_lichnyh_celey')} description="Как только сотрудники создадут цели, они появятся здесь." />
+        <EmptyState icon="flag-outline" title={t('ui.v_komande_poka_net_lichnyh_celey')} description={t('ui.kak_tolko_sotrudniki_sozdadut_celi_oni')} />
       )}
 
       {!loading && members.map(m => (
@@ -597,7 +597,7 @@ function LeadGoals({ meId, colors }: { meId: number; colors: AppColors }) {
             <View style={styles.avatar}><Text style={styles.avatarText}>{(m.user_name || '?').slice(0, 1).toUpperCase()}</Text></View>
             <Text style={styles.memberName}>{m.user_name}</Text>
             <View style={{ flex: 1 }} />
-            <Text style={styles.muted}>{m.goals.length ? `${m.goals.length} цел.` : 'нет целей'}</Text>
+            <Text style={styles.muted}>{m.goals.length ? t('ui.cel', { v1: m.goals.length }) : t('ui.net_celey')}</Text>
           </View>
           {m.goals.length === 0
             ? <Text style={styles.muted}>{t('ui.sotrudnik_esche_ne_postavil_celi')}</Text>

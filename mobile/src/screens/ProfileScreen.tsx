@@ -67,7 +67,7 @@ export default function ProfileScreen() {
     setLang(next);
     if (user) updateUser(user.id, { preferred_language: next }).catch(() => {});
   };
-  const langLabel = LANGS.find((l) => l.code === lang)?.label ?? 'Русский';
+  const langLabel = LANGS.find((l) => l.code === lang)?.label ?? t('language.ru');
 
   // Привязка Telegram по коду из бота
   const [showTgLink, setShowTgLink] = useState(false);
@@ -76,15 +76,15 @@ export default function ProfileScreen() {
   const [tgError, setTgError] = useState('');
   const handleTgLink = async () => {
     if (!user) return;
-    if (!tgCode.trim()) { setTgError('Введите код'); return; }
+    if (!tgCode.trim()) { setTgError(t('ui.vvedite_kod')); return; }
     setTgBusy(true); setTgError('');
     try {
       const res = await telegramLink(user.id, tgCode.trim());
       setUser({ ...user, ...(res.user || {}) } as any);
       setShowTgLink(false); setTgCode('');
-      Alert.alert(t('ui.gotovo'), 'Telegram привязан к аккаунту');
+      Alert.alert(t('ui.gotovo'), t('profile.telegramLinked'));
     } catch (err: any) {
-      setTgError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось привязать');
+      setTgError(err?.response?.data?.detail ?? err?.response?.detail ?? t('profile.telegramLinkFailed'));
     } finally { setTgBusy(false); }
   };
 
@@ -102,14 +102,14 @@ export default function ProfileScreen() {
       setUser({ ...user, ...payload } as any);
       setEditing(false);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить профиль');
+      Alert.alert(t('ui.oshibka'), t('profile.saveFailed'));
     } finally { setSaving(false); }
   };
 
   const handleAvatarChange = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('ui.net_dostupa'), 'Разрешите доступ к фото в настройках');
+      Alert.alert(t('ui.net_dostupa'), t('profile.photoPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
         await updateUser(user.id, { avatar: b64 });
         setUser({ ...user, avatar: b64 });
       } catch {
-        Alert.alert(t('ui.oshibka'), 'Не удалось обновить фото');
+        Alert.alert(t('ui.oshibka'), t('profile.photoFailed'));
       } finally { setUploadingAvatar(false); }
     }
   };
@@ -136,17 +136,17 @@ export default function ProfileScreen() {
     setAddRoleLoading(true); setAddRoleError('');
     try {
       if (currentRole === 'member') {
-        if (!newTeamName.trim()) { setAddRoleError('Введите название команды'); setAddRoleLoading(false); return; }
+        if (!newTeamName.trim()) { setAddRoleError(t('ui.vvedite_nazvanie_komandy')); setAddRoleLoading(false); return; }
         await addTeamLeadRole(newTeamName.trim());
       } else {
-        if (!inviteCode.trim()) { setAddRoleError('Введите код приглашения'); setAddRoleLoading(false); return; }
+        if (!inviteCode.trim()) { setAddRoleError(t('ui.vvedite_kod_priglasheniya')); setAddRoleLoading(false); return; }
         await addSecondaryRole(inviteCode.trim());
       }
       setShowAddRole(false);
       setInviteCode('');
       setNewTeamName('');
     } catch (err: any) {
-      setAddRoleError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Ошибка. Проверьте данные и повторите.');
+      setAddRoleError(err?.response?.detail ?? err?.response?.data?.detail ?? t('ui.oshibka_proverte_dannye_i_povtorite'));
     } finally { setAddRoleLoading(false); }
   };
 
@@ -156,20 +156,20 @@ export default function ProfileScreen() {
   };
 
   const handleChangePassword = async () => {
-    if (!pwdCurrent.trim()) { setPwdError('Введите текущий пароль'); return; }
+    if (!pwdCurrent.trim()) { setPwdError(t('ui.vvedite_tekuschiy_parol')); return; }
     if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
-      setPwdError('Пароль: минимум 8 символов, буквы и цифры'); return;
+      setPwdError(t('ui.parol_minimum_8_simvolov_bukvy_i')); return;
     }
-    if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return; }
+    if (pwdNew !== pwdConfirm) { setPwdError(t('validation.passwordMismatch')); return; }
     if (!user?.id) return;
     setPwdLoading(true); setPwdError('');
     try {
       await authChangePassword({ user_id: user.id, current_password: pwdCurrent, new_password: pwdNew });
-      setPwdSuccess('Пароль изменён');
+      setPwdSuccess(t('ui.parol_izmenen'));
       setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
       setTimeout(() => { setPwdSuccess(''); setShowPassword(false); }, 1500);
     } catch (err: any) {
-      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось изменить пароль');
+      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? t('ui.ne_udalos_izmenit_parol'));
     } finally { setPwdLoading(false); }
   };
 
@@ -179,14 +179,14 @@ export default function ProfileScreen() {
     setResendLoading(true);
     try {
       await authResendConfirmation(user.id);
-      Alert.alert(t('ui.pismo_otpravleno'), 'Проверьте почту и перейдите по ссылке.');
+      Alert.alert(t('ui.pismo_otpravleno'), t('ui.proverte_pochtu_i_pereydite_po_ssylke'));
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось отправить письмо. Попробуйте позже.');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otpravit_pismo_poprobuyte_pozzhe'));
     } finally { setResendLoading(false); }
   };
 
   const handleLogout = () => {
-    Alert.alert(t('ui.vyyti'), 'Вы уверены?', [
+    Alert.alert(t('ui.vyyti'), t('ui.vy_uvereny'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('menu.logout'), style: 'destructive', onPress: signOut },
     ]);
@@ -195,7 +195,7 @@ export default function ProfileScreen() {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const handleDeleteAccount = () => {
     Alert.alert(t('ui.udalit_akkaunt'),
-      'Это действие необратимо. Все ваши данные будут удалены.',
+      t('ui.eto_deystvie_neobratimo_vse_vashi_dannye'),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -207,13 +207,13 @@ export default function ProfileScreen() {
             try {
               await createSupportTicket({
                 user_id: user.id,
-                subject: '[SYSTEM] Удаление аккаунта',
-                body: `Пользователь ${user.name} (${user.email}, id=${user.id}) запросил удаление аккаунта.`,
+                subject: t('ui.system_udalenie_akkaunta'),
+                body: t('ui.polzovatel_id_zaprosil_udalenie_akkaunta', { v1: user.name, v2: user.email, v3: user.id }),
               }).catch(() => {});
               await deleteUser(user.id);
               await signOut();
             } catch {
-              Alert.alert(t('ui.oshibka'), 'Не удалось удалить аккаунт. Попробуйте позже.');
+              Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_udalit_akkaunt_poprobuyte_pozzhe'));
             } finally { setDeletingAccount(false); }
           },
         },
@@ -343,7 +343,7 @@ export default function ProfileScreen() {
                   <View>
                     <Text style={styles.infoLabel}>{f.label}</Text>
                     <Text style={[styles.infoValue, !f.value && styles.infoEmpty]}>
-                      {f.value || 'не указано'}
+                      {f.value || t('ui.ne_ukazano')}
                     </Text>
                   </View>
                 </View>
@@ -385,7 +385,7 @@ export default function ProfileScreen() {
                   onPress={handleSave}
                   disabled={saving}
                 >
-                  <Text style={styles.saveBtnText}>{saving ? '...' : 'Сохранить'}</Text>
+                  <Text style={styles.saveBtnText}>{saving ? '...' : t('common.save')}</Text>
                 </TouchableOpacity>
               </View>
             </>

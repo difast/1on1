@@ -59,8 +59,8 @@ export default function AdminEmployees() {
   const handleDelete = async (e) => {
     if (!await confirmDialog({
       title: t('ui.udalit_sotrudnika'),
-      message: `${e.name} будет снят со всех назначений. Действие необратимо.`,
-      confirmText: 'Удалить', cancelText: 'Отмена', danger: true,
+      message: t('ui.budet_snyat_so_vseh_naznacheniy_deystvie', { v1: e.name }),
+      confirmText: t('common.delete'), cancelText: t('common.cancel'), danger: true,
     })) return
     await deleteManager(e.id).catch(() => {})
     setList(prev => prev.filter(m => m.id !== e.id))
@@ -145,7 +145,7 @@ export default function AdminEmployees() {
         </div>
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           <button type="submit" disabled={saving} className="btn btn-accent" style={{ flex: 1 }}>
-            {saving ? 'Сохранение...' : editingId ? t('common.save') : t('common.add')}
+            {saving ? t('ui.sohranenie') : editingId ? t('common.save') : t('common.add')}
           </button>
           {editingId && (
             <button type="button" onClick={startCreate} className="btn btn-secondary">{t('ui.otmena')}</button>

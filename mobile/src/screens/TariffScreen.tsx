@@ -106,20 +106,18 @@ export default function TariffScreen() {
             ) : sub ? (
               <Text style={styles.planSub}>
                 {SUB_STATUS[sub.status] ?? sub.status}
-                {sub.current_period_end ? ` · до ${fmtDate(sub.current_period_end)}` : ''}
+                {sub.current_period_end ? t('ui.do_3', { v1: fmtDate(sub.current_period_end) }) : ''}
               </Text>
             ) : data?.trial_until ? (
               <Text style={styles.planSub}>
-                {data?.trial_expired ? 'Пробный период истёк' : `Пробный период до ${fmtDate(data.trial_until)}`}
+                {data?.trial_expired ? t('ui.probnyy_period_istek') : t('ui.probnyy_period_do', { v1: fmtDate(data.trial_until) })}
               </Text>
             ) : null}
           </View>
 
           {trialLocked.length > 0 && (
             <View style={styles.noticeCard}>
-              <Text style={styles.noticeText}>
-                На пробном периоде тарифа Team недоступны ONE AI и Развитие. Они включатся после оплаты подписки.
-              </Text>
+              <Text style={styles.noticeText}>{t('ui.na_probnom_periode_tarifa_team_nedostupny_2')}</Text>
             </View>
           )}
 
@@ -160,10 +158,10 @@ export default function TariffScreen() {
           <Text style={styles.sectionLabel}>{t('ui.tarify')}</Text>
           <View style={styles.card}>
             {[
-              { name: 'Start', price: '1 490 ₽/мес', users: 'до 5 пользователей, 1 команда' },
-              { name: 'Team', price: '49 990 ₽/год', users: 'до 30 пользователей, 1 команда' },
-              { name: 'Business', price: 'Цена договорная', users: '30–100+ пользователей, несколько команд' },
-              { name: 'Enterprise', price: 'от 1 000 000 ₽/год', users: 'без ограничений' },
+              { name: 'Start', price: t('ui.1_490_mes'), users: t('ui.do_5_polzovateley_1_komanda') },
+              { name: 'Team', price: t('ui.49_990_god'), users: t('ui.do_30_polzovateley_1_komanda') },
+              { name: 'Business', price: t('ui.cena_dogovornaya'), users: t('ui.30_100_polzovateley_neskolko_komand') },
+              { name: 'Enterprise', price: t('ui.ot_1_000_000_god'), users: t('ui.bez_ogranicheniy') },
             ].map((p, i) => (
               <View key={p.name} style={[styles.row, i > 0 && styles.rowBorder]}>
                 <View style={{ flex: 1 }}>
@@ -175,9 +173,7 @@ export default function TariffScreen() {
             ))}
           </View>
 
-          <Text style={styles.note}>
-            Автотранскрипция встреч пока недоступна — скоро. Сменить тариф и оплатить можно в веб-версии.
-          </Text>
+          <Text style={styles.note}>{t('ui.avtotranskripciya_vstrech_poka_nedostupna_skor')}</Text>
         </ScrollView>
       )}
     </SafeAreaView>

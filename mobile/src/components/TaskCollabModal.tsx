@@ -54,7 +54,7 @@ export function TaskCollabModal({
     if (!text.trim()) return;
     setSending(true);
     try { await addTaskComment(task.id, currentUserId, text.trim()); setText(''); loadComments(); loadActivity(); }
-    catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить'); }
+    catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otpravit')); }
     finally { setSending(false); }
   };
 
@@ -65,13 +65,13 @@ export function TaskCollabModal({
   const doAdd = async (uid: number) => {
     setBusy(true);
     try { await addTaskAssignee(task.id, { user_id: uid, actor_id: currentUserId }); await refreshTask(); loadActivity(); }
-    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось добавить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_dobavit')); }
     finally { setBusy(false); }
   };
   const doRemove = async (assigneeId: number) => {
     setBusy(true);
     try { await removeTaskAssigneeById(task.id, assigneeId, currentUserId); await refreshTask(); loadActivity(); }
-    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось удалить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('errors.deleteFailed')); }
     finally { setBusy(false); }
   };
 
@@ -87,7 +87,7 @@ export function TaskCollabModal({
         </View>
 
         <View style={styles.tabs}>
-          {([['activity', 'Активность'], ['comments', 'Комментарии'], ['members', 'Состав']] as const).map(([k, l]) => (
+          {([['activity', t('ui.aktivnost')], ['comments', t('ui.kommentarii')], ['members', t('ui.sostav')]] as const).map(([k, l]) => (
             <TouchableOpacity key={k} style={[styles.tab, tab === k && styles.tabActive]} onPress={() => setTab(k)}>
               <Text style={[styles.tabText, tab === k && styles.tabTextActive]}>{l}</Text>
             </TouchableOpacity>
@@ -102,7 +102,7 @@ export function TaskCollabModal({
               <View key={a.id} style={styles.activityRow}>
                 <View style={styles.dot} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.activityText}><Text style={{ fontWeight: '700' }}>{a.actor_name || 'Участник'}</Text> {ACTION_LABEL[a.action] || a.action}{a.detail && a.action !== 'created' ? ` — ${a.detail}` : ''}</Text>
+                  <Text style={styles.activityText}><Text style={{ fontWeight: '700' }}>{a.actor_name || t('ui.uchastnik')}</Text> {ACTION_LABEL[a.action] || a.action}{a.detail && a.action !== 'created' ? ` — ${a.detail}` : ''}</Text>
                   <Text style={styles.activityTime}>{fmt(a.created_at)}</Text>
                 </View>
               </View>
@@ -115,7 +115,7 @@ export function TaskCollabModal({
                 comments.length === 0 ? <Text style={styles.empty}>{t('ui.kommentariev_poka_net')}</Text> :
                 comments.map(c => (
                   <View key={c.id} style={styles.comment}>
-                    <Text style={styles.commentAuthor}>{c.author_name || 'Участник'} · {fmt(c.created_at)}</Text>
+                    <Text style={styles.commentAuthor}>{c.author_name || t('ui.uchastnik')} · {fmt(c.created_at)}</Text>
                     <Text style={styles.commentBody}>{c.body}</Text>
                   </View>
                 ))}

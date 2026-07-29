@@ -58,17 +58,17 @@ export function MeetingProposalsModal({
   const act = async (fn: (id: number, uid: number) => Promise<any>, id: number) => {
     setBusyId(id);
     try { await fn(id, currentUser.id); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_vypolnit')); }
     finally { setBusyId(null); }
   };
 
   const doCounter = async (id: number) => {
-    if (!counterTime) { Alert.alert(t('ui.ukazhite_vremya'), 'Выберите новое время встречи'); return; }
+    if (!counterTime) { Alert.alert(t('ui.ukazhite_vremya'), t('ui.vyberite_novoe_vremya_vstrechi')); return; }
     setBusyId(id);
     try {
       await counterProposal(id, currentUser.id, counterTime);
       setCounterFor(null); setCounterTime(''); load(); onChanged?.();
-    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_otpravit')); }
     finally { setBusyId(null); }
   };
 
@@ -80,7 +80,7 @@ export function MeetingProposalsModal({
       await createProposal({ from_user_id: currentUser.id, to_user_id: toUser, proposed_time: when, topic: topic.trim() || null, team_id: teamId ?? null });
       setToUser(null); setTopic(''); setWhen('');
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить предложение'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_otpravit_predlozhenie')); }
     finally { setCreating(false); }
   };
 
@@ -91,23 +91,23 @@ export function MeetingProposalsModal({
       <View key={p.id} style={styles.card}>
         <View style={styles.cardHead}>
           <Text style={styles.cardTitle}>
-            {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || 'Участник'}` : `${p.from_user_name || 'Участник'} -> вам`}
+            {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || t('ui.uchastnik')}` : `${p.from_user_name || t('ui.uchastnik')} -> вам`}
           </Text>
-          <Text style={[styles.badge, { color: badgeColor }]}>{mineTurn ? 'Ваш ход' : (STATUS_LABEL[p.status] || p.status)}</Text>
+          <Text style={[styles.badge, { color: badgeColor }]}>{mineTurn ? t('ui.vash_hod') : (STATUS_LABEL[p.status] || p.status)}</Text>
         </View>
         {!!p.topic && <Text style={styles.cardTopic}>{p.topic}</Text>}
         <Text style={styles.cardTime}>Время: {fmt(p.proposed_time)}</Text>
 
         {p.events?.length > 1 && (
           <TouchableOpacity onPress={() => setExpanded(expanded === p.id ? null : p.id)}>
-            <Text style={styles.historyToggle}>{expanded === p.id ? 'Скрыть историю' : `История (${p.events.length})`}</Text>
+            <Text style={styles.historyToggle}>{expanded === p.id ? t('ui.skryt_istoriyu') : t('ui.istoriya_2', { v1: p.events.length })}</Text>
           </TouchableOpacity>
         )}
         {expanded === p.id && (
           <View style={styles.history}>
             {p.events.map((e: any) => (
               <Text key={e.id} style={styles.historyLine}>
-                <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || 'Участник'}</Text> {ACTION_LABEL[e.action] || e.action}
+                <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || t('ui.uchastnik')}</Text> {ACTION_LABEL[e.action] || e.action}
                 {e.proposed_time ? ` (${fmt(e.proposed_time)})` : ''} · {fmt(e.created_at)}
               </Text>
             ))}
@@ -154,7 +154,7 @@ export function MeetingProposalsModal({
         </View>
 
         <View style={styles.tabs}>
-          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', 'Все'], ['new', 'Создать']] as const).map(([k, label]) => (
+          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', t('common.all')], ['new', t('common.create')]] as const).map(([k, label]) => (
             <TouchableOpacity key={k} style={[styles.tab, tab === k && styles.tabActive]} onPress={() => setTab(k)}>
               <Text style={[styles.tabText, tab === k && styles.tabTextActive]}>{label}</Text>
             </TouchableOpacity>

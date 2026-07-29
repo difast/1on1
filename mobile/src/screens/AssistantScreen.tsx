@@ -55,7 +55,7 @@ export default function AssistantScreen() {
       }
       const context = pitCtxRef.current?.text ?? '';
       const res = await assistantChat(newMessages, context, user?.id) as any;
-      const rawReply: string = res.reply ?? 'Нет ответа';
+      const rawReply: string = res.reply ?? t('ui.net_otveta');
 
       const { clean, actions } = parsePitActions(rawReply);
       let reply = clean || rawReply;
@@ -71,8 +71,8 @@ export default function AssistantScreen() {
       // Недоступно по тарифу -> мягкое сообщение, а не техническая ошибка.
       const fl = parseFeatureLock(err);
       const content = fl
-        ? `${fl.message} Тарифы можно посмотреть в веб-версии.`
-        : 'Не удалось получить ответ. Попробуйте ещё раз.';
+        ? t('ui.tarify_mozhno_posmotret_v_veb_versii', { v1: fl.message })
+        : t('ui.ne_udalos_poluchit_otvet_poprobuyte_esche');
       setMessages(prev => [...prev, { role: 'assistant', content }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } finally {

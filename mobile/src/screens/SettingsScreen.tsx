@@ -25,7 +25,7 @@ export default function SettingsScreen() {
   const ADMIN_CODE = '1on12026';
 
   const handleAdminUnlock = async () => {
-    if (adminCode !== ADMIN_CODE) { setAdminError('Неверный код'); return; }
+    if (adminCode !== ADMIN_CODE) { setAdminError(t('ui.nevernyy_kod')); return; }
     await enterAdmin();
     setShowAdminSection(false);
     setAdminCode('');
@@ -39,26 +39,26 @@ export default function SettingsScreen() {
   const [pwdSuccess, setPwdSuccess] = useState('');
 
   const handleChangePassword = async () => {
-    if (!pwdCurrent.trim()) { setPwdError('Введите текущий пароль'); return; }
+    if (!pwdCurrent.trim()) { setPwdError(t('ui.vvedite_tekuschiy_parol')); return; }
     if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
-      setPwdError('Пароль: минимум 8 символов, буквы и цифры'); return;
+      setPwdError(t('ui.parol_minimum_8_simvolov_bukvy_i')); return;
     }
-    if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return; }
+    if (pwdNew !== pwdConfirm) { setPwdError(t('validation.passwordMismatch')); return; }
     if (!user?.id) return;
     setPwdLoading(true);
     setPwdError('');
     try {
       await authChangePassword({ user_id: user.id, current_password: pwdCurrent, new_password: pwdNew });
-      setPwdSuccess('Пароль изменён');
+      setPwdSuccess(t('ui.parol_izmenen'));
       setPwdCurrent(''); setPwdNew(''); setPwdConfirm('');
       setTimeout(() => { setPwdSuccess(''); setShowPasswordSection(false); }, 1500);
     } catch (err: any) {
-      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось изменить пароль');
+      setPwdError(err?.response?.data?.detail ?? err?.response?.detail ?? t('ui.ne_udalos_izmenit_parol'));
     } finally { setPwdLoading(false); }
   };
 
   const handleLogout = () => {
-    Alert.alert(t('ui.vyyti'), 'Вы уверены, что хотите выйти?', [
+    Alert.alert(t('ui.vyyti'), t('ui.vy_uvereny_chto_hotite_vyyti'), [
       { text: t('common.cancel'), style: 'cancel' },
       { text: t('menu.logout'), style: 'destructive', onPress: signOut },
     ]);
@@ -152,7 +152,7 @@ export default function SettingsScreen() {
         {/* Help */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('ui.podderzhka')}</Text>
-          <TouchableOpacity style={styles.row} onPress={() => Alert.alert(t('ui.pomosch'), 'Обратитесь к администратору или напишите в поддержку.')} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.row} onPress={() => Alert.alert(t('ui.pomosch'), t('ui.obratites_k_administratoru_ili_napishite_v'))} activeOpacity={0.7}>
             <View style={styles.rowIcon}><Ionicons name="help-circle-outline" size={18} color={colors.textSecondary} /></View>
             <View style={styles.rowBody}>
               <Text style={styles.rowTitle}>{t('ui.pomosch')}</Text>

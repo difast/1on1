@@ -122,15 +122,15 @@ export default function LeadMeetingsScreen() {
   };
 
   const handleCreateMeeting = async () => {
-    if (!createDate) { Alert.alert(t('ui.zapolnite_polya'), 'Выберите дату'); return; }
+    if (!createDate) { Alert.alert(t('ui.zapolnite_polya'), t('ui.vyberite_datu')); return; }
     setCreating(true);
     try {
       if (groupMode) {
         // Групповая встреча: несколько участников или вся команда.
         const teamId = teamMembers[0]?.team_id;
-        if (!teamId) { Alert.alert(t('ui.oshibka'), 'Нет команды'); setCreating(false); return; }
+        if (!teamId) { Alert.alert(t('ui.oshibka'), t('ui.net_komandy')); setCreating(false); return; }
         if (!wholeTeam && groupSelected.length === 0) {
-          Alert.alert(t('ui.vyberite_uchastnikov'), 'Отметьте участников или «Вся команда»'); setCreating(false); return;
+          Alert.alert(t('ui.vyberite_uchastnikov'), t('ui.otmette_uchastnikov_ili_vsya_komanda')); setCreating(false); return;
         }
         await createGroupMeeting({
           team_id: teamId,
@@ -153,7 +153,7 @@ export default function LeadMeetingsScreen() {
       }
       resetCreate();
       await load();
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать встречу'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_vstrechu')); }
     finally { setCreating(false); }
   };
 
@@ -171,7 +171,7 @@ export default function LeadMeetingsScreen() {
       const url = `${data.room_url}?t=${data.token}`;
       await Linking.openURL(url);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось начать созвон');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_nachat_sozvon'));
     } finally {
       setCallLoading(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -241,7 +241,7 @@ export default function LeadMeetingsScreen() {
       }
       setExpandedNoteId(null);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_zametku'));
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -388,7 +388,7 @@ export default function LeadMeetingsScreen() {
               </TouchableOpacity>
             )}
 
-            <Text style={styles.modalLabel}>{groupMode ? 'Участники' : 'Участник'}</Text>
+            <Text style={styles.modalLabel}>{groupMode ? t('meetings.participants') : t('ui.uchastnik')}</Text>
             {teamMembers.length === 0 ? (
               <Text style={styles.modalHint}>{t('ui.net_uchastnikov_v_komandah')}</Text>
             ) : (
@@ -495,7 +495,7 @@ export default function LeadMeetingsScreen() {
         )}
 
         {meetings.length === 0 && (
-          <EmptyState icon="calendar-outline" title={t('ui.vstrech_poka_net')} description="Встречи появятся после планирования" />
+          <EmptyState icon="calendar-outline" title={t('ui.vstrech_poka_net')} description={t('ui.vstrechi_poyavyatsya_posle_planirovaniya')} />
         )}
 
         {calendarView ? (
@@ -612,7 +612,7 @@ export default function LeadMeetingsScreen() {
                               onPress={() => handleSaveNote(m.id)}
                               disabled={!draft.trim() || saving}
                             >
-                              <Text style={styles.noteSaveText}>{saving ? '...' : 'Сохранить'}</Text>
+                              <Text style={styles.noteSaveText}>{saving ? '...' : t('common.save')}</Text>
                             </TouchableOpacity>
                           </View>
                         </View>

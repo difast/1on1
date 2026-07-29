@@ -18,9 +18,9 @@ import { useSurface } from '../lib/surface'
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
   meeting_scheduled:  { icon: '◎', color: '#0061ff' },
-  meeting_confirmed:  { icon: '✓', color: '#15803d' },
+  meeting_confirmed:  { icon: '', color: '#15803d' },
   meeting_requested:  { icon: '◎', color: '#b45309' },
-  meeting_declined:   { icon: '✕', color: '#dc2626' },
+  meeting_declined:   { icon: '', color: '#dc2626' },
   broadcast:          { icon: '!', color: '#ef4444' },
 }
 
@@ -168,9 +168,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
     deadlineDismissed.current = true
     const first = upcoming[0]
     const diff = Math.ceil((new Date(first.due_date) - now) / 86400000)
-    const dueLabel = diff <= 0 ? 'сегодня' : diff === 1 ? t('ui.zavtra') : t('ui.poslezavtra')
+    const dueLabel = diff <= 0 ? t('ui.segodnya') : diff === 1 ? t('ui.zavtra') : t('ui.poslezavtra')
     setDeadlineBanner({
-      title: upcoming.length === 1 ? `Срок задачи — ${dueLabel}` : `${upcoming.length} задач истекают скоро`,
+      title: upcoming.length === 1 ? t('ui.srok_zadachi', { v1: dueLabel }) : t('ui.zadach_istekayut_skoro', { v1: upcoming.length }),
       body: (first.title || '').slice(0, 42) + ((first.title || '').length > 42 ? '…' : ''),
       dismissAt: Date.now() + 5000,
     })
@@ -389,9 +389,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
   const handleChangePassword = async (e) => {
     e.preventDefault()
-    if (pwdNew !== pwdConfirm) { setPwdError('Пароли не совпадают'); return }
+    if (pwdNew !== pwdConfirm) { setPwdError(t('validation.passwordMismatch')); return }
     if (pwdNew.length < 8 || !/[A-Za-zА-Яа-я]/.test(pwdNew) || !/\d/.test(pwdNew)) {
-      setPwdError('Пароль должен быть не короче 8 символов и содержать буквы и цифры'); return
+      setPwdError(t('ui.parol_dolzhen_byt_ne_koroche_8')); return
     }
     setPwdLoading(true)
     setPwdError('')
@@ -401,11 +401,11 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         current_password: pwdCurrent,
         new_password: pwdNew,
       })
-      setPwdSuccess('Пароль изменён')
+      setPwdSuccess(t('ui.parol_izmenen'))
       setPwdCurrent(''); setPwdNew(''); setPwdConfirm('')
       setTimeout(() => { setShowPasswordModal(false); setPwdSuccess('') }, 1500)
     } catch (err) {
-      setPwdError(err?.response?.data?.detail || 'Не удалось изменить пароль')
+      setPwdError(err?.response?.data?.detail || t('ui.ne_udalos_izmenit_parol'))
     } finally { setPwdLoading(false) }
   }
 
@@ -431,7 +431,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       setAddEmailVal('')
       toast(t('ui.email_dobavlen_proverte_pochtu_dlya_podtverzhd'))
     } catch (err) {
-      setAddEmailErr(err?.response?.data?.detail || 'Не удалось добавить email')
+      setAddEmailErr(err?.response?.data?.detail || t('ui.ne_udalos_dobavit_email'))
     } finally { setAddEmailLoading(false) }
   }
 
@@ -744,7 +744,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   <div style={{ minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.name || '—'}</p>
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {user?.email || (user?.role === 'team_lead' ? 'Тимлид' : 'Участник')}
+                      {user?.email || (user?.role === 'team_lead' ? t('profile.roleLead') : t('ui.uchastnik'))}
                     </p>
                   </div>
                 </div>
@@ -865,12 +865,12 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <span className="modal-title">
                 {currentUser?.role === 'team_lead' ? t('ui.pereyti_v_rezhim_uchastnika') : t('ui.pereyti_v_rezhim_timlida')}
               </span>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
             <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 20 }}>
               {currentUser?.role === 'team_lead'
                 ? 'Вы переключитесь на представление участника. Управление командой и аналитика станут недоступны, пока не вернётесь обратно.'
-                : 'Вы переключитесь на представление тимлида — с командами, встречами и аналитикой. Вернуться можно так же через это меню.'}
+                : t('ui.vy_pereklyuchites_na_predstavlenie_timlida_s')}
             </p>
             <div style={{ display: 'flex', gap: 10 }}>
               <button className="btn btn-secondary" style={{ flex: 1 }} onClick={() => setShowRoleConfirm(false)} disabled={switchingRole}>{t('ui.otmena')}</button>
@@ -888,7 +888,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">{t('ui.smenit_parol')}</span>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowPasswordModal(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowPasswordModal(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
             {pwdSuccess ? (
               <p style={{ color: 'var(--color-success)', fontSize: 14, textAlign: 'center', padding: '16px 0' }}>
@@ -937,11 +937,9 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">{t('ui.dobavit_email')}</span>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowAddEmailModal(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowAddEmailModal(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
-            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
-              Email нужен для оформления платной подписки. Мы отправим на него ссылку для подтверждения.
-            </p>
+            <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>{t('ui.email_nuzhen_dlya_oformleniya_platnoy_podpiski')}</p>
             <form onSubmit={handleAddEmail}>
               <div className="form-group">
                 <label className="form-label">Email</label>
@@ -967,7 +965,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
             <div className="modal-header">
               <span className="modal-title">{t('ui.privyazat_telegram')}</span>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowTgModal(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowTgModal(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
             <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 16, lineHeight: 1.5 }}>
               Откройте бота в Telegram, отправьте команду /link и введите полученный код. Ваш
@@ -1028,7 +1026,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <button
                 onClick={e => { e.stopPropagation(); setMoodBanner(null) }}
                 style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
-              >✕</button>
+              ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
           )}
 
@@ -1060,7 +1058,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <button
                 onClick={e => { e.stopPropagation(); setDeadlineBanner(null) }}
                 style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
-              >✕</button>
+              ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
           )}
 
@@ -1098,7 +1096,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 <button
                   onClick={e => { e.stopPropagation(); setToasts(prev => prev.filter(x => x.id !== t.id)) }}
                   style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, flexShrink: 0, padding: 0, lineHeight: 1 }}
-                >✕</button>
+                ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
               </div>
             )
           })}
@@ -1268,7 +1266,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
               <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
                 <button type="button" onClick={() => setEditing(false)} className="btn btn-secondary btn-sm" style={{ flex: 1 }}>{t('ui.otmena')}</button>
                 <button type="submit" disabled={savingProfile} className="btn btn-accent btn-sm" style={{ flex: 1 }}>
-                  {savingProfile ? '...' : 'Сохранить'}
+                  {savingProfile ? '...' : t('common.save')}
                 </button>
               </div>
             </form>
@@ -1330,7 +1328,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                   {currentUser?.role === 'team_lead' ? t('ui.zadachi_zakrytye_segodnya_vsemi_uchastnikami_k') : t('ui.vashi_zadachi_zakrytye_segodnya')}
                 </p>
               </div>
-              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowClosedToday(false)}>✕</button>
+              <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setShowClosedToday(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
             </div>
             {closedTasks === null ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
@@ -1347,7 +1345,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                       <p style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.35 }}>{t.title}</p>
                       <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>
                         {t.completed_at ? new Date(t.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
-                        {t.is_multi && t.progress ? ` · ${t.progress.done}/${t.progress.total} участников` : ''}
+                        {t.is_multi && t.progress ? t('ui.uchastnikov_2', { v1: t.progress.done, v2: t.progress.total }) : ''}
                       </p>
                     </div>
                   </div>
@@ -1485,7 +1483,7 @@ function StoreBtn({ label, title, icon, href, compact }) {
   }
   // Stores not published yet — graceful placeholder.
   return (
-    <button type="button" title={(title || label) + ' — появится позже'} onClick={() => toast(t('ui.poyavitsya_pozzhe'))}
+    <button type="button" title={(title || label) + t('ui.poyavitsya_pozzhe_2')} onClick={() => toast(t('ui.poyavitsya_pozzhe'))}
       style={{ ...base, opacity: 0.55, cursor: 'pointer' }}>
       {inner}
       {!compact && <span style={{ fontSize: 10, fontWeight: 500, color: 'var(--color-text-muted)' }}>{t('ui.skoro_3')}</span>}

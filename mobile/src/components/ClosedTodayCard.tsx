@@ -77,7 +77,7 @@ export function ClosedTodayCard({
                       <Text style={styles.rowTitle}>{t.title}</Text>
                       <Text style={styles.rowMeta}>
                         {t.completed_at ? new Date(t.completed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : ''}
-                        {t.is_multi && t.progress ? ` · ${t.progress.done}/${t.progress.total} участников` : ''}
+                        {t.is_multi && t.progress ? t('ui.uchastnikov_2', { v1: t.progress.done, v2: t.progress.total }) : ''}
                       </Text>
                     </View>
                   </View>

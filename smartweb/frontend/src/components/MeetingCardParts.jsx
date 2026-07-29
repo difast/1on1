@@ -56,7 +56,7 @@ export function UploadRecordingButton({ uploading, done, onFile }) {
         title={t('ui.zagruzit_zapis_sozvona_dlya_ai_analiza')}
         style={{ fontSize: 12, fontWeight: 600, background: done ? '#f0fdf4' : 'var(--color-surface)', color: done ? 'var(--color-success)' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', cursor: done ? 'default' : 'pointer', padding: '5px 9px', flexShrink: 0, whiteSpace: 'nowrap' }}
       >
-        {uploading ? 'Загрузка...' : done ? t('ui.analiziruyu') : t('ui.zapis')}
+        {uploading ? t('common.loading') : done ? t('ui.analiziruyu') : t('ui.zapis')}
       </button>
     </>
   )

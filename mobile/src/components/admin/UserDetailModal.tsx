@@ -44,14 +44,14 @@ export function UserDetailModal({
       try {
         const all = await getTeams() as any[];
         for (const t of (all || [])) {
-          if (t.team_lead_id === user.id) found.push({ id: t.id, name: t.name, role: 'тимлид' });
+          if (t.team_lead_id === user.id) found.push({ id: t.id, name: t.name, role: t('ui.timlid') });
         }
       } catch {}
       try {
         const mt = await getMemberTeam(user.id) as any;
         if (mt && mt.id && !found.some(f => f.id === mt.id)) {
           const me = (mt.members || []).find((m: any) => m.user_id === user.id);
-          found.push({ id: mt.id, name: mt.name, role: me?.role ?? 'участник' });
+          found.push({ id: mt.id, name: mt.name, role: me?.role ?? t('ui.uchastnik_3') });
         }
       } catch {}
       setTeams(found);
@@ -75,7 +75,7 @@ export function UserDetailModal({
     if (newRole === role) return;
     setBusy(true);
     try { await updateUser(user.id, { role: newRole }); setRole(newRole); onChanged(); }
-    catch { Alert.alert(t('ui.oshibka'), 'Не удалось сменить роль'); }
+    catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_smenit_rol')); }
     finally { setBusy(false); }
   };
 
@@ -84,18 +84,18 @@ export function UserDetailModal({
     try {
       if (blocked) await unblockUser(user.id); else await blockUser(user.id);
       setBlocked(!blocked); onChanged();
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos')); }
     finally { setBusy(false); }
   };
 
   const handleDelete = () => {
-    Alert.alert(t('ui.udalit_polzovatelya'), `${user.name} (id ${user.id}) будет удалён безвозвратно.`, [
+    Alert.alert(t('ui.udalit_polzovatelya'), t('ui.id_budet_udalen_bezvozvratno', { v1: user.name, v2: user.id }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive', onPress: async () => {
           setBusy(true);
           try { await deleteUser(user.id); onChanged(); onClose(); }
-          catch { Alert.alert(t('ui.oshibka'), 'Не удалось удалить'); setBusy(false); }
+          catch { Alert.alert(t('ui.oshibka'), t('errors.deleteFailed')); setBusy(false); }
         },
       },
     ]);
@@ -112,7 +112,7 @@ export function UserDetailModal({
             <View style={styles.idRow}>
               <Text style={styles.idBadge}>ID: {user.id}</Text>
               <Text style={[styles.idBadge, { backgroundColor: colors.accentLight, color: colors.accent }]}>
-                {role === 'team_lead' ? 'Тимлид' : 'Участник'}
+                {role === 'team_lead' ? t('profile.roleLead') : t('ui.uchastnik')}
               </Text>
               {blocked && <Text style={[styles.idBadge, { backgroundColor: colors.dangerBg, color: colors.danger }]}>{t('ui.zablokirovan')}</Text>}
             </View>

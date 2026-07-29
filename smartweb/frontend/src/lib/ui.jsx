@@ -1,5 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 
 /*
  * App-wide toast + confirm, replacing native alert()/confirm().
@@ -47,6 +48,7 @@ export function toast(message, type = 'info', duration) {
 // ── Confirm ──────────────────────────────────────────────────────────────────
 let setConfirm = null
 function ConfirmHost() {
+  const { t } = useTranslation()
   const [opts, setOpts] = useState(null)
   useEffect(() => { setConfirm = setOpts; return () => { setConfirm = null } }, [])
   useEffect(() => {
@@ -63,9 +65,9 @@ function ConfirmHost() {
         <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 8px' }}>{opts.title}</h3>
         {opts.message && <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', margin: '0 0 20px', lineHeight: 1.5 }}>{opts.message}</p>}
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <button className="btn btn-secondary btn-sm" onClick={() => done(false)}>{opts.cancelText || 'Отмена'}</button>
+          <button className="btn btn-secondary btn-sm" onClick={() => done(false)}>{opts.cancelText || t('common.cancel')}</button>
           <button className={opts.danger ? 'btn btn-danger btn-sm' : 'btn btn-accent btn-sm'} autoFocus onClick={() => done(true)}>
-            {opts.confirmText || 'Подтвердить'}
+            {opts.confirmText || t('common.confirm')}
           </button>
         </div>
       </div>

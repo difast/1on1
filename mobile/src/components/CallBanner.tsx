@@ -69,7 +69,7 @@ export function CallBanner() {
           <Text style={styles.joinText}>{t('ui.voyti')}</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.endBtn} onPress={handleEnd} disabled={ending}>
-          <Text style={styles.endText}>{ending ? '...' : 'Завершить'}</Text>
+          <Text style={styles.endText}>{ending ? '...' : t('ui.zavershit')}</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>

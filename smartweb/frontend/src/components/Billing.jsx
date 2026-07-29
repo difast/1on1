@@ -52,8 +52,8 @@ const fmt = (v) => (v === null || v === undefined || v < 0) ? 'без огран
 function planBullets(p) {
   const l = p.limits || {}, f = l.features || {}
   const out = []
-  out.push(l.users_label || (l.max_users != null ? `До ${l.max_users} пользователей` : 'Пользователей без лимита'))
-  out.push(l.max_teams === 1 ? '1 команда' : `Команд: ${fmt(l.max_teams)}`)
+  out.push(l.users_label || (l.max_users != null ? t('ui.do_polzovateley', { v1: l.max_users }) : t('ui.polzovateley_bez_limita')))
+  out.push(l.max_teams === 1 ? t('ui.1_komanda') : t('ui.komand_2', { v1: fmt(l.max_teams) }))
   for (const [key, label] of FEATURE_LABELS) {
     if (f[key]) out.push(label)
     if (out.length >= 7) break
@@ -91,7 +91,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
     try {
       const { data } = await checkoutPlan({ plan_code: p.code, user_id: currentUser.id })
       const cfg = data.checkout
-      if (!cfg?.configured || !cfg.public_id) { setMsg('Платёжная система ещё не подключена администратором.'); setBusy(''); return }
+      if (!cfg?.configured || !cfg.public_id) { setMsg(t('ui.platezhnaya_sistema_esche_ne_podklyuchena_admi')); setBusy(''); return }
       const cp = await loadCpWidget()
       new cp.CloudPayments().pay('charge', {
         publicId: cfg.public_id, description: cfg.description, amount: cfg.amount,
@@ -100,11 +100,11 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
         // на рекуррентные списания (Этап 6.1/6.2).
         ...(cfg.recurrent ? { data: { cloudPayments: { recurrent: { interval: cfg.recurrent.interval, period: cfg.recurrent.period } } } } : {}),
       }, {
-        onSuccess: () => { setMsg('Оплата прошла. Тариф активируется в течение минуты.'); setTimeout(refresh, 3000) },
-        onFail: (reason) => setMsg(reason ? `Оплата не завершена: ${reason}` : 'Оплата не завершена. Попробуйте ещё раз.'),
+        onSuccess: () => { setMsg(t('ui.oplata_proshla_tarif_aktiviruetsya_v_techenie')); setTimeout(refresh, 3000) },
+        onFail: (reason) => setMsg(reason ? t('ui.oplata_ne_zavershena', { v1: reason }) : t('ui.oplata_ne_zavershena_poprobuyte_esche_raz')),
         onComplete: () => setBusy(''),
       })
-    } catch { setMsg('Не удалось открыть оплату.'); setBusy('') }
+    } catch { setMsg(t('ui.ne_udalos_otkryt_oplatu')); setBusy('') }
   }
 
   // Единая обработка клика по тарифу: сценарий определяет бэкенд
@@ -118,7 +118,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
     try {
       const res = await changePlanPreview({ plan_code: p.code, user_id: currentUser.id })
       d = res.data
-    } catch { setMsg('Не удалось проверить тариф. Попробуйте позже.'); return }
+    } catch { setMsg(t('ui.ne_udalos_proverit_tarif_poprobuyte_pozzhe')); return }
 
     switch (d.action) {
       case 'contact_sales':
@@ -135,21 +135,21 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
       case 'upgrade': {
         // Годовой тариф оплачивается ЦЕЛИКОМ и сразу — рассрочки нет.
         const extra = d.amount ? ` К оплате сейчас: ${d.amount.toLocaleString('ru-RU')} ₽${d.period === 'year' ? t('ui.za_god_edinovremenno') : t('ui.za_mesyac')}.` : ''
-        if (await confirmDialog({ title: `Перейти на тариф ${p.name}?`, message: d.message + extra, confirmText: 'Оплатить и перейти' }))
+        if (await confirmDialog({ title: t('ui.pereyti_na_tarif', { v1: p.name }), message: d.message + extra, confirmText: t('ui.oplatit_i_pereyti') }))
           return openWidget(p)
         return
       }
       case 'downgrade_free': {
-        if (await confirmDialog({ title: t('ui.otkazatsya_ot_podpiski_2'), message: d.message, confirmText: 'Отказаться от подписки', danger: true })) {
-          try { await cancelMySubscription(currentUser.id); setMsg('Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт останется без подписки.'); setTimeout(refresh, 1200) }
-          catch { setMsg('Не удалось выполнить действие.') }
+        if (await confirmDialog({ title: t('ui.otkazatsya_ot_podpiski_2'), message: d.message, confirmText: t('ui.otkazatsya_ot_podpiski'), danger: true })) {
+          try { await cancelMySubscription(currentUser.id); setMsg(t('ui.avtospisaniya_otmeneny_dostup_sohranitsya_do_k')); setTimeout(refresh, 1200) }
+          catch { setMsg(t('ui.ne_udalos_vypolnit_deystvie_2')) }
         }
         return
       }
       case 'downgrade': {
         const warn = (d.over_limit || []).map(v => v.message).join(' ')
         const full = d.message + (warn ? `\n\nВнимание: ${warn}` : '')
-        if (await confirmDialog({ title: `Понизить тариф до ${p.name}?`, message: full, confirmText: 'Запланировать понижение' })) {
+        if (await confirmDialog({ title: t('ui.ponizit_tarif_do', { v1: p.name }), message: full, confirmText: t('ui.zaplanirovat_ponizhenie') })) {
           // Планируемый переход на более дешёвый ПЛАТНЫЙ тариф применяется со
           // следующего периода. Серверное применение требует хранения
           // отложенного плана — см. отчёт; пока оформляется через поддержку.
@@ -167,7 +167,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
   const meetUsed = me?.usage?.meetings_this_month ?? 0
   const currentCode = me?.full_access_override ? 'unlimited' : (me?.plan_code || 'free')
   const currentIsPaid = currentCode !== 'free' && currentCode !== 'unlimited'
-  const currentName = me?.full_access_override ? 'Полный доступ' : (me?.plan_name || currentCode)
+  const currentName = me?.full_access_override ? t('billing.fullAccess') : (me?.plan_name || currentCode)
   const inTrial = me?.subscription?.status === 'trialing'
   const trialLocked = me?.trial_restricted_features || []
 
@@ -176,21 +176,19 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
       <div className="bill-modal" onClick={e => e.stopPropagation()}>
         <div className="bill-head">
           <h2>{t('ui.moy_tarif')}</h2>
-          <button className="bill-x" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
+          <button className="bill-x" aria-label={t('ui.zakryt')} onClick={onClose}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
 
         <div className="bill-body">
           {readOnly && (
-            <p className="bill-msg" style={{ marginTop: 0 }}>
-              Здесь можно посмотреть тариф и лимиты. Оплата и смена тарифа доступны в веб-версии.
-            </p>
+            <p className="bill-msg" style={{ marginTop: 0 }}>{t('ui.zdes_mozhno_posmotret_tarif_i_limity')}</p>
           )}
           <p className="bill-hero">Выберите тариф под размер команды. Start — 1 490 ₽ в месяц, Team — 49 990 ₽ в год единовременно. Business и Enterprise подключаются индивидуально. Повышение действует сразу.</p>
 
           {/* Current plan + usage */}
           <div className="bill-current">
             <span className="lbl">{t('ui.tekuschiy_tarif')}</span>
-            <span className="bill-chip">{currentName}{inTrial ? ' · пробный период' : ''}</span>
+            <span className="bill-chip">{currentName}{inTrial ? t('ui.probnyy_period') : ''}</span>
             {meetLimit != null && meetLimit >= 0 && (
               <div className="bill-usage">
                 <div className="cap">Встречи в этом месяце: {meetUsed} / {meetLimit}</div>
@@ -204,9 +202,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
               </div>
             )}
             {me?.subscription?.cancel_at_period_end && !me?.subscription?.in_grace && (
-              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
-                Автосписания отменены. Доступ сохранится до конца оплаченного периода, затем аккаунт перейдёт на Free.
-              </div>
+              <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>{t('ui.avtospisaniya_otmeneny_dostup_sohranitsya_do_k_2')}</div>
             )}
             {/* 14-дневный пробный период */}
             {inTrial && me?.trial_until && !me?.trial_expired && (() => {
@@ -215,7 +211,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
               return (
                 <div style={{ marginTop: 10, fontSize: 12, color: 'var(--color-text-muted)' }}>
                   Пробный период до {end.toLocaleDateString('ru-RU')} — осталось {daysLeft} дн.
-                  {trialLocked.length > 0 && ' На пробном периоде тарифа Team недоступны ONE AI и Развитие — они включаются после оплаты.'}
+                  {trialLocked.length > 0 && t('ui.na_probnom_periode_tarifa_team_nedostupny')}
                 </div>
               )
             })()}
@@ -249,7 +245,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
                   <span className="bill-name">{p.name}</span>
                   <div className={`bill-price${p.is_enterprise ? ' ent' : ''}`}>
                     {p.is_enterprise || isFreeState
-                      ? (l.price_label || 'По запросу')
+                      ? (l.price_label || t('ui.po_zaprosu'))
                       : <>{(p.price_year || p.price_month).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? t('ui.god') : t('ui.mes')}</small></>}
                   </div>
                   <div className="bill-desc">{DESC[p.code] || ''}</div>

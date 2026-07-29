@@ -68,13 +68,13 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
   const patch = async (payload) => {
     setSaving(true)
     try { const { data } = await updateUserSkill(us.id, { actor_id: meId, ...payload }); onChanged(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось сохранить', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('errors.saveFailed'), 'error') }
     finally { setSaving(false) }
   }
   const remove = async () => {
     if (!window.confirm(t('ui.udalit_navyk'))) return
     try { await deleteUserSkill(us.id, meId); onRemoved(us.id) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось удалить', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('errors.deleteFailed'), 'error') }
   }
 
   return (
@@ -147,13 +147,13 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
   const patch = async (payload) => {
     setSaving(true)
     try { const { data } = await updateDevStep(step.id, { actor_id: meId, ...payload }); onChanged(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось сохранить', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('errors.saveFailed'), 'error') }
     finally { setSaving(false) }
   }
   const remove = async () => {
     if (!window.confirm(t('ui.udalit_shag'))) return
     try { await deleteDevStep(step.id, meId); onRemoved(step.id) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось удалить', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('errors.deleteFailed'), 'error') }
   }
 
   return (
@@ -216,7 +216,7 @@ function RecommendationCard({ rec, meId, onChanged }) {
   const act = async (action) => {
     setBusy(true)
     try { const { data } = await actOnDevRecommendation(rec.id, { actor_id: meId, action }); onChanged(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos'), 'error') }
     finally { setBusy(false) }
   }
   const done = rec.status !== 'new'
@@ -262,7 +262,7 @@ function AddSkillForm({ meId, dict, onAdded, onCancel }) {
         current_level: Number(current), desired_level: desired ? Number(desired) : undefined,
       })
       onAdded(data)
-    } catch (e) { toast(e?.response?.data?.detail || 'Не удалось добавить', 'error') }
+    } catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos_dobavit'), 'error') }
     finally { setSaving(false) }
   }
 
@@ -319,7 +319,7 @@ function AddStepForm({ meId, userId, skills, onAdded, onCancel }) {
         skill_id: skillId ? Number(skillId) : undefined, due_date: due ? new Date(due).toISOString() : undefined,
       })
       onAdded(data)
-    } catch (e) { toast(e?.response?.data?.detail || 'Не удалось добавить', 'error') }
+    } catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos_dobavit'), 'error') }
     finally { setSaving(false) }
   }
   return (
@@ -370,7 +370,7 @@ export function DevelopmentMember({ user }) {
     catch (e) {
       const detail = e?.response?.data?.detail
       if (detail?.code === 'feature_locked') toast(detail.message, 'info')
-      else toast(detail || 'Пит недоступен', 'error')
+      else toast(detail || t('ui.pit_nedostupen'), 'error')
     } finally { setAiBusy(false) }
   }
 
@@ -392,7 +392,7 @@ export function DevelopmentMember({ user }) {
           {!showSkill && <button className="btn btn-accent btn-sm" onClick={() => setShowSkill(true)}>{t('ui.navyk')}</button>}
         </div>
         {showSkill && <AddSkillForm meId={meId} dict={dict} onCancel={() => setShowSkill(false)} onAdded={(s) => { setDev(d => ({ ...d, skills: [...d.skills, s] })); setShowSkill(false) }} />}
-        {dev.skills.length === 0 && !showSkill && <EmptyState title={t('ui.navyki_ne_zadany')} desc="Добавьте навык и укажите текущий и желаемый уровень." />}
+        {dev.skills.length === 0 && !showSkill && <EmptyState title={t('ui.navyki_ne_zadany')} desc={t('ui.dobavte_navyk_i_ukazhite_tekuschiy_i')} />}
         {dev.skills.map(s => <SkillRow key={s.id} us={s} meId={meId} onChanged={upSkill} onRemoved={(id) => upSkill(null, id)} />)}
       </section>
 
@@ -404,7 +404,7 @@ export function DevelopmentMember({ user }) {
           {!showStep && <button className="btn btn-accent btn-sm" onClick={() => setShowStep(true)}>{t('ui.shag')}</button>}
         </div>
         {showStep && <AddStepForm meId={meId} userId={meId} skills={dev.skills} onCancel={() => setShowStep(false)} onAdded={(s) => { setDev(d => ({ ...d, steps: [s, ...d.steps] })); setShowStep(false) }} />}
-        {dev.steps.length === 0 && !showStep && <EmptyState title={t('ui.plan_pust')} desc="Добавьте первый шаг развития — свяжите его с навыком и сроком." />}
+        {dev.steps.length === 0 && !showStep && <EmptyState title={t('ui.plan_pust')} desc={t('ui.dobavte_pervyy_shag_razvitiya_svyazhite_ego')} />}
         {dev.steps.map(s => <StepCard key={s.id} step={s} meId={meId} canFeedback={false} onChanged={upStep} onRemoved={(id) => upStep(null, id)} />)}
       </section>
 
@@ -414,7 +414,7 @@ export function DevelopmentMember({ user }) {
           <h3 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{t('ui.rekomendacii')}</h3>
           <button className="btn btn-secondary btn-sm" disabled={aiBusy} onClick={askAi}>{aiBusy ? t('ui.pit_dumaet') : t('pit.ask')}</button>
         </div>
-        {openRecs.length === 0 && <EmptyState title={t('ui.rekomendaciy_net')} desc="Задайте желаемые уровни навыков — появятся рекомендации по разрыву." />}
+        {openRecs.length === 0 && <EmptyState title={t('ui.rekomendaciy_net')} desc={t('ui.zadayte_zhelaemye_urovni_navykov_poyavyatsya_r')} />}
         {openRecs.map(r => <RecommendationCard key={r.id} rec={r} meId={meId} onChanged={upRec} />)}
       </section>
 
@@ -431,7 +431,7 @@ export function DevelopmentMember({ user }) {
                 {dev.skills.map(s => <option key={s.id} value={s.skill_id}>{s.skill_name}</option>)}
               </select>
             </label>
-            <GoalForm submitLabel="Создать учебную цель" placeholder={t('ui.naprimer_proyti_kurs_po_sistemnomu_dizaynu')}
+            <GoalForm submitLabel={t('ui.sozdat_uchebnuyu_cel')} placeholder={t('ui.naprimer_proyti_kurs_po_sistemnomu_dizaynu')}
               onCancel={() => { setShowLearn(false); setLearnSkill('') }}
               onCreate={async (payload) => {
                 const { data } = await createGoal({ user_id: meId, goal_kind: 'learning', skill_id: learnSkill ? Number(learnSkill) : undefined, ...payload })
@@ -440,7 +440,7 @@ export function DevelopmentMember({ user }) {
               }} />
           </div>
         )}
-        {learning.length === 0 && !showLearn && <EmptyState title={t('ui.uchebnyh_celey_net')} desc="Создайте учебную цель — она появится и во вкладке «Цели»." />}
+        {learning.length === 0 && !showLearn && <EmptyState title={t('ui.uchebnyh_celey_net')} desc={t('ui.sozdayte_uchebnuyu_cel_ona_poyavitsya_i')} />}
         {learning.map(g => (
           <div key={g.id} className="card" style={{ padding: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}>
@@ -503,7 +503,7 @@ function AssignDirection({ meId, userId, skills, onDone }) {
       })
       toast(t('ui.napravlenie_naznacheno_sotrudnik_poluchit_uved'), 'success')
       setTitle(''); setBody(''); setSkillId(''); setLevel(''); setDue(''); setOpen(false); onDone?.()
-    } catch (e) { toast(e?.response?.data?.detail || 'Не удалось назначить', 'error') }
+    } catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos_naznachit'), 'error') }
     finally { setSaving(false) }
   }
   if (!open) return <button className="btn btn-accent btn-sm" onClick={() => setOpen(true)}>{t('ui.naznachit_napravlenie_rosta')}</button>
@@ -548,7 +548,7 @@ export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
     if (!teamId) { setData(null); return }
     setLoading(true)
     try { const { data } = await getTeamDevelopment(teamId, meId); setData(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось загрузить', 'error'); setData(null) }
+    catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos_zagruzit'), 'error'); setData(null) }
     finally { setLoading(false) }
   }, [teamId, meId])
   useEffect(() => { load() }, [load])
@@ -556,7 +556,7 @@ export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
   const openMemberDev = async (uid) => {
     setOpenMember(uid); setMemberDev(null)
     try { const { data } = await getDevelopment(uid, meId); setMemberDev(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Нет доступа', 'error'); setOpenMember(null) }
+    catch (e) { toast(e?.response?.data?.detail || t('ui.net_dostupa'), 'error'); setOpenMember(null) }
   }
   const upMemberStep = (u) => setMemberDev(d => d && ({ ...d, steps: d.steps.map(s => s.id === u.id ? u : s) }))
 
@@ -599,7 +599,7 @@ export function DevelopmentLead({ user, teams, selectedTeamId, onSelectTeam }) {
         )}
       </div>
       {loading && <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>}
-      {!loading && members.length === 0 && <EmptyState title={t('ui.v_komande_poka_net_dannyh_razvitiya')} desc="Как только сотрудники добавят навыки и планы, они появятся здесь." />}
+      {!loading && members.length === 0 && <EmptyState title={t('ui.v_komande_poka_net_dannyh_razvitiya')} desc={t('ui.kak_tolko_sotrudniki_dobavyat_navyki_i')} />}
       {!loading && members.map(m => <TeamMemberRow key={m.user_id} m={m} meId={meId} onOpen={openMemberDev} />)}
     </div>
   )

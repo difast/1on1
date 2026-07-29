@@ -16,8 +16,8 @@ export default function ResetPasswordPage() {
   const [done, setDone] = useState(false)
 
   const problem = (p) => {
-    if ((p || '').length < 8) return 'Пароль должен быть не короче 8 символов'
-    if (!/[A-Za-zА-Яа-я]/.test(p) || !/\d/.test(p)) return 'Пароль должен содержать буквы и цифры'
+    if ((p || '').length < 8) return t('validation.passwordShort')
+    if (!/[A-Za-zА-Яа-я]/.test(p) || !/\d/.test(p)) return t('validation.passwordWeak')
     return ''
   }
 
@@ -35,7 +35,7 @@ export default function ResetPasswordPage() {
       setDone(true)
       setTimeout(() => { window.location.href = '/' }, 1200)
     } catch (err) {
-      setError(err?.response?.data?.detail || 'Ссылка недействительна или устарела')
+      setError(err?.response?.data?.detail || t('validation.linkExpired'))
     } finally { setLoading(false) }
   }
 

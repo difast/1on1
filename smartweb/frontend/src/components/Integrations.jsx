@@ -34,13 +34,13 @@ function CalendarCard({ item, userId, onChange }) {
       const { data } = await getIntegrationAuthUrl(item.provider, userId)
       if (data?.url) window.location.href = data.url
     } catch (e) {
-      onChange?.(e?.response?.data?.detail?.message || 'Интеграция ещё не настроена администратором.')
+      onChange?.(e?.response?.data?.detail?.message || t('integrations.notConfigured'))
       setBusy(false)
     }
   }
 
   const disconnect = async () => {
-    if (!(await confirmDialog({ title: `Отключить ${meta.name}?`, message: t('ui.sinhronizaciya_vstrech_s_etim_kalendarem_prekr'), confirmText: 'Отключить', danger: true }))) return
+    if (!(await confirmDialog({ title: t('ui.otklyuchit_2', { v1: meta.name }), message: t('ui.sinhronizaciya_vstrech_s_etim_kalendarem_prekr'), confirmText: t('integrations.disconnect'), danger: true }))) return
     setBusy(true)
     try { await disconnectIntegration(item.provider, userId); onChange?.() }
     finally { setBusy(false) }
@@ -61,7 +61,7 @@ function CalendarCard({ item, userId, onChange }) {
       </div>
       <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>{meta.desc}</p>
       <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0, minHeight: 16 }}>
-        {item.connected && item.account_email ? `Подключён как ${item.account_email}` : ''}
+        {item.connected && item.account_email ? t('ui.podklyuchen_kak', { v1: item.account_email }) : ''}
       </p>
       {!item.configured ? (
         <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled title={t('ui.integraciya_esche_ne_nastroena_administratorom')}>{t('ui.nedostupno')}</button>
@@ -69,7 +69,7 @@ function CalendarCard({ item, userId, onChange }) {
         <button className="btn btn-secondary btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={disconnect}>{t('ui.otklyuchit')}</button>
       ) : (
         <button className="btn btn-accent btn-sm" style={{ marginTop: 'auto' }} disabled={busy} onClick={connect}>
-          {busy ? '...' : reauth ? 'Переподключить' : `Подключить ${meta.name}`}
+          {busy ? '...' : reauth ? t('ui.perepodklyuchit') : t('ui.podklyuchit', { v1: meta.name })}
         </button>
       )}
     </div>
@@ -84,21 +84,21 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
 
   const add = async () => {
     const u = url.trim()
-    if (!/^https?:\/\//.test(u)) { notify?.('URL должен начинаться с http:// или https://'); return }
+    if (!/^https?:\/\//.test(u)) { notify?.(t('ui.url_dolzhen_nachinatsya_s_http_ili')); return }
     setAdding(true)
     try { await createWebhook({ team_id: teamId, user_id: userId, url: u, events: null }); setUrl(''); onChange?.() }
-    catch (e) { notify?.(e?.response?.data?.detail || 'Не удалось добавить Webhook.') }
+    catch (e) { notify?.(e?.response?.data?.detail || t('ui.ne_udalos_dobavit_webhook')) }
     finally { setAdding(false) }
   }
 
   const remove = async (id) => {
-    if (!(await confirmDialog({ title: t('ui.udalit_webhook'), message: t('ui.dostavka_sobytiy_na_etot_url_prekratitsya'), confirmText: 'Удалить', danger: true }))) return
-    try { await deleteWebhook(id, userId); onChange?.() } catch { notify?.('Не удалось удалить.') }
+    if (!(await confirmDialog({ title: t('ui.udalit_webhook'), message: t('ui.dostavka_sobytiy_na_etot_url_prekratitsya'), confirmText: t('common.delete'), danger: true }))) return
+    try { await deleteWebhook(id, userId); onChange?.() } catch { notify?.(t('ui.ne_udalos_udalit')) }
   }
 
   const test = async (id) => {
-    try { await testWebhook(id, userId); notify?.('Тестовое событие отправлено.'); setTimeout(onChange, 1500) }
-    catch { notify?.('Не удалось отправить тест.') }
+    try { await testWebhook(id, userId); notify?.(t('ui.testovoe_sobytie_otpravleno')); setTimeout(onChange, 1500) }
+    catch { notify?.(t('ui.ne_udalos_otpravit_test')) }
   }
 
   return (
@@ -113,7 +113,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
       <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
         <input className="input" style={{ flex: 1, minWidth: 220 }} placeholder="https://example.com/webhook"
           value={url} onChange={e => setUrl(e.target.value)} onKeyDown={e => e.key === 'Enter' && add()} />
-        <button className="btn btn-accent btn-sm" disabled={adding} onClick={add}>{adding ? '...' : 'Добавить'}</button>
+        <button className="btn btn-accent btn-sm" disabled={adding} onClick={add}>{adding ? '...' : t('common.add')}</button>
       </div>
 
       {webhooks.length === 0 ? (
@@ -142,7 +142,7 @@ function WebhookCard({ teamId, userId, webhooks, events, onChange, notify }) {
                     <div key={d.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, fontSize: 12 }}>
                       <span style={{ color: 'var(--color-text-secondary)' }}>{d.event_type}</span>
                       <span style={{ fontWeight: 600, color: d.status === 'success' ? 'var(--color-success, #16a34a)' : d.status === 'failed' ? 'var(--color-danger)' : 'var(--color-text-muted)' }}>
-                        {d.status === 'success' ? `успех (${d.status_code})` : d.status === 'failed' ? `ошибка${d.last_error ? ': ' + d.last_error : ''}` : 'в очереди'}
+                        {d.status === 'success' ? t('ui.uspeh', { v1: d.status_code }) : d.status === 'failed' ? `ошибка${d.last_error ? ': ' + d.last_error : ''}` : t('ui.v_ocheredi')}
                       </span>
                     </div>
                   ))}

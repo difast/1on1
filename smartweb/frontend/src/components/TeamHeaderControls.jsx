@@ -104,7 +104,7 @@ export default function TeamHeaderControls({
                   {copied ? t('common.copied') : t('ui.skopirovat_ssylku')}
                 </button>
                 <button className="btn btn-secondary btn-sm" onClick={onRegenerate} disabled={regenerating} title={t('ui.sgenerirovat_novyy_kod')}>
-                  {regenerating ? '...' : 'Новый код'}
+                  {regenerating ? '...' : t('ui.novyy_kod')}
                 </button>
                 <button className="btn btn-accent-ghost btn-sm" onClick={() => { setManageOpen(false); onAddMember() }}>{t('ui.dobavit_uchastnika_2')}</button>
                 <button className="btn btn-secondary btn-sm" onClick={() => { setManageOpen(false); onOpenOrg() }} title={orgLabel}>

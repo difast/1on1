@@ -178,7 +178,7 @@ export function DateTimePickerField({
                 disabled={!selected}
               >
                 <Text style={styles.confirmText}>
-                  {selected ? `${selected.getDate()} ${MONTHS[selected.getMonth()].toLowerCase().slice(0, 3)}, ${pad(hour)}:${pad(minute)}` : 'Готово'}
+                  {selected ? `${selected.getDate()} ${MONTHS[selected.getMonth()].toLowerCase().slice(0, 3)}, ${pad(hour)}:${pad(minute)}` : t('common.done')}
                 </Text>
               </TouchableOpacity>
             </View>

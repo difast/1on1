@@ -86,7 +86,7 @@ export default function KnowledgeBasePage({ onClose }) {
           )}
           <span className="logo">OneOn<span className="accent">One</span></span>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {selected ? `/ ${selected.title}` : '/ База знаний'}
+            {selected ? `/ ${selected.title}` : t('ui.baza_znaniy')}
           </span>
         </div>
         <button onClick={onClose} className="btn btn-secondary btn-sm">{t('ui.zakryt_2')}</button>

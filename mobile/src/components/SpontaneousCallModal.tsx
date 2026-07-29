@@ -36,7 +36,7 @@ export function SpontaneousCallModal({
   const close = () => { reset(); onClose(); };
 
   const start = async (memberIds: number[], isGroup: boolean) => {
-    if (!teamId) { Alert.alert(t('ui.oshibka'), 'Нет команды'); return; }
+    if (!teamId) { Alert.alert(t('ui.oshibka'), t('ui.net_komandy')); return; }
     if (memberIds.length === 0) { Alert.alert(t('ui.vyberite_uchastnikov')); return; }
     setLoading(true);
     try {
@@ -44,7 +44,7 @@ export function SpontaneousCallModal({
       setResult({ room_url: data.room_url });
       setStep('done');
       onStarted?.();
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать созвон'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_sozvon')); }
     finally { setLoading(false); }
   };
 

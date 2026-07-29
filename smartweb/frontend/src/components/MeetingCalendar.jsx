@@ -126,7 +126,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
                   borderRadius: 3, opacity: w.count === 0 ? 0.25 : 1, alignSelf: 'flex-end',
                   transition: 'height 0.3s', position: 'relative',
                 }}
-                title={`${w.count} встреч`}
+                title={t('ui.vstrech_2', { v1: w.count })}
               >
                 {w.isCurrent && w.count > 0 && (
                   <span style={{
@@ -187,7 +187,7 @@ export default function MeetingCalendar({ meetings, renderCard }) {
         {visibleMeetings.length > 0 ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <p className="label">
-              {selectedDay ? `${selectedDay.getDate()} ${MONTH_SHORT[selectedDay.getMonth()]}` : 'Встречи на этой неделе'}
+              {selectedDay ? `${selectedDay.getDate()} ${MONTH_SHORT[selectedDay.getMonth()]}` : t('ui.vstrechi_na_etoy_nedele')}
             </p>
             {visibleMeetings.map(m => renderCard(m))}
           </div>

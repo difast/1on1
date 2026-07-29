@@ -168,7 +168,7 @@ export default function SupportPage({ currentUser, onClose }) {
           )}
           <span className="logo">OneOn<span className="accent">One</span></span>
           <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-muted)' }}>
-            {view === 'new' ? '/ Новое обращение' : view === 'thread' ? `/ ${activeTicket?.subject}` : '/ Поддержка'}
+            {view === 'new' ? t('ui.novoe_obraschenie') : view === 'thread' ? `/ ${activeTicket?.subject}` : t('ui.podderzhka')}
           </span>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -267,7 +267,7 @@ export default function SupportPage({ currentUser, onClose }) {
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button type="button" onClick={() => setView('list')} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.nazad_2')}</button>
                     <button type="submit" disabled={submitting} className="btn btn-accent" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                      {submitting ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить'}
+                      {submitting ? <><Spinner size={15} />{t('ui.otpravka')}</> : t('common.send')}
                     </button>
                   </div>
                 </form>

@@ -34,9 +34,7 @@ export default function ConfirmEmailPage() {
           {status === 'error' && (
             <>
               <h2 style={{ fontSize: 20, fontWeight: 600, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.ssylka_nedeystvitelna')}</h2>
-              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>
-                Возможно, она устарела или уже использована. Запросите новое письмо в приложении.
-              </p>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 22 }}>{t('ui.vozmozhno_ona_ustarela_ili_uzhe_ispolzovana')}</p>
               <button onClick={goApp} className="btn btn-accent" style={{ width: '100%' }}>{t('ui.vernutsya_v_prilozhenie')}</button>
             </>
           )}

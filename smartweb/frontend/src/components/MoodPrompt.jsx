@@ -84,7 +84,7 @@ export default function MoodPrompt({ teamId, user }) {
   }
 
   const SCORE_COLORS = ['', '#ef4444', '#f97316', '#f59e0b', '#84cc16', '#22c55e']
-  const SCORE_LABELS = ['', 'Плохо', 'Не очень', 'Нормально', 'Хорошо', 'Отлично']
+  const SCORE_LABELS = ['', t('mood.bad'), t('ui.ne_ochen'), t('mood.neutral'), t('mood.good'), t('mood.veryGood')]
 
   if (!visible) return null
 
@@ -118,9 +118,7 @@ export default function MoodPrompt({ teamId, user }) {
           <button
             onClick={e => { e.stopPropagation(); setVisible(false) }}
             style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 16, padding: 0, flexShrink: 0 }}
-          >
-            ✕
-          </button>
+          ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
       )}
 
@@ -162,7 +160,7 @@ export default function MoodPrompt({ teamId, user }) {
                     <span className="modal-title">{t('ui.opros_po_itogam_dnya')}</span>
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.anonimno_otvety_analiziruet_ii')}</p>
                   </div>
-                  <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}>✕</button>
+                  <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setOpen(false)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 16, padding: '4px 0 8px' }}>
