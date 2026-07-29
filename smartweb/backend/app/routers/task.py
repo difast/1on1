@@ -377,8 +377,8 @@ def update_assignee(assignee_id: int, data: AssigneeStatusUpdate, db: Session = 
             task_collab.log_activity(db, task.id, a.user_id, "status_changed",
                                      f"{actor_name}: статус части -> {data.status}")
             task_collab.notify_task_participants(
-                db, task, "Обновление задачи",
-                f"{actor_name}: {task.title}", exclude={a.user_id})
+                db, task, "notify.task.updated.title", "notify.task.updated.body",
+                exclude={a.user_id}, name=actor_name, title=task.title)
     db.commit()
     db.refresh(task)
     return _serialize(task)
@@ -484,8 +484,8 @@ def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db)):
     author = db.query(User).filter(User.id == data.author_id).first()
     author_name = author.name if author else "Участник"
     task_collab.log_activity(db, task_id, data.author_id, "commented", f"{author_name} оставил(а) комментарий")
-    task_collab.notify_task_participants(db, task, "Комментарий к задаче",
-                                         f"{author_name}: {task.title}", exclude={data.author_id})
+    task_collab.notify_task_participants(db, task, "task.comment.title", "task.comment.body",
+                                         exclude={data.author_id}, name=author_name, title=task.title)
     db.commit(); db.refresh(c)
     return {"id": c.id, "author_id": c.author_id, "author_name": author_name,
             "body": c.body, "created_at": c.created_at}

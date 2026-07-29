@@ -754,6 +754,210 @@ TEXTS: dict[str, dict[str, str]] = {
         "en": "Team member",
         "kz": "Қатысушы",
     },
+
+    # --- Предложения встреч ---
+    "proposal.new.title": {
+        "ru": "Предложение встречи",
+        "en": "Meeting proposal",
+        "kz": "Кездесу ұсынысы",
+    },
+    "proposal.new.body": {
+        "ru": "{name} предлагает встречу {when}",
+        "en": "{name} proposes a meeting on {when}",
+        "kz": "{name} {when} кездесуді ұсынады",
+    },
+    "proposal.new.bodyTopic": {
+        "ru": "{name} предлагает встречу {when}: {topic}",
+        "en": "{name} proposes a meeting on {when}: {topic}",
+        "kz": "{name} {when} кездесуді ұсынады: {topic}",
+    },
+    "proposal.accepted.title": {
+        "ru": "Встреча подтверждена",
+        "en": "Meeting confirmed",
+        "kz": "Кездесу расталды",
+    },
+    "proposal.accepted.body": {
+        "ru": "{name} принял предложение встречи на {when}",
+        "en": "{name} accepted the meeting proposal for {when}",
+        "kz": "{name} {when} кездесу ұсынысын қабылдады",
+    },
+    "proposal.declined.title": {
+        "ru": "Предложение встречи отклонено",
+        "en": "Meeting proposal declined",
+        "kz": "Кездесу ұсынысы қабылданбады",
+    },
+    "proposal.declined.body": {
+        "ru": "{name} отклонил предложение встречи",
+        "en": "{name} declined the meeting proposal",
+        "kz": "{name} кездесу ұсынысын қабылдамады",
+    },
+    "proposal.counter.title": {
+        "ru": "Предложено другое время",
+        "en": "Another time proposed",
+        "kz": "Басқа уақыт ұсынылды",
+    },
+    "proposal.counter.body": {
+        "ru": "{name} предлагает встречу {when}",
+        "en": "{name} proposes a meeting on {when}",
+        "kz": "{name} {when} кездесуді ұсынады",
+    },
+
+    # --- Предложения задач ---
+    "taskProposal.new.title": {
+        "ru": "Предложение задачи",
+        "en": "Task proposal",
+        "kz": "Тапсырма ұсынысы",
+    },
+    "taskProposal.new.body": {
+        "ru": "{name} предлагает вам задачу: {title}",
+        "en": "{name} proposes a task for you: {title}",
+        "kz": "{name} сізге тапсырма ұсынады: {title}",
+    },
+    "taskProposal.accepted.title": {
+        "ru": "Предложение задачи принято",
+        "en": "Task proposal accepted",
+        "kz": "Тапсырма ұсынысы қабылданды",
+    },
+    "taskProposal.accepted.body": {
+        "ru": "{name} принял задачу: {title}",
+        "en": "{name} accepted the task: {title}",
+        "kz": "{name} тапсырманы қабылдады: {title}",
+    },
+    "taskProposal.declined.title": {
+        "ru": "Предложение задачи отклонено",
+        "en": "Task proposal declined",
+        "kz": "Тапсырма ұсынысы қабылданбады",
+    },
+    "taskProposal.declined.body": {
+        "ru": "{name} отклонил задачу: {title}",
+        "en": "{name} declined the task: {title}",
+        "kz": "{name} тапсырмадан бас тартты: {title}",
+    },
+    "taskProposal.comment.title": {
+        "ru": "Обсуждение задачи",
+        "en": "Task discussion",
+        "kz": "Тапсырманы талқылау",
+    },
+    "taskProposal.comment.body": {
+        "ru": "{name}: {note}",
+        "en": "{name}: {note}",
+        "kz": "{name}: {note}",
+    },
+
+    # --- Задачи: комментарии и активность ---
+    "task.comment.title": {
+        "ru": "Комментарий к задаче",
+        "en": "Task comment",
+        "kz": "Тапсырмаға пікір",
+    },
+    "task.comment.body": {
+        "ru": "{name}: {title}",
+        "en": "{name}: {title}",
+        "kz": "{name}: {title}",
+    },
+    "notify.task.updated.title": {
+        "ru": "Обновление задачи",
+        "en": "Task update",
+        "kz": "Тапсырма жаңартылды",
+    },
+    "notify.task.updated.body": {
+        "ru": "{name}: {title}",
+        "en": "{name}: {title}",
+        "kz": "{name}: {title}",
+    },
+    "task.assignee.added.title": {
+        "ru": "Вас добавили в задачу",
+        "en": "You were added to a task",
+        "kz": "Сіз тапсырмаға қосылдыңыз",
+    },
+    "task.assignee.added.body": {
+        "ru": "{name}: {title}",
+        "en": "{name}: {title}",
+        "kz": "{name}: {title}",
+    },
+    "task.assignee.removed.title": {
+        "ru": "Вас удалили из задачи",
+        "en": "You were removed from a task",
+        "kz": "Сіз тапсырмадан шығарылдыңыз",
+    },
+    "task.assignee.removed.body": {
+        "ru": "{title}",
+        "en": "{title}",
+        "kz": "{title}",
+    },
+    "goal.comment.team.title": {
+        "ru": "Комментарий к командной цели",
+        "en": "Comment on a team goal",
+        "kz": "Команда мақсатына пікір",
+    },
+    "goal.comment.title": {
+        "ru": "Комментарий к цели",
+        "en": "Comment on a goal",
+        "kz": "Мақсатқа пікір",
+    },
+    "goal.feedback.title": {
+        "ru": "Обратная связь по цели",
+        "en": "Feedback on a goal",
+        "kz": "Мақсат бойынша кері байланыс",
+    },
+    "goal.comment.body": {
+        "ru": "{name}: {text}",
+        "en": "{name}: {text}",
+        "kz": "{name}: {text}",
+    },
+    # --- Страница подтверждения почты (переход по ссылке из письма) ---
+    "email.confirm.page.title": {
+        "ru": "Подтверждение почты",
+        "en": "Email confirmation",
+        "kz": "Поштаны растау",
+    },
+    "email.confirm.page.ok": {
+        "ru": "Почта подтверждена. Можно вернуться в приложение.",
+        "en": "Your email is confirmed. You can return to the app.",
+        "kz": "Пошта расталды. Қосымшаға оралуыңызға болады.",
+    },
+    "email.confirm.page.fail": {
+        "ru": "Ссылка недействительна или устарела.",
+        "en": "The link is invalid or has expired.",
+        "kz": "Сілтеме жарамсыз немесе мерзімі өткен.",
+    },
+
+    # --- Настроение: напоминание и сводка ---
+    "mood.reminder.title": {
+        "ru": "Как прошёл ваш день?",
+        "en": "How was your day?",
+        "kz": "Күніңіз қалай өтті?",
+    },
+    "mood.reminder.body": {
+        "ru": "Пройдите короткий опрос настроения в приложении",
+        "en": "Take a short mood check-in in the app",
+        "kz": "Қосымшада қысқа көңіл-күй сауалнамасынан өтіңіз",
+    },
+    "mood.summary.title": {
+        "ru": "Сводка настроения команды",
+        "en": "Team mood summary",
+        "kz": "Команда көңіл-күйінің қорытындысы",
+    },
+    "mood.summary.insufficient": {
+        "ru": "Недостаточно данных для анонимной статистики за сегодня (заполнили {filled} из {size}, нужно от {threshold}).",
+        "en": "Not enough data for anonymous statistics today ({filled} of {size} responded, at least {threshold} required).",
+        "kz": "Бүгінгі анонимді статистика үшін деректер жеткіліксіз ({size} адамның {filled} толтырды, кемінде {threshold} қажет).",
+    },
+    "mood.summary.body": {
+        "ru": "Средний уровень: {avg} из 5. Заполнили: {filled} из {size}{share}.{delta}",
+        "en": "Average level: {avg} out of 5. Responded: {filled} of {size}{share}.{delta}",
+        "kz": "Орташа деңгей: 5-тен {avg}. Толтырды: {size} адамның {filled}{share}.{delta}",
+    },
+    "mood.summary.delta": {
+        "ru": " Динамика к вчера: {sign}{value}.",
+        "en": " Change vs yesterday: {sign}{value}.",
+        "kz": " Кешеге қарағанда өзгеріс: {sign}{value}.",
+    },
+    "task.activity.commented": {
+        "ru": "{name} оставил(а) комментарий",
+        "en": "{name} left a comment",
+        "kz": "{name} пікір қалдырды",
+    },
 }
 
 

@@ -13,30 +13,31 @@ import {
 } from '../api/client'
 
 // ── конфигурация (повторяет серверную из app/models/development.py) ───────────
-export const SKILL_LEVELS = { 1: 'Новичок', 2: 'Базовый', 3: 'Уверенный', 4: 'Продвинутый', 5: 'Эксперт' }
 const LEVELS = [1, 2, 3, 4, 5]
-const CATEGORY_LABEL = {
-  technical: 'Технические', product: 'Продуктовые',
-  communication: 'Коммуникационные', management: 'Управленческие',
-}
+// Название уровня навыка берём из словаря по числу, а не из ответа сервера:
+// шкала 1..5 общая, а язык интерфейса выбирает пользователь на клиенте.
+const levelLabel = (t, lvl) => (lvl ? t(`development.level.${lvl}`) : '')
+// Категории навыков переводим по ключу справочника, а не хранением текста.
+const categoryLabel = (t, cat) => t(`development.category.${cat}`, { defaultValue: cat })
 const CATEGORIES = ['technical', 'product', 'communication', 'management']
 const STEP_STATUS = {
-  not_started: { label: 'Не начат', bg: 'var(--gray-100)', fg: 'var(--color-text-secondary)', bd: 'var(--gray-200)' },
-  in_progress: { label: 'В работе', bg: '#eff6ff', fg: '#1d4ed8', bd: '#bfdbfe' },
-  done: { label: 'Выполнен', bg: '#f0fdf4', fg: '#15803d', bd: '#bbf7d0' },
-  cancelled: { label: 'Отменён', bg: 'var(--gray-100)', fg: 'var(--color-text-muted)', bd: 'var(--gray-200)' },
+  not_started: { bg: 'var(--gray-100)', fg: 'var(--color-text-secondary)', bd: 'var(--gray-200)' },
+  in_progress: { bg: '#eff6ff', fg: '#1d4ed8', bd: '#bfdbfe' },
+  done: { bg: '#f0fdf4', fg: '#15803d', bd: '#bbf7d0' },
+  cancelled: { bg: 'var(--gray-100)', fg: 'var(--color-text-muted)', bd: 'var(--gray-200)' },
 }
 const STEP_OPEN = ['not_started', 'in_progress']
 
 // ── графическая шкала уровня (без эмодзи): заполненные и целевые деления ───────
 function LevelScale({ current, desired }) {
+  const { t } = useTranslation()
   return (
     <div style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
       {LEVELS.map(l => {
         const filled = l <= current
         const isTarget = desired && l === desired
         return (
-          <div key={l} title={SKILL_LEVELS[l]} style={{
+          <div key={l} title={levelLabel(t, l)} style={{
             width: 16, height: 8, borderRadius: 2,
             background: filled ? 'var(--color-accent)' : 'var(--gray-200)',
             outline: isTarget ? '2px solid var(--color-success)' : 'none', outlineOffset: 1,
@@ -48,9 +49,11 @@ function LevelScale({ current, desired }) {
 }
 
 function StepStatusBadge({ status }) {
-  const c = STEP_STATUS[status] || STEP_STATUS.not_started
+  const { t } = useTranslation()
+  const key = STEP_STATUS[status] ? status : 'not_started'
+  const c = STEP_STATUS[key]
   return (
-    <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999, background: c.bg, color: c.fg, border: `1px solid ${c.bd}`, whiteSpace: 'nowrap' }}>{c.label}</span>
+    <span style={{ fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999, background: c.bg, color: c.fg, border: `1px solid ${c.bd}`, whiteSpace: 'nowrap' }}>{t(`development.stepStatus.${key}`)}</span>
   )
 }
 
@@ -83,18 +86,18 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
         <div style={{ minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{us.skill_name}</h4>
-            <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--gray-100)', borderRadius: 6, padding: '1px 8px' }}>{CATEGORY_LABEL[us.category] || us.category}</span>
+            <span style={{ fontSize: 11, color: 'var(--color-text-muted)', background: 'var(--gray-100)', borderRadius: 6, padding: '1px 8px' }}>{categoryLabel(t, us.category)}</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
             <LevelScale current={us.current_level} desired={us.desired_level} />
             <span style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>
-              {us.current_level_label}{us.desired_level ? ` → ${us.desired_level_label}` : ''}
+              {levelLabel(t, us.current_level)}{us.desired_level ? ` → ${levelLabel(t, us.desired_level)}` : ''}
             </span>
             {us.gap > 0 && (
-              <span style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '1px 8px' }}>разрыв {us.gap}</span>
+              <span style={{ fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 6, padding: '1px 8px' }}>{t('development.gap', { v1: us.gap })}</span>
             )}
           </div>
-          {us.target_date && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>Срок: {fmtDate(us.target_date)}</p>}
+          {us.target_date && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>{t('development.deadline', { v1: fmtDate(us.target_date) })}</p>}
         </div>
         {!readOnly && (
           <button onClick={remove} style={{ fontSize: 12, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)' }}>{t('ui.udalit')}</button>
@@ -104,12 +107,12 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
       {!readOnly && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12, flexWrap: 'wrap' }}>
           <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.tekuschiy')}<select className="input" disabled={saving} value={us.current_level} onChange={e => patch({ current_level: Number(e.target.value) })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
-              {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
+              {LEVELS.map(l => <option key={l} value={l}>{l} · {levelLabel(t, l)}</option>)}
             </select>
           </label>
           <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.zhelaemyy')}<select className="input" disabled={saving} value={us.desired_level || ''} onChange={e => patch({ desired_level: e.target.value ? Number(e.target.value) : 0 })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }}>
               <option value="">—</option>
-              {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
+              {LEVELS.map(l => <option key={l} value={l}>{l} · {levelLabel(t, l)}</option>)}
             </select>
           </label>
           <label style={{ fontSize: 12, color: 'var(--color-text-secondary)' }}>{t('ui.srok')}<input type="date" className="input" disabled={saving} value={toDateInput(us.target_date)} onChange={e => patch({ target_date: e.target.value ? new Date(e.target.value).toISOString() : null })} style={{ marginLeft: 6, width: 'auto', padding: '3px 6px', fontSize: 12 }} />
@@ -119,14 +122,14 @@ function SkillRow({ us, meId, readOnly, onChanged, onRemoved }) {
 
       {us.history?.length > 1 && (
         <button onClick={() => setShowHist(v => !v)} style={{ fontSize: 12, fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-accent)', padding: 0, marginTop: 10 }}>
-          История уровня ({us.history.length})
+          {t('development.levelHistory', { v1: us.history.length })}
         </button>
       )}
       {showHist && (
         <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
           {us.history.map(h => (
             <div key={h.id} style={{ fontSize: 12, color: 'var(--color-text-secondary)', display: 'flex', gap: 10 }}>
-              <span style={{ fontWeight: 600 }}>{h.level_label}</span>
+              <span style={{ fontWeight: 600 }}>{levelLabel(t, h.level)}</span>
               <span style={{ color: 'var(--color-text-muted)' }}>{fmtDate(h.changed_at)}</span>
               {h.note && <span style={{ color: 'var(--color-text-muted)' }}>· {h.note}</span>}
             </div>
@@ -171,7 +174,7 @@ function StepCard({ step, meId, readOnly, canFeedback, onChanged, onRemoved }) {
         <StepStatusBadge status={step.status} />
       </div>
       {step.description && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 8, whiteSpace: 'pre-wrap' }}>{step.description}</p>}
-      {step.due_date && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>Срок: {fmtDate(step.due_date)}</p>}
+      {step.due_date && <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 6 }}>{t('development.deadline', { v1: fmtDate(step.due_date) })}</p>}
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 10 }}>
         <div style={{ flex: 1, height: 8, background: 'var(--gray-100)', borderRadius: 999, overflow: 'hidden', minWidth: 80 }}>
@@ -225,7 +228,7 @@ function RecommendationCard({ rec, meId, onChanged }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: '#7c3aed', background: '#ede9fe', borderRadius: 6, padding: '1px 8px' }}>{rec.source_label}</span>
         {rec.skill_name && <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{rec.skill_name}</span>}
-        {rec.target_level && <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>цель: {SKILL_LEVELS[rec.target_level]}</span>}
+        {rec.target_level && <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>{t('development.target')}: {levelLabel(t, rec.target_level)}</span>}
       </div>
       <h4 style={{ fontSize: 14, fontWeight: 700, color: 'var(--color-text-primary)' }}>{rec.title}</h4>
       {rec.body && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 4, whiteSpace: 'pre-wrap' }}>{rec.body}</p>}
@@ -272,25 +275,25 @@ function AddSkillForm({ meId, dict, onAdded, onCancel }) {
         <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{t('ui.navyk_iz_spravochnika')}</label>
         <select className="input" value={skillId} onChange={e => setSkillId(e.target.value)} style={{ marginTop: 4 }}>
           <option value="">{t('ui.novyy_navyk')}</option>
-          {dict.map(s => <option key={s.id} value={s.id}>{s.name} ({CATEGORY_LABEL[s.category] || s.category})</option>)}
+          {dict.map(s => <option key={s.id} value={s.id}>{s.name} ({categoryLabel(t, s.category)})</option>)}
         </select>
       </div>
       {!skillId && (
         <div style={{ display: 'flex', gap: 8 }}>
           <input className="input" placeholder={t('ui.nazvanie_navyka')} value={name} onChange={e => setName(e.target.value)} style={{ flex: 1 }} />
           <select className="input" value={category} onChange={e => setCategory(e.target.value)} style={{ width: 'auto' }}>
-            {CATEGORIES.map(c => <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>)}
+            {CATEGORIES.map(c => <option key={c} value={c}>{categoryLabel(t, c)}</option>)}
           </select>
         </div>
       )}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.tekuschiy_uroven')}<select className="input" value={current} onChange={e => setCurrent(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
-            {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
+            {LEVELS.map(l => <option key={l} value={l}>{l} · {levelLabel(t, l)}</option>)}
           </select>
         </label>
         <label style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>{t('ui.zhelaemyy')}<select className="input" value={desired} onChange={e => setDesired(e.target.value)} style={{ marginLeft: 6, width: 'auto' }}>
             <option value="">—</option>
-            {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
+            {LEVELS.map(l => <option key={l} value={l}>{l} · {levelLabel(t, l)}</option>)}
           </select>
         </label>
       </div>
@@ -518,7 +521,7 @@ function AssignDirection({ meId, userId, skills, onDone }) {
         </select>
         <select className="input" value={level} onChange={e => setLevel(e.target.value)} style={{ width: 'auto' }}>
           <option value="">{t('ui.celevoy_uroven')}</option>
-          {LEVELS.map(l => <option key={l} value={l}>{l} · {SKILL_LEVELS[l]}</option>)}
+          {LEVELS.map(l => <option key={l} value={l}>{l} · {levelLabel(t, l)}</option>)}
         </select>
         <input type="date" className="input" value={due} onChange={e => setDue(e.target.value)} style={{ width: 'auto' }} />
       </div>

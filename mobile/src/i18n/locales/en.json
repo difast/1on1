@@ -243,7 +243,30 @@
     "growthArea": "Growth area",
     "strength": "Strength",
     "recommendation": "Recommendation",
-    "noPlan": "No development plan yet"
+    "noPlan": "No development plan yet",
+    "level": {
+      "1": "Beginner",
+      "2": "Basic",
+      "3": "Confident",
+      "4": "Advanced",
+      "5": "Expert"
+    },
+    "category": {
+      "technical": "Technical",
+      "product": "Product",
+      "communication": "Communication",
+      "management": "Management"
+    },
+    "gap": "gap {{v1}}",
+    "deadline": "Due: {{v1}}",
+    "target": "target",
+    "stepStatus": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "done": "Done",
+      "cancelled": "Cancelled"
+    },
+    "levelHistory": "Level history ({{v1}})"
   },
   "analytics": {
     "title": "Analytics",
