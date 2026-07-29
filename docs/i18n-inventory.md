@@ -11,14 +11,14 @@
 |---|---|
 | Веб | 562 |
 | Мобильное приложение | 524 |
-| Бэкенд (письма, бот, уведомления) | 607 |
+| Бэкенд (письма, бот, уведомления) | 578 |
 
 ## Юридические документы — 521
 
 - `smartweb/frontend/src/lib/legalDocs.js` — 263: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; <h3>1. ОБЩИЕ ПОЛОЖЕНИЯ</h3><p>1.1. Настоящее Пользовательско
 - `mobile/src/lib/legalDocs.ts` — 258: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; 1. ОБЩИЕ ПОЛОЖЕНИЯ
 
-## Прочее — 400
+## Прочее — 388
 
 - `smartweb/backend/app/services/ai_context.py` — 69: в работе; заблокирована; на проверке
 - `smartweb/backend/app/services/plans.py` — 44: 1-на-1 встречи; Предложения встреч; Задачи
@@ -46,7 +46,6 @@ d; Сейчас у вас команд: {len(teams)}, а новый тариф �
 - `smartweb/backend/app/routers/proposal.py` — 14: ,
         awaiting_user_id=data.to_user_id,   # ждём ответа ; Участник; Предложение встречи
 - `smartweb/backend/app/services/entitlements.py` — 12: Эта функция; Функция «{label}» пока недоступна — {COMING_SOON_LABEL.lower; Функция «{label}» недоступна во время пробного периода.
-- `smartweb/backend/app/tasks/reminders.py` — 12: 1-on-1 с {with_name} завтра; Запланировано на {time_str}; 1-on-1 с {with_name} завтра
 - `smartweb/backend/app/routers/video.py` — 12: Спонтанный созвон может инициировать только тимлид команды; Тимлид; Быстрый созвон
 - `smartweb/backend/app/main.py` — 11: Как прошёл ваш день?; Пройдите короткий опрос настроения в приложении; )
         for team in db.query(Team).all():
@@ -311,14 +310,6 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 - `smartweb/backend/app/routers/assistant.py` — 2: \n\n=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===\n{context}\n=== КОНЕЦ К; AI временно недоступен, попробуйте ещё раз
 - `smartweb/frontend/src/components/PitAssistant.jsx` — 1: Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросам
 
-## Уведомления — 20
-
-- `smartweb/backend/app/services/notification_service.py` — 17: Встреча запланирована; {lead_name} назначил встречу на {when}; Запрос на встречу
-- `smartweb/backend/app/routers/notification.py` — 2: <b>Важное объявление</b>; Важное объявление
-- `mobile/src/screens/NotificationsScreen.tsx` — 1: ]}>
-      <View style={styles.header}>
-        <View style={
-
 ## Кабинет тимлида — 19
 
 - `smartweb/frontend/src/components/LeadDashboard.jsx` — 19: В работе; Блокер; На ревью
@@ -420,6 +411,13 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
   const [meetings, setMeetings] = useState([])
   const [s; disabled={moodFilledToday}
               style={moodFilledTo; style={{ flex: 1, display: 'inline-flex', alignItems: 'cente
+
+## Уведомления — 3
+
+- `smartweb/backend/app/routers/notification.py` — 2: <b>Важное объявление</b>; Важное объявление
+- `mobile/src/screens/NotificationsScreen.tsx` — 1: ]}>
+      <View style={styles.header}>
+        <View style={
 
 ## Профиль и настройки — 3
 

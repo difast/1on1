@@ -443,6 +443,126 @@ TEXTS: dict[str, dict[str, str]] = {
         "kz": "Командалар: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /language, /menu.",
     },
     # ── Пуш-уведомления и напоминания ────────────────────────────────────────
+    "notify.meetingScheduled.title": {
+        "ru": "Встреча запланирована",
+        "en": "Meeting scheduled",
+        "kz": "Кездесу жоспарланды",
+    },
+    "notify.meetingScheduled.body": {
+        "ru": "{lead} назначил встречу на {when}",
+        "en": "{lead} scheduled a meeting for {when}",
+        "kz": "{lead} {when} уақытына кездесу тағайындады",
+    },
+    "notify.meetingRequested.title": {
+        "ru": "Запрос на встречу",
+        "en": "Meeting request",
+        "kz": "Кездесу сұрауы",
+    },
+    "notify.meetingRequested.body": {
+        "ru": "{member} хочет провести 1-on-1",
+        "en": "{member} wants to hold a 1-on-1",
+        "kz": "{member} 1-on-1 кездесу өткізгісі келеді",
+    },
+    "notify.meetingConfirmed.title": {
+        "ru": "Встреча подтверждена",
+        "en": "Meeting confirmed",
+        "kz": "Кездесу расталды",
+    },
+    "notify.meetingConfirmed.body": {
+        "ru": "{lead} подтвердил встречу на {when}",
+        "en": "{lead} confirmed the meeting for {when}",
+        "kz": "{lead} {when} кездесуін растады",
+    },
+    "notify.meetingDeclined.title": {
+        "ru": "Встреча отклонена",
+        "en": "Meeting declined",
+        "kz": "Кездесуден бас тартылды",
+    },
+    "notify.meetingDeclined.body": {
+        "ru": "{lead} отклонил запрос на встречу",
+        "en": "{lead} declined the meeting request",
+        "kz": "{lead} кездесу сұрауынан бас тартты",
+    },
+    "notify.meetingReminder.title": {
+        "ru": "Напоминание о встрече",
+        "en": "Meeting reminder",
+        "kz": "Кездесу туралы еске салу",
+    },
+    "notify.meetingReminder.body": {
+        "ru": "Встреча с {name} в {when}",
+        "en": "Meeting with {name} at {when}",
+        "kz": "{name} қатысатын кездесу {when}",
+    },
+    "notify.meetingRequest.title": {
+        "ru": "Запрос на встречу от {name}",
+        "en": "Meeting request from {name}",
+        "kz": "{name} жіберген кездесу сұрауы",
+    },
+    "notify.meetingRequest.body": {
+        "ru": "Нажмите, чтобы подтвердить или отклонить",
+        "en": "Tap to confirm or decline",
+        "kz": "Растау немесе бас тарту үшін басыңыз",
+    },
+    "notify.callStarted.title": {
+        "ru": "{name} начал созвон",
+        "en": "{name} started a call",
+        "kz": "{name} қоңырауды бастады",
+    },
+    "notify.callStarted.body": {
+        "ru": "Нажмите «Присоединиться», чтобы войти",
+        "en": "Tap Join to enter",
+        "kz": "Кіру үшін «Қосылу» түймесін басыңыз",
+    },
+    "notify.taskAssigned.title": {
+        "ru": "Новая задача",
+        "en": "New task",
+        "kz": "Жаңа тапсырма",
+    },
+    "notify.taskAssigned.body": {
+        "ru": "{assigner}: {task}",
+        "en": "{assigner}: {task}",
+        "kz": "{assigner}: {task}",
+    },
+    "notify.burnout.title": {
+        "ru": "{name} перенёс встречу {count} раз",
+        "en": "{name} rescheduled the meeting {count} times",
+        "kz": "{name} кездесуді {count} рет ауыстырды",
+    },
+    "notify.burnout.body": {
+        "ru": "Рассмотрите возможность личного общения",
+        "en": "Consider talking in person",
+        "kz": "Жеке сөйлесуді қарастырыңыз",
+    },
+    "notify.meetingTomorrow.title": {
+        "ru": "1-on-1 с {name} завтра",
+        "en": "1-on-1 with {name} tomorrow",
+        "kz": "{name} қатысатын 1-on-1 ертең",
+    },
+    "notify.meetingTomorrow.body": {
+        "ru": "Запланировано на {time}",
+        "en": "Scheduled for {time}",
+        "kz": "{time} уақытына жоспарланған",
+    },
+    "notify.meetingInHour.title": {
+        "ru": "Встреча через час",
+        "en": "Meeting in an hour",
+        "kz": "Бір сағаттан кейін кездесу",
+    },
+    "notify.meetingInHour.body": {
+        "ru": "1-on-1 с {name}",
+        "en": "1-on-1 with {name}",
+        "kz": "{name} қатысатын 1-on-1",
+    },
+    "notify.noMeetingLong.title": {
+        "ru": "Давно не было 1-on-1 с {name}",
+        "en": "No 1-on-1 with {name} for a while",
+        "kz": "{name} қатысатын 1-on-1 ұзақ болмады",
+    },
+    "notify.noMeetingLong.body": {
+        "ru": "Прошло {days} дн., рекомендуется каждые {cadence} дн.",
+        "en": "{days} days have passed, the recommended cadence is every {cadence} days",
+        "kz": "{days} күн өтті, ұсынылатын жиілік — әр {cadence} күн сайын",
+    },
     "notify.meetingSoon.title": {
         "ru": "Скоро встреча",
         "en": "Meeting starts soon",

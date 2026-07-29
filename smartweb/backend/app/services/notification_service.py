@@ -23,6 +23,11 @@ class NotificationService:
     def __init__(self, db: Session):
         self.db = db
 
+    def _lang(self, user_id: int) -> str:
+        """Язык получателя уведомления: то же значение, что в вебе и приложении."""
+        user = self.db.query(User).filter(User.id == user_id).first()
+        return i18n.user_lang(user) if user else i18n.DEFAULT_LANG
+
     def _get_push_token(self, user_id: int) -> str | None:
         user = self.db.query(User).filter(User.id == user_id).first()
         return user.push_token if user else None
@@ -57,81 +62,90 @@ class NotificationService:
         return notif
 
     def meeting_scheduled(self, member_id: int, meeting_id: int, lead_name: str, when: str):
+        lang = self._lang(member_id)
         return self.create_notification(
             user_id=member_id,
             type="meeting_scheduled",
-            title="Встреча запланирована",
-            body=f"{lead_name} назначил встречу на {when}",
+            title=i18n.t("notify.meetingScheduled.title", lang),
+            body=i18n.t("notify.meetingScheduled.body", lang, lead=lead_name, when=when),
             data={"meeting_id": meeting_id},
         )
 
     def meeting_requested(self, lead_id: int, member_name: str, meeting_id: int):
+        lang = self._lang(lead_id)
         return self.create_notification(
             user_id=lead_id,
             type="meeting_request",
-            title="Запрос на встречу",
-            body=f"{member_name} хочет провести 1-on-1",
+            title=i18n.t("notify.meetingRequested.title", lang),
+            body=i18n.t("notify.meetingRequested.body", lang, member=member_name),
             data={"meeting_id": meeting_id},
         )
 
     def meeting_confirmed(self, member_id: int, lead_name: str, meeting_id: int, when: str):
+        lang = self._lang(member_id)
         return self.create_notification(
             user_id=member_id,
             type="meeting_confirmed",
-            title="Встреча подтверждена",
-            body=f"{lead_name} подтвердил встречу на {when}",
+            title=i18n.t("notify.meetingConfirmed.title", lang),
+            body=i18n.t("notify.meetingConfirmed.body", lang, lead=lead_name, when=when),
             data={"meeting_id": meeting_id},
         )
 
     def meeting_declined(self, member_id: int, lead_name: str, meeting_id: int):
+        lang = self._lang(member_id)
         return self.create_notification(
             user_id=member_id,
             type="meeting_declined",
-            title="Встреча отклонена",
-            body=f"{lead_name} отклонил запрос на встречу",
+            title=i18n.t("notify.meetingDeclined.title", lang),
+            body=i18n.t("notify.meetingDeclined.body", lang, lead=lead_name),
             data={"meeting_id": meeting_id},
         )
 
     def meeting_reminder(self, user_id: int, meeting_id: int, with_name: str, when: str):
+        lang = self._lang(user_id)
         return self.create_notification(
             user_id=user_id,
             type="meeting_reminder",
-            title="Напоминание о встрече",
-            body=f"Встреча с {with_name} в {when}",
+            title=i18n.t("notify.meetingReminder.title", lang),
+            body=i18n.t("notify.meetingReminder.body", lang, name=with_name, when=when),
             data={"meeting_id": meeting_id},
         )
 
     def meeting_request(self, user_id: int, from_name: str, meeting_id: int):
+        lang = self._lang(user_id)
         return self.create_notification(
             user_id=user_id,
             type="meeting_request",
-            title=f"Запрос на встречу от {from_name}",
-            body="Нажмите, чтобы подтвердить или отклонить",
+            title=i18n.t("notify.meetingRequest.title", lang, name=from_name),
+            body=i18n.t("notify.meetingRequest.body", lang),
             data={"meeting_id": meeting_id},
         )
 
     def call_started(self, user_id: int, caller_name: str, room_url: str):
+        lang = self._lang(user_id)
         return self.create_notification(
             user_id=user_id,
             type="call_started",
-            title=f"📹 {caller_name} начал созвон",
-            body="Нажмите «Присоединиться» чтобы войти",
+            title=i18n.t("notify.callStarted.title", lang, name=caller_name),
+            body=i18n.t("notify.callStarted.body", lang),
             data={"room_url": room_url},
         )
 
     def task_assigned(self, user_id: int, task_id: int, task_title: str, assigner_name: str):
+        lang = self._lang(user_id)
         return self.create_notification(
             user_id=user_id,
             type="new_task",
-            title="Новая задача",
-            body=f"{assigner_name}: {task_title}",
+            title=i18n.t("notify.taskAssigned.title", lang),
+            body=i18n.t("notify.taskAssigned.body", lang, assigner=assigner_name, task=task_title),
             data={"task_id": task_id},
         )
 
     def burnout_alert(self, user_id: int, member_name: str, reschedule_count: int):
+        lang = self._lang(user_id)
         return self.create_notification(
             user_id=user_id,
             type="burnout_alert",
-            title=f"️ {member_name} перенёс встречу {reschedule_count} раз",
-            body="Рассмотрите возможность личного общения",
+            title=i18n.t("notify.burnout.title", lang, name=member_name, count=reschedule_count),
+            body=i18n.t("notify.burnout.body", lang),
         )
