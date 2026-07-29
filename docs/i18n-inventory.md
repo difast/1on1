@@ -2,7 +2,7 @@
 
 Файл генерируется скриптом `tools/i18n-inventory.py` — не редактируйте вручную.
 
-В словарях (`ru.json`): **1868** ключей.
+В словарях (`ru.json`): **1893** ключей.
 
 Ниже — строки с кириллицей, которые ещё захардкожены в коде и не вынесены
 в словари, сгруппированные по разделам продукта.
@@ -11,14 +11,14 @@
 |---|---|
 | Веб | 562 |
 | Мобильное приложение | 524 |
-| Бэкенд (письма, бот, уведомления) | 607 |
+| Бэкенд (письма, бот, уведомления) | 527 |
 
 ## Юридические документы — 521
 
 - `smartweb/frontend/src/lib/legalDocs.js` — 263: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; <h3>1. ОБЩИЕ ПОЛОЖЕНИЯ</h3><p>1.1. Настоящее Пользовательско
 - `mobile/src/lib/legalDocs.ts` — 258: Пользовательское соглашение; ООО «ОДИН НА ОДИН» Редакция от 25.07.2026; 1. ОБЩИЕ ПОЛОЖЕНИЯ
 
-## Прочее — 400
+## Прочее — 388
 
 - `smartweb/backend/app/services/ai_context.py` — 69: в работе; заблокирована; на проверке
 - `smartweb/backend/app/services/plans.py` — 44: 1-на-1 встречи; Предложения встреч; Задачи
@@ -46,7 +46,6 @@ d; Сейчас у вас команд: {len(teams)}, а новый тариф �
 - `smartweb/backend/app/routers/proposal.py` — 14: ,
         awaiting_user_id=data.to_user_id,   # ждём ответа ; Участник; Предложение встречи
 - `smartweb/backend/app/services/entitlements.py` — 12: Эта функция; Функция «{label}» пока недоступна — {COMING_SOON_LABEL.lower; Функция «{label}» недоступна во время пробного периода.
-- `smartweb/backend/app/tasks/reminders.py` — 12: 1-on-1 с {with_name} завтра; Запланировано на {time_str}; 1-on-1 с {with_name} завтра
 - `smartweb/backend/app/routers/video.py` — 12: Спонтанный созвон может инициировать только тимлид команды; Тимлид; Быстрый созвон
 - `smartweb/backend/app/main.py` — 11: Как прошёл ваш день?; Пройдите короткий опрос настроения в приложении; )
         for team in db.query(Team).all():
@@ -136,9 +135,9 @@ def _matches(sub: WebhookSubscription, event_type: str)
 - `smartweb/backend/app/models/user.py` — 1: )
     telegram = Column(String(100), nullable=True)  # @hand
 
-## Развитие — 124
+## Развитие — 115
 
-- `smartweb/backend/app/routers/development.py` — 63: Правило; Тимлид; База знаний
+- `smartweb/backend/app/routers/development.py` — 54: Правило; Тимлид; База знаний
 - `smartweb/frontend/src/components/Development.jsx` — 25: Новичок; Базовый; Уверенный
 - `mobile/src/screens/DevelopmentScreen.tsx` — 20: Новичок; Базовый; Уверенный
 - `smartweb/backend/app/models/development.py` — 14: Новичок; Базовый; Уверенный
@@ -233,14 +232,6 @@ const ICON_COLORS = {
     </span>
     <p style={{ color: 'var(--color-
 
-## Взаимодействия — 50
-
-- `smartweb/frontend/src/components/InteractionsPanel.jsx` — 20: Совместная работа; Предложение помощи; Консультация
-- `smartweb/backend/app/routers/interaction.py` — 15: Предложение совместной работы; Предложение помощи; Запрос консультации
-- `mobile/src/components/InteractionsModal.tsx` — 14: Совместная работа; Предложение помощи; Консультация
-- `smartweb/backend/app/models/interaction.py` — 1: )
-    outcome = Column(String(20), nullable=True)  # discuss
-
 ## Тариф и оплата — 47
 
 - `smartweb/frontend/src/components/Billing.jsx` — 21: Без подписки: доступ к платным функциям закрыт.; Одна команда до 5 человек: встречи 1-на-1, задачи, заметки, ; Команде до 30 человек: групповые встречи, аналитика, Цели, Р
@@ -273,13 +264,12 @@ class AssignManagerReq(BaseModel):
 - `mobile/src/screens/OneAiScreen.tsx` — 16: Проблемы, риски и вовлечённость команды за период.; Эффективность и динамика конкретного сотрудника.; Черновик обратной связи по задачам, встречам, целям и развит
 - `smartweb/backend/app/routers/oneai.py` — 5: Доступ только от своего имени; Проанализируй данные и дай рекомендации.; \n\nЗапрос пользователя: {data.message}
 
-## Онбординг — 31
+## Взаимодействия — 35
 
-- `smartweb/backend/app/services/survey.py` — 27: Как вы планируете использовать OneOnOne?; Можно выбрать несколько вариантов; Проводить встречи 1-на-1
-- `smartweb/frontend/src/components/SurveyPage.jsx` — 2: export default function SurveyPage({ user, onDone }) {
-  con; style={{ padding: '48px 20px' }}>
-      <div style={{ width:
-- `smartweb/backend/app/routers/survey.py` — 2: Пользователь не найден; Можно изменять только свой опросник
+- `smartweb/frontend/src/components/InteractionsPanel.jsx` — 20: Совместная работа; Предложение помощи; Консультация
+- `mobile/src/components/InteractionsModal.tsx` — 14: Совместная работа; Предложение помощи; Консультация
+- `smartweb/backend/app/models/interaction.py` — 1: )
+    outcome = Column(String(20), nullable=True)  # discuss
 
 ## Цели — 28
 
@@ -310,14 +300,6 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 - `mobile/src/screens/AssistantScreen.tsx` — 4: Как провести эффективную 1-on-1 встречу?; Как дать конструктивную обратную связь?; Как помочь сотруднику с выгоранием?
 - `smartweb/backend/app/routers/assistant.py` — 2: \n\n=== ТЕКУЩИЙ КОНТЕКСТ КОМАНДЫ ===\n{context}\n=== КОНЕЦ К; AI временно недоступен, попробуйте ещё раз
 - `smartweb/frontend/src/components/PitAssistant.jsx` — 1: Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросам
-
-## Уведомления — 20
-
-- `smartweb/backend/app/services/notification_service.py` — 17: Встреча запланирована; {lead_name} назначил встречу на {when}; Запрос на встречу
-- `smartweb/backend/app/routers/notification.py` — 2: <b>Важное объявление</b>; Важное объявление
-- `mobile/src/screens/NotificationsScreen.tsx` — 1: ]}>
-      <View style={styles.header}>
-        <View style={
 
 ## Кабинет тимлида — 19
 
@@ -413,6 +395,13 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 
 - `smartweb/backend/app/services/mailer.py` — 5: SMTP не настроен (нет SMTP_HOST/SMTP_USER в окружении); Письмо отправлено: %s -> %s; Ошибка отправки письма '%s' на %s: %s
 
+## Онбординг — 4
+
+- `smartweb/frontend/src/components/SurveyPage.jsx` — 2: export default function SurveyPage({ user, onDone }) {
+  con; style={{ padding: '48px 20px' }}>
+      <div style={{ width:
+- `smartweb/backend/app/routers/survey.py` — 2: Пользователь не найден; Можно изменять только свой опросник
+
 ## Кабинет участника — 3
 
 - `smartweb/frontend/src/components/MemberDashboard.jsx` — 3: )
@@ -420,6 +409,13 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
   const [meetings, setMeetings] = useState([])
   const [s; disabled={moodFilledToday}
               style={moodFilledTo; style={{ flex: 1, display: 'inline-flex', alignItems: 'cente
+
+## Уведомления — 3
+
+- `smartweb/backend/app/routers/notification.py` — 2: <b>Важное объявление</b>; Важное объявление
+- `mobile/src/screens/NotificationsScreen.tsx` — 1: ]}>
+      <View style={styles.header}>
+        <View style={
 
 ## Профиль и настройки — 3
 

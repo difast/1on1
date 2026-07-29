@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.services import i18n
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
@@ -15,11 +16,11 @@ from app.services import task_collab
 router = APIRouter()
 
 TYPE_TITLE = {
-    "collab_proposal": "Предложение совместной работы",
-    "help_offer": "Предложение помощи",
-    "consultation": "Запрос консультации",
-    "discussion": "Обсуждение",
-    "recommendation": "Рекомендация",
+    "collab_proposal": "interaction.type.collab",
+    "help_offer": "interaction.type.help",
+    "consultation": "interaction.type.consultation",
+    "discussion": "interaction.type.discussion",
+    "recommendation": "interaction.type.recommendation",
 }
 
 
@@ -30,11 +31,18 @@ def _name(db: Session, uid: Optional[int]) -> Optional[str]:
     return u.name if u else None
 
 
-def _notify(db: Session, user_id: int, ntype: str, title: str, body: str, interaction_id: int):
+def _notify(db: Session, user_id: int, ntype: str, title_key: str, body_key: str,
+            interaction_id: int, **fmt):
+    """Уведомление о взаимодействии. Тексты — ключи словаря: подставляются на
+    языке получателя, как и остальные уведомления."""
     if not user_id:
         return
+    user = db.query(User).filter(User.id == user_id).first()
+    lang = i18n.user_lang(user) if user else i18n.DEFAULT_LANG
     NotificationService(db).create_notification(
-        user_id=user_id, type=ntype, title=title, body=body,
+        user_id=user_id, type=ntype,
+        title=i18n.t(title_key, lang),
+        body=i18n.t(body_key, lang, **fmt) if body_key else None,
         data={"interaction_id": interaction_id},
     )
 
@@ -93,7 +101,7 @@ def create_interaction(data: InteractionCreate, db: Session = Depends(get_db)):
     db.add(it)
     db.flush()
 
-    from_name = _name(db, data.from_user_id) or "Участник"
+    from_name = _name(db, data.from_user_id) or i18n.t("interaction.fallback.member")
 
     if data.type == "discussion":
         # Обсуждение (39.6): инициатор + приглашённые. Уведомляем приглашённых.
@@ -107,8 +115,9 @@ def create_interaction(data: InteractionCreate, db: Session = Depends(get_db)):
         db.commit(); db.refresh(it)
         for p in it.participants:
             if p.user_id != data.from_user_id:
-                _notify(db, p.user_id, "interaction_discussion", "Новое обсуждение",
-                        f"{from_name}: {it.topic or 'обсуждение'}", it.id)
+                _notify(db, p.user_id, "interaction_discussion", "interaction.newDiscussion",
+                        "interaction.body.fromTopic", it.id, name=from_name,
+                        topic=it.topic or i18n.t("interaction.fallback.discussion"))
         return _serialize(db, it)
 
     if data.type == "recommendation":
@@ -116,19 +125,22 @@ def create_interaction(data: InteractionCreate, db: Session = Depends(get_db)):
         # рекомендуемого и, если указан, того, кому рекомендуют.
         db.commit(); db.refresh(it)
         if it.subject_user_id and it.subject_user_id != data.from_user_id:
-            _notify(db, it.subject_user_id, "interaction_recommendation", "Вас рекомендовали",
-                    f"{from_name}: {it.topic or 'эксперт'}", it.id)
+            _notify(db, it.subject_user_id, "interaction_recommendation", "interaction.recommended",
+                    "interaction.body.fromTopic", it.id, name=from_name,
+                    topic=it.topic or i18n.t("interaction.fallback.expert"))
         if it.to_user_id and it.to_user_id not in (data.from_user_id, it.subject_user_id):
-            _notify(db, it.to_user_id, "interaction_recommendation", "Рекомендация коллеги",
-                    f"{from_name} рекомендует {_name(db, it.subject_user_id)}", it.id)
+            _notify(db, it.to_user_id, "interaction_recommendation", "interaction.colleagueRec",
+                    "interaction.body.recommends", it.id, name=from_name,
+                    subject=_name(db, it.subject_user_id))
         return _serialize(db, it)
 
     # 1:1 типы (collab_proposal / help_offer / consultation)
     if not data.to_user_id:
         raise HTTPException(status_code=400, detail="to_user_id required for this type")
     db.commit(); db.refresh(it)
-    _notify(db, it.to_user_id, f"interaction_{it.type}", TYPE_TITLE.get(it.type, "Взаимодействие"),
-            f"{from_name}: {it.topic or ''}".strip().rstrip(':'), it.id)
+    _notify(db, it.to_user_id, f"interaction_{it.type}",
+            TYPE_TITLE.get(it.type, "interaction.generic"),
+            "interaction.body.fromTopic", it.id, name=from_name, topic=it.topic or "")
     return _serialize(db, it)
 
 
@@ -183,7 +195,7 @@ def accept_interaction(interaction_id: int, data: InteractionAction, db: Session
     if data.user_id != it.to_user_id:
         raise HTTPException(status_code=403, detail="Only the recipient can accept")
 
-    actor_name = _name(db, data.user_id) or "Участник"
+    actor_name = _name(db, data.user_id) or i18n.t("interaction.fallback.member")
 
     if it.type == "collab_proposal":
         # 39.1: оба становятся исполнителями задачи.
@@ -195,7 +207,7 @@ def accept_interaction(interaction_id: int, data: InteractionAction, db: Session
         task_collab.add_assignee(db, task, it.from_user_id, data.user_id)
         task_collab.add_assignee(db, task, it.to_user_id, data.user_id)
         task_collab.log_activity(db, task.id, data.user_id, "collab_joined",
-                                 f"{actor_name} принял(а) совместную работу")
+                                 i18n.t("interaction.body.accepted", name=actor_name))
     elif it.type == "help_offer":
         # 39.4: при принятии — связь с задачей (добавляем помогающего исполнителем).
         if it.task_id:
@@ -206,7 +218,8 @@ def accept_interaction(interaction_id: int, data: InteractionAction, db: Session
     it.status = "accepted"
     db.commit(); db.refresh(it)
     _notify(db, it.from_user_id, f"interaction_{it.type}_accepted",
-            "Предложение принято", f"{actor_name} принял(а): {it.topic or ''}".strip().rstrip(':'), it.id)
+            "interaction.accepted.title", "interaction.body.fromTopic", it.id,
+            name=actor_name, topic=it.topic or "")
     return _serialize(db, it)
 
 
@@ -221,9 +234,10 @@ def decline_interaction(interaction_id: int, data: InteractionAction, db: Sessio
         raise HTTPException(status_code=403, detail="Only the recipient can decline")
     it.status = "declined"
     db.commit(); db.refresh(it)
-    actor_name = _name(db, data.user_id) or "Участник"
+    actor_name = _name(db, data.user_id) or i18n.t("interaction.fallback.member")
     _notify(db, it.from_user_id, f"interaction_{it.type}_declined",
-            "Предложение отклонено", f"{actor_name} отклонил(а)", it.id)
+            "interaction.declined.title", "interaction.body.declined", it.id,
+            name=actor_name)
     return _serialize(db, it)
 
 
@@ -244,12 +258,13 @@ def reply_interaction(interaction_id: int, data: InteractionReplyIn, db: Session
     db.add(InteractionReply(interaction_id=it.id, author_id=data.user_id, body=data.body.strip()))
     db.commit(); db.refresh(it)
 
-    author_name = _name(db, data.user_id) or "Участник"
+    author_name = _name(db, data.user_id) or i18n.t("interaction.fallback.member")
     # Уведомляем остальных участников (не автора).
     for uid in (allowed - {data.user_id}):
         if uid:
-            _notify(db, uid, "interaction_reply", "Новый ответ",
-                    f"{author_name}: {it.topic or ''}".strip().rstrip(':'), it.id)
+            _notify(db, uid, "interaction_reply", "interaction.newReply",
+                    "interaction.body.fromTopic", it.id, name=author_name,
+                    topic=it.topic or "")
     return _serialize(db, it)
 
 

@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
+from app.services import i18n
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from typing import List, Optional
@@ -61,6 +62,12 @@ def _user_team_id(db: Session, user_id: int) -> Optional[int]:
 def _can_view_user(db: Session, actor_id: int, user_id: int) -> bool:
     """Развитие — чувствительные данные: видит сам сотрудник или тимлид его команды."""
     return actor_id == user_id or _is_lead_of(db, actor_id, user_id)
+
+
+def _lang(db: Session, user_id: int) -> str:
+    """Язык получателя уведомления — как в вебе, приложении и боте."""
+    u = db.query(User).filter(User.id == user_id).first()
+    return i18n.user_lang(u) if u else i18n.DEFAULT_LANG
 
 
 def _skill_name(db: Session, skill_id: Optional[int]) -> Optional[str]:
@@ -318,8 +325,10 @@ def update_user_skill(us_id: int, data: UserSkillUpdate, db: Session = Depends(g
         for lead_id in _leads_of_user(db, us.user_id):
             NotificationService(db).create_notification(
                 user_id=lead_id, type="dev_level_reached",
-                title="Достигнут целевой уровень",
-                body=f"{_name(db, us.user_id)}: навык «{sname}» — {_level_label(us.current_level)}",
+                title=i18n.t("dev.notify.targetReached", _lang(db, lead_id)),
+                body=i18n.t("dev.skillProgress", _lang(db, lead_id),
+                            name=_name(db, us.user_id), skill=sname,
+                            level=_level_label(us.current_level)),
                 data={"user_id": us.user_id, "skill_id": us.skill_id},
             )
     return _serialize_skill(us, skill)
@@ -369,7 +378,7 @@ def create_step(data: StepCreate, db: Session = Depends(get_db), current=Depends
     if is_lead and not is_owner:
         NotificationService(db).create_notification(
             user_id=data.user_id, type="dev_direction_assigned",
-            title="Назначен шаг развития",
+            title=i18n.t("dev.notify.stepAssigned", _lang(db, data.user_id)),
             body=f"{_name(db, data.actor_id)}: {step.title[:80]}",
             data={"step_id": step.id},
         )
@@ -480,12 +489,14 @@ def add_step_comment(step_id: int, data: GoalCommentCreate, db: Session = Depend
     if is_owner:
         for lead_id in _leads_of_user(db, step.user_id):
             NotificationService(db).create_notification(
-                user_id=lead_id, type="dev_feedback", title="Комментарий к плану развития",
+                user_id=lead_id, type="dev_feedback",
+                title=i18n.t("dev.notify.planComment", _lang(db, lead_id)),
                 body=f"{actor_name}: {snippet}", data={"step_id": step.id})
     else:
         NotificationService(db).create_notification(
             user_id=step.user_id, type="dev_feedback",
-            title=("Обратная связь по развитию" if kind == "feedback" else "Комментарий к плану развития"),
+            title=i18n.t("dev.notify.feedback" if kind == "feedback" else "dev.notify.planComment",
+                         _lang(db, target_id)),
             body=f"{actor_name}: {snippet}", data={"step_id": step.id})
     db.refresh(step)
     return _serialize_step(db, step)
@@ -511,7 +522,7 @@ def create_recommendation(data: RecommendationCreate, db: Session = Depends(get_
     db.add(rec); db.commit(); db.refresh(rec)
     NotificationService(db).create_notification(
         user_id=data.user_id, type="dev_direction_assigned",
-        title="Назначено направление роста",
+        title=i18n.t("dev.notify.growthAssigned", _lang(db, data.user_id)),
         body=f"{_name(db, data.actor_id)}: {rec.title[:80]}",
         data={"recommendation_id": rec.id, "skill_id": rec.skill_id},
     )
@@ -597,7 +608,7 @@ def act_on_recommendation(rec_id: int, data: RecommendationAction, db: Session =
         if rec.created_by and rec.created_by != rec.user_id:
             NotificationService(db).create_notification(
                 user_id=rec.created_by, type="dev_feedback",
-                title="Направление роста принято",
+                title=i18n.t("dev.notify.growthAccepted", _lang(db, lead_id)),
                 body=f"{_name(db, rec.user_id)}: {rec.title[:80]}",
                 data={"user_id": rec.user_id})
         return _serialize_rec(db, rec)
@@ -609,7 +620,7 @@ def act_on_recommendation(rec_id: int, data: RecommendationAction, db: Session =
         note = (data.note or "").strip()
         NotificationService(db).create_notification(
             user_id=rec.created_by, type="dev_feedback",
-            title="Направление роста отклонено",
+            title=i18n.t("dev.notify.growthDeclined", _lang(db, lead_id)),
             body=f"{_name(db, rec.user_id)}: {rec.title[:60]}" + (f" — {note[:60]}" if note else ""),
             data={"user_id": rec.user_id})
     return _serialize_rec(db, rec)

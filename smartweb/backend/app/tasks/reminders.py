@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from app.services import i18n
 from app.tasks.celery_app import celery_app
 from app.database import SessionLocal
 from app.models.meeting import Meeting
@@ -35,18 +36,22 @@ def send_meeting_reminders():
             for user, with_name in [(lead, member.name if member else "—"), (member, lead.name if lead else "—")]:
                 if not user:
                     continue
+                # Текст напоминания — на языке получателя (профиль пользователя).
+                lang = i18n.user_lang(user)
+                title = i18n.t("notify.meetingTomorrow.title", lang, name=with_name)
+                body = i18n.t("notify.meetingTomorrow.body", lang, time=time_str)
                 db.add(Notification(
                     user_id=user.id,
                     type="meeting_reminder",
-                    title=f"1-on-1 с {with_name} завтра",
-                    body=f"Запланировано на {time_str}",
+                    title=title,
+                    body=body,
                     data={"meeting_id": meeting.id},
                 ))
                 if user.push_token:
                     messages.append({
                         "to": user.push_token,
-                        "title": f"1-on-1 с {with_name} завтра",
-                        "body": f"Запланировано на {time_str}",
+                        "title": title,
+                        "body": body,
                         "sound": "default",
                         "data": {"meeting_id": meeting.id},
                     })
@@ -83,10 +88,11 @@ def send_hourly_meeting_reminders():
 
             for user, with_name in [(lead, member.name if member else "—"), (member, lead.name if lead else "—")]:
                 if user and user.push_token:
+                    lang = i18n.user_lang(user)
                     messages.append({
                         "to": user.push_token,
-                        "title": "Встреча через час",
-                        "body": f"1-on-1 с {with_name}",
+                        "title": i18n.t("notify.meetingInHour.title", lang),
+                        "body": i18n.t("notify.meetingInHour.body", lang, name=with_name),
                         "sound": "default",
                         "priority": "high",
                         "data": {"meeting_id": meeting.id},
@@ -133,18 +139,24 @@ def check_overdue_meetings():
                     continue
                 lead = db.query(User).filter(User.id == team.team_lead_id).first()
 
+                # Получатель — тимлид: текст на языке его профиля.
+                lang = i18n.user_lang(lead) if lead else i18n.DEFAULT_LANG
+                title = i18n.t("notify.noMeetingLong.title", lang,
+                               name=member.name if member else "—")
+                body = i18n.t("notify.noMeetingLong.body", lang,
+                              days=days, cadence=tm.cadence_days)
                 db.add(Notification(
                     user_id=team.team_lead_id,
                     type="overdue_alert",
-                    title=f"Давно не было 1-on-1 с {member.name if member else '—'}",
-                    body=f"Прошло {days} дн., рекомендуется каждые {tm.cadence_days} дн.",
+                    title=title,
+                    body=body,
                     data={"member_id": tm.user_id, "team_id": tm.team_id},
                 ))
                 if lead and lead.push_token:
                     messages.append({
                         "to": lead.push_token,
-                        "title": f"Давно не было 1-on-1 с {member.name if member else '—'}",
-                        "body": f"Прошло {days} дн., рекомендуется каждые {tm.cadence_days} дн.",
+                        "title": title,
+                        "body": body,
                         "sound": "default",
                         "data": {"member_id": tm.user_id, "team_id": tm.team_id},
                     })
@@ -163,20 +175,19 @@ def send_new_task_notification(user_id: int, task_title: str, assigned_by_name: 
         user = db.query(User).filter(User.id == user_id).first()
         if not user:
             return
+        lang = i18n.user_lang(user)
+        title = i18n.t("notify.taskAssigned.title", lang)
+        body = i18n.t("notify.taskAssigned.body", lang,
+                      assigner=assigned_by_name, task=task_title)
         db.add(Notification(
             user_id=user_id,
             type="new_task",
-            title="Новая задача",
-            body=f"{assigned_by_name}: {task_title}",
+            title=title,
+            body=body,
             data={"task_id": task_id},
         ))
         db.commit()
         if user.push_token:
-            send_push(
-                user.push_token,
-                "Новая задача",
-                f"{assigned_by_name}: {task_title}",
-                {"task_id": task_id},
-            )
+            send_push(user.push_token, title, body, {"task_id": task_id})
     finally:
         db.close()

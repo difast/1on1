@@ -443,6 +443,126 @@ TEXTS: dict[str, dict[str, str]] = {
         "kz": "Командалар: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /language, /menu.",
     },
     # ── Пуш-уведомления и напоминания ────────────────────────────────────────
+    "notify.meetingScheduled.title": {
+        "ru": "Встреча запланирована",
+        "en": "Meeting scheduled",
+        "kz": "Кездесу жоспарланды",
+    },
+    "notify.meetingScheduled.body": {
+        "ru": "{lead} назначил встречу на {when}",
+        "en": "{lead} scheduled a meeting for {when}",
+        "kz": "{lead} {when} уақытына кездесу тағайындады",
+    },
+    "notify.meetingRequested.title": {
+        "ru": "Запрос на встречу",
+        "en": "Meeting request",
+        "kz": "Кездесу сұрауы",
+    },
+    "notify.meetingRequested.body": {
+        "ru": "{member} хочет провести 1-on-1",
+        "en": "{member} wants to hold a 1-on-1",
+        "kz": "{member} 1-on-1 кездесу өткізгісі келеді",
+    },
+    "notify.meetingConfirmed.title": {
+        "ru": "Встреча подтверждена",
+        "en": "Meeting confirmed",
+        "kz": "Кездесу расталды",
+    },
+    "notify.meetingConfirmed.body": {
+        "ru": "{lead} подтвердил встречу на {when}",
+        "en": "{lead} confirmed the meeting for {when}",
+        "kz": "{lead} {when} кездесуін растады",
+    },
+    "notify.meetingDeclined.title": {
+        "ru": "Встреча отклонена",
+        "en": "Meeting declined",
+        "kz": "Кездесуден бас тартылды",
+    },
+    "notify.meetingDeclined.body": {
+        "ru": "{lead} отклонил запрос на встречу",
+        "en": "{lead} declined the meeting request",
+        "kz": "{lead} кездесу сұрауынан бас тартты",
+    },
+    "notify.meetingReminder.title": {
+        "ru": "Напоминание о встрече",
+        "en": "Meeting reminder",
+        "kz": "Кездесу туралы еске салу",
+    },
+    "notify.meetingReminder.body": {
+        "ru": "Встреча с {name} в {when}",
+        "en": "Meeting with {name} at {when}",
+        "kz": "{name} қатысатын кездесу {when}",
+    },
+    "notify.meetingRequest.title": {
+        "ru": "Запрос на встречу от {name}",
+        "en": "Meeting request from {name}",
+        "kz": "{name} жіберген кездесу сұрауы",
+    },
+    "notify.meetingRequest.body": {
+        "ru": "Нажмите, чтобы подтвердить или отклонить",
+        "en": "Tap to confirm or decline",
+        "kz": "Растау немесе бас тарту үшін басыңыз",
+    },
+    "notify.callStarted.title": {
+        "ru": "{name} начал созвон",
+        "en": "{name} started a call",
+        "kz": "{name} қоңырауды бастады",
+    },
+    "notify.callStarted.body": {
+        "ru": "Нажмите «Присоединиться», чтобы войти",
+        "en": "Tap Join to enter",
+        "kz": "Кіру үшін «Қосылу» түймесін басыңыз",
+    },
+    "notify.taskAssigned.title": {
+        "ru": "Новая задача",
+        "en": "New task",
+        "kz": "Жаңа тапсырма",
+    },
+    "notify.taskAssigned.body": {
+        "ru": "{assigner}: {task}",
+        "en": "{assigner}: {task}",
+        "kz": "{assigner}: {task}",
+    },
+    "notify.burnout.title": {
+        "ru": "{name} перенёс встречу {count} раз",
+        "en": "{name} rescheduled the meeting {count} times",
+        "kz": "{name} кездесуді {count} рет ауыстырды",
+    },
+    "notify.burnout.body": {
+        "ru": "Рассмотрите возможность личного общения",
+        "en": "Consider talking in person",
+        "kz": "Жеке сөйлесуді қарастырыңыз",
+    },
+    "notify.meetingTomorrow.title": {
+        "ru": "1-on-1 с {name} завтра",
+        "en": "1-on-1 with {name} tomorrow",
+        "kz": "{name} қатысатын 1-on-1 ертең",
+    },
+    "notify.meetingTomorrow.body": {
+        "ru": "Запланировано на {time}",
+        "en": "Scheduled for {time}",
+        "kz": "{time} уақытына жоспарланған",
+    },
+    "notify.meetingInHour.title": {
+        "ru": "Встреча через час",
+        "en": "Meeting in an hour",
+        "kz": "Бір сағаттан кейін кездесу",
+    },
+    "notify.meetingInHour.body": {
+        "ru": "1-on-1 с {name}",
+        "en": "1-on-1 with {name}",
+        "kz": "{name} қатысатын 1-on-1",
+    },
+    "notify.noMeetingLong.title": {
+        "ru": "Давно не было 1-on-1 с {name}",
+        "en": "No 1-on-1 with {name} for a while",
+        "kz": "{name} қатысатын 1-on-1 ұзақ болмады",
+    },
+    "notify.noMeetingLong.body": {
+        "ru": "Прошло {days} дн., рекомендуется каждые {cadence} дн.",
+        "en": "{days} days have passed, the recommended cadence is every {cadence} days",
+        "kz": "{days} күн өтті, ұсынылатын жиілік — әр {cadence} күн сайын",
+    },
     "notify.meetingSoon.title": {
         "ru": "Скоро встреча",
         "en": "Meeting starts soon",
@@ -472,6 +592,167 @@ TEXTS: dict[str, dict[str, str]] = {
         "ru": "Отметьте настроение за сегодня — это займёт меньше минуты.",
         "en": "Share how your day went — it takes less than a minute.",
         "kz": "Бүгінгі көңіл-күйіңізді белгілеңіз — бір минуттан аз уақыт алады.",
+    },
+    # ── Взаимодействия и развитие ────────────────────────────────────────────
+    "interaction.type.collab": {
+        "ru": "Предложение совместной работы",
+        "en": "Collaboration proposal",
+        "kz": "Бірлескен жұмыс ұсынысы",
+    },
+    "interaction.type.help": {
+        "ru": "Предложение помощи",
+        "en": "Offer of help",
+        "kz": "Көмек ұсынысы",
+    },
+    "interaction.type.consultation": {
+        "ru": "Запрос консультации",
+        "en": "Consultation request",
+        "kz": "Кеңес сұрауы",
+    },
+    "interaction.type.discussion": {
+        "ru": "Обсуждение",
+        "en": "Discussion",
+        "kz": "Талқылау",
+    },
+    "interaction.type.recommendation": {
+        "ru": "Рекомендация",
+        "en": "Recommendation",
+        "kz": "Ұсыныс",
+    },
+    "interaction.generic": {
+        "ru": "Взаимодействие",
+        "en": "Interaction",
+        "kz": "Өзара әрекет",
+    },
+    "interaction.newDiscussion": {
+        "ru": "Новое обсуждение",
+        "en": "New discussion",
+        "kz": "Жаңа талқылау",
+    },
+    "interaction.recommended": {
+        "ru": "Вас рекомендовали",
+        "en": "You have been recommended",
+        "kz": "Сізді ұсынды",
+    },
+    "interaction.colleagueRec": {
+        "ru": "Рекомендация коллеги",
+        "en": "Colleague recommendation",
+        "kz": "Әріптестің ұсынысы",
+    },
+    "interaction.newReply": {
+        "ru": "Новый ответ",
+        "en": "New reply",
+        "kz": "Жаңа жауап",
+    },
+    "interaction.accepted.title": {
+        "ru": "Предложение принято",
+        "en": "Proposal accepted",
+        "kz": "Ұсыныс қабылданды",
+    },
+    "interaction.declined.title": {
+        "ru": "Предложение отклонено",
+        "en": "Proposal declined",
+        "kz": "Ұсыныс қабылданбады",
+    },
+    "interaction.body.fromTopic": {
+        "ru": "{name}: {topic}",
+        "en": "{name}: {topic}",
+        "kz": "{name}: {topic}",
+    },
+    "interaction.body.recommends": {
+        "ru": "{name} рекомендует {subject}",
+        "en": "{name} recommends {subject}",
+        "kz": "{name} {subject} ұсынады",
+    },
+    "interaction.body.accepted": {
+        "ru": "{name} принял(а) совместную работу",
+        "en": "{name} accepted the collaboration",
+        "kz": "{name} бірлескен жұмысты қабылдады",
+    },
+    "interaction.body.declined": {
+        "ru": "{name} отклонил(а)",
+        "en": "{name} declined",
+        "kz": "{name} қабылдамады",
+    },
+    "interaction.fallback.discussion": {
+        "ru": "обсуждение",
+        "en": "discussion",
+        "kz": "талқылау",
+    },
+    "interaction.fallback.expert": {
+        "ru": "эксперт",
+        "en": "expert",
+        "kz": "сарапшы",
+    },
+    "dev.notify.stepAssigned": {
+        "ru": "Назначен шаг развития",
+        "en": "Development step assigned",
+        "kz": "Даму қадамы тағайындалды",
+    },
+    "dev.notify.planComment": {
+        "ru": "Комментарий к плану развития",
+        "en": "Comment on the development plan",
+        "kz": "Даму жоспарына пікір",
+    },
+    "dev.notify.feedback": {
+        "ru": "Обратная связь по развитию",
+        "en": "Development feedback",
+        "kz": "Даму бойынша кері байланыс",
+    },
+    "dev.notify.growthAssigned": {
+        "ru": "Назначено направление роста",
+        "en": "Growth area assigned",
+        "kz": "Даму бағыты тағайындалды",
+    },
+    "dev.notify.growthAccepted": {
+        "ru": "Направление роста принято",
+        "en": "Growth area accepted",
+        "kz": "Даму бағыты қабылданды",
+    },
+    "dev.notify.growthDeclined": {
+        "ru": "Направление роста отклонено",
+        "en": "Growth area declined",
+        "kz": "Даму бағыты қабылданбады",
+    },
+    "dev.notify.targetReached": {
+        "ru": "Достигнут целевой уровень",
+        "en": "Target level reached",
+        "kz": "Мақсатты деңгейге жетті",
+    },
+    "dev.rec.closeGap": {
+        "ru": "Закрыть разрыв по навыку «{skill}»",
+        "en": "Close the gap in the “{skill}” skill",
+        "kz": "«{skill}» дағдысы бойынша алшақтықты жабу",
+    },
+    "dev.rec.levels": {
+        "ru": "Текущий уровень — {cur}, целевой — {des}. Добавьте шаг плана, чтобы двигаться к цели.",
+        "en": "Current level is {cur}, target is {des}. Add a plan step to move towards the goal.",
+        "kz": "Ағымдағы деңгей — {cur}, мақсатты — {des}. Мақсатқа жылжу үшін жоспарға қадам қосыңыз.",
+    },
+    "dev.rec.material": {
+        "ru": "Материал базы знаний: {title}",
+        "en": "Knowledge base material: {title}",
+        "kz": "Білім қоры материалы: {title}",
+    },
+    "dev.rec.studyMaterial": {
+        "ru": "Изучите материал, связанный с этим навыком.",
+        "en": "Study the material related to this skill.",
+        "kz": "Осы дағдыға қатысты материалды оқып шығыңыз.",
+    },
+    "dev.pitTitle": {
+        "ru": "Пит: как развивать «{skill}»",
+        "en": "Pit: how to develop “{skill}”",
+        "kz": "Пит: «{skill}» дағдысын қалай дамытуға болады",
+    },
+    "dev.skillProgress": {
+        "ru": "{name}: навык «{skill}» — {level}",
+        "en": "{name}: skill “{skill}” — {level}",
+        "kz": "{name}: «{skill}» дағдысы — {level}",
+    },
+    "interaction.fallback.member": {
+        "ru": "Участник",
+        "en": "Team member",
+        "kz": "Қатысушы",
     },
 }
 
