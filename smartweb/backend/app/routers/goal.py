@@ -10,6 +10,13 @@ from app.models.user import User
 from app.schemas.goal import GoalCreate, GoalUpdate, GoalCommentCreate, GoalOut
 from app.utils.auth import get_current_user
 from app.services.notification_service import NotificationService
+from app.services import i18n
+
+
+def _lang(db, user_id: int) -> str:
+    """Язык получателя уведомления."""
+    u = db.query(User).filter(User.id == user_id).first()
+    return i18n.user_lang(u) if u else i18n.DEFAULT_LANG
 
 def _require_goals(db: Session = Depends(get_db), current=Depends(get_current_user)):
     """Тарифный гейт модуля целей/OKR: функция тарифа Team и выше.
@@ -393,28 +400,33 @@ def add_comment(goal_id: int, data: GoalCommentCreate, db: Session = Depends(get
     if is_team:
         # Командная цель: владелец (тимлид) → всем участникам; участник → тимлиду.
         recipients = _team_member_ids(db, goal.team_id) if is_owner else [goal.user_id]
-        title = "Комментарий к командной цели"
         for rid in recipients:
             if rid == data.actor_id:
                 continue
+            lang = _lang(db, rid)
             NotificationService(db).create_notification(
                 user_id=rid, type="goal_comment",
-                title=title, body=f"{actor_name}: {snippet}",
+                title=i18n.t("goal.comment.team.title", lang),
+                body=i18n.t("goal.comment.body", lang, name=actor_name, text=snippet),
                 data={"goal_id": goal.id, "team_id": goal.team_id},
             )
     elif is_owner:
         # сотрудник ответил — уведомляем тимлидов его команды
         for lead_id in _leads_of_user(db, goal.user_id):
+            lang = _lang(db, lead_id)
             NotificationService(db).create_notification(
                 user_id=lead_id, type="goal_comment",
-                title="Комментарий к цели", body=f"{actor_name}: {snippet}",
+                title=i18n.t("goal.comment.title", lang),
+                body=i18n.t("goal.comment.body", lang, name=actor_name, text=snippet),
                 data={"goal_id": goal.id},
             )
     else:
-        title = "Обратная связь по цели" if kind == "feedback" else "Комментарий к цели"
+        lang = _lang(db, goal.user_id)
+        title_key = "goal.feedback.title" if kind == "feedback" else "goal.comment.title"
         NotificationService(db).create_notification(
             user_id=goal.user_id, type=("goal_feedback" if kind == "feedback" else "goal_comment"),
-            title=title, body=f"{actor_name}: {snippet}",
+            title=i18n.t(title_key, lang),
+            body=i18n.t("goal.comment.body", lang, name=actor_name, text=snippet),
             data={"goal_id": goal.id},
         )
     return _serialize(db, goal)

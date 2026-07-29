@@ -11,6 +11,7 @@ from app.schemas.proposal import (
     ProposalCreate, ProposalAction, ProposalCounter, ProposalOut,
 )
 from app.services.notification_service import NotificationService
+from app.services import i18n
 
 router = APIRouter()
 
@@ -52,9 +53,20 @@ def _serialize(db: Session, p: MeetingProposal) -> dict:
     }
 
 
-def _notify(db: Session, user_id: int, title: str, body: str, proposal_id: int):
+def _notify(db: Session, user_id: int, title_key: str, body_key: str,
+            proposal_id: int, **fmt):
+    """Уведомление о предложении встречи на языке получателя (ключи словаря)."""
+    if not user_id:
+        return
+    u = db.query(User).filter(User.id == user_id).first()
+    lang = i18n.user_lang(u) if u else i18n.DEFAULT_LANG
+    # Имя автора может быть пустым — подставляем нейтральное на языке получателя.
+    if "name" in fmt and not fmt["name"]:
+        fmt["name"] = i18n.t("interaction.fallback.member", lang)
     NotificationService(db).create_notification(
-        user_id=user_id, type="meeting_proposal", title=title, body=body,
+        user_id=user_id, type="meeting_proposal",
+        title=i18n.t(title_key, lang),
+        body=i18n.t(body_key, lang, **fmt),
         data={"proposal_id": proposal_id},
     )
 
@@ -97,10 +109,11 @@ def create_proposal(data: ProposalCreate, db: Session = Depends(get_db)):
     db.commit()
     db.refresh(p)
 
-    from_name = _name(db, data.from_user_id) or "Участник"
+    from_name = _name(db, data.from_user_id) or ""
     when = data.proposed_time.strftime("%d.%m %H:%M")
-    _notify(db, data.to_user_id, "Предложение встречи",
-            f"{from_name} предлагает встречу {when}" + (f": {data.topic}" if data.topic else ""), p.id)
+    _notify(db, data.to_user_id, "proposal.new.title",
+            "proposal.new.bodyTopic" if data.topic else "proposal.new.body",
+            p.id, name=from_name, when=when, topic=data.topic or "")
     return _serialize(db, p)
 
 
@@ -158,11 +171,11 @@ def accept_proposal(proposal_id: int, data: ProposalAction, db: Session = Depend
     db.refresh(p)
 
     # Уведомляем обе стороны: встреча назначена.
-    acceptor = _name(db, data.user_id) or "Участник"
+    acceptor = _name(db, data.user_id) or ""
     when = p.proposed_time.strftime("%d.%m %H:%M")
     other = p.from_user_id if data.user_id == p.to_user_id else p.to_user_id
-    _notify(db, other, "Встреча подтверждена",
-            f"{acceptor} принял предложение встречи на {when}", p.id)
+    _notify(db, other, "proposal.accepted.title", "proposal.accepted.body",
+            p.id, name=acceptor, when=when)
     return _serialize(db, p)
 
 
@@ -182,10 +195,10 @@ def decline_proposal(proposal_id: int, data: ProposalAction, db: Session = Depen
     db.commit()
     db.refresh(p)
 
-    decliner = _name(db, data.user_id) or "Участник"
+    decliner = _name(db, data.user_id) or ""
     other = p.from_user_id if data.user_id == p.to_user_id else p.to_user_id
-    _notify(db, other, "Предложение встречи отклонено",
-            f"{decliner} отклонил предложение встречи", p.id)
+    _notify(db, other, "proposal.declined.title", "proposal.declined.body",
+            p.id, name=decliner)
     return _serialize(db, p)
 
 
@@ -214,8 +227,8 @@ def counter_proposal(proposal_id: int, data: ProposalCounter, db: Session = Depe
     db.commit()
     db.refresh(p)
 
-    actor = _name(db, data.user_id) or "Участник"
+    actor = _name(db, data.user_id) or ""
     when = data.proposed_time.strftime("%d.%m %H:%M")
-    _notify(db, other, "Предложено другое время",
-            f"{actor} предлагает встречу {when}", p.id)
+    _notify(db, other, "proposal.counter.title", "proposal.counter.body",
+            p.id, name=actor, when=when)
     return _serialize(db, p)

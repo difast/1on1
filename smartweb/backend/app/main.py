@@ -52,12 +52,10 @@ def _send_mood_reminders():
     from app.models.team import Team, TeamMember
     from app.models.notification import Notification
     from app.utils.push import send_push_bulk
-    from app.services import mood_service
+    from app.services import mood_service, i18n
     db = SessionLocal()
     try:
         utc = ZoneInfo("UTC")
-        title = "Как прошёл ваш день?"
-        body = "Пройдите короткий опрос настроения в приложении"
         pushes = []
         for team in db.query(Team).all():
             try:
@@ -82,6 +80,10 @@ def _send_mood_reminders():
                     continue
                 users = db.query(User).filter(User.id.in_(member_ids), User.is_blocked == False).all()  # noqa: E712
                 for u in users:
+                    # Текст напоминания — на языке получателя (профиль пользователя).
+                    lang = i18n.user_lang(u)
+                    title = i18n.t("mood.reminder.title", lang)
+                    body = i18n.t("mood.reminder.body", lang)
                     db.add(Notification(user_id=u.id, type="mood_reminder", title=title, body=body, read=False))
                     if u.push_token and str(u.push_token).startswith("ExponentPushToken"):
                         pushes.append({
@@ -181,7 +183,8 @@ def _send_mood_summaries():
     from app.database import SessionLocal
     from app.models.team import Team
     from app.models.notification import Notification
-    from app.services import mood_service
+    from app.models.user import User
+    from app.services import mood_service, i18n
     from app.services.notification_service import NotificationService
     db = SessionLocal()
     try:
@@ -202,18 +205,21 @@ def _send_mood_summaries():
                 if already:
                     continue
                 s = mood_service.team_summary(db, team.id, ref=local_now.date())
+                lead = db.query(User).filter(User.id == team.team_lead_id).first()
+                lang = i18n.user_lang(lead) if lead else i18n.DEFAULT_LANG
                 if s.get("insufficient"):
-                    body = f"Недостаточно данных для анонимной статистики за сегодня (заполнили {s['filled']} из {s['team_size']}, нужно от {s['threshold']})."
+                    body = i18n.t("mood.summary.insufficient", lang, filled=s["filled"],
+                                  size=s["team_size"], threshold=s["threshold"])
                 else:
                     delta = s.get("delta_prev")
-                    delta_txt = "" if delta is None else f" Динамика к вчера: {'+' if delta > 0 else ''}{delta}."
-                    body = (f"Средний уровень: {s['avg']} из 5. "
-                            f"Заполнили: {s['filled']} из {s['team_size']}"
-                            + (f" ({s['share_pct']}%)." if s.get('share_pct') is not None else ".")
-                            + delta_txt)
+                    delta_txt = "" if delta is None else i18n.t(
+                        "mood.summary.delta", lang, sign="+" if delta > 0 else "", value=delta)
+                    share = f" ({s['share_pct']}%)" if s.get("share_pct") is not None else ""
+                    body = i18n.t("mood.summary.body", lang, avg=s["avg"], filled=s["filled"],
+                                  size=s["team_size"], share=share, delta=delta_txt)
                 NotificationService(db).create_notification(
                     user_id=team.team_lead_id, type="mood_summary",
-                    title="Сводка настроения команды", body=body,
+                    title=i18n.t("mood.summary.title", lang), body=body,
                     data={"team_id": team.id, "summary": s},
                 )
             except Exception:

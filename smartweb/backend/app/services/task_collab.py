@@ -8,10 +8,17 @@ from app.models.task_assignee import TaskAssignee
 from app.models.task_activity import TaskActivity
 from app.models.user import User
 from app.services.notification_service import NotificationService
+from app.services import i18n
 
 
 def log_activity(db: Session, task_id: int, actor_id: int, action: str, detail: str | None = None):
     db.add(TaskActivity(task_id=task_id, actor_id=actor_id, action=action, detail=detail))
+
+
+def _user_lang(db: Session, uid: int) -> str:
+    """Язык получателя уведомления — тексты собираем на нём, а не на языке автора."""
+    u = db.query(User).filter(User.id == uid).first()
+    return i18n.user_lang(u) if u else i18n.DEFAULT_LANG
 
 
 def _name(db: Session, uid: int) -> str:
@@ -46,10 +53,12 @@ def add_assignee(db: Session, task: Task, user_id: int, actor_id: int,
     log_activity(db, task.id, actor_id, "assignee_added",
                  f"{_name(db, user_id)} добавлен(а) в исполнители")
     if notify and user_id != actor_id:
+        lang = _user_lang(db, user_id)
         NotificationService(db).create_notification(
             user_id=user_id, type="task_assignee_added",
-            title="Вас добавили в задачу",
-            body=f"{_name(db, actor_id)}: {task.title}",
+            title=i18n.t("task.assignee.added.title", lang),
+            body=i18n.t("task.assignee.added.body", lang,
+                        name=_name(db, actor_id), title=task.title),
             data={"task_id": task.id},
         )
     return row
@@ -67,17 +76,21 @@ def remove_assignee(db: Session, task: Task, assignee_id: int, actor_id: int) ->
     log_activity(db, task.id, actor_id, "assignee_removed",
                  f"{_name(db, removed_user)} удалён(а) из исполнителей")
     if removed_user != actor_id:
+        lang = _user_lang(db, removed_user)
         NotificationService(db).create_notification(
             user_id=removed_user, type="task_assignee_removed",
-            title="Вас удалили из задачи",
-            body=f"{task.title}",
+            title=i18n.t("task.assignee.removed.title", lang),
+            body=i18n.t("task.assignee.removed.body", lang, title=task.title),
             data={"task_id": task.id},
         )
     return True
 
 
-def notify_task_participants(db: Session, task: Task, title: str, body: str, exclude: set[int] | None = None):
-    """Уведомить всех исполнителей задачи (39.2 — значимые изменения)."""
+def notify_task_participants(db: Session, task: Task, title_key: str, body_key: str,
+                             exclude: set[int] | None = None, **fmt):
+    """Уведомить всех исполнителей задачи (39.2 — значимые изменения).
+    Тексты — ключи словаря: у каждого получателя свой язык, поэтому подставляем
+    их отдельно для каждого адресата, а не один раз на всю рассылку."""
     exclude = exclude or set()
     ids = {a.user_id for a in (task.assignees or [])}
     if task.assigned_to:
@@ -85,5 +98,12 @@ def notify_task_participants(db: Session, task: Task, title: str, body: str, exc
     ids -= exclude
     svc = NotificationService(db)
     for uid in ids:
-        svc.create_notification(user_id=uid, type="task_update", title=title, body=body,
+        u = db.query(User).filter(User.id == uid).first()
+        lang = i18n.user_lang(u) if u else i18n.DEFAULT_LANG
+        vals = dict(fmt)
+        if "name" in vals and not vals["name"]:
+            vals["name"] = i18n.t("interaction.fallback.member", lang)
+        svc.create_notification(user_id=uid, type="task_update",
+                                title=i18n.t(title_key, lang),
+                                body=i18n.t(body_key, lang, **vals),
                                 data={"task_id": task.id})

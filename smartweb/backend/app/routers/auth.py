@@ -24,7 +24,7 @@ from app.schemas.auth import (
 from app.schemas.user import UserOut
 from app.utils.passwords import hash_password, verify_password
 from app.utils.auth import create_access_token, create_admin_token, get_current_user, require_admin
-from app.services import mailer
+from app.services import mailer, i18n
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -220,18 +220,21 @@ def confirm_email_link(token: str = Query(...), db: Session = Depends(get_db)):
     """Переход по ссылке из письма (GET). Возвращает простую HTML-страницу."""
     row = _consume_token(db, token, "confirm")
     ok = False
+    lang = i18n.DEFAULT_LANG
     if row is not None:
         user = db.query(User).filter(User.id == row.user_id).first()
         if user is not None:
+            # Страница открывается по ссылке из письма — язык берём из профиля,
+            # как и само письмо, чтобы человек не увидел два разных языка подряд.
+            lang = i18n.user_lang(user)
             user.email_confirmed = True
             db.commit()
             ok = True
-    msg = ("Почта подтверждена. Можно вернуться в приложение."
-           if ok else "Ссылка недействительна или устарела.")
+    msg = i18n.t("email.confirm.page.ok" if ok else "email.confirm.page.fail", lang)
     html = (
-        "<!doctype html><html lang='ru'><head><meta charset='utf-8'>"
+        f"<!doctype html><html lang='{lang}'><head><meta charset='utf-8'>"
         "<meta name='viewport' content='width=device-width, initial-scale=1'>"
-        "<title>Подтверждение почты</title></head>"
+        f"<title>{i18n.t('email.confirm.page.title', lang)}</title></head>"
         "<body style='font-family:system-ui,Arial,sans-serif;max-width:520px;"
         "margin:64px auto;padding:0 20px;color:#1a1a2e'>"
         f"<h1 style='font-size:20px'>{msg}</h1>"

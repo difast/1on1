@@ -12,6 +12,7 @@ from app.schemas.task_proposal import (
     TaskProposalCreate, TaskProposalAction, TaskProposalComment, TaskProposalOut,
 )
 from app.services.notification_service import NotificationService
+from app.services import i18n
 
 router = APIRouter()
 
@@ -52,9 +53,20 @@ def _serialize(db: Session, p: TaskProposal) -> dict:
     }
 
 
-def _notify(db: Session, user_id: int, title: str, body: str, proposal_id: int):
+def _notify(db: Session, user_id: int, title_key: str, body_key: str,
+            proposal_id: int, **fmt):
+    """Уведомление о предложении задачи на языке получателя (ключи словаря)."""
+    if not user_id:
+        return
+    u = db.query(User).filter(User.id == user_id).first()
+    lang = i18n.user_lang(u) if u else i18n.DEFAULT_LANG
+    # Имя автора может быть пустым — подставляем нейтральное на языке получателя.
+    if "name" in fmt and not fmt["name"]:
+        fmt["name"] = i18n.t("interaction.fallback.member", lang)
     NotificationService(db).create_notification(
-        user_id=user_id, type="task_proposal", title=title, body=body,
+        user_id=user_id, type="task_proposal",
+        title=i18n.t(title_key, lang),
+        body=i18n.t(body_key, lang, **fmt),
         data={"task_proposal_id": proposal_id},
     )
 
@@ -98,9 +110,9 @@ def create_task_proposal(data: TaskProposalCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(p)
 
-    from_name = _name(db, data.from_user_id) or "Участник"
-    _notify(db, data.to_user_id, "Предложение задачи",
-            f"{from_name} предлагает вам задачу: {p.title}", p.id)
+    from_name = _name(db, data.from_user_id) or ""
+    _notify(db, data.to_user_id, "taskProposal.new.title", "taskProposal.new.body",
+            p.id, name=from_name, title=p.title)
     return _serialize(db, p)
 
 
@@ -156,9 +168,9 @@ def accept_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session
     db.commit()
     db.refresh(p)
 
-    acceptor = _name(db, data.user_id) or "Участник"
-    _notify(db, p.from_user_id, "Предложение задачи принято",
-            f"{acceptor} принял задачу: {p.title}", p.id)
+    acceptor = _name(db, data.user_id) or ""
+    _notify(db, p.from_user_id, "taskProposal.accepted.title", "taskProposal.accepted.body",
+            p.id, name=acceptor, title=p.title)
     return _serialize(db, p)
 
 
@@ -177,9 +189,9 @@ def decline_task_proposal(proposal_id: int, data: TaskProposalAction, db: Sessio
     db.commit()
     db.refresh(p)
 
-    decliner = _name(db, data.user_id) or "Участник"
-    _notify(db, p.from_user_id, "Предложение задачи отклонено",
-            f"{decliner} отклонил задачу: {p.title}", p.id)
+    decliner = _name(db, data.user_id) or ""
+    _notify(db, p.from_user_id, "taskProposal.declined.title", "taskProposal.declined.body",
+            p.id, name=decliner, title=p.title)
     return _serialize(db, p)
 
 
@@ -205,8 +217,8 @@ def comment_task_proposal(proposal_id: int, data: TaskProposalComment, db: Sessi
     db.commit()
     db.refresh(p)
 
-    actor = _name(db, data.user_id) or "Участник"
+    actor = _name(db, data.user_id) or ""
     other = p.from_user_id if data.user_id == p.to_user_id else p.to_user_id
-    _notify(db, other, "Обсуждение задачи",
-            f"{actor}: {data.note.strip()[:80]}", p.id)
+    _notify(db, other, "taskProposal.comment.title", "taskProposal.comment.body",
+            p.id, name=actor, note=data.note.strip()[:80])
     return _serialize(db, p)

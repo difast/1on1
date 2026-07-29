@@ -24,11 +24,8 @@ import {
   type Development, type DevSkill, type DevStep, type DevRecommendation, type TeamDevelopment,
 } from '../lib/api';
 
-export const SKILL_LEVELS: Record<number, string> = { 1: 'Новичок', 2: 'Базовый', 3: 'Уверенный', 4: 'Продвинутый', 5: 'Эксперт' };
 const LEVELS = [1, 2, 3, 4, 5];
-const CATEGORY_LABEL: Record<string, string> = { technical: 'Технические', product: 'Продуктовые', communication: 'Коммуникационные', management: 'Управленческие' };
 const CATEGORIES = ['technical', 'product', 'communication', 'management'];
-const STEP_STATUS_LABEL: Record<string, string> = { not_started: 'Не начат', in_progress: 'В работе', done: 'Выполнен', cancelled: 'Отменён' };
 const STEP_OPEN = ['not_started', 'in_progress'];
 
 function stepColor(c: AppColors, status: string) {
@@ -78,14 +75,14 @@ function SkillRow({ us, meId, colors, readOnly, onChanged, onRemoved }: {
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
             <Text style={styles.title}>{us.skill_name}</Text>
-            <Text style={styles.chip}>{CATEGORY_LABEL[us.category] || us.category}</Text>
+            <Text style={styles.chip}>{t(`development.category.${us.category}`)}</Text>
           </View>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 8 }}>
             <LevelScale current={us.current_level} desired={us.desired_level} colors={colors} />
-            <Text style={styles.muted}>{us.current_level_label}{us.desired_level ? ` → ${us.desired_level_label}` : ''}</Text>
+            <Text style={styles.muted}>{t(`development.level.${us.current_level}`)}{us.desired_level ? ` → ${t(`development.level.${us.desired_level}`)}` : ''}</Text>
           </View>
-          {us.gap > 0 && <Text style={[styles.warnChip, { marginTop: 6 }]}>разрыв {us.gap}</Text>}
-          {us.target_date && <Text style={[styles.muted, { marginTop: 6 }]}>Срок: {new Date(us.target_date).toLocaleDateString('ru-RU')}</Text>}
+          {us.gap > 0 && <Text style={[styles.warnChip, { marginTop: 6 }]}>{t('development.gap', { v1: us.gap })}</Text>}
+          {us.target_date && <Text style={[styles.muted, { marginTop: 6 }]}>{t('development.deadline', { v1: new Date(us.target_date).toLocaleDateString() })}</Text>}
         </View>
         {!readOnly && <TouchableOpacity onPress={remove}><Text style={styles.removeLink}>{t('ui.udalit')}</Text></TouchableOpacity>}
       </View>
@@ -138,7 +135,7 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
     <View style={[styles.card, { borderLeftWidth: 3, borderLeftColor: stepColor(colors, step.status) }]}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', gap: 8 }}>
         <Text style={[styles.title, { flex: 1 }]}>{step.title}</Text>
-        <Text style={[styles.badge, { color: stepColor(colors, step.status) }]}>{STEP_STATUS_LABEL[step.status]}</Text>
+        <Text style={[styles.badge, { color: stepColor(colors, step.status) }]}>{t(`development.stepStatus.${step.status}`)}</Text>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 4 }}>
         {step.skill_name && <Text style={styles.chip}>Навык: {step.skill_name}</Text>}
@@ -147,7 +144,7 @@ function StepCard({ step, meId, colors, readOnly, canFeedback, onChanged, onRemo
         {step.overdue && <Text style={styles.warnChip}>{t('ui.prosrochen')}</Text>}
       </View>
       {!!step.description && <Text style={[styles.muted, { marginTop: 6 }]}>{step.description}</Text>}
-      {step.due_date && <Text style={[styles.muted, { marginTop: 4 }]}>Срок: {new Date(step.due_date).toLocaleDateString('ru-RU')}</Text>}
+      {step.due_date && <Text style={[styles.muted, { marginTop: 4 }]}>{t('development.deadline', { v1: new Date(step.due_date).toLocaleDateString() })}</Text>}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 10 }}>
         <View style={{ flex: 1, height: 8, backgroundColor: colors.surface2, borderRadius: 999, overflow: 'hidden' }}>
@@ -199,7 +196,7 @@ function RecCard({ rec, meId, colors, onChanged }: { rec: DevRecommendation; meI
       <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginBottom: 4 }}>
         <Text style={[styles.chip, { color: '#7c3aed' }]}>{rec.source_label}</Text>
         {rec.skill_name && <Text style={styles.muted}>{rec.skill_name}</Text>}
-        {!!rec.target_level && <Text style={styles.muted}>цель: {SKILL_LEVELS[rec.target_level]}</Text>}
+        {!!rec.target_level && <Text style={styles.muted}>{t('development.target')}: {t(`development.level.${rec.target_level}`)}</Text>}
       </View>
       <Text style={styles.title}>{rec.title}</Text>
       {!!rec.body && <Text style={[styles.muted, { marginTop: 4 }]}>{rec.body}</Text>}
@@ -285,7 +282,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
             {CATEGORIES.map(c => (
               <TouchableOpacity key={c} onPress={() => setSCat(c)} style={[styles.levelChip, sCat === c && { backgroundColor: colors.accentLight, borderColor: colors.accent }]}>
-                <Text style={[styles.levelChipText, sCat === c && { color: colors.accent }]}>{CATEGORY_LABEL[c]}</Text>
+                <Text style={[styles.levelChipText, sCat === c && { color: colors.accent }]}>{t(`development.category.${c}`)}</Text>
               </TouchableOpacity>
             ))}
           </View>
