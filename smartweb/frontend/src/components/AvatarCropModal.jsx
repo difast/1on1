@@ -14,8 +14,9 @@ const OUT = 256    // размер итогового аватара (px)
 
 function clamp(v, lo, hi) { return Math.min(hi, Math.max(lo, v)) }
 
-export default function AvatarCropModal({ open, onSave, onClose, title = 'Фото профиля', saving = false }) {
+export default function AvatarCropModal({ open, onSave, onClose, title, saving = false }) {
   const { t } = useTranslation()
+  const heading = title || t('labels.profilePhoto')
   const [imageSrc, setImageSrc] = useState(null)
   const [img, setImg] = useState(null)        // загруженный Image
   const [zoom, setZoom] = useState(1)
@@ -125,7 +126,7 @@ export default function AvatarCropModal({ open, onSave, onClose, title = 'Фот
     <div className="overlay-center" onClick={() => !busy && onClose()}>
       <div className="modal" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 420, width: '92vw' }}>
         <div className="modal-header">
-          <span className="modal-title">{title}</span>
+          <span className="modal-title">{heading}</span>
           <button className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose} disabled={busy}>×</button>
         </div>
 

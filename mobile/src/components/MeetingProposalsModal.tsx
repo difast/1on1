@@ -10,8 +10,11 @@ import type { AppColors } from '../constants/colors';
 import { DateTimePickerField } from './DateTimePickerField';
 import { getProposals, createProposal, acceptProposal, declineProposal, counterProposal } from '../lib/api';
 
-const STATUS_LABEL: Record<string, string> = { pending: 'Ожидает ответа', accepted: 'Принято', declined: 'Отклонено' };
-const ACTION_LABEL: Record<string, string> = { proposed: 'предложил(а) встречу', countered: 'предложил(а) другое время', accepted: 'принял(а)', declined: 'отклонил(а)' };
+const statusLabel = (t: (k: string) => string, st: string) =>
+  t(`labels.interactionStatus.${st === 'pending' ? 'sent' : st}`);
+const ACTION_KEY: Record<string, string> = { proposed: 'proposed', countered: 'counter', accepted: 'accepted', declined: 'declined' };
+const actionLabel = (t: (k: string) => string, a: string) =>
+  (ACTION_KEY[a] ? t(`labels.proposalEvent.${ACTION_KEY[a]}`) : a);
 const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
 /*
@@ -93,7 +96,7 @@ export function MeetingProposalsModal({
           <Text style={styles.cardTitle}>
             {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || t('ui.uchastnik')}` : `${p.from_user_name || t('ui.uchastnik')} -> вам`}
           </Text>
-          <Text style={[styles.badge, { color: badgeColor }]}>{mineTurn ? t('ui.vash_hod') : (STATUS_LABEL[p.status] || p.status)}</Text>
+          <Text style={[styles.badge, { color: badgeColor }]}>{mineTurn ? t('ui.vash_hod') : statusLabel(t, p.status)}</Text>
         </View>
         {!!p.topic && <Text style={styles.cardTopic}>{p.topic}</Text>}
         <Text style={styles.cardTime}>Время: {fmt(p.proposed_time)}</Text>
@@ -107,7 +110,7 @@ export function MeetingProposalsModal({
           <View style={styles.history}>
             {p.events.map((e: any) => (
               <Text key={e.id} style={styles.historyLine}>
-                <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || t('ui.uchastnik')}</Text> {ACTION_LABEL[e.action] || e.action}
+                <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || t('ui.uchastnik')}</Text> {actionLabel(t, e.action)}
                 {e.proposed_time ? ` (${fmt(e.proposed_time)})` : ''} · {fmt(e.created_at)}
               </Text>
             ))}

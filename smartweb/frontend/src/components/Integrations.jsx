@@ -12,21 +12,21 @@ import { confirmDialog } from '../lib/ui'
  * «Скоро». Токены хранит бэкенд в шифрованном виде — клиент их не видит.
  */
 
-const CAL_META = {
-  google: { name: 'Google Calendar', desc: 'Встречи 1-на-1 автоматически синхронизируются с вашим Google-календарём.' },
-  yandex: { name: 'Яндекс Календарь', desc: 'Встречи 1-на-1 автоматически синхронизируются с вашим Яндекс-календарём.' },
-}
+// Название календаря — имя бренда (не переводится), описание и статус — из словаря.
+const CAL_NAME = { google: 'Google Calendar', yandex: 'Yandex Calendar' }
+const calDesc = (t, id) => t(`integrations.${id}Desc`)
 
-const STATUS_LABEL = {
-  connected: 'Подключено',
-  reauth_required: 'Требуется переподключение',
-  not_connected: 'Не подключено',
+const STATUS_KEY = {
+  connected: 'connected',
+  reauth_required: 'reconnect',
+  not_connected: 'notConnected',
 }
+const statusLabel = (t, st) => t(`labels.integrationStatus.${STATUS_KEY[st] || 'notConnected'}`)
 
 function CalendarCard({ item, userId, onChange }) {
   const { t } = useTranslation()
   const [busy, setBusy] = useState(false)
-  const meta = CAL_META[item.provider] || { name: item.provider, desc: '' }
+  const meta = { name: CAL_NAME[item.provider] || item.provider, desc: calDesc(t, item.provider) }
 
   const connect = async () => {
     setBusy(true)
@@ -56,7 +56,7 @@ function CalendarCard({ item, userId, onChange }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
         <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>{meta.name}</span>
         <span style={{ fontSize: 12, fontWeight: 600, color: badgeColor, whiteSpace: 'nowrap' }}>
-          {reauth ? STATUS_LABEL.reauth_required : item.connected ? STATUS_LABEL.connected : STATUS_LABEL.not_connected}
+          {statusLabel(t, reauth ? 'reauth_required' : item.connected ? 'connected' : 'not_connected')}
         </span>
       </div>
       <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: 0, lineHeight: 1.5 }}>{meta.desc}</p>

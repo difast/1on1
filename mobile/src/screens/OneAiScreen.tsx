@@ -15,19 +15,8 @@ import { Spinner } from '../components/Spinner';
 import { getOneAiSections, oneAiQuery, getTeams, getTeam, type OneAiSection } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
-const HINT: Record<string, string> = {
-  team_analysis: 'Проблемы, риски и вовлечённость команды за период.',
-  employee_analysis: 'Эффективность и динамика конкретного сотрудника.',
-  feedback_prep: 'Черновик обратной связи по задачам, встречам, целям и развитию.',
-  manager_recommendations: 'Рекомендации по управлению командой и процессам.',
-  one_on_one_prep: 'Темы и вопросы к встрече 1-на-1.',
-  mood_analysis: 'Динамика настроения и вовлечённости, тревожные сигналы.',
-  goals_analysis: 'Прогресс целей, риски срыва, декомпозиция.',
-  self_analysis: 'Личная эффективность: что получается, что улучшить.',
-  development_analysis: 'Рекомендации по развитию навыков и плану.',
-  knowledge_search: 'Поиск и суммаризация материалов базы знаний.',
-  auto_reports: 'Периодический отчёт по команде: метрики и изменения.',
-};
+// Подсказка раздела — из словаря по идентификатору раздела.
+const sectionHint = (t: (k: string) => string, id: string) => t(`oneaiSections.${id}`);
 const NEEDS_MEMBER = ['employee_analysis', 'feedback_prep'];
 
 export default function OneAiScreen() {
@@ -89,7 +78,7 @@ export default function OneAiScreen() {
 
   const basedOnText = (b: any) => {
     if (!b) return '';
-    if (b.facts) return `задач ${b.facts.tasks_total ?? '—'}, встреч ${b.facts.meetings_total ?? '—'}, целей ${b.facts.goals_total ?? '—'}`;
+    if (b.facts) return t('labels.basedOnFacts', { v1: b.facts.tasks_total ?? '—', v2: b.facts.meetings_total ?? '—', v3: b.facts.goals_total ?? '—' });
     if (b.members != null) return t('ui.uchastnikov_komandy', { v1: b.members });
     return t('ui.agregaty_po_vashim_dannym');
   };
@@ -120,7 +109,7 @@ export default function OneAiScreen() {
           {active && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>{sections.find(s => s.key === active)?.title}</Text>
-              <Text style={styles.muted}>{HINT[active]}</Text>
+              <Text style={styles.muted}>{sectionHint(t, active)}</Text>
               {NEEDS_MEMBER.includes(active) && (
                 <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
                   {members.length === 0 && <Text style={styles.muted}>{t('ui.net_uchastnikov_dlya_vybora')}</Text>}

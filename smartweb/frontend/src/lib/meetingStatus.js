@@ -6,11 +6,14 @@ const BADGE = {
   in_progress: 'badge-green', cancelled: 'badge-red', declined: 'badge-red',
   requested: 'badge-amber',
 }
-const LABEL = {
-  scheduled: 'Запланирована', confirmed: 'Подтверждена', completed: 'Завершена',
-  in_progress: 'Идёт созвон', cancelled: 'Отменена', declined: 'Отклонена',
-  requested: 'Запрошена',
+// Ключ статуса в словаре: подпись собирает вызывающий через t(), поэтому
+// смена языка меняет её без пересборки этого модуля.
+const LABEL_KEY = {
+  scheduled: 'scheduled', confirmed: 'confirmed', completed: 'completed',
+  in_progress: 'live', cancelled: 'cancelled', declined: 'declined',
+  requested: 'requested',
 }
 
 export const meetingStatusBadge = (status) => BADGE[status] || 'badge-gray'
-export const meetingStatusLabel = (status) => LABEL[status] || status
+export const meetingStatusLabel = (status, t) =>
+  (LABEL_KEY[status] ? t(`labels.meetingStatus.${LABEL_KEY[status]}`) : status)

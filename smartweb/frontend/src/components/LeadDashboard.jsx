@@ -15,7 +15,8 @@ import Layout from './Layout'
 
 const STATUS_CYCLE = { in_progress: 'review', review: 'done', done: 'in_progress', blocked: 'in_progress' }
 const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 'badge-amber', done: 'badge-green' }
-const STATUS_LABEL = { in_progress: 'В работе', blocked: 'Блокер', review: 'На ревью', done: 'Готово' }
+// Подпись статуса — из словаря по ключу (labels.taskStatus.*).
+const statusLabel = (t, st) => t(`labels.taskStatus.${st}`, { defaultValue: st })
 import UserCard from './UserCard'
 import LeadAnalytics from './LeadAnalytics'
 import { GoalsLead } from './Goals'
@@ -691,7 +692,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   // Calendar meeting render for lead's meetings tab
   const renderMeetingCard = (m) => {
-    const memberName = usersMap[m.member_id]?.name || `Участник #${m.member_id}`
+    const memberName = usersMap[m.member_id]?.name || `${t('labels.member')} #${m.member_id}`
     const busy = meetingAction[m.id]
     const noteState = meetingNotes[m.id]
     const isPast = new Date(m.scheduled_date) < new Date()
@@ -711,7 +712,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'flex-end', flexShrink: 0 }}>
             <span className={`badge ${meetingStatusBadge(m.status)}`}>
-              {meetingStatusLabel(m.status)}
+              {meetingStatusLabel(m.status, t)}
             </span>
             {m.group_id && (
               <span style={{ fontSize: 10, fontWeight: 700, color: '#0891b2', background: '#ecfeff', border: '1px solid #a5f3fc', borderRadius: 20, padding: '1px 7px', whiteSpace: 'nowrap' }}>{t('ui.gruppovaya')}</span>
@@ -1000,7 +1001,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               {myMeetings.filter(m => m.notes).length > 0 ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {myMeetings.filter(m => m.notes).map(m => {
-                    const memberName = usersMap[m.member_id]?.name || `Участник #${m.member_id}`
+                    const memberName = usersMap[m.member_id]?.name || `${t('labels.member')} #${m.member_id}`
                     const isExpanded = notesMeetingExpanded.has(m.id)
                     const noteLines = (m.notes || '').split('\n').filter(l => l.trim())
                     return (
@@ -1737,7 +1738,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
       {showTaskProposals && (
         <TaskProposals
           currentUser={user}
-          contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `Участник #${m.user_id}` }))}
+          contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: m.user_name || `${t('labels.member')} #${m.user_id}` }))}
           teamId={selectedTeamId}
           presetToUserId={taskProposalPreset}
           onClose={() => { setShowTaskProposals(false); setTaskProposalPreset(null) }}
@@ -1842,7 +1843,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 className="btn btn-accent"
                 style={{ marginTop: 6, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}
               >
-                {callModalLoading ? <><Spinner size={15} />{t('ui.sozdaem')}</> : `Начать созвон${callSelected.length ? ` (${callSelected.length})` : ''}`}
+                {callModalLoading ? <><Spinner size={15} />{t('ui.sozdaem')}</> : `${t('meetings.startCall')}${callSelected.length ? ` (${callSelected.length})` : ''}`}
               </button>
             </div>
           )}
@@ -2154,7 +2155,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     {/* Групповая встреча (Задача 4) */}
     {showGroupModal && (
       <GroupMeetingModal
-        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `${t('labels.member')} #${m.user_id}` }))}
         teamId={selectedTeamId}
         teamLeadId={user.id}
         onClose={() => setShowGroupModal(false)}
@@ -2166,7 +2167,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     {showProposals && (
       <MeetingProposals
         currentUser={user}
-        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `${t('labels.member')} #${m.user_id}` }))}
         teamId={selectedTeamId}
         onClose={() => setShowProposals(false)}
         onChanged={() => loadMyMeetings()}
@@ -2177,7 +2178,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     {showInteractions && (
       <InteractionsPanel
         currentUser={user}
-        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        contacts={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `${t('labels.member')} #${m.user_id}` }))}
         tasks={myTasks}
         teamId={selectedTeamId}
         onClose={() => setShowInteractions(false)}
@@ -2187,7 +2188,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
     {/* Совместная задача */}
     {collabModal && (
       <CollabTaskModal
-        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `Участник #${m.user_id}` }))}
+        members={(teamDetail?.members || []).filter(m => m.user_id !== user.id).map(m => ({ user_id: m.user_id, name: usersMap[m.user_id]?.name || `${t('labels.member')} #${m.user_id}` }))}
         teamId={selectedTeamId}
         assignedBy={user.id}
         onClose={() => setCollabModal(false)}

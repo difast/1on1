@@ -19,17 +19,18 @@ import { useIsTelegram } from '../lib/surface'
  * тур не показывает пустых подсветок. Прогресс и пропуск обязательны на
  * каждом шаге. Показывается один раз (localStorage), полностью скипается.
  */
+// Шаги тура держат только ключи словаря — тексты приходят на языке интерфейса.
 const STEPS = {
   team_lead: [
-    { sel: '[data-tour="views"]', title: 'Разделы', text: 'Команды, встречи, задачи, заметки и аналитика — всё рабочее пространство переключается здесь.', place: 'bottom' },
-    { sel: '[data-tour="pit"]', title: 'Ассистент Пит', text: 'Спросите Пита про задачи и встречи. Он же подсказывает темы, когда вы готовите повестку.', place: 'left' },
-    { sel: '[data-tour="notifications"]', title: 'Уведомления', text: 'Запросы встреч, приближающиеся дедлайны и начатые звонки приходят сюда.', place: 'bottom' },
-    { sel: '[data-tour="menu"]', title: 'Профиль и настройки', text: 'Тема оформления, смена пароля и переключатель подсказок Пита — в этом меню.', place: 'bottom' },
+    { sel: '[data-tour="views"]', titleKey: 'tour.sections', textKey: 'tour.sectionsDesc', place: 'bottom' },
+    { sel: '[data-tour="pit"]', titleKey: 'tour.pit', textKey: 'tour.pitDescLead', place: 'left' },
+    { sel: '[data-tour="notifications"]', titleKey: 'tour.notifications', textKey: 'tour.notificationsDescLead', place: 'bottom' },
+    { sel: '[data-tour="menu"]', titleKey: 'tour.profile', textKey: 'tour.profileDescLead', place: 'bottom' },
   ],
   member: [
-    { sel: '[data-tour="pit"]', title: 'Ассистент Пит', text: 'Спросите Пита про свои задачи, встречи и команду — он рядом в любой момент.', place: 'left' },
-    { sel: '[data-tour="notifications"]', title: 'Уведомления', text: 'Приглашения, напоминания о встречах и задачах приходят сюда.', place: 'bottom' },
-    { sel: '[data-tour="menu"]', title: 'Профиль и настройки', text: 'Данные профиля, тема оформления и выход — в этом меню.', place: 'bottom' },
+    { sel: '[data-tour="pit"]', titleKey: 'tour.pit', textKey: 'tour.pitDescMember', place: 'left' },
+    { sel: '[data-tour="notifications"]', titleKey: 'tour.notifications', textKey: 'tour.notificationsDescMember', place: 'bottom' },
+    { sel: '[data-tour="menu"]', titleKey: 'tour.profile', textKey: 'tour.profileDescMember', place: 'bottom' },
   ],
 }
 
@@ -202,8 +203,8 @@ export default function WelcomeTour({ currentUser }) {
         <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', letterSpacing: '0.04em', marginBottom: 6 }}>
           Шаг {i + 1} из {total}
         </div>
-        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{step.title}</h3>
-        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.55, margin: '0 0 16px' }}>{step.text}</p>
+        <h3 style={{ fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>{t(step.titleKey)}</h3>
+        <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.55, margin: '0 0 16px' }}>{t(step.textKey)}</p>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <button onClick={finish} className="btn btn-secondary btn-sm">{t('ui.propustit')}</button>
           <button onClick={() => last ? finish() : setI(i + 1)} className="btn btn-accent btn-sm" style={{ fontWeight: 700 }}>

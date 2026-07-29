@@ -11,11 +11,13 @@ import {
   getTaskActivity, getTaskComments, addTaskComment, addTaskAssignee, removeTaskAssigneeById, getTaskById,
 } from '../lib/api';
 
-const ACTION_LABEL: Record<string, string> = {
-  created: 'создал(а) задачу', status_changed: 'изменил(а) статус',
-  assignee_added: 'добавил(а) исполнителя', assignee_removed: 'удалил(а) исполнителя',
-  commented: 'оставил(а) комментарий', collab_joined: 'присоединил(ся) к работе',
+const ACTION_KEY: Record<string, string> = {
+  created: 'created', status_changed: 'statusChanged',
+  assignee_added: 'assigneeAdded', assignee_removed: 'assigneeRemoved',
+  commented: 'commented', collab_joined: 'joined',
 };
+const actionLabel = (t: (k: string) => string, a: string) =>
+  (ACTION_KEY[a] ? t(`labels.collabEvent.${ACTION_KEY[a]}`) : a);
 const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
 /*
@@ -102,7 +104,7 @@ export function TaskCollabModal({
               <View key={a.id} style={styles.activityRow}>
                 <View style={styles.dot} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.activityText}><Text style={{ fontWeight: '700' }}>{a.actor_name || t('ui.uchastnik')}</Text> {ACTION_LABEL[a.action] || a.action}{a.detail && a.action !== 'created' ? ` — ${a.detail}` : ''}</Text>
+                  <Text style={styles.activityText}><Text style={{ fontWeight: '700' }}>{a.actor_name || t('ui.uchastnik')}</Text> {actionLabel(t, a.action)}{a.detail && a.action !== 'created' ? ` — ${a.detail}` : ''}</Text>
                   <Text style={styles.activityTime}>{fmt(a.created_at)}</Text>
                 </View>
               </View>

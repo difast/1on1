@@ -8,19 +8,8 @@ import { getOneAiSections, oneAiQuery, getTeams, getTeam } from '../api/client'
 // ONE AI — стратегический AI-центр. Отдельная поверхность от Пита: разделы,
 // глубокий аналитический ответ. Данные и права — общий AI-слой (бэкенд).
 
-const SECTION_HINT = {
-  team_analysis: 'Проблемы, риски и вовлечённость команды за период.',
-  employee_analysis: 'Эффективность и динамика конкретного сотрудника.',
-  feedback_prep: 'Черновик обратной связи по задачам, встречам, целям и развитию.',
-  manager_recommendations: 'Рекомендации по управлению командой и процессам.',
-  one_on_one_prep: 'Темы и вопросы к встрече 1-на-1.',
-  mood_analysis: 'Динамика настроения и вовлечённости, тревожные сигналы.',
-  goals_analysis: 'Прогресс целей, риски срыва, декомпозиция.',
-  self_analysis: 'Личная эффективность: что получается, что улучшить.',
-  development_analysis: 'Рекомендации по развитию навыков и плану.',
-  knowledge_search: 'Поиск и суммаризация материалов базы знаний.',
-  auto_reports: 'Периодический отчёт по команде: метрики и изменения.',
-}
+// Подсказка раздела — из словаря по идентификатору раздела.
+const sectionHint = (t, id) => t(`oneaiSections.${id}`, { defaultValue: '' })
 const NEEDS_MEMBER = ['employee_analysis', 'feedback_prep']
 
 export default function OneAI({ user }) {
@@ -100,7 +89,7 @@ export default function OneAI({ user }) {
           <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div>
               <h3 style={{ fontSize: 17, fontWeight: 700, color: 'var(--color-text-primary)' }}>{sections.find(s => s.key === active)?.title}</h3>
-              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{SECTION_HINT[active]}</p>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginTop: 2 }}>{sectionHint(t, active)}</p>
             </div>
             {NEEDS_MEMBER.includes(active) && (
               <select className="input" value={targetUser} onChange={e => setTargetUser(e.target.value)}>
@@ -129,9 +118,13 @@ export default function OneAI({ user }) {
             <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{result.reply}</p>
             {result.based_on && (
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 14, borderTop: '1px solid var(--gray-100)', paddingTop: 10 }}>
-                Основано на данных: {result.based_on.facts
-                  ? `задач ${result.based_on.facts.tasks_total ?? '—'}, встреч ${result.based_on.facts.meetings_total ?? '—'}, целей ${result.based_on.facts.goals_total ?? '—'}`
-                  : result.based_on.members != null ? `${result.based_on.members} участников команды` : t('ui.agregaty_po_vashim_dannym')}
+                {t('labels.basedOn')}: {result.based_on.facts
+                  ? t('labels.basedOnFacts', {
+                      v1: result.based_on.facts.tasks_total ?? '—',
+                      v2: result.based_on.facts.meetings_total ?? '—',
+                      v3: result.based_on.facts.goals_total ?? '—',
+                    })
+                  : result.based_on.members != null ? t('labels.basedOnMembers', { v1: result.based_on.members }) : t('ui.agregaty_po_vashim_dannym')}
               </p>
             )}
           </div>

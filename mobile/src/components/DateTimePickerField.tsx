@@ -29,7 +29,7 @@ function formatValue(iso: string): string {
  * highlighted, plus hour/minute selection. Emits a local "YYYY-MM-DDTHH:mm".
  */
 export function DateTimePickerField({
-  value, onChange, placeholder = 'Выберите дату и время', minToday = true,
+  value, onChange, placeholder, minToday = true,
 }: {
   value: string;
   onChange: (iso: string) => void;

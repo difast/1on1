@@ -127,7 +127,7 @@ export default function TaskAIHelper({ task, role = 'member', userId = null, onS
                       transition: 'all 0.2s',
                     }}
                   >
-                    {added ? 'Добавлено!' : adding ? t('ui.dobavlenie') : t('ui.dobavit_podzadachi')}
+                    {added ? t('labels.added') : adding ? t('ui.dobavlenie') : t('ui.dobavit_podzadachi')}
                   </button>
                   <button onClick={fetchSteps} style={{ padding: '9px 14px', borderRadius: 10, border: '1px solid var(--color-border)', background: 'none', cursor: 'pointer', fontSize: 13, color: 'var(--color-text-secondary)', fontWeight: 600 }}>{t('ui.obnovit')}</button>
                 </div>

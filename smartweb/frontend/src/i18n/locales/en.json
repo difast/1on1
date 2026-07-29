@@ -344,7 +344,8 @@
     "ask": "Ask Pit",
     "placeholder": "Ask about meetings, tasks or your team",
     "thinking": "Pit is thinking...",
-    "error": "Pit is unavailable right now. Please try again later."
+    "error": "Pit is unavailable right now. Please try again later.",
+    "greeting": "Hi! I am Pit, your OneOnOne AI assistant. I can help with meetings, tasks and your team. Just ask."
   },
   "oneai": {
     "title": "ONE AI",
@@ -361,7 +362,9 @@
     "connected": "Connected",
     "notConnected": "Not connected",
     "comingSoon": "Coming soon",
-    "notConfigured": "This integration has not been set up by the administrator yet."
+    "notConfigured": "This integration has not been set up by the administrator yet.",
+    "googleDesc": "1-on-1 meetings sync automatically with your Google Calendar.",
+    "yandexDesc": "1-on-1 meetings sync automatically with your Yandex Calendar."
   },
   "errors": {
     "generic": "Something went wrong",
@@ -414,7 +417,16 @@
     "saved": "Company details saved",
     "removed": "Company details removed",
     "saveError": "Could not save",
-    "fieldSize": "Size (employees)"
+    "fieldSize": "Size (employees)",
+    "name": "Name",
+    "taxId": "Tax ID / BIN",
+    "kpp": "Tax registration code",
+    "ogrn": "Registration number",
+    "address": "Legal address",
+    "industry": "Industry",
+    "director": "Director",
+    "status": "Status",
+    "size": "Size (employees)"
   },
   "ui": {
     "oshibka": "Error",
@@ -1932,7 +1944,8 @@
     "tarify_mozhno_posmotret_v_veb_versii": "{{v1}} You can view the plans in the web version.",
     "inn_bin": "INN/BIN {{v1}}",
     "polzovatel_id_zaprosil_udalenie_akkaunta": "User {{v1}} ({{v2}}, id={{v3}}) requested account deletion.",
-    "dobro_pozhalovat_imya": "Welcome, {{v1}}"
+    "dobro_pozhalovat_imya": "Welcome, {{v1}}",
+    "itog": "Outcome"
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",
@@ -1960,5 +1973,175 @@
     "o.burnout": "Mood and burnout risk",
     "o.growth": "Employee growth and development",
     "o.time": "Saving time on routine work"
+  },
+  "labels": {
+    "goalStatus": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "at_risk": "At risk",
+      "achieved": "Achieved",
+      "missed": "Missed"
+    },
+    "taskStatus": {
+      "in_progress": "In progress",
+      "blocked": "Blocked",
+      "review": "In review",
+      "done": "Done"
+    },
+    "taskStatusDesc": {
+      "in_progress": "The task is active and in progress",
+      "blocked": "There is a blocker",
+      "review": "Waiting for review",
+      "done": "The task is complete"
+    },
+    "meetingStatus": {
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "live": "Call in progress",
+      "cancelled": "Cancelled",
+      "declined": "Declined",
+      "requested": "Requested",
+      "awaiting": "Pending",
+      "request": "Request",
+      "live_short": "Live"
+    },
+    "interactionType": {
+      "collab": "Collaboration",
+      "help": "Offer of help",
+      "consultation": "Consultation",
+      "discussion": "Discussion",
+      "recommendation": "Recommendation"
+    },
+    "interactionStatus": {
+      "sent": "Sent",
+      "accepted": "Accepted",
+      "declined": "Declined",
+      "completed": "Completed",
+      "closed": "Closed",
+      "discussing": "Under discussion"
+    },
+    "interactionOutcome": {
+      "decided": "Decision made",
+      "needMeeting": "A meeting is needed",
+      "closedNoDecision": "Closed without a decision"
+    },
+    "collabEvent": {
+      "created": "created the task",
+      "statusChanged": "changed the status",
+      "assigneeAdded": "added an assignee",
+      "assigneeRemoved": "removed an assignee",
+      "commented": "left a comment",
+      "joined": "joined the work"
+    },
+    "proposalEvent": {
+      "proposed": "proposed a meeting",
+      "counter": "proposed another time",
+      "accepted": "accepted",
+      "declined": "declined",
+      "taskProposed": "proposed a task",
+      "wrote": "wrote"
+    },
+    "risk": {
+      "ok": "OK",
+      "urgent": "Urgent",
+      "soon": "Soon",
+      "fine": "All good",
+      "moodDown": "Mood is declining",
+      "noMeeting": "No meeting",
+      "moodArrowDown": "Mood down",
+      "tasks": "Tasks"
+    },
+    "integrationStatus": {
+      "connected": "Connected",
+      "reconnect": "Reconnection required",
+      "notConnected": "Not connected"
+    },
+    "member": "Team member",
+    "colleagues": "colleagues",
+    "recipient": "the recipient",
+    "discussionLower": "discussion",
+    "today": "today",
+    "yesterday": "yesterday",
+    "noDeadline": "No deadline",
+    "days": "{{v1}} d.",
+    "daysNoMeeting": "{{v1}} days without a meeting",
+    "openTasksCount": "{{v1}} open tasks",
+    "overduePrefix": "Overdue · ",
+    "thisFeature": "This feature",
+    "added": "Added",
+    "somethingWentWrong": "Something went wrong",
+    "requestTimeout": "The request timed out",
+    "pickDateTime": "Pick a date and time",
+    "profilePhoto": "Profile photo",
+    "daysAgo": "{{v1}} d. ago",
+    "weeksAgo": "{{v1}} w. ago",
+    "monthsAgo": "{{v1}} mo. ago",
+    "updated": "Updated",
+    "basedOn": "Based on data",
+    "basedOnFacts": "tasks {{v1}}, meetings {{v2}}, goals {{v3}}",
+    "basedOnMembers": "{{v1}} team members",
+    "burnoutAdvicePrompt": "A team lead sees a risk signal for team member \"{{v1}}\": {{v2}}. Give 3 short, specific pieces of advice on how to help this person and reduce the risk of burnout. Bullet points only, no introduction. Answer in English.",
+    "exportCardHint": "Each card is the full analytics for one team member",
+    "exportDone": "Completed",
+    "exportOpen": "Open",
+    "exportTotal": "Total",
+    "hoursMinutes": "{{v1}}h {{v2}}m",
+    "taskStatusShort": {
+      "blocked": "Blocked",
+      "review": "Review"
+    },
+    "until": "until {{v1}}",
+    "ledByLead": "led by the team lead",
+    "createGoal": "Create a goal",
+    "noGoals": "no goals",
+    "yearsAgo": "{{v1}} y. ago",
+    "notifications": "Notifications"
+  },
+  "moodPrompt": {
+    "q1": "How was your day?",
+    "q1ph": "Describe it in a few words...",
+    "q2": "What gave you energy?",
+    "q2ph": "Tasks, conversations, wins...",
+    "q3": "What got in the way?",
+    "q3ph": "Blockers, fatigue, distractions...",
+    "q4": "Anything you want to tell the team?",
+    "q4ph": "Anonymous — the team lead sees only a summary..."
+  },
+  "oneaiSections": {
+    "team_analysis": "Team problems, risks and engagement over the period.",
+    "employee_analysis": "Performance and trends for a specific employee.",
+    "feedback_prep": "A feedback draft based on tasks, meetings, goals and development.",
+    "manager_recommendations": "Recommendations on managing the team and its processes.",
+    "one_on_one_prep": "Topics and questions for a 1-on-1 meeting.",
+    "mood_analysis": "Mood and engagement trends, early warning signals.",
+    "goals_analysis": "Goal progress, risks of missing them, breakdown.",
+    "self_analysis": "Personal performance: what works and what to improve.",
+    "development_analysis": "Recommendations on skill development and the plan.",
+    "knowledge_search": "Search and summarisation of knowledge base materials.",
+    "auto_reports": "A periodic team report: metrics and changes."
+  },
+  "tour": {
+    "sections": "Sections",
+    "sectionsDesc": "Teams, meetings, tasks, notes and analytics — switch between them here.",
+    "pit": "Pit the assistant",
+    "pitDescLead": "Ask Pit about tasks and meetings. He also suggests topics while you prepare an agenda.",
+    "pitDescMember": "Ask Pit about your tasks, meetings and team — he is always at hand.",
+    "notifications": "Notifications",
+    "notificationsDescLead": "Meeting requests, upcoming deadlines and started calls arrive here.",
+    "notificationsDescMember": "Invitations and reminders about meetings and tasks arrive here.",
+    "profile": "Profile and settings",
+    "profileDescLead": "The colour theme, password change and the Pit hints switch live in this menu.",
+    "profileDescMember": "Profile details, the colour theme and sign-out live in this menu."
+  },
+  "faq": {
+    "start": "How do I get started with the platform?",
+    "invite": "How do I invite someone to the team?",
+    "firstMeeting": "How do I run the first meeting?",
+    "analytics": "How do I view analytics?",
+    "effective1on1": "How do I run an effective 1-on-1?",
+    "feedback": "How do I give constructive feedback?",
+    "burnout": "How do I help an employee with burnout?",
+    "smart": "How do I set SMART goals?"
   }
 }

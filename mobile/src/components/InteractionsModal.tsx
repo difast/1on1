@@ -11,11 +11,13 @@ import {
   getInteractions, createInteraction, acceptInteraction, declineInteraction, replyInteraction, closeInteraction,
 } from '../lib/api';
 
-const TYPE_LABEL: Record<string, string> = {
-  collab_proposal: 'Совместная работа', help_offer: 'Предложение помощи',
-  consultation: 'Консультация', discussion: 'Обсуждение', recommendation: 'Рекомендация',
+const TYPE_KEY: Record<string, string> = {
+  collab_proposal: 'collab', help_offer: 'help',
+  consultation: 'consultation', discussion: 'discussion', recommendation: 'recommendation',
 };
-const STATUS_LABEL: Record<string, string> = { sent: 'Отправлено', accepted: 'Принято', declined: 'Отклонено', completed: 'Завершено', closed: 'Закрыто' };
+const typeLabel = (t: (k: string) => string, ty: string) =>
+  (TYPE_KEY[ty] ? t(`labels.interactionType.${TYPE_KEY[ty]}`) : ty);
+const statusLabel = (t: (k: string) => string, st: string) => t(`labels.interactionStatus.${st}`);
 const fmt = (iso?: string) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : '';
 
 /*
@@ -104,16 +106,16 @@ export function InteractionsModal({
     <View key={it.id} style={styles.card}>
       <View style={styles.cardHead}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.typeLabel}>{TYPE_LABEL[it.type] || it.type}</Text>
+          <Text style={styles.typeLabel}>{typeLabel(t, it.type)}</Text>
           <Text style={styles.cardTitle}>{it.topic || t('ui.bez_temy')}</Text>
           <Text style={styles.cardMeta}>
-            {it.from_user_id === currentUser.id ? t('ui.vy_3', { v1: it.to_user_name || it.subject_user_name || 'обсуждение' }) : `${it.from_user_name || t('ui.uchastnik')} -> вам`}
+            {it.from_user_id === currentUser.id ? t('ui.vy_3', { v1: it.to_user_name || it.subject_user_name || t('labels.discussionLower') }) : `${it.from_user_name || t('ui.uchastnik')} -> ${t('ui.vam')}`}
           </Text>
           {!!it.context && <Text style={styles.cardContext}>{it.context}</Text>}
           {!!it.desired_format && <Text style={styles.cardMeta}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</Text>}
           {!!it.outcome && <Text style={[styles.cardMeta, { color: colors.success }]}>Итог: {it.outcome}</Text>}
         </View>
-        <Text style={styles.badge}>{awaitingMe(it) ? t('ui.vash_hod') : (STATUS_LABEL[it.status] || it.status)}</Text>
+        <Text style={styles.badge}>{awaitingMe(it) ? t('ui.vash_hod') : statusLabel(t, it.status)}</Text>
       </View>
 
       {it.replies?.length > 0 && (
@@ -184,9 +186,9 @@ export function InteractionsModal({
             <View style={{ gap: 12 }}>
               <Text style={styles.label}>{t('ui.tip')}</Text>
               <View style={{ gap: 6 }}>
-                {Object.entries(TYPE_LABEL).map(([k, v]) => (
+                {Object.keys(TYPE_KEY).map((k) => (
                   <TouchableOpacity key={k} style={[styles.pick, ntype === k && styles.pickActive]} onPress={() => setNtype(k)}>
-                    <Text style={styles.pickName}>{v}</Text>
+                    <Text style={styles.pickName}>{typeLabel(t, k)}</Text>
                     {ntype === k && <Ionicons name="checkmark-circle" size={18} color={colors.accent} />}
                   </TouchableOpacity>
                 ))}

@@ -39,7 +39,8 @@ const PIT_STYLES = `
 }
 `
 
-const GREETING = 'Привет! Я Пит — ваш AI-ассистент OneOnOne. Помогу с вопросами о встречах, задачах и команде. Спрашивайте!'
+// Приветствие Пита — из словаря: первый ответ должен быть на языке интерфейса.
+const greeting = (t) => t('pit.greeting')
 
 function readCurrentUser() {
   try { return JSON.parse(localStorage.getItem('smart_user') || 'null') } catch { return null }
@@ -63,7 +64,7 @@ export default function PitAssistant() {
     obs.observe(document.body, { childList: true, subtree: true })
     return () => obs.disconnect()
   }, [])
-  const [messages, setMessages] = useState([{ role: 'assistant', content: GREETING }])
+  const [messages, setMessages] = useState([{ role: 'assistant', content: greeting(t) }])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [shifted, setShifted] = useState(false)

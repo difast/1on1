@@ -1,4 +1,5 @@
 import { getToken } from './authToken';
+import { translate } from './i18n';
 
 const BASE =
   (process.env.EXPO_PUBLIC_API_URL || 'https://api.oneononehq.com') + '/api';
@@ -33,7 +34,7 @@ async function req<T>(path: string, options?: RequestInit & { timeoutMs?: number
   } catch (err: any) {
     clearTimeout(timer);
     if (err.name === 'AbortError') {
-      throw { response: { detail: 'Превышено время ожидания', status: 0 } };
+      throw { response: { detail: translate('labels.requestTimeout'), status: 0 } };
     }
     throw err;
   }

@@ -13,16 +13,16 @@ import useEscapeKey from '../lib/useEscapeKey'
  * предложений совместной работы, помощи, консультаций, обсуждений, рекомендаций.
  * Всё — структурные записи со статусом, НЕ чат.
  */
-const TYPE_LABEL = {
-  collab_proposal: 'Совместная работа',
-  help_offer: 'Предложение помощи',
-  consultation: 'Консультация',
-  discussion: 'Обсуждение',
-  recommendation: 'Рекомендация',
+// Тип и статус взаимодействия — ключи словаря, а не готовый русский текст.
+const TYPE_KEY = {
+  collab_proposal: 'collab', help_offer: 'help', consultation: 'consultation',
+  discussion: 'discussion', recommendation: 'recommendation',
 }
-const STATUS_LABEL = { sent: 'Отправлено', accepted: 'Принято', declined: 'Отклонено', completed: 'Завершено', closed: 'Закрыто' }
+const typeLabel = (t, type) => t(`labels.interactionType.${TYPE_KEY[type] || type}`, { defaultValue: type })
+const statusLabel = (t, st) => t(`labels.interactionStatus.${st}`, { defaultValue: st })
 const STATUS_BADGE = { sent: 'badge-amber', accepted: 'badge-green', completed: 'badge-green', declined: 'badge-red', closed: 'badge-gray' }
-const OUTCOME_LABEL = { decision: 'Решение принято', needs_meeting: 'Нужна встреча', closed: 'Закрыто без решения' }
+const OUTCOME_KEY = { decision: 'decided', needs_meeting: 'needMeeting', closed: 'closedNoDecision' }
+const outcomeLabel = (t, o) => (OUTCOME_KEY[o] ? t(`labels.interactionOutcome.${OUTCOME_KEY[o]}`) : '')
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
 
 export default function InteractionsPanel({ currentUser, contacts = [], tasks = [], teamId, onClose, onChanged }) {
@@ -97,7 +97,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
 
   const otherLabel = (it) => it.from_user_id === currentUser.id
     ? `Вы -> ${it.to_user_name || (it.type === 'discussion' ? `${it.participants?.length || 0} участн.` : it.subject_user_name || '')}`
-    : `${it.from_user_name || t('ui.uchastnik')} -> ${it.type === 'discussion' ? 'обсуждение' : it.type === 'recommendation' ? (it.subject_user_name || '') : t('ui.vam')}`
+    : `${it.from_user_name || t('ui.uchastnik')} -> ${it.type === 'discussion' ? t('labels.discussionLower') : it.type === 'recommendation' ? (it.subject_user_name || '') : t('ui.vam')}`
 
   const canReply = (it) => ['discussion', 'consultation'].includes(it.type) &&
     (it.from_user_id === currentUser.id || it.to_user_id === currentUser.id || (it.participants || []).some(p => p.user_id === currentUser.id))
@@ -106,15 +106,15 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
     <div key={it.id} className="card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
-          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)' }}>{TYPE_LABEL[it.type] || it.type}</span>
+          <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)' }}>{typeLabel(t, it.type)}</span>
           <p style={{ fontWeight: 700, fontSize: 14, margin: '2px 0 0', color: 'var(--color-text-primary)' }}>{it.topic || t('ui.bez_temy')}</p>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{otherLabel(it)}</p>
           {it.context && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>{it.context}</p>}
           {it.desired_format && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</p>}
-          {it.outcome && <p style={{ fontSize: 12, color: '#15803d', margin: '2px 0 0', fontWeight: 600 }}>Итог: {OUTCOME_LABEL[it.outcome] || it.outcome}</p>}
+          {it.outcome && <p style={{ fontSize: 12, color: '#15803d', margin: '2px 0 0', fontWeight: 600 }}>{t('ui.itog')}: {outcomeLabel(t, it.outcome) || it.outcome}</p>}
         </div>
         <span className={`badge ${STATUS_BADGE[it.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-          {awaitingMe(it) ? t('ui.vash_hod') : (STATUS_LABEL[it.status] || it.status)}
+          {awaitingMe(it) ? t('ui.vash_hod') : statusLabel(t, it.status)}
         </span>
       </div>
 
@@ -200,7 +200,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
             <div className="form-group" style={{ margin: 0 }}>
               <label className="form-label">{t('ui.tip_vzaimodeystviya')}</label>
               <select className="input" value={ntype} onChange={e => setNtype(e.target.value)}>
-                {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                {Object.keys(TYPE_KEY).map(k => <option key={k} value={k}>{typeLabel(t, k)}</option>)}
               </select>
             </div>
             {needsRecipient && (

@@ -23,11 +23,12 @@ type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
 
-const STATUS_CONFIG: Record<TaskStatus, { label: string; short: string }> = {
-  in_progress: { label: 'В работе', short: 'В работе' },
-  blocked: { label: 'Блокер', short: 'Блок' },
-  review: { label: 'На ревью', short: 'Ревью' },
-  done: { label: 'Готово', short: '' },
+// Ключи словаря вместо готового текста: полная и короткая подписи статуса.
+const STATUS_KEYS: Record<TaskStatus, { label: string; short: string }> = {
+  in_progress: { label: 'labels.taskStatus.in_progress', short: 'labels.taskStatus.in_progress' },
+  blocked: { label: 'labels.taskStatus.blocked', short: 'labels.taskStatusShort.blocked' },
+  review: { label: 'labels.taskStatus.review', short: 'labels.taskStatusShort.review' },
+  done: { label: 'labels.taskStatus.done', short: '' },
 };
 
 function getTaskStatus(task: any): TaskStatus {
@@ -267,7 +268,7 @@ function TaskRow({
   const { t } = useI18n();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const status = getTaskStatus(task);
-  const cfg = STATUS_CONFIG[status];
+  const cfg = STATUS_KEYS[status];
   const overdue = isOverdue(task);
   const [expanded, setExpanded] = useState(false);
   const [aiSteps, setAiSteps] = useState<string[]>([]);
@@ -378,7 +379,7 @@ function TaskRow({
             activeOpacity={0.7}
           >
             <Status3DIcon status={status} size={16} />
-            <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short}</Text>
+            <Text style={[styles.statusBadgeText, { color: sc.text }]}>{cfg.short ? t(cfg.short) : ''}</Text>
           </TouchableOpacity>
         )}
         {onDelete && (

@@ -60,34 +60,26 @@ const ICON_COLORS = {
 
 const STATUS_CONFIG = {
   in_progress: {
-    label: 'В работе',
-    desc: 'Задача активна и выполняется',
     bg: '#dbeafe', color: '#1d4ed8', dot: '#3b82f6',
     hoverBg: '#bfdbfe',
   },
   blocked: {
-    label: 'Блокер',
-    desc: 'Есть препятствие для выполнения',
     bg: '#fee2e2', color: '#dc2626', dot: '#ef4444',
     hoverBg: '#fecaca',
   },
   review: {
-    label: 'На ревью',
-    desc: 'Ожидает проверки',
     bg: '#fef3c7', color: '#b45309', dot: '#f59e0b',
     hoverBg: '#fde68a',
   },
   done: {
-    label: 'Готово',
-    desc: 'Задача выполнена',
     bg: '#dcfce7', color: '#15803d', dot: '#22c55e',
     hoverBg: '#bbf7d0',
   },
 }
 
-export const STATUS_LABEL = Object.fromEntries(
-  Object.entries(STATUS_CONFIG).map(([k, v]) => [k, v.label])
-)
+// Подпись и описание статуса — из словаря по ключу; здесь остаётся только цвет.
+export const statusLabel = (t, st) => t(`labels.taskStatus.${st}`, { defaultValue: st })
+export const statusDesc = (t, st) => t(`labels.taskStatusDesc.${st}`, { defaultValue: '' })
 
 export { StatusIcon }
 
@@ -212,10 +204,10 @@ export default function TaskStatusSelect({ status, onChange, canMarkDone = true,
             }}><StatusIcon type={o} size={20} /></span>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 13, fontWeight: active ? 700 : 500, color: active ? c.color : 'var(--color-text-primary)', margin: 0, lineHeight: 1.2 }}>
-                {c.label}
+                {statusLabel(t, o)}
               </p>
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', margin: 0, marginTop: 1 }}>
-                {c.desc}
+                {statusDesc(t, o)}
               </p>
             </div>
             {active && (
@@ -253,7 +245,7 @@ export default function TaskStatusSelect({ status, onChange, canMarkDone = true,
         onMouseLeave={e => { e.currentTarget.style.background = cfg.bg }}
       >
         <StatusIcon type={status} size={15} />
-        {cfg.label}
+        {statusLabel(t, status)}
         <svg width="9" height="6" viewBox="0 0 9 6" fill="currentColor"
           style={{ opacity: 0.6, marginLeft: 1, transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s' }}>
           <path d="M0 0l4.5 6L9 0z" />

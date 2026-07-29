@@ -5,9 +5,12 @@ import { toast } from '../lib/ui'
 import Spinner from '../lib/Spinner'
 import useEscapeKey from '../lib/useEscapeKey'
 
-const STATUS_LABEL = { pending: 'Ожидает ответа', discussing: 'Обсуждается', accepted: 'Принято', declined: 'Отклонено' }
+// Статусы и события — ключи словаря, а не готовый русский текст.
+const STATUS_KEY = { pending: 'sent', discussing: 'discussing', accepted: 'accepted', declined: 'declined' }
+const statusLabel = (t, st) => t(`labels.interactionStatus.${STATUS_KEY[st] || st}`, { defaultValue: st })
 const STATUS_BADGE = { pending: 'badge-amber', discussing: 'badge-blue', accepted: 'badge-green', declined: 'badge-red' }
-const ACTION_LABEL = { proposed: 'предложил(а) задачу', commented: 'написал(а)', accepted: 'принял(а)', declined: 'отклонил(а)' }
+const ACTION_KEY = { proposed: 'taskProposed', commented: 'wrote', accepted: 'accepted', declined: 'declined' }
+const actionLabel = (t, a) => (ACTION_KEY[a] ? t(`labels.proposalEvent.${ACTION_KEY[a]}`) : a)
 
 const fmt = (iso) => iso ? new Date(iso).toLocaleString('ru-RU', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }) : ''
 const fmtDue = (iso) => iso ? new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: 'long', year: 'numeric' }) : null
@@ -109,7 +112,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
             {p.due_date && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '4px 0 0' }}>Срок: {fmtDue(p.due_date)}</p>}
           </div>
           <span className={`badge ${STATUS_BADGE[p.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-            {respond ? t('ui.vash_hod') : STATUS_LABEL[p.status] || p.status}
+            {respond ? t('ui.vash_hod') : statusLabel(t, p.status)}
           </span>
         </div>
 
@@ -124,7 +127,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
             {p.events.map(e => (
               <div key={e.id}>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
-                  <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || t('ui.uchastnik')}</b> {ACTION_LABEL[e.action] || e.action} · {fmt(e.created_at)}
+                  <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || t('ui.uchastnik')}</b> {actionLabel(t, e.action)} · {fmt(e.created_at)}
                 </p>
                 {e.note && <p style={{ fontSize: 13, color: 'var(--color-text-primary)', margin: '1px 0 0' }}>{e.note}</p>}
               </div>
@@ -159,7 +162,7 @@ export default function TaskProposals({ currentUser, contacts = [], teamId, onCl
           )
         )}
         {p.status === 'accepted' && (
-          <p style={{ fontSize: 12, color: '#15803d', margin: 0, fontWeight: 600 }}>Задача создана и назначена на {p.to_user_name || 'получателя'}</p>
+          <p style={{ fontSize: 12, color: '#15803d', margin: 0, fontWeight: 600 }}>Задача создана и назначена на {p.to_user_name || t('labels.recipient')}</p>
         )}
         {p.status === 'declined' && (
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>{t('ui.predlozhenie_otkloneno')}</p>

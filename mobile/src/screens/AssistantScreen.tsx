@@ -20,12 +20,7 @@ interface Message {
   content: string;
 }
 
-const STARTERS = [
-  'Как провести эффективную 1-on-1 встречу?',
-  'Как дать конструктивную обратную связь?',
-  'Как помочь сотруднику с выгоранием?',
-  'Как ставить цели по SMART?',
-];
+const STARTER_KEYS = ['faq.effective1on1', 'faq.feedback', 'faq.burnout', 'faq.smart'];
 
 export default function AssistantScreen() {
   const { t } = useI18n();
@@ -115,9 +110,9 @@ export default function AssistantScreen() {
               <Text style={styles.emptyTitle}>{t('ui.sprosite_chto_ugodno')}</Text>
               <Text style={styles.emptySub}>{t('ui.o_provedenii_vstrech_motivacii_komandy_obratno')}</Text>
               <View style={styles.starters}>
-                {STARTERS.map((s, i) => (
-                  <TouchableOpacity key={i} style={styles.starterChip} onPress={() => send(s)}>
-                    <Text style={styles.starterText}>{s}</Text>
+                {STARTER_KEYS.map((k, i) => (
+                  <TouchableOpacity key={i} style={styles.starterChip} onPress={() => send(t(k))}>
+                    <Text style={styles.starterText}>{t(k)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

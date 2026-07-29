@@ -20,12 +20,7 @@ import type { AppColors } from '../constants/colors';
 type Tab = 'pit' | 'ticket';
 interface Message { role: 'user' | 'assistant'; content: string; }
 
-const PIT_STARTERS = [
-  'Как начать работу с платформой?',
-  'Как пригласить участника в команду?',
-  'Как провести первую встречу?',
-  'Как посмотреть аналитику?',
-];
+const PIT_STARTER_KEYS = ['faq.start', 'faq.invite', 'faq.firstMeeting', 'faq.analytics'];
 
 export default function SupportScreen() {
   const { t } = useI18n();
@@ -203,9 +198,9 @@ export default function SupportScreen() {
             )}
             {messages.length === 1 && (
               <View style={styles.starters}>
-                {PIT_STARTERS.map((s, i) => (
-                  <TouchableOpacity key={i} style={styles.starterChip} onPress={() => sendPit(s)}>
-                    <Text style={styles.starterText}>{s}</Text>
+                {PIT_STARTER_KEYS.map((k, i) => (
+                  <TouchableOpacity key={i} style={styles.starterChip} onPress={() => sendPit(t(k))}>
+                    <Text style={styles.starterText}>{t(k)}</Text>
                   </TouchableOpacity>
                 ))}
               </View>

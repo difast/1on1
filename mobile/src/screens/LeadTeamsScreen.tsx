@@ -24,10 +24,10 @@ import { Spinner } from '../components/Spinner';
 import { NotificationBell } from '../components/NotificationBell';
 
 
-const STATUS_BADGE_LABEL: Record<string, string> = {
-  green: 'В порядке',
-  yellow: 'Скоро',
-  red: 'Нет встречи',
+const STATUS_BADGE_KEY: Record<string, string> = {
+  green: 'labels.risk.fine',
+  yellow: 'labels.risk.soon',
+  red: 'labels.risk.noMeeting',
 };
 
 const STATUS_BADGE_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
@@ -482,7 +482,7 @@ export default function LeadTeamsScreen() {
                       </View>
                       {member.status_color && (
                         <StatusBadge
-                          label={STATUS_BADGE_LABEL[member.status_color] ?? '—'}
+                          label={STATUS_BADGE_KEY[member.status_color] ? t(STATUS_BADGE_KEY[member.status_color]) : '—'}
                           variant={STATUS_BADGE_VARIANT[member.status_color] ?? 'gray'}
                         />
                       )}
@@ -545,8 +545,8 @@ export default function LeadTeamsScreen() {
                                 </Text>
                                 {task.due_date && (
                                   <Text style={[styles.taskDue, overdue && { color: colors.danger, fontWeight: '600' }]}>
-                                    {overdue ? `Просрочено · ` : t('ui.do')}
-                                    {new Date(task.due_date).toLocaleDateString('ru-RU')}
+                                    {overdue ? t('labels.overduePrefix') : t('ui.do')}
+                                    {new Date(task.due_date).toLocaleDateString()}
                                   </Text>
                                 )}
                               </View>

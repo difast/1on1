@@ -542,7 +542,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                           )}
                         </div>
                         <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
-                          {meetingStatusLabel(m.status)}
+                          {meetingStatusLabel(m.status, t)}
                         </span>
                         {!isTg && (
                           <button
@@ -586,7 +586,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         {m.topic && <p style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.topic}</p>}
                       </div>
                       <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
-                        {meetingStatusLabel(m.status)}
+                        {meetingStatusLabel(m.status, t)}
                       </span>
                     </div>
                   )
@@ -693,7 +693,7 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
                         )}
                       </div>
                       <span className={`badge ${meetingStatusBadge(m.status)}`} style={{ flexShrink: 0 }}>
-                        {meetingStatusLabel(m.status)}
+                        {meetingStatusLabel(m.status, t)}
                       </span>
                       {!['completed', 'cancelled', 'declined'].includes(m.status) && (
                         <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', flexShrink: 0 }}>

@@ -11,13 +11,10 @@ import {
 // ── справочники статусов ─────────────────────────────────────────────────────
 // Русские подписи и мягкая цветовая индикация. Риск подсвечивается информативно
 // (янтарный), а не тревожно (красный оставлен только для «не достигнута»).
-export const GOAL_STATUS_LABEL = {
-  not_started: 'Не начата',
-  in_progress: 'В работе',
-  at_risk: 'Под риском',
-  achieved: 'Достигнута',
-  failed: 'Не достигнута',
-}
+// Подписи статусов берём из словаря по ключу — цвет остаётся здесь, текст
+// приходит на языке интерфейса.
+export const goalStatusLabel = (t, status) =>
+  t(`labels.goalStatus.${status === 'failed' ? 'missed' : status}`, { defaultValue: status })
 const STATUS_COLOR = {
   not_started: { bg: 'var(--gray-100)', fg: 'var(--color-text-secondary)', bd: 'var(--gray-200)' },
   in_progress: { bg: '#eff6ff', fg: '#1d4ed8', bd: '#bfdbfe' },
@@ -36,7 +33,7 @@ function StatusBadge({ status }) {
     <span style={{
       fontSize: 12, fontWeight: 600, padding: '3px 10px', borderRadius: 999,
       background: c.bg, color: c.fg, border: `1px solid ${c.bd}`, whiteSpace: 'nowrap',
-    }}>{GOAL_STATUS_LABEL[status] || status}</span>
+    }}>{goalStatusLabel(t, status)}</span>
   )
 }
 
@@ -73,10 +70,10 @@ export function quarterOptions() {
   return opts
 }
 
-function periodText(g) {
+function periodText(t, g) {
   if (g.period_label) return g.period_label
-  if (g.period_end) return `до ${fmtDate(g.period_end)}`
-  return 'Без срока'
+  if (g.period_end) return t('labels.until', { v1: fmtDate(g.period_end) })
+  return t('labels.noDeadline')
 }
 
 // ── ветка обсуждения цели ────────────────────────────────────────────────────
@@ -195,7 +192,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)', wordBreak: 'break-word' }}>{goal.title}</h4>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(goal)}</p>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(t, goal)}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <StatusBadge status={goal.status} />
@@ -231,14 +228,14 @@ function OwnGoalCard({ goal, meId, onChanged }) {
           onChange={e => patch({ status: e.target.value })}
           className="input" style={{ width: 'auto', padding: '4px 8px', fontSize: 13 }}
         >
-          {SELECTABLE_STATUSES.map(s => <option key={s} value={s}>{GOAL_STATUS_LABEL[s]}</option>)}
+          {SELECTABLE_STATUSES.map(s => <option key={s} value={s}>{goalStatusLabel(t, s)}</option>)}
         </select>
       </div>
 
       {/* Информативная подсказка статуса — финальное решение за сотрудником */}
       {suggestDiffers && suggestOpen && (
         <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-secondary)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span>По прогрессу и сроку статус ближе к «{GOAL_STATUS_LABEL[goal.suggested_status]}».</span>
+          <span>По прогрессу и сроку статус ближе к «{goalStatusLabel(t, goal.suggested_status)}».</span>
           <button className="btn btn-secondary btn-sm" style={{ padding: '2px 8px', fontSize: 12 }} disabled={saving}
             onClick={() => patch({ status: goal.suggested_status })}>{t('ui.primenit')}</button>
         </div>
@@ -265,7 +262,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
 }
 
 // ── переиспользуемая форма создания цели (личная / командная) ───────────────
-export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать цель', placeholder }) {
+export function GoalForm({ onCreate, onCancel, submitLabel, placeholder }) {
   const { t } = useTranslation()
   const [title, setTitle] = useState('')
   const [desc, setDesc] = useState('')
@@ -307,7 +304,7 @@ export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать ц�
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button className="btn btn-secondary btn-sm" onClick={onCancel}>{t('ui.otmena')}</button>
-        <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? t('ui.sozdaem_2') : submitLabel}</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? t('ui.sozdaem_2') : (submitLabel || t('labels.createGoal'))}</button>
       </div>
     </div>
   )
@@ -322,7 +319,7 @@ function TeamGoalCard({ goal, meId, onChanged }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)', wordBreak: 'break-word' }}>{goal.title}</h4>
-          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(goal)} · ведёт тимлид</p>
+          <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(t, goal)} · {t('labels.ledByLead')}</p>
         </div>
         <StatusBadge status={goal.status} />
       </div>
@@ -452,7 +449,7 @@ function LeadGoalCard({ goal, meId, onCommented }) {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--color-text-primary)', wordBreak: 'break-word' }}>{goal.title}</p>
-          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(goal)}</p>
+          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 2 }}>{periodText(t, goal)}</p>
         </div>
         <StatusBadge status={goal.status} />
       </div>
@@ -597,7 +594,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
               {(m.user_name || '?').slice(0, 1).toUpperCase()}
             </div>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{m.user_name}</h4>
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{m.goals.length ? t('ui.cel', { v1: m.goals.length }) : 'нет целей'}</span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{m.goals.length ? t('ui.cel', { v1: m.goals.length }) : t('labels.noGoals')}</span>
           </div>
           {m.goals.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.sotrudnik_esche_ne_postavil_celi')}</p>
