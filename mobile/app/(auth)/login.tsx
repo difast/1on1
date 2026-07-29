@@ -114,7 +114,7 @@ export default function LoginScreen() {
         setNeedConfirm(true);
         setError(detail.message || t('validation.emailUnconfirmed'));
       } else {
-        setError(translateError(typeof detail === 'string' ? detail : 'Не удалось войти'));
+        setError(translateError(typeof detail === 'string' ? detail : t('auth.yandexFailedTitle')));
       }
       submittingRef.current = false;
       setLoading(false);
@@ -143,7 +143,7 @@ export default function LoginScreen() {
       await signUp(email, password);
       setMode('confirm_sent');
     } catch (err: any) {
-      setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? 'Не удалось зарегистрироваться'));
+      setError(translateError(err?.response?.data?.detail ?? err?.response?.detail ?? t('ui.ne_udalos_zaregistrirovatsya')));
     } finally {
       submittingRef.current = false;
       setLoading(false);
@@ -181,13 +181,9 @@ export default function LoginScreen() {
           <Ionicons name="mail-outline" size={28} color={colors.accent} />
         </View>
         <Text style={styles.emailTitle}>{t('auth.confirmTitle')}</Text>
-        <Text style={styles.emailDesc}>
-          Регистрация завершена. Мы отправили письмо со ссылкой для подтверждения и активации аккаунта на адрес:
-        </Text>
+        <Text style={styles.emailDesc}>{t('ui.registraciya_zavershena_my_otpravili_pismo_so')}</Text>
         <Text style={styles.emailAddress}>{email}</Text>
-        <Text style={styles.emailHint}>
-          Перейдите по ссылке из письма, чтобы продолжить. Вход в кабинет откроется после подтверждения.
-        </Text>
+        <Text style={styles.emailHint}>{t('auth.confirmHint')}</Text>
         <View style={{ flexDirection: 'row', gap: 10, width: '100%', maxWidth: 400 }}>
           <TouchableOpacity
             style={[styles.btn, styles.btnSecondary, { flex: 0 }]}
@@ -200,7 +196,7 @@ export default function LoginScreen() {
             onPress={openMailApp}
             disabled={!provider.url}
           >
-            <Text style={styles.btnText}>{provider.label}</Text>
+            <Text style={styles.btnText}>{t(provider.labelKey)}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

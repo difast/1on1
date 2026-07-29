@@ -60,7 +60,7 @@ export function EntityPicker({
               keyExtractor={i => String(i.id)}
               keyboardShouldPersistTaps="handled"
               style={{ maxHeight: 360 }}
-              ListEmptyComponent={<Text style={styles.empty}>{emptyText || 'Ничего не найдено'}</Text>}
+              ListEmptyComponent={<Text style={styles.empty}>{emptyText || t('common.notFound')}</Text>}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={[styles.row, item.id === valueId && styles.rowActive]}

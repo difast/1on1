@@ -63,7 +63,7 @@ export function InteractionsModal({
   const act = async (fn: (id: number, uid: number, ...a: any[]) => Promise<any>, id: number, ...args: any[]) => {
     setBusyId(id);
     try { await fn(id, currentUser.id, ...args); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_vypolnit')); }
     finally { setBusyId(null); }
   };
 
@@ -71,7 +71,7 @@ export function InteractionsModal({
     if (!replyText.trim()) return;
     setBusyId(id);
     try { await replyInteraction(id, currentUser.id, replyText.trim()); setReplyFor(null); setReplyText(''); load(); onChanged?.(); }
-    catch { Alert.alert(t('ui.oshibka'), 'Не удалось отправить'); }
+    catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otpravit')); }
     finally { setBusyId(null); }
   };
 
@@ -96,7 +96,7 @@ export function InteractionsModal({
       });
       setTopic(''); setContext(''); setToUser(null); setParticipants([]); setSubjectUser(null); setTaskId(null);
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось создать'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_sozdat')); }
     finally { setCreating(false); }
   };
 
@@ -105,25 +105,25 @@ export function InteractionsModal({
       <View style={styles.cardHead}>
         <View style={{ flex: 1 }}>
           <Text style={styles.typeLabel}>{TYPE_LABEL[it.type] || it.type}</Text>
-          <Text style={styles.cardTitle}>{it.topic || '(без темы)'}</Text>
+          <Text style={styles.cardTitle}>{it.topic || t('ui.bez_temy')}</Text>
           <Text style={styles.cardMeta}>
-            {it.from_user_id === currentUser.id ? `Вы -> ${it.to_user_name || it.subject_user_name || 'обсуждение'}` : `${it.from_user_name || 'Участник'} -> вам`}
+            {it.from_user_id === currentUser.id ? t('ui.vy_3', { v1: it.to_user_name || it.subject_user_name || 'обсуждение' }) : `${it.from_user_name || t('ui.uchastnik')} -> вам`}
           </Text>
           {!!it.context && <Text style={styles.cardContext}>{it.context}</Text>}
           {!!it.desired_format && <Text style={styles.cardMeta}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</Text>}
           {!!it.outcome && <Text style={[styles.cardMeta, { color: colors.success }]}>Итог: {it.outcome}</Text>}
         </View>
-        <Text style={styles.badge}>{awaitingMe(it) ? 'Ваш ход' : (STATUS_LABEL[it.status] || it.status)}</Text>
+        <Text style={styles.badge}>{awaitingMe(it) ? t('ui.vash_hod') : (STATUS_LABEL[it.status] || it.status)}</Text>
       </View>
 
       {it.replies?.length > 0 && (
         <TouchableOpacity onPress={() => setExpanded(expanded === it.id ? null : it.id)}>
-          <Text style={styles.link}>{expanded === it.id ? 'Скрыть ответы' : `Ответы (${it.replies.length})`}</Text>
+          <Text style={styles.link}>{expanded === it.id ? t('ui.skryt_otvety') : t('ui.otvety', { v1: it.replies.length })}</Text>
         </TouchableOpacity>
       )}
       {expanded === it.id && (it.replies || []).map((r: any) => (
         <View key={r.id} style={styles.reply}>
-          <Text style={styles.replyAuthor}>{r.author_name || 'Участник'} · {fmt(r.created_at)}</Text>
+          <Text style={styles.replyAuthor}>{r.author_name || t('ui.uchastnik')} · {fmt(r.created_at)}</Text>
           <Text style={styles.replyBody}>{r.body}</Text>
         </View>
       ))}
@@ -172,7 +172,7 @@ export function InteractionsModal({
           <TouchableOpacity onPress={onClose} hitSlop={8}><Ionicons name="close" size={24} color={colors.textPrimary} /></TouchableOpacity>
         </View>
         <View style={styles.tabs}>
-          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', 'Все'], ['new', 'Создать']] as const).map(([k, label]) => (
+          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', t('common.all')], ['new', t('common.create')]] as const).map(([k, label]) => (
             <TouchableOpacity key={k} style={[styles.tab, tab === k && styles.tabActive]} onPress={() => setTab(k)}>
               <Text style={[styles.tabText, tab === k && styles.tabTextActive]}>{label}</Text>
             </TouchableOpacity>

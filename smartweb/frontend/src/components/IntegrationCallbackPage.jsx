@@ -30,7 +30,7 @@ export default function IntegrationCallbackPage() {
       .then(() => setStatus('ok'))
       .catch((e) => {
         setStatus('error')
-        setMessage(e?.response?.data?.detail?.message || e?.response?.data?.detail || 'Не удалось завершить подключение.')
+        setMessage(e?.response?.data?.detail?.message || e?.response?.data?.detail || t('ui.ne_udalos_zavershit_podklyuchenie'))
       })
   }, [])
 

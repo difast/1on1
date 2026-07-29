@@ -57,7 +57,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
   const act = async (fn, id, ...args) => {
     setBusyId(id)
     try { await fn(id, currentUser.id, ...args); load(); onChanged?.() }
-    catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Не удалось выполнить', 'error') }
+    catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : t('ui.ne_udalos_vypolnit'), 'error') }
     finally { setBusyId(null) }
   }
 
@@ -91,13 +91,13 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       toast(t('ui.vzaimodeystvie_sozdano'), 'success')
       setTopic(''); setContext(''); setToUser(''); setParticipants([]); setSubjectUser(''); setTaskId('')
       setTab('all'); load(); onChanged?.()
-    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : 'Не удалось создать', 'error') }
+    } catch (err) { toast(typeof err?.response?.data?.detail === 'string' ? err.response.data.detail : t('ui.ne_udalos_sozdat'), 'error') }
     finally { setCreating(false) }
   }
 
   const otherLabel = (it) => it.from_user_id === currentUser.id
     ? `Вы -> ${it.to_user_name || (it.type === 'discussion' ? `${it.participants?.length || 0} участн.` : it.subject_user_name || '')}`
-    : `${it.from_user_name || 'Участник'} -> ${it.type === 'discussion' ? 'обсуждение' : it.type === 'recommendation' ? (it.subject_user_name || '') : 'вам'}`
+    : `${it.from_user_name || t('ui.uchastnik')} -> ${it.type === 'discussion' ? 'обсуждение' : it.type === 'recommendation' ? (it.subject_user_name || '') : t('ui.vam')}`
 
   const canReply = (it) => ['discussion', 'consultation'].includes(it.type) &&
     (it.from_user_id === currentUser.id || it.to_user_id === currentUser.id || (it.participants || []).some(p => p.user_id === currentUser.id))
@@ -107,14 +107,14 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
         <div style={{ minWidth: 0 }}>
           <span style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', color: 'var(--color-accent)' }}>{TYPE_LABEL[it.type] || it.type}</span>
-          <p style={{ fontWeight: 700, fontSize: 14, margin: '2px 0 0', color: 'var(--color-text-primary)' }}>{it.topic || '(без темы)'}</p>
+          <p style={{ fontWeight: 700, fontSize: 14, margin: '2px 0 0', color: 'var(--color-text-primary)' }}>{it.topic || t('ui.bez_temy')}</p>
           <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>{otherLabel(it)}</p>
           {it.context && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '4px 0 0' }}>{it.context}</p>}
           {it.desired_format && <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '2px 0 0' }}>Формат: {it.desired_format === 'call' ? t('ui.sozvon_2') : t('ui.pismennyy_otvet_2')}</p>}
           {it.outcome && <p style={{ fontSize: 12, color: '#15803d', margin: '2px 0 0', fontWeight: 600 }}>Итог: {OUTCOME_LABEL[it.outcome] || it.outcome}</p>}
         </div>
         <span className={`badge ${STATUS_BADGE[it.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-          {awaitingMe(it) ? 'Ваш ход' : (STATUS_LABEL[it.status] || it.status)}
+          {awaitingMe(it) ? t('ui.vash_hod') : (STATUS_LABEL[it.status] || it.status)}
         </span>
       </div>
 
@@ -122,13 +122,13 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       {it.replies?.length > 0 && (
         <>
           <button onClick={() => setExpanded(expanded === it.id ? null : it.id)} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            {expanded === it.id ? 'Скрыть ответы' : `Ответы (${it.replies.length})`}
+            {expanded === it.id ? t('ui.skryt_otvety') : t('ui.otvety', { v1: it.replies.length })}
           </button>
           {expanded === it.id && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderLeft: '2px solid var(--color-border)', paddingLeft: 10 }}>
               {it.replies.map(r => (
                 <div key={r.id}>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-secondary)', margin: 0 }}>{r.author_name || 'Участник'} · {fmt(r.created_at)}</p>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-secondary)', margin: 0 }}>{r.author_name || t('ui.uchastnik')} · {fmt(r.created_at)}</p>
                   <p style={{ fontSize: 13, color: 'var(--color-text-primary)', margin: '1px 0 0', whiteSpace: 'pre-wrap' }}>{r.body}</p>
                 </div>
               ))}
@@ -189,7 +189,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
       </div>
 
       <div style={{ display: 'flex', gap: 6, padding: '12px 20px 0', maxWidth: 720, width: '100%', margin: '0 auto' }}>
-        {[['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', 'Все'], ['new', '+ Создать']].map(([k, label]) => (
+        {[['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', t('common.all')], ['new', t('ui.sozdat')]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={tab === k ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>{label}</button>
         ))}
       </div>
@@ -270,7 +270,7 @@ export default function InteractionsPanel({ currentUser, contacts = [], tasks = 
               <textarea className="input" rows={3} value={context} onChange={e => setContext(e.target.value)} placeholder={t('ui.podrobnosti')} />
             </div>
             <button type="submit" disabled={creating} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Создать'}
+              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : t('common.create')}
             </button>
           </form>
         ) : items === null ? (

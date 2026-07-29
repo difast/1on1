@@ -4,11 +4,9 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 
-const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
+// Ключи словаря: подпись берётся при отрисовке и следует языку интерфейса.
+const DAYS = ['ui.pn', 'ui.vt', 'ui.sr', 'ui.cht', 'ui.pt', 'ui.sb', 'ui.vs'];
+const MONTHS = ['ui.yanvar', 'ui.fevral', 'ui.mart', 'ui.aprel', 'ui.may', 'ui.iyun', 'ui.iyul', 'ui.avgust', 'ui.sentyabr', 'ui.oktyabr', 'ui.noyabr', 'ui.dekabr'];
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -178,7 +176,7 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
       {/* Day headers */}
       <View style={styles.dayRow}>
         {DAYS.map((d, i) => (
-          <Text key={d} style={[styles.dayLabel, i >= 5 && styles.dayLabelWeekend]}>{d}</Text>
+          <Text key={d} style={[styles.dayLabel, i >= 5 && styles.dayLabelWeekend]}>{t(d)}</Text>
         ))}
       </View>
 
@@ -191,7 +189,7 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
           return (
             <View key={wi}>
               {showMonthHeader && (
-                <Text style={styles.monthLabel}>{MONTHS[month]} {week[0].getFullYear()}</Text>
+                <Text style={styles.monthLabel}>{t(MONTHS[month])} {week[0].getFullYear()}</Text>
               )}
               <View style={styles.dayRow}>
                 {week.map((date, di) => {
@@ -237,7 +235,7 @@ export function WeekCalendar({ meetings, subtitleFn }: Props) {
               <Text style={styles.navBtnText}>‹</Text>
             </TouchableOpacity>
             <Text style={styles.monthNavTitle}>
-              {MONTHS[monthYear.month]} {monthYear.year}
+              {t(MONTHS[monthYear.month])} {monthYear.year}
             </Text>
             <TouchableOpacity onPress={nextMonth} style={styles.navBtn}>
               <Text style={styles.navBtnText}>›</Text>

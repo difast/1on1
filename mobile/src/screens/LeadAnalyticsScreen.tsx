@@ -25,11 +25,11 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
     if (advice) { setAdvice(''); return; }
     setLoading(true);
     try {
-      const prompt = `Тимлид видит сигнал риска по участнику "${signal.member_name}": ${getFlagDesc(signal)}. `
+      const prompt = t('ui.timlid_vidit_signal_riska_po_uchastniku', { v1: signal.member_name, v2: getFlagDesc(signal) })
         + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`;
       const res = await assistantChat([{ role: 'user', content: prompt }]) as any;
-      setAdvice(res.reply ?? 'Не удалось получить совет.');
-    } catch { setAdvice('Не удалось получить совет. Попробуйте позже.'); }
+      setAdvice(res.reply ?? t('ui.ne_udalos_poluchit_sovet'));
+    } catch { setAdvice(t('ui.ne_udalos_poluchit_sovet_poprobuyte_pozzhe')); }
     finally { setLoading(false); }
   };
 
@@ -49,7 +49,7 @@ function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) 
         {loading
           ? <ActivityIndicator size="small" color={colors.accent} />
           : <Ionicons name="sparkles" size={14} color={colors.accent} />}
-        <Text style={styles.aiBtnText}>{advice ? 'Скрыть совет' : loading ? t('ui.ai_dumaet_2') : t('ui.sovet_ot_ai')}</Text>
+        <Text style={styles.aiBtnText}>{advice ? t('ui.skryt_sovet') : loading ? t('ui.ai_dumaet_2') : t('ui.sovet_ot_ai')}</Text>
       </TouchableOpacity>
       {!!advice && (
         <View style={styles.aiBox}>
@@ -230,8 +230,8 @@ function TeamStats({ team, topics = [] }: { team: any; topics?: string[] }) {
                 <Text style={styles.memberMeta}>
                   За 30 дн: {ms.meetings_last_30 ?? 0} встреч ·{' '}
                   {ms.days_since_last != null
-                    ? `${ms.days_since_last} дн. назад`
-                    : 'встреч не было'}
+                    ? t('ui.dn_nazad', { v1: ms.days_since_last })
+                    : t('ui.vstrech_ne_bylo')}
                 </Text>
                 {ms.task_completion_pct != null && (
                   <Text style={styles.memberMeta}>
@@ -312,7 +312,7 @@ function AnonTeamMood({ teamId }: { teamId: number }) {
       <Text style={styles.infoLabel}>{t('ui.nastroenie_komandy_anonimno')}</Text>
       {mood.insufficient ? (
         <Text style={styles.moodInsufficient}>
-          {mood.message || `Недостаточно данных для анонимной статистики (нужно от ${mood.threshold} ответов).`}
+          {mood.message || t('ui.nedostatochno_dannyh_dlya_anonimnoy_statistiki', { v1: mood.threshold })}
         </Text>
       ) : (
         <View style={styles.moodStatsRow}>

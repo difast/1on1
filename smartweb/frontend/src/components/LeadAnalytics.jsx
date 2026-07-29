@@ -62,7 +62,7 @@ function Heatmap({ weeks }) {
         {weeks.map((w, i) => (
           <div
             key={i}
-            title={`${w.week}: ${w.count} встр.`}
+            title={t('ui.vstr', { v1: w.week, v2: w.count })}
             style={{
               width: 28, height: 28, borderRadius: 5,
               background: getColor(w.count),
@@ -234,7 +234,7 @@ function RiskCard({ s, delay }) {
   useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t) }, [delay])
   const reasons = []
   if (s.warning_flags.includes('no_meeting_14_days')) reasons.push(`${s.days_since_last ?? '14+'} дн. без встречи`)
-  if (s.warning_flags.includes('mood_declining')) reasons.push('Настроение падает')
+  if (s.warning_flags.includes('mood_declining')) reasons.push(t('ui.nastroenie_padaet'))
   if (s.warning_flags.includes('many_incomplete_tasks')) reasons.push(`${s.open_tasks} незакрытых задач`)
   const isUrgent = s.days_since_last >= 21 || s.warning_flags.length >= 2
 
@@ -242,11 +242,11 @@ function RiskCard({ s, delay }) {
     if (advice) { setAdvice(''); return }
     setLoading(true)
     try {
-      const prompt = `Тимлид видит сигнал риска по участнику "${s.name}": ${reasons.join(', ') || 'риск выгорания'}. `
+      const prompt = `Тимлид видит сигнал риска по участнику "${s.name}": ${reasons.join(', ') || t('ui.risk_vygoraniya')}. `
         + `Дай 3 коротких конкретных совета, как помочь участнику и снизить риск выгорания. Только пункты, без вступления.`
       const { data } = await pitChat([{ role: 'user', content: prompt }])
-      setAdvice(data.reply || 'Не удалось получить совет.')
-    } catch { setAdvice('Не удалось получить совет. Попробуйте позже.') }
+      setAdvice(data.reply || t('ui.ne_udalos_poluchit_sovet'))
+    } catch { setAdvice(t('ui.ne_udalos_poluchit_sovet_poprobuyte_pozzhe')) }
     finally { setLoading(false) }
   }
 
@@ -275,7 +275,7 @@ function RiskCard({ s, delay }) {
           borderRadius: 8, padding: '7px 12px',
         }}
       >
-        {advice ? 'Скрыть совет' : loading ? t('ui.ai_dumaet') : t('ui.sovet_ot_ai')}
+        {advice ? t('ui.skryt_sovet') : loading ? t('ui.ai_dumaet') : t('ui.sovet_ot_ai')}
       </button>
       {advice && (
         <div style={{ marginTop: 10, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12, fontSize: 13, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>
@@ -511,7 +511,7 @@ export default function LeadAnalytics({ user }) {
 
     const FLAG_RU = {
       no_meeting_14_days: (s) => `${s.days_since_last ?? '14+'} дн. без встречи`,
-      mood_declining: () => 'Настроение падает',
+      mood_declining: () => t('ui.nastroenie_padaet'),
       many_incomplete_tasks: (s) => `${s.open_tasks} незакрытых задач`,
     }
 
@@ -534,7 +534,7 @@ export default function LeadAnalytics({ user }) {
     }
     sc(ws0, 1, 1, 'OneOnOne', S.coverBrand)
     addMerge(ws0, 1, 1, 1, 5)
-    sc(ws0, 2, 1, 'Платформа эффективных 1-on-1 встреч', S.coverSub)
+    sc(ws0, 2, 1, t('ui.platforma_effektivnyh_1_on_1_vstrech'), S.coverSub)
     addMerge(ws0, 2, 2, 1, 5)
 
     // Team block (rows 3–4)
@@ -542,9 +542,9 @@ export default function LeadAnalytics({ user }) {
       sc(ws0, 3, ci, '', { fill: { fgColor: { rgb: LIGHT } } })
       sc(ws0, 4, ci, '', { fill: { fgColor: { rgb: LIGHT } } })
     }
-    sc(ws0, 3, 1, `Команда: ${team.team_name}`, S.coverTeam)
+    sc(ws0, 3, 1, t('ui.komanda_2', { v1: team.team_name }), S.coverTeam)
     addMerge(ws0, 3, 3, 1, 5)
-    sc(ws0, 4, 1, `Отчёт сформирован: ${nowStr}`, S.coverDate)
+    sc(ws0, 4, 1, t('ui.otchet_sformirovan', { v1: nowStr }), S.coverDate)
     addMerge(ws0, 4, 4, 1, 5)
 
     // Spacer
@@ -560,16 +560,16 @@ export default function LeadAnalytics({ user }) {
     const atRiskCnt = (team.at_risk_members || []).length
 
     const kpi1 = [
-      ['Встреч за 30 дн', teamMtg30],
-      ['Всего встреч', team.total_meetings ?? 0],
-      ['Участников', ms.length],
-      ['В зоне риска', atRiskCnt],
+      [t('ui.vstrech_za_30_dn'), teamMtg30],
+      [t('ui.vsego_vstrech'), team.total_meetings ?? 0],
+      [t('ui.uchastnikov'), ms.length],
+      [t('ui.v_zone_riska'), atRiskCnt],
     ]
     const kpi2 = [
-      ['Ср. интервал (дн)', teamAvgInt ?? '—'],
-      ['Выполнено задач', teamTaskP != null ? teamTaskP + '%' : '—'],
-      ['Настроение ср.', mood?.overall_avg ? mood.overall_avg + '/5' : '—'],
-      ['Всего опросов', mood?.total ?? 0],
+      [t('ui.sr_interval_dn'), teamAvgInt ?? '—'],
+      [t('analytics.tasksCompleted'), teamTaskP != null ? teamTaskP + '%' : '—'],
+      [t('ui.nastroenie_sr'), mood?.overall_avg ? mood.overall_avg + '/5' : '—'],
+      [t('ui.vsego_oprosov'), mood?.total ?? 0],
     ]
     kpi1.forEach(([lbl, val], ci) => {
       sc(ws0, 6, ci + 1, lbl, S.coverKpiLbl)
@@ -582,14 +582,14 @@ export default function LeadAnalytics({ user }) {
 
     ws0['!rows'].push({ hpt: 20 })
     const noteRow = 12
-    sc(ws0, noteRow, 1, 'Листы отчёта: Обложка, Сводка, Карточки, Риски, Активность', {
+    sc(ws0, noteRow, 1, t('ui.listy_otcheta_oblozhka_svodka_kartochki_riski'), {
       font: { italic: true, sz: 9, color: { rgb: '94A3B8' } },
       alignment: { horizontal: 'left', vertical: 'center' },
     })
     addMerge(ws0, noteRow, noteRow, 1, 5)
 
     setRef(ws0, noteRow, 6)
-    XLSX.utils.book_append_sheet(wb, ws0, 'Обложка')
+    XLSX.utils.book_append_sheet(wb, ws0, t('ui.oblozhka'))
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 1 — СВОДКА (Team overview table)
@@ -598,14 +598,14 @@ export default function LeadAnalytics({ user }) {
     ws1['!cols'] = [28, 14, 14, 14, 16, 16, 16, 16, 14, 14, 12].map(w => ({ wch: w }))
 
     const HDR1 = [
-      'Участник', 'Встреч 30дн', 'Встреч 90дн', 'Всего встреч',
-      'Без встречи (дн)', 'Ср. интервал (дн)', '% задач', 'Откр. задач',
-      'Вып. задач', 'Всего задач', 'Статус',
+      t('ui.uchastnik'), t('ui.vstrech_30dn'), t('ui.vstrech_90dn'), t('ui.vsego_vstrech'),
+      t('ui.bez_vstrechi_dn'), t('ui.sr_interval_dn'), t('ui.zadach_2'), t('ui.otkr_zadach'),
+      t('ui.vyp_zadach'), t('ui.vsego_zadach'), t('common.status'),
     ]
     // Title
-    sc(ws1, 0, 0, `Сводная таблица — ${team.team_name}`, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    sc(ws1, 0, 0, t('ui.svodnaya_tablica', { v1: team.team_name }), { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
     addMerge(ws1, 0, 0, 0, HDR1.length - 1)
-    sc(ws1, 1, 0, `Дата: ${today} · Участников: ${ms.length} · В зоне риска: ${atRiskCnt}`, { font: { sz: 10, color: { rgb: '64748B' } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    sc(ws1, 1, 0, t('ui.data_uchastnikov_v_zone_riska', { v1: today, v2: ms.length, v3: atRiskCnt }), { font: { sz: 10, color: { rgb: '64748B' } }, alignment: { horizontal: 'left', vertical: 'center' } })
     addMerge(ws1, 1, 1, 0, HDR1.length - 1)
 
     HDR1.forEach((h, ci) => sc(ws1, 2, ci, h, S.secHdr()))
@@ -631,7 +631,7 @@ export default function LeadAnalytics({ user }) {
       sc(ws1, row, 7, s.open_tasks ?? 0, S[a]('center'))
       sc(ws1, row, 8, s.completed_tasks ?? 0, S[a]('center'))
       sc(ws1, row, 9, s.total_tasks ?? 0, S[a]('center'))
-      sc(ws1, row, 10, isUrgent ? 'Срочно' : isRisk ? t('ui.risk') : t('ui.ok'), st)
+      sc(ws1, row, 10, isUrgent ? t('ui.srochno') : isRisk ? t('ui.risk') : t('ui.ok'), st)
       ws1['!rows'].push({ hpt: 22 })
     })
 
@@ -640,7 +640,7 @@ export default function LeadAnalytics({ user }) {
     // статичным числом. AVERAGE обёрнут в IFERROR на случай пустого столбца.
     const footRow = ms.length + 3
     const rng = (c) => `${XLSX.utils.encode_cell({ r: 3, c })}:${XLSX.utils.encode_cell({ r: footRow - 1, c })}`
-    sc(ws1, footRow, 0, 'ИТОГО / СРЕДНЕЕ', S.subHdr(TEAL))
+    sc(ws1, footRow, 0, t('ui.itogo_srednee'), S.subHdr(TEAL))
     scF(ws1, footRow, 1, `SUM(${rng(1)})`, S.subHdr(TEAL))
     scF(ws1, footRow, 2, `SUM(${rng(2)})`, S.subHdr(TEAL))
     scF(ws1, footRow, 3, `SUM(${rng(3)})`, S.subHdr(TEAL))
@@ -650,13 +650,13 @@ export default function LeadAnalytics({ user }) {
     scF(ws1, footRow, 7, `SUM(${rng(7)})`, S.subHdr(TEAL))
     scF(ws1, footRow, 8, `SUM(${rng(8)})`, S.subHdr(TEAL))
     scF(ws1, footRow, 9, `SUM(${rng(9)})`, S.subHdr(TEAL))
-    sc(ws1, footRow, 10, `${atRiskCnt} риск`, S.subHdr(TEAL))
+    sc(ws1, footRow, 10, t('ui.risk_3', { v1: atRiskCnt }), S.subHdr(TEAL))
     ws1['!rows'].push({ hpt: 24 })
 
     // Автофильтр на шапку + строки данных (строку ИТОГО не включаем).
     if (ms.length > 0) setAutoFilter(ws1, 2, 0, footRow - 1, HDR1.length - 1)
     setRef(ws1, footRow, HDR1.length - 1)
-    XLSX.utils.book_append_sheet(wb, ws1, 'Сводка')
+    XLSX.utils.book_append_sheet(wb, ws1, t('ui.svodka'))
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 2 — КАРТОЧКИ УЧАСТНИКОВ (per-member detail cards)
@@ -668,7 +668,7 @@ export default function LeadAnalytics({ user }) {
 
     let curRow = 0
     // Sheet title
-    sc(ws2, curRow, 0, `Карточки участников — ${team.team_name}`, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    sc(ws2, curRow, 0, t('ui.kartochki_uchastnikov', { v1: team.team_name }), { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left', vertical: 'center' } })
     addMerge(ws2, curRow, curRow, 0, 7)
     ws2['!rows'].push({ hpt: 28 })
     curRow++
@@ -681,7 +681,7 @@ export default function LeadAnalytics({ user }) {
       const flags = s.warning_flags || []
       const isRisk = flags.length > 0
       const isUrgent = s.days_since_last >= 21 || flags.length >= 2
-      const statusTxt = isUrgent ? 'СРОЧНО' : isRisk ? t('ui.risk_2') : t('ui.ok')
+      const statusTxt = isUrgent ? t('ui.srochno_2') : isRisk ? t('ui.risk_2') : t('ui.ok')
 
       // Spacer
       ws2['!rows'].push({ hpt: 6 })
@@ -696,9 +696,9 @@ export default function LeadAnalytics({ user }) {
       curRow++
 
       // ── KPI labels row
-      const kpiLbls = ['Встреч 30дн', 'Встреч 90дн', 'Всего встреч', 'Без встречи', 'Ср. интервал', '% задач', 'Откр. задач']
+      const kpiLbls = [t('ui.vstrech_30dn'), t('ui.vstrech_90dn'), t('ui.vsego_vstrech'), t('ui.bez_vstrechi'), t('ui.sr_interval'), t('ui.zadach_2'), t('ui.otkr_zadach')]
       kpiLbls.forEach((l, ci) => sc(ws2, curRow, ci + 1, l, S.cardLbl))
-      sc(ws2, curRow, 0, 'Показатель', S.cardLbl)
+      sc(ws2, curRow, 0, t('ui.pokazatel'), S.cardLbl)
       ws2['!rows'].push({ hpt: 20 })
       curRow++
 
@@ -707,12 +707,12 @@ export default function LeadAnalytics({ user }) {
         s.meetings_last_30 ?? 0,
         s.meetings_last_90 ?? 0,
         s.total_meetings ?? 0,
-        s.days_since_last != null ? s.days_since_last + ' дн.' : '—',
-        s.avg_interval_days != null ? s.avg_interval_days + ' дн.' : '—',
+        s.days_since_last != null ? s.days_since_last + t('ui.dn') : '—',
+        s.avg_interval_days != null ? s.avg_interval_days + t('ui.dn') : '—',
         s.task_completion_pct != null ? s.task_completion_pct + '%' : '—',
         s.open_tasks ?? 0,
       ]
-      sc(ws2, curRow, 0, 'Значение', S.cardLbl)
+      sc(ws2, curRow, 0, t('ui.znachenie'), S.cardLbl)
       kpiVals.forEach((v, ci) => {
         let st = S.cardVal
         if (ci === 3 && s.days_since_last >= 14) st = S.cardValR
@@ -727,7 +727,7 @@ export default function LeadAnalytics({ user }) {
       curRow++
 
       // ── Tasks detail row
-      sc(ws2, curRow, 0, 'Задачи', S.cardLbl)
+      sc(ws2, curRow, 0, t('nav.tasks'), S.cardLbl)
       sc(ws2, curRow, 1, `Выполнено: ${s.completed_tasks ?? 0}`, S.data('center'))
       sc(ws2, curRow, 2, `Открыто: ${s.open_tasks ?? 0}`, S.data('center'))
       sc(ws2, curRow, 3, `Всего: ${s.total_tasks ?? 0}`, S.data('center'))
@@ -736,7 +736,7 @@ export default function LeadAnalytics({ user }) {
 
       // ── Mood trend row
       if (s.mood_trend && s.mood_trend.length > 0) {
-        sc(ws2, curRow, 0, 'Настроение (последние)', S.cardLbl)
+        sc(ws2, curRow, 0, t('ui.nastroenie_poslednie'), S.cardLbl)
         s.mood_trend.slice(0, 7).forEach((m, ci) => {
           sc(ws2, curRow, ci + 1, m.label || m.mood || '', S.moodCell)
         })
@@ -746,7 +746,7 @@ export default function LeadAnalytics({ user }) {
 
       // ── Warning flags row
       if (flags.length > 0) {
-        sc(ws2, curRow, 0, 'Флаги риска', { ...S.cardLbl, fill: { fgColor: { rgb: 'FEE2E2' } } })
+        sc(ws2, curRow, 0, t('ui.flagi_riska'), { ...S.cardLbl, fill: { fgColor: { rgb: 'FEE2E2' } } })
         const flagStr = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
         sc(ws2, curRow, 1, flagStr, { font: { sz: 10, bold: true, color: { rgb: RED } }, fill: { fgColor: { rgb: 'FEE2E2' } }, alignment: { horizontal: 'left', vertical: 'center' }, border: brdB('FECACA') })
         addMerge(ws2, curRow, curRow, 1, 7)
@@ -756,7 +756,7 @@ export default function LeadAnalytics({ user }) {
     })
 
     setRef(ws2, curRow, 7)
-    XLSX.utils.book_append_sheet(wb, ws2, 'Карточки')
+    XLSX.utils.book_append_sheet(wb, ws2, t('ui.kartochki'))
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 3 — РИСКИ & СИГНАЛЫ
@@ -767,18 +767,18 @@ export default function LeadAnalytics({ user }) {
     ws3['!merges'] = []
     let r3 = 0
 
-    sc(ws3, r3, 0, 'Зоны риска & Сигналы тревоги', { font: { bold: true, sz: 14, color: { rgb: RED } }, alignment: { horizontal: 'left', vertical: 'center' } })
+    sc(ws3, r3, 0, t('ui.zony_riska_signaly_trevogi'), { font: { bold: true, sz: 14, color: { rgb: RED } }, alignment: { horizontal: 'left', vertical: 'center' } })
     addMerge(ws3, r3, r3, 0, 5)
     ws3['!rows'].push({ hpt: 28 })
     r3++
 
     // ── At-risk members
-    sc(ws3, r3, 0, 'УЧАСТНИКИ В ЗОНЕ РИСКА', S.secHdr(RED))
+    sc(ws3, r3, 0, t('ui.uchastniki_v_zone_riska'), S.secHdr(RED))
     addMerge(ws3, r3, r3, 0, 5)
     ws3['!rows'].push({ hpt: 24 })
     r3++
 
-    const rHdrs = ['Участник', 'Дней без встречи', 'Открытых задач', '% задач', 'Срочность', 'Причины']
+    const rHdrs = [t('ui.uchastnik'), t('ui.dney_bez_vstrechi'), t('ui.otkrytyh_zadach'), t('ui.zadach_2'), t('ui.srochnost'), t('ui.prichiny')]
     const riskHdrRow = r3
     rHdrs.forEach((h, ci) => sc(ws3, r3, ci, h, S.subHdr(RED)))
     ws3['!rows'].push({ hpt: 22 })
@@ -786,7 +786,7 @@ export default function LeadAnalytics({ user }) {
 
     const atRisk = (team.at_risk_members || [])
     if (atRisk.length === 0) {
-      sc(ws3, r3, 0, 'Нет участников в зоне риска — всё в порядке!', { font: { sz: 11, color: { rgb: GREEN }, bold: true }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'left', vertical: 'center' } })
+      sc(ws3, r3, 0, t('ui.net_uchastnikov_v_zone_riska_vse'), { font: { sz: 11, color: { rgb: GREEN }, bold: true }, fill: { fgColor: { rgb: 'DCFCE7' } }, alignment: { horizontal: 'left', vertical: 'center' } })
       addMerge(ws3, r3, r3, 0, 5)
       ws3['!rows'].push({ hpt: 22 })
       r3++
@@ -797,7 +797,7 @@ export default function LeadAnalytics({ user }) {
         const reasons = flags.map(f => FLAG_RU[f]?.(s) || f).join(', ')
         const a = i % 2 ? S.dataAlt : S.data
         sc(ws3, r3, 0, s.name, { ...a('left', true), ...(isUrgent ? { fill: { fgColor: { rgb: 'FFF1F2' } } } : {}) })
-        sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + ' дн.' : '—', isUrgent ? S.urgent : S.danger)
+        sc(ws3, r3, 1, s.days_since_last != null ? s.days_since_last + t('ui.dn') : '—', isUrgent ? S.urgent : S.danger)
         sc(ws3, r3, 2, s.open_tasks ?? 0, a('center'))
         sc(ws3, r3, 3, s.task_completion_pct != null ? s.task_completion_pct + '%' : '—', a('center'))
         sc(ws3, r3, 4, isUrgent ? t('ui.srochno_2') : t('ui.risk_2'), isUrgent ? S.urgent : S.danger)
@@ -812,30 +812,30 @@ export default function LeadAnalytics({ user }) {
 
     // ── Warning signals
     r3++
-    sc(ws3, r3, 0, 'ВСЕ СИГНАЛЫ ПРЕДУПРЕЖДЕНИЙ', S.secHdr(AMBER))
+    sc(ws3, r3, 0, t('ui.vse_signaly_preduprezhdeniy'), S.secHdr(AMBER))
     addMerge(ws3, r3, r3, 0, 5)
     ws3['!rows'].push({ hpt: 24 })
     r3++
 
-    const sigHdrs = ['Тип сигнала', 'Участник', 'Детали', '', '', '']
+    const sigHdrs = [t('ui.tip_signala'), t('ui.uchastnik'), t('ui.detali'), '', '', '']
     sigHdrs.forEach((h, ci) => sc(ws3, r3, ci, h, S.subHdr(AMBER)))
     ws3['!rows'].push({ hpt: 22 })
     r3++
 
     const sigTypeRu = {
-      no_meeting_14_days: 'Долго без встречи',
-      mood_declining: 'Настроение ухудшается',
-      many_incomplete_tasks: 'Много незакрытых задач',
+      no_meeting_14_days: t('ui.dolgo_bez_vstrechi'),
+      mood_declining: t('ui.nastroenie_uhudshaetsya'),
+      many_incomplete_tasks: t('ui.mnogo_nezakrytyh_zadach'),
     }
     const signals = team.warning_signals || []
     if (signals.length === 0) {
-      sc(ws3, r3, 0, 'Нет активных сигналов', { font: { sz: 11, color: { rgb: GREEN } }, alignment: { horizontal: 'left' } })
+      sc(ws3, r3, 0, t('ui.net_aktivnyh_signalov'), { font: { sz: 11, color: { rgb: GREEN } }, alignment: { horizontal: 'left' } })
       addMerge(ws3, r3, r3, 0, 5)
       ws3['!rows'].push({ hpt: 20 })
       r3++
     } else {
       signals.forEach((sig, i) => {
-        const detail = sig.days != null ? `${sig.days} дн.` : sig.count != null ? `${sig.count} задач` : ''
+        const detail = sig.days != null ? `${sig.days} дн.` : sig.count != null ? t('ui.zadach_3', { v1: sig.count }) : ''
         const a = i % 2 ? S.dataAlt : S.data
         sc(ws3, r3, 0, sigTypeRu[sig.type] || sig.type, { ...a('left'), font: { sz: 10, bold: true, color: { rgb: AMBER } } })
         sc(ws3, r3, 1, sig.member_name || '', a('left', true))
@@ -849,7 +849,7 @@ export default function LeadAnalytics({ user }) {
     }
 
     setRef(ws3, r3, 5)
-    XLSX.utils.book_append_sheet(wb, ws3, 'Риски')
+    XLSX.utils.book_append_sheet(wb, ws3, t('ui.riski'))
 
     // ─────────────────────────────────────────────────────────────────────────
     // SHEET 4 — НАСТРОЕНИЕ & АКТИВНОСТЬ
@@ -860,21 +860,21 @@ export default function LeadAnalytics({ user }) {
     ws4['!merges'] = []
     let r4 = 0
 
-    sc(ws4, r4, 0, 'Настроение & Активность — ' + team.team_name, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left' } })
+    sc(ws4, r4, 0, t('ui.nastroenie_aktivnost') + team.team_name, { font: { bold: true, sz: 14, color: { rgb: NAVY } }, alignment: { horizontal: 'left' } })
     addMerge(ws4, r4, r4, 0, 6)
     ws4['!rows'].push({ hpt: 28 })
     r4++
 
     // ── Mood summary stats
     if (mood) {
-      sc(ws4, r4, 0, 'ИТОГИ НАСТРОЕНИЯ', S.secHdr(TEAL))
+      sc(ws4, r4, 0, t('ui.itogi_nastroeniya'), S.secHdr(TEAL))
       addMerge(ws4, r4, r4, 0, 2)
       ws4['!rows'].push({ hpt: 22 })
       r4++
       const moodKpi = [
-        ['Общий средний балл', mood.overall_avg != null ? mood.overall_avg + '/5' : '—'],
-        ['Всего ответов', mood.total ?? 0],
-        ['Последних резюме', (mood.recent_summaries || []).length],
+        [t('ui.obschiy_sredniy_ball'), mood.overall_avg != null ? mood.overall_avg + '/5' : '—'],
+        [t('ui.vsego_otvetov'), mood.total ?? 0],
+        [t('ui.poslednih_rezyume'), (mood.recent_summaries || []).length],
       ]
       moodKpi.forEach(([l, v]) => {
         sc(ws4, r4, 0, l, S.data('left', true))
@@ -885,9 +885,9 @@ export default function LeadAnalytics({ user }) {
       r4++
 
       // ── Mood by day
-      sc(ws4, r4, 0, 'НАСТРОЕНИЕ ПО ДНЯМ (7 дней)', S.subHdr(TEAL))
-      sc(ws4, r4, 1, 'Ср. балл (1–5)', S.subHdr(TEAL))
-      sc(ws4, r4, 2, 'Ответов', S.subHdr(TEAL))
+      sc(ws4, r4, 0, t('ui.nastroenie_po_dnyam_7_dney'), S.subHdr(TEAL))
+      sc(ws4, r4, 1, t('ui.sr_ball_1_5'), S.subHdr(TEAL))
+      sc(ws4, r4, 2, t('ui.otvetov'), S.subHdr(TEAL))
       ws4['!rows'].push({ hpt: 22 })
       r4++;
       (mood.days || []).forEach((d, i) => {
@@ -901,9 +901,9 @@ export default function LeadAnalytics({ user }) {
       r4++
 
       // ── Mood by week
-      sc(ws4, r4, 0, 'НАСТРОЕНИЕ ПО НЕДЕЛЯМ (12 нед.)', S.subHdr(TEAL))
-      sc(ws4, r4, 1, 'Ср. балл', S.subHdr(TEAL))
-      sc(ws4, r4, 2, 'Ответов', S.subHdr(TEAL))
+      sc(ws4, r4, 0, t('ui.nastroenie_po_nedelyam_12_ned'), S.subHdr(TEAL))
+      sc(ws4, r4, 1, t('ui.sr_ball'), S.subHdr(TEAL))
+      sc(ws4, r4, 2, t('ui.otvetov'), S.subHdr(TEAL))
       ws4['!rows'].push({ hpt: 22 })
       r4++;
       (mood.weeks || []).forEach((w, i) => {
@@ -918,7 +918,7 @@ export default function LeadAnalytics({ user }) {
 
       // ── Recent AI summaries
       if ((mood.recent_summaries || []).length > 0) {
-        sc(ws4, r4, 0, 'AI-РЕЗЮМЕ ОПРОСОВ (последние)', S.subHdr(ACCENT))
+        sc(ws4, r4, 0, t('ui.ai_rezyume_oprosov_poslednie'), S.subHdr(ACCENT))
         addMerge(ws4, r4, r4, 0, 6)
         ws4['!rows'].push({ hpt: 22 })
         r4++
@@ -937,12 +937,12 @@ export default function LeadAnalytics({ user }) {
     const hourDist = team.patterns?.hour_distribution || {}
     const hourEntries = Object.entries(hourDist).map(([h, c]) => ({ hour: parseInt(h), count: c })).sort((a, b) => a.hour - b.hour)
     if (hourEntries.length > 0) {
-      sc(ws4, r4, 0, 'РАСПРЕДЕЛЕНИЕ ВСТРЕЧ ПО ЧАСАМ', S.secHdr(NAVY))
+      sc(ws4, r4, 0, t('ui.raspredelenie_vstrech_po_chasam'), S.secHdr(NAVY))
       addMerge(ws4, r4, r4, 0, 6)
       ws4['!rows'].push({ hpt: 24 })
       r4++
-      sc(ws4, r4, 0, 'Час', S.subHdr())
-      sc(ws4, r4, 1, 'Кол-во встреч', S.subHdr())
+      sc(ws4, r4, 0, t('ui.chas'), S.subHdr())
+      sc(ws4, r4, 1, t('ui.kol_vo_vstrech'), S.subHdr())
       ws4['!rows'].push({ hpt: 22 })
       r4++
       const maxHour = Math.max(...hourEntries.map(e => e.count), 1)
@@ -960,12 +960,12 @@ export default function LeadAnalytics({ user }) {
     // ── Weekly meetings heatmap data
     const weekData = team.meetings_per_week || []
     if (weekData.length > 0) {
-      sc(ws4, r4, 0, 'АКТИВНОСТЬ ПО НЕДЕЛЯМ', S.secHdr(NAVY))
+      sc(ws4, r4, 0, t('ui.aktivnost_po_nedelyam'), S.secHdr(NAVY))
       addMerge(ws4, r4, r4, 0, 6)
       ws4['!rows'].push({ hpt: 24 })
       r4++
-      sc(ws4, r4, 0, 'Неделя', S.subHdr())
-      sc(ws4, r4, 1, 'Встреч', S.subHdr())
+      sc(ws4, r4, 0, t('analytics.week'), S.subHdr())
+      sc(ws4, r4, 1, t('ui.vstrech'), S.subHdr())
       ws4['!rows'].push({ hpt: 22 })
       r4++
       const maxW = Math.max(...weekData.map(w => w.count), 1)
@@ -982,11 +982,11 @@ export default function LeadAnalytics({ user }) {
     // ── Checkins (if provided)
     if (checkins && checkins.length > 0) {
       r4++
-      sc(ws4, r4, 0, 'ПРИХОД / УХОД (последние данные)', S.secHdr(TEAL))
+      sc(ws4, r4, 0, t('ui.prihod_uhod_poslednie_dannye'), S.secHdr(TEAL))
       addMerge(ws4, r4, r4, 0, 6)
       ws4['!rows'].push({ hpt: 24 })
       r4++
-      const cHdrs = ['Участник', 'Пришёл', 'Ушёл', 'Продолжительность', '', '', '']
+      const cHdrs = [t('ui.uchastnik'), t('ui.prishel'), t('ui.ushel'), t('ui.prodolzhitelnost'), '', '', '']
       cHdrs.forEach((h, ci) => sc(ws4, r4, ci, h, S.subHdr(TEAL)))
       ws4['!rows'].push({ hpt: 22 })
       r4++
@@ -1009,7 +1009,7 @@ export default function LeadAnalytics({ user }) {
     }
 
     setRef(ws4, r4, 6)
-    XLSX.utils.book_append_sheet(wb, ws4, 'Активность')
+    XLSX.utils.book_append_sheet(wb, ws4, t('ui.aktivnost'))
 
     // ─────────────────────────────────────────────────────────────────────────
     // WRITE
@@ -1077,7 +1077,7 @@ export default function LeadAnalytics({ user }) {
 
       {/* 4 Top stats */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'flex-start' }}>
-        <StatCard value={teamAvgInterval} suffix=" дн." label={t('ui.sr_interval_vstrech')} delay={0} />
+        <StatCard value={teamAvgInterval} suffix={t('ui.dn')} label={t('ui.sr_interval_vstrech')} delay={0} />
         <StatCard value={teamMeetings30} label={t('ui.vstrech_za_30_dney')} accent delay={100} />
         <StatCard value={teamTaskPct} suffix="%" label={t('ui.zadach_vypolneno')} accent={teamTaskPct >= 70} warning={teamTaskPct < 40 && teamTaskPct !== null} delay={200} />
         <StatCard value={atRiskCount} label={t('ui.v_zone_riska')} danger={atRiskCount > 0} delay={300} />
@@ -1116,7 +1116,7 @@ export default function LeadAnalytics({ user }) {
             <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {Object.entries(team.development.category_avg_level).map(([cat, lvl]) => (
                 <span key={cat} style={{ fontSize: 12, color: 'var(--color-text-secondary)', background: 'var(--gray-100)', borderRadius: 6, padding: '4px 10px' }}>
-                  {({ technical: 'Технические', product: 'Продуктовые', communication: 'Коммуникационные', management: 'Управленческие' }[cat] || cat)}: ср. {lvl}
+                  {({ technical: t('ui.tehnicheskie'), product: t('ui.produktovye'), communication: t('ui.kommunikacionnye'), management: t('ui.upravlencheskie') }[cat] || cat)}: ср. {lvl}
                 </span>
               ))}
             </div>
@@ -1165,19 +1165,17 @@ export default function LeadAnalytics({ user }) {
             <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{t('ui.nastroenie_komandy')}</p>
             <span className="badge badge-blue" style={{ fontSize: 10 }}>{t('ui.anonimno')}</span>
           </div>
-          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>
-            Обобщённая статистика без привязки к участникам · опрос и быстрая оценка (единая шкала 1–5)
-          </p>
+          <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginBottom: 12 }}>{t('ui.obobschennaya_statistika_bez_privyazki_k_uchas')}</p>
           {!mood ? (
             <div style={{ display: 'flex', justifyContent: 'center', padding: '24px 0' }}><div className="spinner" /></div>
           ) : mood.insufficient ? (
             <div style={{ background: 'var(--color-bg)', border: '1px dashed var(--color-border)', borderRadius: 10, padding: '16px 18px' }}>
               <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
-                {mood.message || `Недостаточно данных для анонимной статистики (нужно от ${mood.threshold} ответов).`}
+                {mood.message || t('ui.nedostatochno_dannyh_dlya_anonimnoy_statistiki', { v1: mood.threshold })}
               </p>
               {mood.share_pct != null && (
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 8 }}>
-                  Сегодня заполнили: {mood.filled}{mood.team_size ? ` из ${mood.team_size}` : ''}
+                  Сегодня заполнили: {mood.filled}{mood.team_size ? t('ui.iz', { v1: mood.team_size }) : ''}
                 </p>
               )}
             </div>
@@ -1210,7 +1208,7 @@ export default function LeadAnalytics({ user }) {
                   {(() => {
                     const dist = mood.distribution
                     const maxC = Math.max(...Object.values(dist), 1)
-                    const LBL = { '1': 'Плохо', '2': 'Ниже сред.', '3': 'Нормально', '4': 'Хорошо', '5': 'Отлично' }
+                    const LBL = { '1': t('mood.bad'), '2': t('ui.nizhe_sred'), '3': t('mood.neutral'), '4': t('mood.good'), '5': t('mood.veryGood') }
                     const COL = { '1': '#ef4444', '2': '#f59e0b', '3': '#eab308', '4': '#84cc16', '5': '#22c55e' }
                     return ['5', '4', '3', '2', '1'].map(k => (
                       <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
@@ -1293,7 +1291,7 @@ export default function LeadAnalytics({ user }) {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid var(--color-border)' }}>
-                {['Участник', 'Без встречи', 'За месяц', 'Настроение', '% задач', 'Статус'].map(h => (
+                {[t('ui.uchastnik'), t('ui.bez_vstrechi'), t('ui.za_mesyac_2'), t('nav.mood'), t('ui.zadach_2'), t('common.status')].map(h => (
                   <th key={h} style={{ padding: '8px 14px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', textAlign: h === 'Участник' ? 'left' : 'center' }}>
                     {h}
                   </th>
@@ -1358,7 +1356,7 @@ export default function LeadAnalytics({ user }) {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, minWidth: 360 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--color-border)' }}>
-                    {['Участник', 'Пришёл', 'Ушёл', 'В офисе'].map(h => (
+                    {[t('ui.uchastnik'), t('ui.prishel'), t('ui.ushel'), t('ui.v_ofise')].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '6px 12px', fontSize: 11, fontWeight: 700, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>

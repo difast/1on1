@@ -67,9 +67,7 @@ export default function TelegramApp() {
     return (
       <Centered>
         <h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 10 }}>{t('ui.otkroyte_v_telegram')}</h2>
-        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-          Эта страница — мини-приложение Telegram. Откройте его через бота @oneononehq_bot.
-        </p>
+        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>{t('ui.eta_stranica_mini_prilozhenie_telegram_otkroyt')}</p>
       </Centered>
     )
   }

@@ -62,7 +62,7 @@ export function TaskProposalsModal({
   const act = async (fn: (id: number, uid: number) => Promise<any>, id: number) => {
     setBusyId(id);
     try { await fn(id, currentUser.id); load(); onChanged?.(); }
-    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось выполнить'); }
+    catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_vypolnit')); }
     finally { setBusyId(null); }
   };
 
@@ -72,7 +72,7 @@ export function TaskProposalsModal({
     try {
       await commentTaskProposal(id, currentUser.id, commentText.trim());
       setCommentFor(null); setCommentText(''); setExpanded(id); load(); onChanged?.();
-    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_otpravit')); }
     finally { setBusyId(null); }
   };
 
@@ -84,7 +84,7 @@ export function TaskProposalsModal({
       await createTaskProposal({ from_user_id: currentUser.id, to_user_id: toUser, title: title.trim(), description: desc.trim() || null, due_date: due || null, team_id: teamId ?? null });
       setTitle(''); setDesc(''); setDue(''); if (!presetToUserId) setToUser(null);
       setTab('all'); load(); onChanged?.();
-    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || 'Не удалось отправить предложение'); }
+    } catch (err: any) { Alert.alert(t('ui.oshibka'), err?.response?.detail || t('ui.ne_udalos_otpravit_predlozhenie')); }
     finally { setCreating(false); }
   };
 
@@ -95,9 +95,9 @@ export function TaskProposalsModal({
       <View key={p.id} style={styles.card}>
         <View style={styles.cardHead}>
           <Text style={styles.cardTitle}>
-            {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || 'Участник'}` : `${p.from_user_name || 'Участник'} -> вам`}
+            {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || t('ui.uchastnik')}` : `${p.from_user_name || t('ui.uchastnik')} -> вам`}
           </Text>
-          <Text style={[styles.badge, { color: badgeColor }]}>{respond ? 'Ваш ход' : (STATUS_LABEL[p.status] || p.status)}</Text>
+          <Text style={[styles.badge, { color: badgeColor }]}>{respond ? t('ui.vash_hod') : (STATUS_LABEL[p.status] || p.status)}</Text>
         </View>
         <Text style={styles.taskTitle}>{p.title}</Text>
         {!!p.description && <Text style={styles.cardTopic}>{p.description}</Text>}
@@ -105,7 +105,7 @@ export function TaskProposalsModal({
 
         {p.events?.length > 1 && (
           <TouchableOpacity onPress={() => setExpanded(expanded === p.id ? null : p.id)}>
-            <Text style={styles.historyToggle}>{expanded === p.id ? 'Скрыть обсуждение' : `Обсуждение (${p.events.length})`}</Text>
+            <Text style={styles.historyToggle}>{expanded === p.id ? t('ui.skryt_obsuzhdenie') : t('ui.obsuzhdenie_2', { v1: p.events.length })}</Text>
           </TouchableOpacity>
         )}
         {expanded === p.id && (
@@ -113,7 +113,7 @@ export function TaskProposalsModal({
             {p.events.map((e: any) => (
               <View key={e.id}>
                 <Text style={styles.historyLine}>
-                  <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || 'Участник'}</Text> {ACTION_LABEL[e.action] || e.action} · {fmt(e.created_at)}
+                  <Text style={{ fontWeight: '700', color: colors.textSecondary }}>{e.actor_name || t('ui.uchastnik')}</Text> {ACTION_LABEL[e.action] || e.action} · {fmt(e.created_at)}
                 </Text>
                 {!!e.note && <Text style={styles.historyNote}>{e.note}</Text>}
               </View>
@@ -164,7 +164,7 @@ export function TaskProposalsModal({
         </View>
 
         <View style={styles.tabs}>
-          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', 'Все'], ['new', 'Создать']] as const).map(([k, label]) => (
+          {([['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['all', t('common.all')], ['new', t('common.create')]] as const).map(([k, label]) => (
             <TouchableOpacity key={k} style={[styles.tab, tab === k && styles.tabActive]} onPress={() => setTab(k)}>
               <Text style={[styles.tabText, tab === k && styles.tabTextActive]}>{label}</Text>
             </TouchableOpacity>

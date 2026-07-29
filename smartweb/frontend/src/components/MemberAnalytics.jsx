@@ -153,7 +153,7 @@ function CompareRow({ label, cur, prev, unit = '', invert = false }) {
         <span style={{ fontSize: 13, fontWeight: 700 }}>{cur ?? 0}{unit}</span>
         <span style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>было {prev ?? 0}{unit}</span>
         <span style={{ fontSize: 12, fontWeight: 700, color, minWidth: 40, textAlign: 'right' }}>
-          {delta === 0 ? 'без изм.' : `${sign}${delta}${unit}`}
+          {delta === 0 ? t('ui.bez_izm') : `${sign}${delta}${unit}`}
         </span>
       </div>
     </div>
@@ -231,7 +231,7 @@ export default function MemberAnalytics({ user, teamId }) {
       {/* Stats row */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
         <StatCard value={data.meetings_last_90} label={t('ui.vstrech_za_90_dney')} accent delay={0} />
-        <StatCard value={data.days_since_last} suffix=" дн." label={t('ui.poslednyaya_vstrecha')} danger={data.days_since_last >= 14} delay={100} />
+        <StatCard value={data.days_since_last} suffix={t('ui.dn')} label={t('ui.poslednyaya_vstrecha')} danger={data.days_since_last >= 14} delay={100} />
         <StatCard value={data.task_completion_pct} suffix="%" label={t('ui.zadach_vypolneno')} accent={data.task_completion_pct >= 70} danger={data.task_completion_pct !== null && data.task_completion_pct < 40} delay={200} />
         <StatCard value={data.open_tasks} label={t('ui.otkrytyh_zadach')} warning={data.open_tasks >= 3} danger={data.open_tasks >= 5} delay={300} />
         <StatCard value={data.closed_last_30} label={t('ui.zakryto_za_30_dn')} delay={400} />
@@ -253,7 +253,7 @@ export default function MemberAnalytics({ user, teamId }) {
                 : data.compare.mood_delta_15d > 0 ? 'var(--color-success)'
                 : data.compare.mood_delta_15d < 0 ? 'var(--color-danger)' : 'var(--color-text-muted)',
             }}>
-              {data.compare.mood_delta_15d == null ? 'нет данных'
+              {data.compare.mood_delta_15d == null ? t('ui.net_dannyh_2')
                 : `${data.compare.mood_delta_15d > 0 ? '+' : ''}${data.compare.mood_delta_15d}`}
             </span>
           </div>
@@ -291,12 +291,12 @@ export default function MemberAnalytics({ user, teamId }) {
           <div>
             <p style={{ fontWeight: 600, fontSize: 14, color: 'var(--color-text-primary)' }}>{t('ui.moe_nastroenie')}</p>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
-              {data.mood_checkin_avg != null ? `Средний балл: ${data.mood_checkin_avg}/5 · ` : ''}
+              {data.mood_checkin_avg != null ? t('ui.sredniy_ball_5', { v1: data.mood_checkin_avg }) : ''}
               опрос и быстрая оценка — единая шкала 1–5
             </p>
           </div>
           <div style={{ display: 'flex', gap: 6 }}>
-            {[['week', 'Неделя'], ['month', 'Месяц'], ['range', 'Период']].map(([val, lbl]) => (
+            {[['week', t('analytics.week')], ['month', t('analytics.month')], ['range', t('analytics.period')]].map(([val, lbl]) => (
               <button key={val} onClick={() => setMoodPeriod(val)}
                 className={moodPeriod === val ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}
                 style={{ fontSize: 12, padding: '5px 12px' }}>{lbl}</button>
@@ -321,9 +321,7 @@ export default function MemberAnalytics({ user, teamId }) {
         ) : moodSeries && moodSeries.series && moodSeries.series.length > 0 ? (
           <CheckinMoodChart points={buildContinuousAxis(moodSeries.series, moodSeries.start, moodSeries.end)} />
         ) : (
-          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
-            Пока нет отметок настроения. Заполните ежедневный опрос — график появится сразу после первой отметки.
-          </p>
+          <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.poka_net_otmetok_nastroeniya_zapolnite_ezhedne')}</p>
         )}
       </div>
 

@@ -72,7 +72,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
 
   const handleDelete = async (id, e) => {
     e.stopPropagation()
-    if (!await confirmDialog({ title: t('ui.udalit_statyu_2'), confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_statyu_2'), confirmText: t('common.delete'), danger: true })) return
     setDeleting(id)
     try {
       await deleteKnowledgeArticle(id)
@@ -144,7 +144,7 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={() => setEditing(null)} className="btn btn-secondary">{t('ui.otmena')}</button>
           <button onClick={handleSave} disabled={!form.title.trim() || saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            {saving ? <><Spinner size={15} />{t('ui.sohranyaem')}</> : 'Сохранить'}
+            {saving ? <><Spinner size={15} />{t('ui.sohranyaem')}</> : t('common.save')}
           </button>
         </div>
       </div>
@@ -182,12 +182,12 @@ export default function KnowledgeBase({ teamId, userId, canEdit = false }) {
           <div className="spinner" />
         </div>
       ) : !teamId ? (
-        <EmptyState title={t('ui.komanda_ne_vybrana')} desc="Выберите команду, чтобы открыть базу знаний" />
+        <EmptyState title={t('ui.komanda_ne_vybrana')} desc={t('ui.vyberite_komandu_chtoby_otkryt_bazu_znaniy')} />
       ) : filtered.length === 0 ? (
         <div className="empty-state">
           <div className="empty-icon" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 8l1.6-3.2A2 2 0 0 1 7.4 4h9.2a2 2 0 0 1 1.8 1.1L20 8"/><path d="M4 8v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M4 8h5l1 2h4l1-2h5"/></svg></div>
           <p className="empty-title">{search ? t('common.notFound') : t('ui.baza_znaniy_pusta')}</p>
-          <p className="empty-desc">{search ? 'Попробуйте другой запрос' : canEdit ? t('ui.dobavte_pervuyu_statyu_instrukcii_processy_pol') : t('ui.timlid_esche_ne_dobavil_stati')}</p>
+          <p className="empty-desc">{search ? t('ui.poprobuyte_drugoy_zapros') : canEdit ? t('ui.dobavte_pervuyu_statyu_instrukcii_processy_pol') : t('ui.timlid_esche_ne_dobavil_stati')}</p>
         </div>
       ) : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>

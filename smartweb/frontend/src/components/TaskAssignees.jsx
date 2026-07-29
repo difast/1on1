@@ -59,7 +59,7 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
             <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', margin: 0, lineHeight: 1.25 }}>
-                  {a.user_name || `#${a.user_id}`}{mine ? ' (вы)' : ''}
+                  {a.user_name || `#${a.user_id}`}{mine ? t('ui.vy_2') : ''}
                 </p>
                 {a.part_description && (
                   <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '1px 0 0', lineHeight: 1.35 }}>
@@ -79,7 +79,7 @@ export default function TaskAssignees({ task, currentUserId, canManageAll = fals
                   background: 'var(--color-bg)', border: '1px solid var(--color-border)',
                 }}>
                   <StatusIcon type={st} size={14} />
-                  {STATUS_LABEL[st] || 'В работе'}
+                  {STATUS_LABEL[st] || t('tasks.statusInProgress')}
                 </span>
               )}
             </div>

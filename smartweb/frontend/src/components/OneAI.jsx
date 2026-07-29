@@ -71,7 +71,7 @@ export default function OneAI({ user }) {
     } catch (err) {
       const detail = err?.response?.data?.detail
       if (detail?.code === 'feature_locked') { setResult({ locked: true, message: detail.message }) }
-      else toast(typeof detail === 'string' ? detail : 'ONE AI недоступен', 'error')
+      else toast(typeof detail === 'string' ? detail : t('ui.one_ai_nedostupen'), 'error')
     } finally { setLoading(false) }
   }
 
@@ -131,14 +131,14 @@ export default function OneAI({ user }) {
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 14, borderTop: '1px solid var(--gray-100)', paddingTop: 10 }}>
                 Основано на данных: {result.based_on.facts
                   ? `задач ${result.based_on.facts.tasks_total ?? '—'}, встреч ${result.based_on.facts.meetings_total ?? '—'}, целей ${result.based_on.facts.goals_total ?? '—'}`
-                  : result.based_on.members != null ? `${result.based_on.members} участников команды` : 'агрегаты по вашим данным'}
+                  : result.based_on.members != null ? `${result.based_on.members} участников команды` : t('ui.agregaty_po_vashim_dannym')}
               </p>
             )}
           </div>
         )}
 
         {!result && !loading && (
-          <EmptyState title={t('ui.one_ai_gotov_k_analizu')} desc="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
+          <EmptyState title={t('ui.one_ai_gotov_k_analizu')} desc={t('ui.vyberite_razdel_i_zaprosite_razvernutyy_analiz')} />
         )}
       </div>
     </div>

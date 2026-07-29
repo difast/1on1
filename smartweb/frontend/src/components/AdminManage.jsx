@@ -31,19 +31,19 @@ export default function AdminManage() {
     })()
   }, [])
 
-  const wrap = async (fn) => { setBusy(true); try { await fn() } catch { notify('Ошибка') } finally { setBusy(false) } }
+  const wrap = async (fn) => { setBusy(true); try { await fn() } catch { notify(t('ui.oshibka')) } finally { setBusy(false) } }
   const doTeam = () => {
-    if (!teamName.trim() || !teamLead) return notify('Укажите название и тимлида')
-    wrap(async () => { await createTeam({ name: teamName.trim(), team_lead_id: Number(teamLead) }); setTeamName(''); setTeamLead(''); notify('✓ Команда создана') })
+    if (!teamName.trim() || !teamLead) return notify(t('ui.ukazhite_nazvanie_i_timlida'))
+    wrap(async () => { await createTeam({ name: teamName.trim(), team_lead_id: Number(teamLead) }); setTeamName(''); setTeamLead(''); notify(t('ui.komanda_sozdana')) })
   }
   const doTask = () => {
-    if (!taskTitle.trim() || !taskAssignee) return notify('Укажите задачу и исполнителя')
-    wrap(async () => { await createTask({ title: taskTitle.trim(), assigned_to: Number(taskAssignee), assigned_by: Number(taskAssignee), team_id: taskTeam ? Number(taskTeam) : null }); setTaskTitle(''); setTaskAssignee(''); setTaskTeam(''); notify('✓ Задача создана') })
+    if (!taskTitle.trim() || !taskAssignee) return notify(t('ui.ukazhite_zadachu_i_ispolnitelya'))
+    wrap(async () => { await createTask({ title: taskTitle.trim(), assigned_to: Number(taskAssignee), assigned_by: Number(taskAssignee), team_id: taskTeam ? Number(taskTeam) : null }); setTaskTitle(''); setTaskAssignee(''); setTaskTeam(''); notify(t('ui.zadacha_sozdana')) })
   }
   const doMeeting = () => {
     const team = teams.find(t => t.id === Number(mTeam))
-    if (!team || !mMember || !mDate) return notify('Выберите команду, участника и дату')
-    wrap(async () => { await createMeeting({ team_id: team.id, team_lead_id: team.team_lead_id, member_id: Number(mMember), scheduled_date: mDate }); setMTeam(''); setMMember(''); setMDate(''); notify('✓ Встреча создана') })
+    if (!team || !mMember || !mDate) return notify(t('ui.vyberite_komandu_uchastnika_i_datu'))
+    wrap(async () => { await createMeeting({ team_id: team.id, team_lead_id: team.team_lead_id, member_id: Number(mMember), scheduled_date: mDate }); setMTeam(''); setMMember(''); setMDate(''); notify(t('ui.vstrecha_sozdana')) })
   }
 
   const label = { fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', display: 'block', marginBottom: 4 }
@@ -103,7 +103,7 @@ export default function AdminManage() {
 
       {msg && (
         <div style={{ gridColumn: '1 / -1', padding: 12, borderRadius: 8, fontSize: 13, fontWeight: 600,
-          background: msg.startsWith('✓') ? '#f0fdf4' : '#fef2f2', color: msg.startsWith('✓') ? '#16a34a' : '#dc2626' }}>{msg}</div>
+          background: msg.startsWith('') ? '#f0fdf4' : '#fef2f2', color: msg.startsWith('') ? '#16a34a' : '#dc2626' }}>{msg}</div>
       )}
     </div>
   )

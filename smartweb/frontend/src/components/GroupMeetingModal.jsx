@@ -34,12 +34,12 @@ export default function GroupMeetingModal({ members, teamId, teamLeadId, onClose
         member_ids: wholeTeam ? null : selected,
         whole_team: wholeTeam,
       })
-      toast(`Групповая встреча создана (${data.length})`, 'success')
+      toast(t('ui.gruppovaya_vstrecha_sozdana', { v1: data.length }), 'success')
       onCreated?.(data)
       onClose()
     } catch (err) {
       const d = err?.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Не удалось создать встречу', 'error')
+      toast(typeof d === 'string' ? d : t('ui.ne_udalos_sozdat_vstrechu'), 'error')
     } finally {
       setSaving(false)
     }
@@ -53,7 +53,7 @@ export default function GroupMeetingModal({ members, teamId, teamLeadId, onClose
             <span className="modal-title">{t('ui.gruppovaya_vstrecha_2')}</span>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.naznachte_sozvon_neskolkim_uchastnikam_ili_vse')}</p>
           </div>
-          <button type="button" className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
+          <button type="button" className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
 
         <div className="form-group">
@@ -87,7 +87,7 @@ export default function GroupMeetingModal({ members, teamId, teamLeadId, onClose
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 14 }}>
           <button type="button" onClick={onClose} className="btn btn-secondary">{t('ui.otmena')}</button>
           <button type="submit" disabled={saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 150 }}>
-            {saving ? <><Spinner size={15} />{t('ui.sozdanie')}</> : 'Создать встречу'}
+            {saving ? <><Spinner size={15} />{t('ui.sozdanie')}</> : t('ui.sozdat_vstrechu')}
           </button>
         </div>
       </form>

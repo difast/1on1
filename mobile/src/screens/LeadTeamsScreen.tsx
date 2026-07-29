@@ -132,7 +132,7 @@ export default function LeadTeamsScreen() {
       const note = await createNote({ user_id: user.id, content: noteText.trim() });
       setNotes(prev => [note, ...prev]);
       setNoteText(''); setShowNoteForm(false);
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось создать заметку'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_zametku')); }
     finally { setNoteLoading(false); }
   };
 
@@ -157,7 +157,7 @@ export default function LeadTeamsScreen() {
       await updateNote(editingNoteId, { content: editNoteText.trim() });
       setNotes(prev => prev.map(n => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
       setEditingNoteId(null);
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('errors.saveFailed')); }
     finally { setEditNoteLoading(false); }
   };
 
@@ -233,7 +233,7 @@ export default function LeadTeamsScreen() {
       closeSheet();
       await loadTeamDetail(selectedTeamId!);
     } catch (err: any) {
-      const detail = err?.response?.detail ?? err?.response?.data?.detail ?? 'Пользователь не найден или уже в команде';
+      const detail = err?.response?.detail ?? err?.response?.data?.detail ?? t('ui.polzovatel_ne_nayden_ili_uzhe_v');
       setAddMemberError(detail);
     } finally { setFormLoading(false); }
   };
@@ -344,7 +344,7 @@ export default function LeadTeamsScreen() {
                   style={[styles.noteSaveBtn, (!noteText.trim() || noteLoading) && { opacity: 0.5 }]}
                   onPress={handleCreateNote} disabled={!noteText.trim() || noteLoading}
                 >
-                  <Text style={styles.noteSaveText}>{noteLoading ? '...' : 'Сохранить'}</Text>
+                  <Text style={styles.noteSaveText}>{noteLoading ? '...' : t('common.save')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -370,7 +370,7 @@ export default function LeadTeamsScreen() {
                       style={[styles.noteSaveBtn, (!editNoteText.trim() || editNoteLoading) && { opacity: 0.5 }]}
                       onPress={handleSaveEditNote} disabled={!editNoteText.trim() || editNoteLoading}
                     >
-                      <Text style={styles.noteSaveText}>{editNoteLoading ? '...' : 'Сохранить'}</Text>
+                      <Text style={styles.noteSaveText}>{editNoteLoading ? '...' : t('common.save')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -406,7 +406,7 @@ export default function LeadTeamsScreen() {
 
         {/* Empty state */}
         {teams.length === 0 && (
-          <EmptyState icon="people-outline" title={t('ui.net_komand')} description="Создайте первую команду, чтобы начать" />
+          <EmptyState icon="people-outline" title={t('ui.net_komand')} description={t('ui.sozdayte_pervuyu_komandu_chtoby_nachat')} />
         )}
 
         {/* Team detail */}
@@ -433,7 +433,7 @@ export default function LeadTeamsScreen() {
                   onPress={handleRegenerateCode}
                   disabled={regenerating}
                 >
-                  <Text style={styles.newCodeBtnText}>{regenerating ? '...' : '🔄 Новый код'}</Text>
+                  <Text style={styles.newCodeBtnText}>{regenerating ? '...' : t('ui.novyy_kod')}</Text>
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -452,7 +452,7 @@ export default function LeadTeamsScreen() {
               <EmptyState
                 icon="person-outline"
                 title={t('ui.net_uchastnikov')}
-                description="Добавьте первого участника в команду"
+                description={t('ui.dobavte_pervogo_uchastnika_v_komandu')}
               >
                 <TouchableOpacity style={[styles.addBtn, { marginTop: 16 }]} onPress={() => openSheet('addMember')}>
                   <Text style={styles.addBtnText}>{t('ui.dobavit_uchastnika')}</Text>
@@ -498,7 +498,7 @@ export default function LeadTeamsScreen() {
                       <Text style={{ fontWeight: '500', color: colors.textPrimary }}>
                         {member.last_meeting_date
                           ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
-                          : 'Не было'}
+                          : t('ui.ne_bylo')}
                       </Text>
                     </Text>
 
@@ -532,7 +532,7 @@ export default function LeadTeamsScreen() {
                             in_progress: { label: t('tasks.statusInProgress'), color: colors.warning, bg: colors.warningBg },
                             blocked: { label: t('ui.blok'), color: colors.danger, bg: colors.dangerBg },
                             review: { label: t('ui.revyu'), color: colors.accent, bg: colors.accentLight },
-                            done: { label: '✓', color: colors.success, bg: colors.successBg },
+                            done: { label: '', color: colors.success, bg: colors.successBg },
                           };
                           const stCfg = TASK_STATUS[st] ?? TASK_STATUS.in_progress;
                           const today = new Date(); today.setHours(0,0,0,0);
@@ -545,7 +545,7 @@ export default function LeadTeamsScreen() {
                                 </Text>
                                 {task.due_date && (
                                   <Text style={[styles.taskDue, overdue && { color: colors.danger, fontWeight: '600' }]}>
-                                    {overdue ? `⚠ Просрочено · ` : 'до '}
+                                    {overdue ? `Просрочено · ` : t('ui.do')}
                                     {new Date(task.due_date).toLocaleDateString('ru-RU')}
                                   </Text>
                                 )}
@@ -708,7 +708,7 @@ export default function LeadTeamsScreen() {
                             style={[styles.sheetInput, { marginTop: 4 }]}
                             value={coAssignees[m.user_id]}
                             onChangeText={(txt) => setCoAssignees(prev => ({ ...prev, [m.user_id]: txt }))}
-                            placeholder={`Часть работы (${m.user_name})`}
+                            placeholder={t('ui.chast_raboty', { v1: m.user_name })}
                             placeholderTextColor={colors.textMuted}
                           />
                         )}

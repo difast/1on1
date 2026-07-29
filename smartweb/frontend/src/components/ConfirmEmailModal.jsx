@@ -59,15 +59,11 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
         </div>
 
         <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 10 }}>{t('ui.podtverdite_pochtu')}</h2>
-        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 6 }}>
-          Регистрация завершена. Мы отправили письмо со ссылкой для подтверждения и активации аккаунта на адрес:
-        </p>
+        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', lineHeight: 1.6, marginBottom: 6 }}>{t('ui.registraciya_zavershena_my_otpravili_pismo_so')}</p>
         <p style={{ fontWeight: 700, color: 'var(--color-accent)', fontSize: 15, marginBottom: 10, wordBreak: 'break-all' }}>
           {email}
         </p>
-        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-          Перейдите по ссылке из письма, чтобы продолжить. Вход в кабинет откроется после подтверждения.
-        </p>
+        <p style={{ fontSize: 13, color: 'var(--color-text-muted)', lineHeight: 1.6, marginBottom: 24 }}>{t('auth.confirmHint')}</p>
 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'space-between' }}>
           <button
@@ -79,10 +75,10 @@ export default function ConfirmEmailModal({ open, email, onGoLogin, onClose }) {
             className="btn btn-accent"
             onClick={openMail}
             disabled={!provider.url}
-            title={provider.url ? provider.label : t('ui.otkroyte_vash_pochtovyy_yaschik')}
+            title={provider.url ? t(provider.labelKey) : t('ui.otkroyte_vash_pochtovyy_yaschik')}
             style={{ flex: 1 }}
           >
-            {provider.label}
+            {t(provider.labelKey)}
           </button>
         </div>
       </div>

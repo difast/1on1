@@ -60,9 +60,9 @@ export default function SupportScreen() {
       if (!pitCtxRef.current && user) {
         pitCtxRef.current = await buildPitContext(user, isLead);
       }
-      const context = pitCtxRef.current?.text ?? (user ? `Пользователь: ${user.name || user.email}` : '');
+      const context = pitCtxRef.current?.text ?? (user ? t('ui.polzovatel_2', { v1: user.name || user.email }) : '');
       const res = await assistantChat(newMsgs, context) as any;
-      const rawReply: string = res.reply ?? 'Нет ответа';
+      const rawReply: string = res.reply ?? t('ui.net_otveta');
 
       // Run any actions Pit requested (create task / schedule meeting).
       const { clean, actions } = parsePitActions(rawReply);
@@ -76,7 +76,7 @@ export default function SupportScreen() {
       setMessages(prev => [...prev, { role: 'assistant', content: reply }]);
       setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
     } catch {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Произошла ошибка. Попробуйте ещё раз.' }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: t('ui.proizoshla_oshibka_poprobuyte_esche_raz') }]);
     } finally { setPitLoading(false); }
   };
 

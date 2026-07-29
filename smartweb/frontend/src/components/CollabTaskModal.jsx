@@ -62,7 +62,7 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
             <span className="modal-title">{t('ui.sovmestnaya_zadacha_2')}</span>
             <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 3 }}>{t('ui.odna_zadacha_na_neskolkih_uchastnikov_u')}</p>
           </div>
-          <button type="button" className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}>✕</button>
+          <button type="button" className="modal-close" aria-label={t('ui.zakryt')} onClick={onClose}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
 
         <div className="form-group">
@@ -109,7 +109,7 @@ export default function CollabTaskModal({ members, teamId, assignedBy, onClose, 
         <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 18 }}>
           <button type="button" onClick={onClose} className="btn btn-secondary">{t('ui.otmena')}</button>
           <button type="submit" disabled={saving} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8, minWidth: 140 }}>
-            {saving ? <><Spinner size={15} />{t('ui.sozdanie')}</> : 'Создать задачу'}
+            {saving ? <><Spinner size={15} />{t('ui.sozdanie')}</> : t('ui.sozdat_zadachu')}
           </button>
         </div>
       </form>

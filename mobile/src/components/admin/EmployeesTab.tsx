@@ -46,7 +46,7 @@ export function EmployeesTab() {
   };
 
   const save = async () => {
-    if (!form.name.trim()) { Alert.alert(t('ui.proverte_formu'), 'Укажите имя сотрудника'); return; }
+    if (!form.name.trim()) { Alert.alert(t('ui.proverte_formu'), t('ui.ukazhite_imya_sotrudnika')); return; }
     setSaving(true);
     try {
       if (editingId) {
@@ -58,12 +58,12 @@ export function EmployeesTab() {
       }
       reset();
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить сотрудника');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_sotrudnika'));
     } finally { setSaving(false); }
   };
 
   const remove = (e: StaffMember) => {
-    Alert.alert(t('ui.udalit_sotrudnika'), `${e.name} будет снят со всех назначений. Действие необратимо.`, [
+    Alert.alert(t('ui.udalit_sotrudnika'), t('ui.budet_snyat_so_vseh_naznacheniy_deystvie', { v1: e.name }), [
       { text: t('common.cancel'), style: 'cancel' },
       {
         text: t('common.delete'), style: 'destructive', onPress: async () => {

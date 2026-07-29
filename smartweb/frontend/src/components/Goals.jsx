@@ -115,7 +115,7 @@ export function CommentThread({ goal, meId, onSend, canFeedback }) {
               borderRadius: 10, padding: '8px 12px',
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 3 }}>
-                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-primary)' }}>{c.author_name || 'Участник'}</span>
+                <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--color-text-primary)' }}>{c.author_name || t('ui.uchastnik')}</span>
                 {isFeedback && (
                   <span style={{ fontSize: 10, fontWeight: 700, color: '#7c3aed', background: '#ede9fe', borderRadius: 6, padding: '1px 6px' }}>{t('ui.itogovaya_ocenka')}</span>
                 )}
@@ -152,7 +152,7 @@ export function CommentThread({ goal, meId, onSend, canFeedback }) {
             style={{ flex: 1 }}
           />
           <button className="btn btn-accent btn-sm" onClick={submit} disabled={sending || !text.trim()}>
-            {sending ? '…' : 'Отправить'}
+            {sending ? '…' : t('common.send')}
           </button>
         </div>
       </div>
@@ -176,7 +176,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
       const { data } = await updateGoal(goal.id, { actor_id: meId, ...payload })
       onChanged(data)
     } catch (e) {
-      toast(e?.response?.data?.detail || 'Не удалось сохранить', 'error')
+      toast(e?.response?.data?.detail || t('errors.saveFailed'), 'error')
       setProgress(goal.progress)
     } finally { setSaving(false) }
   }
@@ -187,7 +187,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
   const remove = async () => {
     if (!window.confirm(t('ui.udalit_etu_cel'))) return
     try { await deleteGoal(goal.id, meId); onChanged(null, goal.id) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось удалить', 'error') }
+    catch (e) { toast(e?.response?.data?.detail || t('errors.deleteFailed'), 'error') }
   }
 
   return (
@@ -200,7 +200,7 @@ function OwnGoalCard({ goal, meId, onChanged }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
           <StatusBadge status={goal.status} />
           {goal.stagnant && OPEN_STATUSES.includes(goal.status) && (
-            <span title={`Прогресс не обновлялся ${goal.days_since_progress} дн.`} style={{
+            <span title={t('ui.progress_ne_obnovlyalsya_dn', { v1: goal.days_since_progress })} style={{
               fontSize: 11, fontWeight: 600, color: '#b45309', background: '#fffbeb',
               border: '1px solid #fde68a', borderRadius: 6, padding: '2px 8px',
             }}>{t('ui.davno_bez_obnovleniy')}</span>
@@ -284,7 +284,7 @@ export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать ц�
       })
       setTitle(''); setDesc(''); setPeriod(qOpts[0].value)
     } catch (e) {
-      toast(e?.response?.data?.detail || 'Не удалось создать цель', 'error')
+      toast(e?.response?.data?.detail || t('ui.ne_udalos_sozdat_cel'), 'error')
     } finally { setCreating(false) }
   }
 
@@ -292,7 +292,7 @@ export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать ц�
     <div className="card" style={{ padding: 18, display: 'flex', flexDirection: 'column', gap: 12 }}>
       <div>
         <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{t('ui.nazvanie_celi')}</label>
-        <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder={placeholder || 'Например: Запустить онбординг новых сотрудников'} style={{ marginTop: 4 }} />
+        <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder={placeholder || t('ui.naprimer_zapustit_onbording_novyh_sotrudnikov')} style={{ marginTop: 4 }} />
       </div>
       <div>
         <label style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-secondary)' }}>{t('ui.ozhidaemyy_rezultat')}</label>
@@ -307,7 +307,7 @@ export function GoalForm({ onCreate, onCancel, submitLabel = 'Создать ц�
       </div>
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
         <button className="btn btn-secondary btn-sm" onClick={onCancel}>{t('ui.otmena')}</button>
-        <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? 'Создаём…' : submitLabel}</button>
+        <button className="btn btn-accent btn-sm" onClick={submit} disabled={creating}>{creating ? t('ui.sozdaem_2') : submitLabel}</button>
       </div>
     </div>
   )
@@ -393,9 +393,7 @@ export function GoalsMember({ user, teamId }) {
       )}
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>
-          Ставьте личные цели на квартал и регулярно отмечайте прогресс. Тимлид видит ваши цели и может оставить обратную связь.
-        </p>
+        <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>{t('ui.stavte_lichnye_celi_na_kvartal_i')}</p>
         {!showForm && <button className="btn btn-accent btn-sm" style={{ flexShrink: 0 }} onClick={() => setShowForm(true)}>{t('ui.novaya_cel')}</button>}
       </div>
 
@@ -412,7 +410,7 @@ export function GoalsMember({ user, teamId }) {
       )}
 
       {goals.length === 0 && !showForm && teamGoals.length === 0 && (
-        <EmptyState title={t('ui.celey_poka_net')} desc="Создайте первую цель на текущий квартал и отслеживайте прогресс." />
+        <EmptyState title={t('ui.celey_poka_net')} desc={t('ui.sozdayte_pervuyu_cel_na_tekuschiy_kvartal')} />
       )}
 
       {active.length > 0 && (
@@ -501,7 +499,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
     if (!teamId) { setData(null); return }
     setLoading(true)
     try { const { data } = await getTeamGoals(teamId, meId); setData(data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось загрузить цели команды', 'error'); setData(null) }
+    catch (e) { toast(e?.response?.data?.detail || t('ui.ne_udalos_zagruzit_celi_komandy'), 'error'); setData(null) }
     finally { setLoading(false) }
   }, [teamId, meId])
   useEffect(() => { load() }, [load])
@@ -565,7 +563,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
           </div>
           {showTeamForm && (
             <GoalForm
-              submitLabel="Создать командную цель"
+              submitLabel={t('ui.sozdat_komandnuyu_cel')}
               placeholder={t('ui.naprimer_sokratit_vremya_otveta_klientu_do')}
               onCancel={() => setShowTeamForm(false)}
               onCreate={async (payload) => {
@@ -589,7 +587,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
       {loading && <div style={{ padding: 40, textAlign: 'center' }}><Spinner /></div>}
 
       {!loading && members.length === 0 && (
-        <EmptyState title={t('ui.v_komande_poka_net_celey')} desc="Как только сотрудники создадут личные цели, они появятся здесь со статусами и прогрессом." />
+        <EmptyState title={t('ui.v_komande_poka_net_celey')} desc={t('ui.kak_tolko_sotrudniki_sozdadut_lichnye_celi')} />
       )}
 
       {!loading && members.map(m => (
@@ -599,7 +597,7 @@ export function GoalsLead({ user, teams, selectedTeamId, onSelectTeam }) {
               {(m.user_name || '?').slice(0, 1).toUpperCase()}
             </div>
             <h4 style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-text-primary)' }}>{m.user_name}</h4>
-            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{m.goals.length ? `${m.goals.length} цел.` : 'нет целей'}</span>
+            <span style={{ fontSize: 12, color: 'var(--color-text-muted)', marginLeft: 'auto' }}>{m.goals.length ? t('ui.cel', { v1: m.goals.length }) : 'нет целей'}</span>
           </div>
           {m.goals.length === 0 ? (
             <p style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>{t('ui.sotrudnik_esche_ne_postavil_celi')}</p>

@@ -145,7 +145,7 @@ export default function NotificationsScreen() {
           >
             <Ionicons name="checkmark-done" size={14} color={unreadCount === 0 ? colors.textMuted : '#fff'} />
             <Text style={[styles.markAllText, unreadCount === 0 && styles.markAllTextDisabled]}>
-              {markingAll ? '...' : 'Прочитать все'}
+              {markingAll ? '...' : t('ui.prochitat_vse')}
             </Text>
           </TouchableOpacity>
         )}

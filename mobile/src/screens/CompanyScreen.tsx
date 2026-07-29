@@ -132,7 +132,7 @@ export default function CompanyScreen() {
 
   const handleSave = async () => {
     if (!teamId) return;
-    if (!String(form.name || '').trim()) { Alert.alert(t('ui.proverte_dannye'), 'Название обязательно'); return; }
+    if (!String(form.name || '').trim()) { Alert.alert(t('ui.proverte_dannye'), t('ui.nazvanie_obyazatelno')); return; }
     setSaving(true);
     try {
       const payload = { ...form, size: form.size ? Number(form.size) : null };
@@ -141,11 +141,11 @@ export default function CompanyScreen() {
       setEditing(false); setManual(false);
       setStatus('view');
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить реквизиты');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_rekvizity'));
     } finally { setSaving(false); }
   };
 
-  const countryLabel = (c?: string) => (c === 'KZ' ? 'Казахстан' : c === 'RU' ? 'Россия' : c || '');
+  const countryLabel = (c?: string) => (c === 'KZ' ? t('ui.kazahstan') : c === 'RU' ? t('ui.rossiya') : c || '');
 
   const viewRows = company ? [
     { label: t('common.name'), value: company.name },
@@ -216,7 +216,7 @@ export default function CompanyScreen() {
                 <TouchableOpacity key={i} style={styles.suggestion} onPress={() => pick(s)}>
                   <Text style={styles.suggestionName}>{s.name}</Text>
                   {(s.inn || s.legal_address) ? (
-                    <Text style={styles.suggestionSub}>{[s.inn && `ИНН/БИН ${s.inn}`, s.legal_address].filter(Boolean).join(' · ')}</Text>
+                    <Text style={styles.suggestionSub}>{[s.inn && t('ui.inn_bin', { v1: s.inn }), s.legal_address].filter(Boolean).join(' · ')}</Text>
                   ) : null}
                 </TouchableOpacity>
               ))}

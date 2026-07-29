@@ -45,7 +45,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
 
   const roleBadge = {
     team_lead: { label: t('profile.roleLead'), cls: 'bg-indigo-100 text-indigo-700' },
-    member: { label: 'Участник', cls: 'bg-gray-100 text-gray-600' },
+    member: { label: t('ui.uchastnik'), cls: 'bg-gray-100 text-gray-600' },
   }
   const badge = roleBadge[role] || { label: role, cls: 'bg-gray-100 text-gray-600' }
 
@@ -171,7 +171,7 @@ export default function UserCard({ user, teamId, organization: orgProp = null, o
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {recs.map(r => (
                 <div key={r.id} style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px' }}>
-                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0 }}>{r.topic || 'Эксперт'}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: '#0f172a', margin: 0 }}>{r.topic || t('ui.ekspert')}</p>
                   <p style={{ fontSize: 11, color: '#64748b', margin: '2px 0 0' }}>от {r.from_user_name || 'коллеги'}</p>
                 </div>
               ))}

@@ -340,7 +340,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   const handleOpenReschedule = async (meeting) => {
     const member = teamDetail?.members?.find(m => m.user_id === meeting.member_id)
     const cadence = member?.cadence_days || 14
-    setRescheduleModal({ meetingId: meeting.id, memberName: usersMap[meeting.member_id]?.name || 'Участник', cadence })
+    setRescheduleModal({ meetingId: meeting.id, memberName: usersMap[meeting.member_id]?.name || t('ui.uchastnik'), cadence })
     setAiSlots([])
     setSlotsLocked(null)
     setSlotsLoading(true)
@@ -677,7 +677,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
   const statusBorderClass = { green: 'border-status-green', yellow: 'border-status-yellow', red: 'border-status-red' }
   const statusBadgeClass = { green: 'badge badge-green', yellow: 'badge badge-amber', red: 'badge badge-red' }
-  const statusLabel = { green: 'В порядке', yellow: 'Скоро', red: 'Нет встречи' }
+  const statusLabel = { green: t('ui.v_poryadke'), yellow: t('integrations.comingSoon'), red: t('ui.net_vstrechi') }
 
   const filteredMembers = teamDetail?.members?.filter(m => {
     if (m.user_id === user.id) return false
@@ -771,7 +771,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   disabled={callLoading[m.id]}
                   style={{ fontSize: 12, fontWeight: 600, background: '#0061ff', color: '#fff', border: 'none', borderRadius: 'var(--radius-md)', cursor: 'pointer', padding: '5px 10px', flexShrink: 0, opacity: callLoading[m.id] ? 0.6 : 1 }}
                 >
-                  {callLoading[m.id] ? '...' : 'Созвон'}
+                  {callLoading[m.id] ? '...' : t('ui.sozvon')}
                 </button>
               )}
             </>
@@ -794,7 +794,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
           пер-встречно. Так повестка работает дальше, а не остаётся мёртвым полем.
         */}
         {isPast && !isRequest && coachingEnabled(user.id) && !coachDismissed.has(m.id) && (() => {
-          const fb = buildMeetingFeedback({ agenda: m.agenda, transcript: m.call_transcript, summary: m.ai_summary })
+          const fb = buildMeetingFeedback({ agenda: m.agenda, transcript: m.call_transcript, summary: m.ai_summary }, t)
           if (!fb) return null
           const dismiss = () => setCoachDismissed(prev => new Set(prev).add(m.id))
           return (
@@ -871,13 +871,13 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
         <div className="page-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: 2 }}>
-              {activeView === 'teams' ? 'Мои команды' : activeView === 'meetings' ? 'Мои встречи' : activeView === 'tasks' ? 'Мои задачи' : activeView === 'goals' ? 'Цели команды' : activeView === 'development' ? 'Развитие команды' : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? 'Заметки' : activeView === 'integrations' ? t('nav.integrations') : t('nav.analytics')}
+              {activeView === 'teams' ? t('ui.moi_komandy') : activeView === 'meetings' ? t('ui.moi_vstrechi') : activeView === 'tasks' ? t('ui.moi_zadachi') : activeView === 'goals' ? t('ui.celi_komandy') : activeView === 'development' ? t('ui.razvitie_komandy') : activeView === 'oneai' ? 'ONE AI' : activeView === 'notes' ? t('nav.notes') : activeView === 'integrations' ? t('nav.integrations') : t('nav.analytics')}
             </h1>
-            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>Добро пожаловать, {user.name}</p>
+            <p style={{ fontSize: 14, color: 'var(--color-text-secondary)' }}>{t('ui.dobro_pozhalovat_imya', { v1: user.name })}</p>
           </div>
           <div className="page-toolbar" style={{ display: 'flex', gap: 8 }}>
             {/* Spontaneous call — shown whenever the lead has any team, next to
-                'Создать команду' (was gated on selectedTeamId, which could lag). */}
+                t('onboarding.createTeam') (was gated on selectedTeamId, which could lag). */}
             {teams.length > 0 && !isTg && (
               <button onClick={openCallModal} className="btn btn-secondary btn-sm" style={{ fontWeight: 600 }}>{t('ui.sozvon')}</button>
             )}
@@ -981,7 +981,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                         onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                         onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
                         title={t('ui.udalit')}
-                      >✕</button>
+                      ><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
                     </div>
                   ))}
                 </div>
@@ -1079,7 +1079,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button type="button" onClick={() => setMyTaskForm(f => ({ ...f, open: false }))} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
                     <button type="submit" disabled={myTaskForm.loading} className="btn btn-accent btn-sm">
-                      {myTaskForm.loading ? '...' : 'Добавить'}
+                      {myTaskForm.loading ? '...' : t('common.add')}
                     </button>
                   </div>
                 </form>
@@ -1090,11 +1090,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 </div>
               )}
               {myTasks.length === 0 ? (
-                <EmptyState title={t('ui.net_zadach')} desc="Добавьте личные задачи, которые видите только вы" />
+                <EmptyState title={t('ui.net_zadach')} desc={t('ui.dobavte_lichnye_zadachi_kotorye_vidite_tolko')} />
               ) : (
                 <>
                   <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-                    {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
+                    {[['all', t('common.all')], ['open', t('ui.otkrytye')], ['done', t('ui.vypolnennye')]].map(([f, label]) => (
                       <button key={f} onClick={() => setMyTaskFilter(f)}
                         className={myTaskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
                         {label}
@@ -1152,7 +1152,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                             style={{ color: 'var(--color-text-muted)', background: 'none', border: 'none', cursor: 'pointer', fontSize: 14, flexShrink: 0, padding: 4, lineHeight: 1, transition: 'color 0.15s' }}
                             onMouseEnter={e => e.currentTarget.style.color = 'var(--color-danger)'}
                             onMouseLeave={e => e.currentTarget.style.color = 'var(--color-text-muted)'}
-                            title={t('ui.udalit')}>✕</button>
+                            title={t('ui.udalit')}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
                           {!task.completed && (
                             <TaskAIHelper
                               task={task}
@@ -1183,11 +1183,11 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             {tasksSubTab === 'members' && (
               <div>
                 {teams.length === 0 ? (
-                  <EmptyState title={t('ui.net_komand')} desc="Создайте команду, чтобы видеть задачи участников" />
+                  <EmptyState title={t('ui.net_komand')} desc={t('ui.sozdayte_komandu_chtoby_videt_zadachi_uchastni')} />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {[['all', 'Все'], ['open', 'Открытые'], ['done', 'Выполненные']].map(([f, label]) => (
+                      {[['all', t('common.all')], ['open', t('ui.otkrytye')], ['done', t('ui.vypolnennye')]].map(([f, label]) => (
                         <button key={f} onClick={() => setMemberTaskFilter(f)}
                           className={memberTaskFilter === f ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>
                           {label}
@@ -1298,7 +1298,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                               ))}
                               {filteredTasks !== undefined && filteredTasks.length === 0 && !taskForm.open && (
                                 <p style={{ fontSize: 13, color: 'var(--color-text-muted)', padding: '4px 0' }}>
-                                  {memberTaskFilter === 'open' ? 'Нет открытых задач' : memberTaskFilter === 'done' ? t('ui.net_vypolnennyh_zadach') : t('ui.net_zadach')}
+                                  {memberTaskFilter === 'open' ? t('ui.net_otkrytyh_zadach') : memberTaskFilter === 'done' ? t('ui.net_vypolnennyh_zadach') : t('ui.net_zadach')}
                                 </p>
                               )}
                               {taskForm.open ? (
@@ -1320,7 +1320,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                   />
                                   <div style={{ display: 'flex', gap: 8 }}>
                                     <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm">{t('ui.otmena')}</button>
-                                    <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm">{taskForm.loading ? '...' : 'Добавить'}</button>
+                                    <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm">{taskForm.loading ? '...' : t('common.add')}</button>
                                   </div>
                                 </form>
                               ) : (
@@ -1335,7 +1335,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                       )
                     })}
                     {(!teamDetail?.members || teamDetail.members.filter(m => m.user_id !== user.id).length === 0) && (
-                      <EmptyState title={t('ui.net_uchastnikov')} desc="Добавьте участников в команду" />
+                      <EmptyState title={t('ui.net_uchastnikov')} desc={t('ui.dobavte_uchastnikov_v_komandu')} />
                     )}
                   </div>
                 )}
@@ -1446,9 +1446,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
               <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 18 }}>{t('ui.soberite_komandu_i_provedite_pervuyu_vstrechu')}</p>
               <ol style={{ listStyle: 'none', padding: 0, margin: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {[
-                  ['Создайте команду', 'Дайте ей название — это ваше рабочее пространство.'],
-                  ['Пригласите участников', 'Отправьте код приглашения коллегам.'],
-                  ['Запланируйте встречу', 'Назначьте первую 1-на-1 с участником.'],
+                  [t('ui.sozdayte_komandu'), t('ui.dayte_ey_nazvanie_eto_vashe_rabochee')],
+                  [t('ui.priglasite_uchastnikov'), t('ui.otpravte_kod_priglasheniya_kollegam')],
+                  [t('ui.zaplaniruyte_vstrechu'), t('ui.naznachte_pervuyu_1_na_1_s')],
                 ].map(([t, d], i) => (
                   <li key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                     <span aria-hidden="true" style={{ flexShrink: 0, width: 24, height: 24, borderRadius: '50%', background: 'var(--color-accent)', color: '#fff', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{i + 1}</span>
@@ -1553,7 +1553,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                               <span style={{ fontWeight: 500, color: 'var(--color-text-primary)' }}>
                                 {member.last_meeting_date
                                   ? new Date(member.last_meeting_date).toLocaleDateString('ru-RU')
-                                  : 'Не было'}
+                                  : t('ui.ne_bylo')}
                               </span>
                             </p>
 
@@ -1568,9 +1568,9 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                 disabled={memberCallLoading[member.user_id]}
                                 className="btn btn-secondary btn-sm"
                                 style={{ flexShrink: 0, fontWeight: 600 }}
-                                title={`Созвон с ${member.user_name}`}
+                                title={t('ui.sozvon_s', { v1: member.user_name })}
                               >
-                                {memberCallLoading[member.user_id] ? '...' : 'Созвон'}
+                                {memberCallLoading[member.user_id] ? '...' : t('ui.sozvon')}
                               </button>
                             </div>
 
@@ -1691,7 +1691,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                                       <div style={{ display: 'flex', gap: 6 }}>
                                         <button type="button" onClick={() => closeTaskForm(member.user_id)} className="btn btn-secondary btn-sm" style={{ flex: 1, fontSize: 12 }}>{t('ui.otmena')}</button>
                                         <button type="submit" disabled={taskForm.loading} className="btn btn-accent btn-sm" style={{ flex: 1, fontSize: 12 }}>
-                                          {taskForm.loading ? '...' : 'Добавить'}
+                                          {taskForm.loading ? '...' : t('common.add')}
                                         </button>
                                       </div>
                                     </form>
@@ -1936,7 +1936,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => setShowCreateTeam(false)} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sozdanie')}</> : 'Создать'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sozdanie')}</> : t('common.create')}</button>
             </div>
           </form>
         </Modal>
@@ -2071,14 +2071,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             ))}
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => setShowAddMember(false)} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.dobavlenie')}</> : 'Добавить'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.dobavlenie')}</> : t('common.add')}</button>
             </div>
           </form>
         </Modal>
       )}
 
       {showSchedule && scheduleMember && (
-        <Modal title={`Встреча с ${scheduleMember.user_name}`} onClose={() => { setShowSchedule(false); setScheduleMember(null) }}>
+        <Modal title={t('ui.vstrecha_s', { v1: scheduleMember.user_name })} onClose={() => { setShowSchedule(false); setScheduleMember(null) }}>
           <form onSubmit={handleScheduleMeeting}>
             <div className="form-group">
               <label className="form-label">{t('ui.data_i_vremya')}</label>
@@ -2106,7 +2106,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 const sugg = buildAgendaSuggestions({
                   member: scheduleMember,
                   tasks: memberTasks[scheduleMember.user_id] || [],
-                })
+                }, t)
                 void coachTick
                 if (sugg.length === 0) return null
                 const add = (line) => setScheduleAgenda(prev => prev.trim() ? `${prev.trim()}\n- ${line}` : `- ${line}`)
@@ -2135,7 +2135,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 6 }}>
               <button type="button" onClick={() => { setShowSchedule(false); setScheduleMember(null) }} className="btn btn-secondary" style={{ flex: 1 }}>{t('ui.otmena')}</button>
-              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : 'Запланировать'}</button>
+              <button type="submit" disabled={formLoading} className="btn btn-accent" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>{formLoading ? <><Spinner size={15} />{t('ui.sohranenie')}</> : t('ui.zaplanirovat')}</button>
             </div>
           </form>
         </Modal>
@@ -2206,7 +2206,7 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
                 Перенос встречи с {rescheduleModal.memberName} · каденция {rescheduleModal.cadence} дн.
               </p>
             </div>
-            <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setRescheduleModal(null)}>✕</button>
+            <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setRescheduleModal(null)}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
           </div>
           {slotsLoading ? (
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '20px 0' }}>

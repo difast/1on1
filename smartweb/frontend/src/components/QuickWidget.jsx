@@ -108,9 +108,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
                     width: 38, height: 38, borderRadius: 'var(--radius-md)',
                     background: '#fef3c7', border: '1px solid #fde68a',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 18,
-                  }}>
-                    ✓
-                  </div>
+                  }}></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text-primary)', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       {nextTask.title}
@@ -169,7 +167,7 @@ export default function QuickWidget({ nextMeeting, nextTask, onGoMeetings, onGoT
             </span>
             {nextMeeting
               ? new Date(nextMeeting.scheduled_date).toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' })
-              : 'Расписание'}
+              : t('ui.raspisanie')}
           </button>
         </div>
       </div>

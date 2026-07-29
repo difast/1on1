@@ -36,13 +36,13 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
       const found = []
       try {
         const { data: all } = await getTeams()
-        for (const t of (all || [])) if (t.team_lead_id === user.id) found.push({ id: t.id, name: t.name, role: 'тимлид' })
+        for (const t of (all || [])) if (t.team_lead_id === user.id) found.push({ id: t.id, name: t.name, role: t('ui.timlid') })
       } catch { /* ignore */ }
       try {
         const { data: mt } = await getMemberTeam(user.id)
         if (mt && mt.id && !found.some(f => f.id === mt.id)) {
           const me = (mt.members || []).find(m => m.user_id === user.id)
-          found.push({ id: mt.id, name: mt.name, role: me?.role ?? 'участник' })
+          found.push({ id: mt.id, name: mt.name, role: me?.role ?? t('ui.uchastnik_3') })
         }
       } catch { /* ignore */ }
       setTeams(found)
@@ -75,7 +75,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
     finally { setBusy(false) }
   }
   const handleDelete = async () => {
-    if (!await confirmDialog({ title: t('ui.udalit_polzovatelya'), message: `${user.name} (id ${user.id}) будет удалён безвозвратно.`, confirmText: 'Удалить', danger: true })) return
+    if (!await confirmDialog({ title: t('ui.udalit_polzovatelya'), message: t('ui.id_budet_udalen_bezvozvratno', { v1: user.name, v2: user.id }), confirmText: 'Удалить', danger: true })) return
     setBusy(true)
     try { await deleteUser(user.id); onChanged?.(); onClose() }
     finally { setBusy(false) }
@@ -101,11 +101,11 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
               <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--color-text-muted)' }}>{user.email}</p>
             </div>
           </div>
-          <button aria-label={t('ui.zakryt')} onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}>✕</button>
+          <button aria-label={t('ui.zakryt')} onClick={onClose} style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--color-text-muted)' }}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
         </div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
           <span style={chip}>ID: {user.id}</span>
-          <span style={{ ...chip, background: 'var(--color-accent-light, #eef2ff)', color: 'var(--color-accent)' }}>{role === 'team_lead' ? 'Тимлид' : 'Участник'}</span>
+          <span style={{ ...chip, background: 'var(--color-accent-light, #eef2ff)', color: 'var(--color-accent)' }}>{role === 'team_lead' ? t('profile.roleLead') : t('ui.uchastnik')}</span>
           {blocked && <span style={{ ...chip, background: '#fee2e2', color: '#b91c1c' }}>{t('ui.zablokirovan')}</span>}
         </div>
 
@@ -138,13 +138,13 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                 <div style={row}>
                   <span>{t('ui.tarif')}</span>
                   <span style={meta}>
-                    {billing.user?.billing_override ? 'полный доступ' : (billing.subscription ? `${billing.subscription.plan_code} · ${billing.subscription.status}` : 'нет подписки')}
+                    {billing.user?.billing_override ? t('ui.polnyy_dostup') : (billing.subscription ? `${billing.subscription.plan_code} · ${billing.subscription.status}` : t('ui.net_podpiski'))}
                   </span>
                 </div>
                 {billing.free_window?.free_until && (
                   <div style={row}>
                     <span>{t('ui.probnyy_period_14_dney')}</span>
-                    <span style={meta}>{billing.free_window.free_expired ? 'истекло' : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
+                    <span style={meta}>{billing.free_window.free_expired ? t('ui.isteklo') : `до ${new Date(billing.free_window.free_until).toLocaleDateString('ru-RU')}`}</span>
                   </div>
                 )}
                 <div style={{ ...row, alignItems: 'flex-start' }}>
@@ -174,7 +174,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
                           setMgr(m => ({ ...m, saving: true }))
                           try { await assignManager(user.id, mgr.managerId ? Number(mgr.managerId) : null); await loadBilling(); toast(t('ui.menedzher_obnovlen'), 'success'); setMgr(null) }
                           catch { toast(t('ui.ne_udalos_sohranit'), 'error'); setMgr(m => ({ ...m, saving: false })) }
-                        }}>{mgr.saving ? <><Spinner size={14} />{t('ui.sohranenie_2')}</> : 'Сохранить'}</button>
+                        }}>{mgr.saving ? <><Spinner size={14} />{t('ui.sohranenie_2')}</> : t('common.save')}</button>
                     </div>
                   </div>
                 )}
@@ -197,7 +197,7 @@ export default function AdminUserDetail({ user, onClose, onChanged }) {
               {['member', 'team_lead'].map(r => (
                 <button key={r} disabled={busy} onClick={() => changeRole(r)} className="btn btn-sm"
                   style={{ flex: 1, background: role === r ? 'var(--color-accent)' : 'var(--color-surface)', color: role === r ? '#fff' : 'var(--color-text-secondary)', border: '1px solid var(--color-border)' }}>
-                  {r === 'member' ? 'Участник' : 'Тимлид'}
+                  {r === 'member' ? t('ui.uchastnik') : t('profile.roleLead')}
                 </button>
               ))}
             </div>

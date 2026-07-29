@@ -7,11 +7,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 
-const WEEKDAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const MONTHS = [
-  'Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь',
-  'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь',
-];
+// Ключи словаря: подпись берётся при отрисовке и следует языку интерфейса.
+const WEEKDAYS = ['ui.pn', 'ui.vt', 'ui.sr', 'ui.cht', 'ui.pt', 'ui.sb', 'ui.vs'];
+const MONTHS = ['ui.yanvar', 'ui.fevral', 'ui.mart', 'ui.aprel', 'ui.may', 'ui.iyun', 'ui.iyul', 'ui.avgust', 'ui.sentyabr', 'ui.oktyabr', 'ui.noyabr', 'ui.dekabr'];
 const pad = (n: number) => String(n).padStart(2, '0');
 // Monday-first weekday index (0=Mon … 6=Sun)
 const wd = (d: Date) => (d.getDay() + 6) % 7;
@@ -104,7 +102,7 @@ export function DateTimePickerField({
               <TouchableOpacity onPress={() => shiftMonth(-1)} style={styles.navBtn}>
                 <Ionicons name="chevron-back" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
-              <Text style={styles.monthTitle}>{MONTHS[viewMonth.getMonth()]} {viewMonth.getFullYear()}</Text>
+              <Text style={styles.monthTitle}>{t(MONTHS[viewMonth.getMonth()])} {viewMonth.getFullYear()}</Text>
               <TouchableOpacity onPress={() => shiftMonth(1)} style={styles.navBtn}>
                 <Ionicons name="chevron-forward" size={20} color={colors.textPrimary} />
               </TouchableOpacity>
@@ -113,7 +111,7 @@ export function DateTimePickerField({
             {/* Weekday header */}
             <View style={styles.weekRow}>
               {WEEKDAYS.map((w, i) => (
-                <Text key={w} style={[styles.weekday, i >= 5 && styles.weekendText]}>{w}</Text>
+                <Text key={w} style={[styles.weekday, i >= 5 && styles.weekendText]}>{t(w)}</Text>
               ))}
             </View>
 
@@ -178,7 +176,7 @@ export function DateTimePickerField({
                 disabled={!selected}
               >
                 <Text style={styles.confirmText}>
-                  {selected ? `${selected.getDate()} ${MONTHS[selected.getMonth()].toLowerCase().slice(0, 3)}, ${pad(hour)}:${pad(minute)}` : 'Готово'}
+                  {selected ? `${selected.getDate()} ${t(MONTHS[selected.getMonth()]).toLowerCase().slice(0, 3)}, ${pad(hour)}:${pad(minute)}` : t('common.done')}
                 </Text>
               </TouchableOpacity>
             </View>

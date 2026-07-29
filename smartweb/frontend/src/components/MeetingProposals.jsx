@@ -51,7 +51,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
       onChanged?.()
     } catch (err) {
       const d = err?.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Не удалось выполнить действие', 'error')
+      toast(typeof d === 'string' ? d : t('ui.ne_udalos_vypolnit_deystvie'), 'error')
     } finally {
       setBusyId(null)
     }
@@ -68,7 +68,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
       load(); onChanged?.()
     } catch (err) {
       const d = err?.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Не удалось отправить', 'error')
+      toast(typeof d === 'string' ? d : t('ui.ne_udalos_otpravit'), 'error')
     } finally { setBusyId(null) }
   }
 
@@ -84,11 +84,11 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
       setTab('outbox'); load(); onChanged?.()
     } catch (err) {
       const d = err?.response?.data?.detail
-      toast(typeof d === 'string' ? d : 'Не удалось отправить предложение', 'error')
+      toast(typeof d === 'string' ? d : t('ui.ne_udalos_otpravit_predlozhenie'), 'error')
     } finally { setCreating(false) }
   }
 
-  const otherName = (p) => p.from_user_id === currentUser.id ? (p.to_user_name || 'Участник') : (p.from_user_name || 'Участник')
+  const otherName = (p) => p.from_user_id === currentUser.id ? (p.to_user_name || t('ui.uchastnik')) : (p.from_user_name || t('ui.uchastnik'))
 
   const renderCard = (p) => {
     const iAmAwaited = awaitingMe(p)
@@ -97,7 +97,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
           <div style={{ minWidth: 0 }}>
             <p style={{ fontWeight: 700, fontSize: 14, margin: 0, color: 'var(--color-text-primary)' }}>
-              {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || 'Участник'}` : `${p.from_user_name || 'Участник'} -> вам`}
+              {p.from_user_id === currentUser.id ? `Вы -> ${p.to_user_name || t('ui.uchastnik')}` : `${p.from_user_name || t('ui.uchastnik')} -> вам`}
             </p>
             {p.topic && <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '2px 0 0' }}>{p.topic}</p>}
             <p style={{ fontSize: 13, color: 'var(--color-text-primary)', margin: '4px 0 0', fontWeight: 600 }}>
@@ -105,21 +105,21 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
             </p>
           </div>
           <span className={`badge ${STATUS_BADGE[p.status] || 'badge-gray'}`} style={{ flexShrink: 0 }}>
-            {iAmAwaited ? 'Ваш ход' : STATUS_LABEL[p.status] || p.status}
+            {iAmAwaited ? t('ui.vash_hod') : STATUS_LABEL[p.status] || p.status}
           </span>
         </div>
 
         {/* История переговоров */}
         {p.events?.length > 1 && (
           <button onClick={() => setExpanded(expanded === p.id ? null : p.id)} style={{ background: 'none', border: 'none', color: 'var(--color-accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, textAlign: 'left' }}>
-            {expanded === p.id ? 'Скрыть историю' : `История (${p.events.length})`}
+            {expanded === p.id ? t('ui.skryt_istoriyu') : t('ui.istoriya_2', { v1: p.events.length })}
           </button>
         )}
         {expanded === p.id && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderLeft: '2px solid var(--color-border)', paddingLeft: 10 }}>
             {p.events.map(e => (
               <p key={e.id} style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: 0 }}>
-                <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || 'Участник'}</b> {ACTION_LABEL[e.action] || e.action}
+                <b style={{ color: 'var(--color-text-secondary)' }}>{e.actor_name || t('ui.uchastnik')}</b> {ACTION_LABEL[e.action] || e.action}
                 {e.proposed_time ? ` (${fmt(e.proposed_time)})` : ''} · {fmt(e.created_at)}
               </p>
             ))}
@@ -135,7 +135,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn btn-secondary btn-sm" style={{ flex: 1 }} disabled={busyId === p.id} onClick={() => { setCounterFor(null); setCounterTime('') }}>{t('ui.otmena')}</button>
                 <button className="btn btn-accent btn-sm" style={{ flex: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }} disabled={busyId === p.id} onClick={() => doCounter(p)}>
-                  {busyId === p.id ? <Spinner size={14} /> : 'Отправить'}
+                  {busyId === p.id ? <Spinner size={14} /> : t('common.send')}
                 </button>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 6, padding: '12px 20px 0', maxWidth: 680, width: '100%', margin: '0 auto' }}>
-        {[['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['outbox', 'Все'], ['new', '+ Предложить']].map(([k, label]) => (
+        {[['inbox', `Входящие${incoming.length ? ` (${incoming.length})` : ''}`], ['outbox', t('common.all')], ['new', t('ui.predlozhit_2')]].map(([k, label]) => (
           <button key={k} onClick={() => setTab(k)} className={tab === k ? 'btn btn-accent btn-sm' : 'btn btn-secondary btn-sm'}>{label}</button>
         ))}
       </div>
@@ -196,7 +196,7 @@ export default function MeetingProposals({ currentUser, contacts = [], teamId, o
               <input type="datetime-local" className="input" value={when} onChange={e => setWhen(e.target.value)} />
             </div>
             <button type="submit" disabled={creating} className="btn btn-accent" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : 'Отправить предложение'}
+              {creating ? <><Spinner size={15} />{t('ui.otpravka')}</> : t('ui.otpravit_predlozhenie')}
             </button>
           </form>
         ) : proposals === null ? (

@@ -83,15 +83,15 @@ export default function OneAiScreen() {
     } catch (e: any) {
       const detail = e?.response?.data?.detail || e?.response?.detail;
       if (detail?.code === 'feature_locked') setLocked(detail.message);
-      else Alert.alert(t('ui.one_ai_nedostupen'), typeof detail === 'string' ? detail : 'Попробуйте позже');
+      else Alert.alert(t('ui.one_ai_nedostupen'), typeof detail === 'string' ? detail : t('ui.poprobuyte_pozzhe'));
     } finally { setLoading(false); }
   };
 
   const basedOnText = (b: any) => {
     if (!b) return '';
     if (b.facts) return `задач ${b.facts.tasks_total ?? '—'}, встреч ${b.facts.meetings_total ?? '—'}, целей ${b.facts.goals_total ?? '—'}`;
-    if (b.members != null) return `${b.members} участников команды`;
-    return 'агрегаты по вашим данным';
+    if (b.members != null) return t('ui.uchastnikov_komandy', { v1: b.members });
+    return t('ui.agregaty_po_vashim_dannym');
   };
 
   return (
@@ -106,7 +106,7 @@ export default function OneAiScreen() {
 
       {sections === null ? <Spinner /> : (
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.intro}>Стратегический AI-анализ по вашим данным. Выберите раздел и запросите развёрнутый разбор.</Text>
+          <Text style={styles.intro}>{t('ui.strategicheskiy_ai_analiz_po_vashim_dannym')}</Text>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
             {sections.map(s => (
@@ -148,7 +148,7 @@ export default function OneAiScreen() {
           )}
 
           {!result && !loading && !locked && (
-            <EmptyState icon="sparkles-outline" title={t('ui.one_ai_gotov_k_analizu')} description="Выберите раздел и запросите развёрнутый анализ по вашим данным." />
+            <EmptyState icon="sparkles-outline" title={t('ui.one_ai_gotov_k_analizu')} description={t('ui.vyberite_razdel_i_zaprosite_razvernutyy_analiz')} />
           )}
         </ScrollView>
       )}

@@ -46,9 +46,9 @@ export default function MemberOverviewScreen() {
   const [showMoodSurvey, setShowMoodSurvey] = useState(false);
   const [moodDone, setMoodDone] = useState(false);
   const MOOD_QUESTIONS = [
-    'Как прошёл твой день?',
-    'Что давалось тяжелее всего?',
-    'Есть что-то, что хочешь обсудить с тимлидом?',
+    t('ui.kak_proshel_tvoy_den'),
+    t('ui.chto_davalos_tyazhelee_vsego'),
+    t('ui.est_chto_to_chto_hochesh_obsudit'),
   ];
   const [moodAnswers, setMoodAnswers] = useState(['', '', '']);
   const [moodLoading, setMoodLoading] = useState(false);
@@ -72,7 +72,7 @@ export default function MemberOverviewScreen() {
       setMoodSent(true);
       setTimeout(() => setShowMoodSurvey(false), 1500);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось отправить опрос');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_otpravit_opros'));
     } finally {
       setMoodLoading(false);
     }
@@ -157,7 +157,7 @@ export default function MemberOverviewScreen() {
       await joinTeam({ invite_code: joinCode.trim(), user_id: user!.id });
       await findTeam();
     } catch (err: any) {
-      setJoinError(err?.response?.detail ?? err?.response?.data?.detail ?? 'Не удалось присоединиться. Проверьте код.');
+      setJoinError(err?.response?.detail ?? err?.response?.data?.detail ?? t('ui.ne_udalos_prisoedinitsya_proverte_kod'));
     } finally { setJoinLoading(false); }
   };
 
@@ -170,7 +170,7 @@ export default function MemberOverviewScreen() {
       setNoteText('');
       setShowNoteForm(false);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось создать заметку');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sozdat_zametku'));
     } finally { setNoteLoading(false); }
   };
 
@@ -183,7 +183,7 @@ export default function MemberOverviewScreen() {
       await updateNote(editingNoteId, { content: editNoteText.trim() });
       setNotes(prev => prev.map((n: any) => n.id === editingNoteId ? { ...n, content: editNoteText.trim() } : n));
       setEditingNoteId(null);
-    } catch { Alert.alert(t('ui.oshibka'), 'Не удалось сохранить'); }
+    } catch { Alert.alert(t('ui.oshibka'), t('errors.saveFailed')); }
     finally { setEditNoteLoading(false); }
   };
 
@@ -216,7 +216,7 @@ export default function MemberOverviewScreen() {
       }
       setExpandedMeetingNote(null);
     } catch {
-      Alert.alert(t('ui.oshibka'), 'Не удалось сохранить заметку');
+      Alert.alert(t('ui.oshibka'), t('ui.ne_udalos_sohranit_zametku'));
     } finally {
       setSavingNote(prev => ({ ...prev, [meetingId]: false }));
     }
@@ -379,7 +379,7 @@ export default function MemberOverviewScreen() {
             <Avatar name={leadMember?.user_name || team.team_lead_name} imageUrl={leadMember?.user_avatar_url} size={52} />
             <View style={{ flex: 1 }}>
               <Text style={styles.leadLabel}>{t('ui.timlid')}</Text>
-              <Text style={styles.leadName}>{team.team_lead_name || 'Тимлид'}</Text>
+              <Text style={styles.leadName}>{team.team_lead_name || t('profile.roleLead')}</Text>
               {team.team_lead_title ? <Text style={styles.leadTitle}>{team.team_lead_title}</Text> : null}
             </View>
           </View>
@@ -392,7 +392,7 @@ export default function MemberOverviewScreen() {
             <View>
               <Text style={styles.checkinTitle}>
                 {checkin?.arrived_at && !checkin?.left_at
-                  ? 'Вы на рабочем месте'
+                  ? t('ui.vy_na_rabochem_meste')
                   : checkin?.left_at
                   ? t('ui.rabochiy_den_zavershen')
                   : t('ui.ne_otmecheno_segodnya')}
@@ -400,7 +400,7 @@ export default function MemberOverviewScreen() {
               {checkin?.arrived_at && (
                 <Text style={styles.checkinTime}>
                   Пришёл: {new Date(checkin.arrived_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                  {checkin.left_at ? `  ·  Ушёл: ${new Date(checkin.left_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                  {checkin.left_at ? t('ui.ushel_3', { v1: new Date(checkin.left_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) }) : ''}
                 </Text>
               )}
             </View>
@@ -514,7 +514,7 @@ export default function MemberOverviewScreen() {
                           onPress={() => handleSaveMeetingNote(m.id)}
                           disabled={!draft.trim() || saving}
                         >
-                          <Text style={styles.saveBtnText}>{saving ? '...' : 'Сохранить'}</Text>
+                          <Text style={styles.saveBtnText}>{saving ? '...' : t('common.save')}</Text>
                         </TouchableOpacity>
                       </View>
                     </View>
@@ -554,7 +554,7 @@ export default function MemberOverviewScreen() {
                   onPress={handleCreateNote}
                   disabled={!noteText.trim() || noteLoading}
                 >
-                  <Text style={styles.saveBtnText}>{noteLoading ? '...' : 'Сохранить'}</Text>
+                  <Text style={styles.saveBtnText}>{noteLoading ? '...' : t('common.save')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -583,7 +583,7 @@ export default function MemberOverviewScreen() {
                       style={[styles.saveBtn, (!editNoteText.trim() || editNoteLoading) && styles.btnDisabled]}
                       onPress={handleSaveEditNote} disabled={!editNoteText.trim() || editNoteLoading}
                     >
-                      <Text style={styles.saveBtnText}>{editNoteLoading ? '...' : 'Сохранить'}</Text>
+                      <Text style={styles.saveBtnText}>{editNoteLoading ? '...' : t('common.save')}</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -637,7 +637,7 @@ export default function MemberOverviewScreen() {
         )}
 
         {upcomingMeetings.length === 0 && otherMembers.length === 0 && notes.length === 0 && (
-          <EmptyState icon="people-outline" title={t('ui.komanda_pusta')} description="Ждём когда тимлид добавит участников" />
+          <EmptyState icon="people-outline" title={t('ui.komanda_pusta')} description={t('ui.zhdem_kogda_timlid_dobavit_uchastnikov')} />
         )}
       </ScrollView>
     </SafeAreaView>

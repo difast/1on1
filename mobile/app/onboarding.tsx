@@ -75,14 +75,14 @@ export default function OnboardingScreen() {
         try {
           await joinTeam({ invite_code: inviteCode.trim(), user_id: newUser.id });
         } catch {
-          setJoinWarning('Код приглашения неверный — вступите в команду позже через Профиль.');
+          setJoinWarning(t('ui.kod_priglasheniya_nevernyy_vstupite_v_komandu'));
         }
       }
 
       setCreatedUser(newUser);
       setStep(3);
     } catch (err: any) {
-      setError(err?.response?.detail ?? err?.response?.data?.detail ?? err?.message ?? 'Ошибка сервера');
+      setError(err?.response?.detail ?? err?.response?.data?.detail ?? err?.message ?? t('ui.oshibka_servera'));
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ export default function OnboardingScreen() {
   const pickPhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert(t('ui.net_dostupa'), 'Разрешите доступ к фото в настройках');
+      Alert.alert(t('ui.net_dostupa'), t('profile.photoPermission'));
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({

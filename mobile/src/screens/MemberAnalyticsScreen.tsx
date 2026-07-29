@@ -99,7 +99,7 @@ export default function MemberAnalyticsScreen() {
                 <View style={styles.divider} />
                 <View style={styles.meetingItem}>
                   <Text style={[styles.meetingNum, data.days_since_last != null && data.days_since_last >= 14 && { color: colors.danger }]}>
-                    {data.days_since_last != null ? `${data.days_since_last} дн.` : '—'}
+                    {data.days_since_last != null ? t('ui.dn_2', { v1: data.days_since_last }) : '—'}
                   </Text>
                   <Text style={styles.meetingLabel}>{t('ui.s_posledney')}</Text>
                 </View>
@@ -135,7 +135,7 @@ export default function MemberAnalyticsScreen() {
                       : data.compare.mood_delta_15d > 0 ? colors.success
                       : data.compare.mood_delta_15d < 0 ? colors.danger : colors.textMuted,
                   }]}>
-                    {data.compare.mood_delta_15d == null ? 'нет данных'
+                    {data.compare.mood_delta_15d == null ? t('ui.net_dannyh_2')
                       : `${data.compare.mood_delta_15d > 0 ? '+' : ''}${data.compare.mood_delta_15d}`}
                   </Text>
                 </View>
@@ -164,6 +164,7 @@ function StatCard({ label, value, accent }: any) {
 }
 
 function CompareRow({ label, cur, prev }: { label: string; cur?: number; prev?: number }) {
+  const { t } = useI18n();
   const { colors } = useTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const delta = (cur ?? 0) - (prev ?? 0);
@@ -175,7 +176,7 @@ function CompareRow({ label, cur, prev }: { label: string; cur?: number; prev?: 
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
         <Text style={styles.compareCur}>{cur ?? 0}</Text>
         <Text style={styles.compareWas}>было {prev ?? 0}</Text>
-        <Text style={[styles.compareDelta, { color }]}>{delta === 0 ? 'без изм.' : `${sign}${delta}`}</Text>
+        <Text style={[styles.compareDelta, { color }]}>{delta === 0 ? t('ui.bez_izm') : `${sign}${delta}`}</Text>
       </View>
     </View>
   );
