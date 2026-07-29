@@ -266,10 +266,10 @@ def _cmd_tasks(db, chat_id, user):
         tg.send_message(chat_id, i18n.t('bot.tasks.none', lang))
         return
     for tk in tasks:
-        _send_task_card(db, chat_id, tk)
+        _send_task_card(db, chat_id, tk, lang=lang)
 
 
-def _send_task_card(db, chat_id, tk, message_id=None):
+def _send_task_card(db, chat_id, tk, message_id=None, lang: str | None = None):
     label = status_labels(lang).get(tk.status, tk.status)
     text = i18n.t('bot.tasks.card', lang, title=tk.title, label=label)
     # Основное действие («Отметить выполненной») — отдельным первым рядом;
@@ -342,6 +342,7 @@ def _cmd_risks(db, chat_id, user):
 
 def _cmd_support(db, chat_id, user):
     """Связь с поддержкой: следующее сообщение пользователя станет обращением."""
+    lang = i18n.user_lang(user)
     _set_state(db, user.telegram_id, "support", "await_text", {})
     tg.send_message(
         chat_id,
@@ -428,7 +429,7 @@ def _handle_callback(db, cq):
             from app.routers.task import update_task
             from app.schemas.task import TaskUpdate
             tk = update_task(int(tid), TaskUpdate(status=status), db)
-            _send_task_card(db, chat_id, tk, message_id=message_id)
+            _send_task_card(db, chat_id, tk, message_id=message_id, lang=lang)
             tg.answer_callback(cq_id, i18n.t('bot.task.status', lang, label=status_labels(lang).get(status, status)))
 
         elif data.startswith("mood:"):

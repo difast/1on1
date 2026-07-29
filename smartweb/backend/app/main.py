@@ -236,6 +236,45 @@ async def _mood_summary_loop():
         await asyncio.sleep(60)
 
 
+async def _telegram_webhook_setup():
+    """Самопроверка вебхука при старте (режим webhook).
+
+    Бот молчал в проде именно из-за этого шага: вебхук нужно было один раз
+    зарегистрировать вручную админским запросом, и после смены домена или
+    пересоздания сервиса регистрация терялась — Telegram переставал доставлять
+    апдейты, а сервер об этом никак не сообщал. Теперь при каждом старте
+    сверяем фактический URL из getWebhookInfo с ожидаемым и перерегистрируем
+    вебхук, если он не совпал (setWebhook идемпотентен)."""
+    import logging
+    from app.config import settings
+    from app.services import telegram as tg
+    log = logging.getLogger("telegram.webhook")
+
+    if (settings.telegram_mode or "webhook").lower() != "webhook":
+        return
+    if not tg.bot_token():
+        return
+    web = (settings.app_web_url or "").rstrip("/")
+    if not web:
+        log.warning("APP_WEB_URL не задан — вебхук Telegram не зарегистрирован")
+        return
+
+    await asyncio.sleep(5)  # дать серверу подняться, иначе Telegram упрётся в 502
+    expected = f"{web}/api/telegram/webhook"
+    try:
+        info = await asyncio.to_thread(tg.get_webhook_info)
+        current = ((info or {}).get("result") or {}).get("url") or ""
+        last_error = ((info or {}).get("result") or {}).get("last_error_message") or ""
+        if current == expected and not last_error:
+            log.info("webhook уже зарегистрирован: %s", current)
+            return
+        log.warning("перерегистрируем вебхук: было %r, ошибка %r", current, last_error)
+        res = await asyncio.to_thread(tg.set_webhook, expected)
+        log.info("setWebhook -> %s", res)
+    except Exception as e:
+        log.warning("проверка вебхука не удалась: %s", e)
+
+
 async def _telegram_polling_loop():
     """Long polling для Telegram — альтернатива вебхуку (TELEGRAM_MODE=polling).
     Нужен, когда входящий трафик до сервера фильтруется и Telegram не может
@@ -297,12 +336,15 @@ async def lifespan(app: FastAPI):
     # Polling запускается сам, только если TELEGRAM_MODE=polling (иначе выходит
     # сразу и остаётся штатный режим вебхука).
     tg_poll_task = asyncio.create_task(_telegram_polling_loop())
+    # В режиме webhook — сверяем регистрацию вебхука у Telegram и чиним её.
+    tg_hook_task = asyncio.create_task(_telegram_webhook_setup())
     yield
     task.cancel()
     mood_task.cancel()
     mood_summary_task.cancel()
     billing_task.cancel()
     tg_poll_task.cancel()
+    tg_hook_task.cancel()
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.3", lifespan=lifespan)
 

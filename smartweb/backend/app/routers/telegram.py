@@ -161,3 +161,24 @@ def set_webhook(db: Session = Depends(get_db), _admin=Depends(require_admin)):
         raise HTTPException(status_code=400, detail="APP_WEB_URL не задан")
     result = tg.set_webhook(f"{web}/api/telegram/webhook")
     return result
+
+
+@router.get("/webhook-info")
+def webhook_info(_admin=Depends(require_admin)):
+    """Диагностика доставки апдейтов: в каком режиме работает бот, задан ли
+    токен, какой вебхук видит сам Telegram и какая была последняя ошибка.
+    Секреты не отдаём — только факт их наличия."""
+    web = _web_url()
+    info = tg.get_webhook_info()
+    result = (info or {}).get("result") or {}
+    return {
+        "mode": (settings.telegram_mode or "webhook").lower(),
+        "has_token": bool(tg.bot_token()),
+        "secret_source": "env" if (settings.telegram_webhook_secret or "").strip()
+                         else ("derived" if tg.bot_token() else "none"),
+        "expected_url": f"{web}/api/telegram/webhook" if web else "",
+        "telegram_url": result.get("url") or "",
+        "pending_update_count": result.get("pending_update_count"),
+        "last_error_message": result.get("last_error_message") or "",
+        "last_error_date": result.get("last_error_date"),
+    }

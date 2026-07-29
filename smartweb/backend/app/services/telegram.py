@@ -97,10 +97,28 @@ def verify_init_data(init_data: str) -> dict | None:
     }
 
 
+def webhook_secret() -> str:
+    """Секрет заголовка вебхука. Если TELEGRAM_WEBHOOK_SECRET не задан, выводим
+    его детерминированно из токена бота: HMAC-SHA256(token, "tg-webhook").
+
+    Зачем: раньше при незаданном секрете verify_webhook_secret всегда возвращал
+    False, и бот молча не отвечал ни на одну команду — Telegram получал 403 на
+    каждый апдейт. Производный секрет остаётся секретом (токен бота секретен),
+    одинаков между перезапусками и, главное, ОДИН И ТОТ ЖЕ при регистрации
+    вебхука и при его проверке — рассинхрон невозможен."""
+    explicit = (settings.telegram_webhook_secret or "").strip()
+    if explicit:
+        return explicit
+    token = bot_token()
+    if not token:
+        return ""
+    # Telegram допускает в secret_token только A-Z a-z 0-9 _ - (1..256 симв.).
+    return hmac.new(token.encode(), b"tg-webhook", hashlib.sha256).hexdigest()[:48]
+
+
 def verify_webhook_secret(header_value: str | None) -> bool:
-    """Проверка заголовка X-Telegram-Bot-Api-Secret-Token. Если секрет не задан
-    в окружении — вебхук считаем неготовым и отклоняем (безопасный дефолт)."""
-    secret = settings.telegram_webhook_secret or ""
+    """Проверка заголовка X-Telegram-Bot-Api-Secret-Token."""
+    secret = webhook_secret()
     if not secret:
         return False
     return hmac.compare_digest(secret, header_value or "")
@@ -289,10 +307,23 @@ def set_webhook(url: str) -> dict:
     if not token:
         return {"ok": False, "error": "no_token"}
     payload = {"url": url, "allowed_updates": ALLOWED_UPDATES}
-    if settings.telegram_webhook_secret:
-        payload["secret_token"] = settings.telegram_webhook_secret
+    secret = webhook_secret()
+    if secret:
+        payload["secret_token"] = secret
     try:
         return _api_post("setWebhook", payload, timeout=10).json()
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
+
+
+def get_webhook_info() -> dict:
+    """getWebhookInfo — диагностика: зарегистрирован ли вебхук, копится ли
+    очередь, какая была последняя ошибка доставки."""
+    token = bot_token()
+    if not token:
+        return {"ok": False, "error": "no_token"}
+    try:
+        return _api_post("getWebhookInfo", {}, timeout=10).json()
     except Exception as e:
         return {"ok": False, "error": str(e)}
 
