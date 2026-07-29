@@ -11,7 +11,7 @@
 |---|---|
 | Веб | 562 |
 | Мобильное приложение | 524 |
-| Бэкенд (письма, бот, уведомления) | 650 |
+| Бэкенд (письма, бот, уведомления) | 607 |
 
 ## Юридические документы — 521
 
@@ -241,10 +241,6 @@ const ICON_COLORS = {
 - `smartweb/backend/app/models/interaction.py` — 1: )
     outcome = Column(String(20), nullable=True)  # discuss
 
-## Telegram-бот — 48
-
-- `smartweb/backend/app/services/telegram_bot.py` — 48: В работе; На ревью; Блокер
-
 ## Тариф и оплата — 47
 
 - `smartweb/frontend/src/components/Billing.jsx` — 21: Без подписки: доступ к платным функциям закрыт.; Одна команда до 5 человек: встречи 1-на-1, задачи, заметки, ; Команде до 30 человек: групповые встречи, аналитика, Цели, Р
@@ -404,6 +400,14 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
     if (pwdNew.length < 8 // !/[A-Za-zА-Яа-я]/.; /></svg></button>
             </div>
             <p style={{
+
+## Telegram-бот — 5
+
+- `smartweb/backend/app/services/telegram_bot.py` — 5: , lang), "callback_data": "cmd:support"}],
+        [{"text":; , lang), "web_app": {"url": f"{web}/telegram"}}])
+    return; }. Аккаунт создан."
+    else:
+        greeting = i18n.t(
 
 ## Письма — 5
 

@@ -22,39 +22,54 @@ from app.models.telegram import TelegramBotState
 from app.services import telegram as tg
 from app.services import i18n
 
-STATUS_LABELS = {"in_progress": "В работе", "review": "На ревью", "blocked": "Блокер", "done": "Готово"}
-# Подписи на кнопках смены статуса: основное действие сформулировано явно.
-STATUS_BTN = {"in_progress": "Вернуть в работу", "review": "На ревью", "blocked": "Отметить блокером", "done": "Отметить выполненной"}
+def status_labels(lang: str | None = None) -> dict:
+    """Подписи статусов задачи на языке пользователя. Функция, а не константа:
+    язык известен только в момент ответа конкретному человеку."""
+    return {
+        "in_progress": i18n.t('bot.status.inProgress', lang),
+        "review": i18n.t('bot.status.review', lang),
+        "blocked": i18n.t('bot.status.blocked', lang),
+        "done": i18n.t('bot.status.done', lang),
+    }
+def status_btn(lang: str | None = None) -> dict:
+    """Подписи на кнопках смены статуса: основное действие сформулировано явно.
+    Как и подписи статусов, зависят от языка пользователя."""
+    return {
+        "in_progress": i18n.t('bot.action.backToWork', lang),
+        "review": i18n.t('bot.status.review', lang),
+        "blocked": i18n.t('bot.action.markBlocked', lang),
+        "done": i18n.t('bot.action.markDone', lang),
+    }
 
 
 def _web_url() -> str:
     return (settings.app_web_url or "").rstrip("/")
 
 
-def _miniapp_button() -> dict | None:
+def _miniapp_button(lang: str | None = None) -> dict | None:
     web = _web_url()
     if not web:
         return None
-    return {"inline_keyboard": [[{"text": "Открыть приложение", "web_app": {"url": f"{web}/telegram"}}]]}
+    return {"inline_keyboard": [[{"text": i18n.t('bot.action.openApp', lang), "web_app": {"url": f"{web}/telegram"}}]]}
 
 
-def _menu_kb() -> dict:
+def _menu_kb(lang: str | None = None) -> dict:
     """Единое меню команд для /menu и /start. Кнопки сгруппированы по смыслу:
     работа со встречами, задачи/настроение, риски/знания, ассистент, приложение."""
     rows = [
-        [{"text": "Повестка", "callback_data": "cmd:agenda"},
-         {"text": "Создать встречу", "callback_data": "cmd:newmeeting"}],
-        [{"text": "Задачи", "callback_data": "cmd:tasks"},
-         {"text": "Настроение", "callback_data": "cmd:mood"}],
-        [{"text": "Риски", "callback_data": "cmd:risks"},
-         {"text": "База знаний", "callback_data": "cmd:knowledge"}],
-        [{"text": "Спросить Пита", "callback_data": "cmd:ask"},
-         {"text": "Поддержка", "callback_data": "cmd:support"}],
+        [{"text": i18n.t('bot.menu.agenda', lang), "callback_data": "cmd:agenda"},
+         {"text": i18n.t('bot.menu.newMeeting', lang), "callback_data": "cmd:newmeeting"}],
+        [{"text": i18n.t('bot.menu.tasks', lang), "callback_data": "cmd:tasks"},
+         {"text": i18n.t('bot.menu.mood', lang), "callback_data": "cmd:mood"}],
+        [{"text": i18n.t('bot.menu.risks', lang), "callback_data": "cmd:risks"},
+         {"text": i18n.t('bot.menu.knowledge', lang), "callback_data": "cmd:knowledge"}],
+        [{"text": i18n.t('bot.menu.askPit', lang), "callback_data": "cmd:ask"},
+         {"text": i18n.t('bot.menu.support', lang), "callback_data": "cmd:support"}],
         [{"text": "Язык / Language / Тіл", "callback_data": "cmd:language"}],
     ]
     web = _web_url()
     if web:
-        rows.append([{"text": "Открыть приложение", "web_app": {"url": f"{web}/telegram"}}])
+        rows.append([{"text": i18n.t('bot.action.openApp', lang), "web_app": {"url": f"{web}/telegram"}}])
     return {"inline_keyboard": rows}
 
 
@@ -72,6 +87,7 @@ def _cmd_language(db, chat_id, user) -> None:
 
 def _set_language(db, chat_id, user, code: str) -> None:
     """Сохранить выбранный язык в профиль пользователя (явный выбор)."""
+    lang = i18n.user_lang(user)
     code = i18n.normalize_lang(code)
     user.preferred_language = code
     db.commit()
@@ -157,68 +173,70 @@ def _parse_dt(text: str):
 
 def _cmd_start(db, chat_id, tg_data):
     user = tg.find_by_telegram_id(db, tg_data["id"])
+    lang = i18n.user_lang(user) if user else i18n.DEFAULT_LANG
     if not user:
         user = tg.create_from_telegram(db, tg_data)
         greeting = f"Добро пожаловать в OneOnOne, {tg_data.get('first_name') or ''}. Аккаунт создан."
     else:
-        greeting = f"С возвращением, {user.name}."
+        greeting = i18n.t('bot.start.welcomeBack', lang, name=user.name)
     tg.send_message(
         chat_id,
-        greeting + "\n\nВыберите действие ниже или откройте приложение.",
-        reply_markup=_menu_kb(),
+        greeting + i18n.t('bot.start.chooseAction', lang),
+        reply_markup=_menu_kb(lang),
     )
 
 
 def _cmd_menu(db, chat_id, user):
+    lang = i18n.user_lang(user)
     tg.send_message(
         chat_id,
-        "Меню OneOnOne. Выберите действие:",
-        reply_markup=_menu_kb(),
+        i18n.t('bot.menu.title', lang),
+        reply_markup=_menu_kb(lang),
     )
 
 
 def _cmd_link(db, chat_id, tg_data):
+    # Аккаунта ещё нет — язык профиля неизвестен, отвечаем языком по умолчанию.
     code = tg.issue_link_code(db, tg_data)
-    tg.send_message(
-        chat_id,
-        "Чтобы связать Telegram с аккаунтом по email, войдите на сайте, откройте меню профиля, "
-        f"пункт «Привязать Telegram», и введите код:\n\n{code}\n\nКод действует 30 минут."
-    )
+    tg.send_message(chat_id, i18n.t('bot.link.instructions', None, code=code))
 
 
 def _cmd_agenda(db, chat_id, user, arg: str):
+    lang = i18n.user_lang(user)
     m = _nearest_meeting(db, user)
     if not m:
-        tg.send_message(chat_id, "Ближайших встреч нет.")
+        tg.send_message(chat_id, i18n.t('bot.agenda.noMeetings', lang))
         return
     when = m.scheduled_date.strftime("%d.%m %H:%M") if m.scheduled_date else ""
     if arg.strip():
         line = arg.strip()
         m.agenda = (m.agenda + "\n" + line) if m.agenda else line
         db.commit()
-        tg.send_message(chat_id, f"Добавлено в повестку встречи {when}:\n- {line}")
+        tg.send_message(chat_id, i18n.t('bot.agenda.added', lang, when=when, line=line))
     else:
-        body = m.agenda.strip() if m.agenda else "Повестка пуста. Добавьте пункт: /agenda текст"
-        tg.send_message(chat_id, f"Повестка встречи {when}:\n\n{body}")
+        body = m.agenda.strip() if m.agenda else i18n.t('bot.agenda.empty', lang)
+        tg.send_message(chat_id, i18n.t('bot.agenda.list', lang, when=when, body=body))
 
 
 def _cmd_ask(db, chat_id, user, question: str):
+    lang = i18n.user_lang(user)
     q = question.strip()
     if not q:
-        tg.send_message(chat_id, "Напишите вопрос после /ask, например: /ask как подготовиться к 1-on-1.")
+        tg.send_message(chat_id, i18n.t('bot.ask.hint', lang))
         return
     try:
         from app.routers.assistant import pit_chat, ChatRequest, ChatMessage
         result = pit_chat(ChatRequest(messages=[ChatMessage(role="user", content=q)]))
-        tg.send_message(chat_id, result.get("reply") or "Пит не смог ответить, попробуйте позже.")
+        tg.send_message(chat_id, result.get("reply") or i18n.t('bot.ask.failed', lang))
     except Exception:
-        tg.send_message(chat_id, "Пит временно недоступен, попробуйте позже.")
+        tg.send_message(chat_id, i18n.t('bot.ask.unavailable', lang))
 
 
 def _cmd_knowledge(db, chat_id, user, query: str):
+    lang = i18n.user_lang(user)
     q = query.strip().lower()
     if not q:
-        tg.send_message(chat_id, "Укажите запрос: /knowledge онбординг.")
+        tg.send_message(chat_id, i18n.t('bot.knowledge.hint', lang))
         return
     team_ids = _user_team_ids(db, user)
     rows = db.query(KnowledgeArticle).filter(
@@ -226,17 +244,18 @@ def _cmd_knowledge(db, chat_id, user, query: str):
     rows += db.query(KnowledgeArticle).filter(KnowledgeArticle.team_id.is_(None)).all()
     hits = [a for a in rows if q in (a.title or "").lower() or q in (a.content or "").lower()]
     if not hits:
-        tg.send_message(chat_id, "По запросу ничего не найдено.")
+        tg.send_message(chat_id, i18n.t('bot.knowledge.nothing', lang))
         return
     top = hits[0]
     text = f"{top.title}\n\n{(top.content or '')[:1500]}"
     if len(hits) > 1:
-        text += "\n\nЕщё найдено: " + "; ".join(a.title for a in hits[1:4])
+        text += i18n.t('bot.knowledge.more', lang) + "; ".join(a.title for a in hits[1:4])
     tg.send_message(chat_id, text)
 
 
 def _cmd_tasks(db, chat_id, user):
     """Открытые задачи пользователя с кнопками смены статуса (Task/update_task)."""
+    lang = i18n.user_lang(user)
     tasks = (
         db.query(Task)
         .filter(Task.assigned_to == user.id, Task.status != "done")
@@ -244,22 +263,22 @@ def _cmd_tasks(db, chat_id, user):
         .limit(5).all()
     )
     if not tasks:
-        tg.send_message(chat_id, "Открытых задач нет.")
+        tg.send_message(chat_id, i18n.t('bot.tasks.none', lang))
         return
     for tk in tasks:
         _send_task_card(db, chat_id, tk)
 
 
 def _send_task_card(db, chat_id, tk, message_id=None):
-    label = STATUS_LABELS.get(tk.status, tk.status)
-    text = f"Задача: {tk.title}\nТекущий статус: {label}\nВыберите новый статус:"
+    label = status_labels(lang).get(tk.status, tk.status)
+    text = i18n.t('bot.tasks.card', lang, title=tk.title, label=label)
     # Основное действие («Отметить выполненной») — отдельным первым рядом;
     # второстепенные статусы — рядом ниже, по двое. Порядок везде одинаковый.
     rows = []
     if tk.status != "done":
-        rows.append([{"text": STATUS_BTN["done"], "callback_data": f"task:{tk.id}:done"}])
+        rows.append([{"text": status_btn(lang)["done"], "callback_data": f"task:{tk.id}:done"}])
     secondary = [s for s in ("in_progress", "review", "blocked") if s != tk.status]
-    sec = [{"text": STATUS_BTN[s], "callback_data": f"task:{tk.id}:{s}"} for s in secondary]
+    sec = [{"text": status_btn(lang)[s], "callback_data": f"task:{tk.id}:{s}"} for s in secondary]
     for j in range(0, len(sec), 2):
         rows.append(sec[j:j + 2])
     if message_id:
@@ -269,28 +288,29 @@ def _send_task_card(db, chat_id, tk, message_id=None):
 
 
 def _cmd_mood(db, chat_id, user):
+    lang = i18n.user_lang(user)
     tid = _first_team_id(db, user)
     if not tid:
-        tg.send_message(chat_id, "Вы пока не в команде.")
+        tg.send_message(chat_id, i18n.t('bot.noTeam', lang))
         return
-    _send_mood_question(chat_id, tid)
+    _send_mood_question(chat_id, tid, lang)
 
 
-def _send_mood_question(chat_id, team_id):
+def _send_mood_question(chat_id, team_id, lang: str | None = None):
     rows = [[{"text": str(s), "callback_data": f"mood:{team_id}:{s}"} for s in range(1, 6)]]
-    tg.send_message(chat_id, "Как настроение сегодня? Оцените от 1 (плохо) до 5 (отлично).", reply_markup=_kb(rows))
+    tg.send_message(chat_id, i18n.t('bot.mood.question', lang), reply_markup=_kb(rows))
 
 
 def _cmd_risks(db, chat_id, user):
     """Участники в зоне риска (просроченные встречи) — из существующей логики
     build_team_detail (status_color). Всегда отвечает, даже если данных нет."""
+    lang = i18n.user_lang(user)
     try:
         teams = _teams_led(db, user)
         if not teams:
             tg.send_message(
                 chat_id,
-                "У вас пока нет команд как у тимлида. Риски появятся, когда вы "
-                "создадите команду и начнёте проводить встречи."
+                i18n.t('bot.risks.noTeams', lang)
             )
             return
         from app.routers.team import build_team_detail
@@ -305,19 +325,19 @@ def _cmd_risks(db, chat_id, user):
                 if m.status_color not in ("red", "yellow"):
                     continue
                 any_risk = True
-                level = "высокий" if m.status_color == "red" else "средний"
+                level = i18n.t('bot.risk.high', lang) if m.status_color == "red" else i18n.t('bot.risk.medium', lang)
                 # Основное действие слева, второстепенное справа; оба — в полряда.
                 rows = [[
-                    {"text": "Назначить встречу", "callback_data": f"risk_meet:{team.id}:{m.user_id}"},
-                    {"text": "Показать контакт", "callback_data": f"risk_msg:{m.user_id}"},
+                    {"text": i18n.t('bot.action.scheduleMeeting', lang), "callback_data": f"risk_meet:{team.id}:{m.user_id}"},
+                    {"text": i18n.t('bot.action.showContact', lang), "callback_data": f"risk_msg:{m.user_id}"},
                 ]]
-                tg.send_message(chat_id, f"Риск ({level}): {m.user_name} — давно не было встречи.", reply_markup=_kb(rows))
+                tg.send_message(chat_id, i18n.t('bot.risk.line', lang, level=level, name=m.user_name), reply_markup=_kb(rows))
         if not any_member:
-            tg.send_message(chat_id, "В ваших командах пока нет участников — риски оценивать не по кому. Добавьте участников в приложении.")
+            tg.send_message(chat_id, i18n.t('bot.risks.noMembers', lang))
         elif not any_risk:
-            tg.send_message(chat_id, "Рисков не обнаружено: встречи проходят вовремя.")
+            tg.send_message(chat_id, i18n.t('bot.risks.none', lang))
     except Exception:
-        tg.send_message(chat_id, "Не удалось получить риски, попробуйте позже.")
+        tg.send_message(chat_id, i18n.t('bot.risks.failed', lang))
 
 
 def _cmd_support(db, chat_id, user):
@@ -325,30 +345,31 @@ def _cmd_support(db, chat_id, user):
     _set_state(db, user.telegram_id, "support", "await_text", {})
     tg.send_message(
         chat_id,
-        "Опишите ваш вопрос одним сообщением — мы создадим обращение в поддержку. "
-        "Ответ придёт в этот чат и в приложение. Отмена — /cancel."
+        i18n.t('bot.support.prompt', lang)
     )
 
 
 # ---- /newmeeting (пошаговый диалог) ----------------------------------------
 
 def _nm_start(db, chat_id, user):
+    lang = i18n.user_lang(user)
     teams = _teams_led(db, user)
     if not teams:
-        tg.send_message(chat_id, "Создавать встречи может тимлид команды.")
+        tg.send_message(chat_id, i18n.t('bot.meeting.onlyLead', lang))
         return
     _set_state(db, user.telegram_id, "newmeeting", "await_member", {})
     if len(teams) == 1:
         _nm_ask_member(db, chat_id, user, teams[0].id)
     else:
         rows = [[{"text": t.name, "callback_data": f"nm_team:{t.id}"}] for t in teams]
-        tg.send_message(chat_id, "Выберите команду:", reply_markup=_kb(rows))
+        tg.send_message(chat_id, i18n.t('bot.meeting.chooseTeam', lang), reply_markup=_kb(rows))
 
 
 def _nm_ask_member(db, chat_id, user, team_id):
+    lang = i18n.user_lang(user)
     members = db.query(TeamMember).filter(TeamMember.team_id == team_id, TeamMember.role != "lead").all()
     if not members:
-        tg.send_message(chat_id, "В команде нет участников для встречи.")
+        tg.send_message(chat_id, i18n.t('bot.meeting.noMembers', lang))
         _clear_state(db, user.telegram_id)
         return
     _set_state(db, user.telegram_id, "newmeeting", "await_member", {"team_id": team_id})
@@ -356,22 +377,24 @@ def _nm_ask_member(db, chat_id, user, team_id):
     for m in members:
         u = db.query(User).filter(User.id == m.user_id).first()
         rows.append([{"text": (u.name if u else f"#{m.user_id}"), "callback_data": f"nm_member:{m.user_id}"}])
-    tg.send_message(chat_id, "Выберите участника:", reply_markup=_kb(rows))
+    tg.send_message(chat_id, i18n.t('bot.meeting.chooseMember', lang), reply_markup=_kb(rows))
 
 
 def _nm_ask_datetime(db, chat_id, user, team_id, member_id):
+    lang = i18n.user_lang(user)
     _set_state(db, user.telegram_id, "newmeeting", "await_datetime",
                {"team_id": team_id, "member_id": member_id})
-    tg.send_message(chat_id, "Введите дату и время в формате ДД.ММ ЧЧ:ММ (например 05.08 14:30). Отмена — /cancel.")
+    tg.send_message(chat_id, i18n.t('bot.meeting.enterDate', lang))
 
 
 def _nm_create(db, chat_id, user, dt):
+    lang = i18n.user_lang(user)
     st = _get_state(db, user.telegram_id)
     data = (st.data if st else {}) or {}
     team_id, member_id = data.get("team_id"), data.get("member_id")
     _clear_state(db, user.telegram_id)
     if not team_id or not member_id:
-        tg.send_message(chat_id, "Не хватает данных, начните заново: /newmeeting")
+        tg.send_message(chat_id, i18n.t('bot.meeting.missingData', lang))
         return
     try:
         from app.routers.meeting import create_meeting
@@ -381,7 +404,7 @@ def _nm_create(db, chat_id, user, dt):
         tg.send_message(chat_id, f"Встреча создана на {dt.strftime('%d.%m %H:%M')}.")
     except Exception as e:
         detail = getattr(e, "detail", None)
-        tg.send_message(chat_id, f"Не удалось создать встречу: {detail}" if detail else "Не удалось создать встречу.")
+        tg.send_message(chat_id, i18n.t('bot.meeting.failedDetail', lang, detail=detail) if detail else i18n.t('bot.meeting.failed', lang))
 
 
 # ---- callback-кнопки --------------------------------------------------------
@@ -394,8 +417,9 @@ def _handle_callback(db, cq):
     message_id = msg.get("message_id")
     cq_id = cq.get("id")
     user = tg.find_by_telegram_id(db, frm.get("id"))
+    lang = i18n.user_lang(user) if user else i18n.DEFAULT_LANG
     if not user or not chat_id:
-        tg.answer_callback(cq_id, "Сначала отправьте /start")
+        tg.answer_callback(cq_id, i18n.t('bot.needStart', lang))
         return
 
     try:
@@ -405,7 +429,7 @@ def _handle_callback(db, cq):
             from app.schemas.task import TaskUpdate
             tk = update_task(int(tid), TaskUpdate(status=status), db)
             _send_task_card(db, chat_id, tk, message_id=message_id)
-            tg.answer_callback(cq_id, f"Статус: {STATUS_LABELS.get(status, status)}")
+            tg.answer_callback(cq_id, i18n.t('bot.task.status', lang, label=status_labels(lang).get(status, status)))
 
         elif data.startswith("mood:"):
             _, team_id, score = data.split(":", 2)
@@ -414,8 +438,8 @@ def _handle_callback(db, cq):
             # участвует в дедупе за день и в личном ряду настроения. current=None
             # — вызов идёт напрямую, минуя зависимость токена.
             submit_mood(MoodCreate(team_id=int(team_id), score=int(score), user_id=user.id), db, current=None)
-            tg.edit_message_text(chat_id, message_id, f"Спасибо, оценка {score} сохранена.")
-            tg.answer_callback(cq_id, "Сохранено")
+            tg.edit_message_text(chat_id, message_id, i18n.t('bot.mood.saved', lang, score=score))
+            tg.answer_callback(cq_id, i18n.t('bot.saved', lang))
 
         elif data.startswith("nm_team:"):
             team_id = int(data.split(":", 1)[1])
@@ -427,7 +451,7 @@ def _handle_callback(db, cq):
             st = _get_state(db, user.telegram_id)
             team_id = (st.data or {}).get("team_id") if st else None
             if not team_id:
-                tg.answer_callback(cq_id, "Начните заново: /newmeeting"); return
+                tg.answer_callback(cq_id, i18n.t('bot.startOver', lang)); return
             tg.answer_callback(cq_id)
             _nm_ask_datetime(db, chat_id, user, team_id, member_id)
 
@@ -439,7 +463,7 @@ def _handle_callback(db, cq):
         elif data.startswith("risk_msg:"):
             member_id = int(data.split(":", 1)[1])
             m = db.query(User).filter(User.id == member_id).first()
-            contact = (m.telegram or m.email or "не указан") if m else "не найден"
+            contact = (m.telegram or m.email or i18n.t('bot.notSet', lang)) if m else i18n.t('bot.notFound', lang)
             tg.answer_callback(cq_id)
             tg.send_message(chat_id, f"Контакт {m.name if m else ''}: {contact}")
 
@@ -462,9 +486,9 @@ def _handle_callback(db, cq):
             elif cmd == "risks":
                 _cmd_risks(db, chat_id, user)
             elif cmd == "knowledge":
-                tg.send_message(chat_id, "Поиск по базе знаний: отправьте сообщение /knowledge и запрос, например: /knowledge онбординг.")
+                tg.send_message(chat_id, i18n.t('bot.knowledge.usage', lang))
             elif cmd == "ask":
-                tg.send_message(chat_id, "Вопрос ассистенту: отправьте сообщение /ask и текст, например: /ask как подготовиться к встрече.")
+                tg.send_message(chat_id, i18n.t('bot.ask.usage', lang))
             elif cmd == "support":
                 _cmd_support(db, chat_id, user)
             elif cmd == "language":
@@ -472,7 +496,7 @@ def _handle_callback(db, cq):
         else:
             tg.answer_callback(cq_id)
     except Exception:
-        tg.answer_callback(cq_id, "Ошибка, попробуйте позже")
+        tg.answer_callback(cq_id, i18n.t('bot.error', lang))
 
 
 # ---- рассылка чек-ина (вызывается джобом) -----------------------------------
@@ -515,13 +539,14 @@ def handle_update(db: Session, update: dict) -> None:
         _cmd_link(db, chat_id, tg_data); return
 
     user = tg.find_by_telegram_id(db, tg_data["id"])
+    lang = i18n.user_lang(user) if user else i18n.DEFAULT_LANG
     if not user:
-        tg.send_message(chat_id, "Сначала отправьте /start, чтобы войти.")
+        tg.send_message(chat_id, i18n.t('bot.needStartToLogin', lang))
         return
 
     if text.startswith("/cancel"):
         _clear_state(db, user.telegram_id)
-        tg.send_message(chat_id, "Отменено.")
+        tg.send_message(chat_id, i18n.t('bot.cancelled', lang))
         return
 
     # Ввод в активном диалоге имеет приоритет над свободным текстом.
@@ -529,7 +554,7 @@ def handle_update(db: Session, update: dict) -> None:
     if st and st.flow == "newmeeting" and st.step == "await_datetime" and not text.startswith("/"):
         dt = _parse_dt(text)
         if not dt:
-            tg.send_message(chat_id, "Не понял дату. Формат: ДД.ММ ЧЧ:ММ (например 05.08 14:30).")
+            tg.send_message(chat_id, i18n.t('bot.badDate', lang))
             return
         _nm_create(db, chat_id, user, dt)
         return
@@ -537,10 +562,10 @@ def handle_update(db: Session, update: dict) -> None:
         _clear_state(db, user.telegram_id)
         try:
             from app.routers.support import create_ticket, TicketCreate
-            create_ticket(TicketCreate(user_id=user.id, subject="Обращение из Telegram", body=text), db)
-            tg.send_message(chat_id, "Обращение отправлено в поддержку. Ответ придёт в этот чат и в приложение.")
+            create_ticket(TicketCreate(user_id=user.id, subject=i18n.t('bot.support.subject', lang), body=text), db)
+            tg.send_message(chat_id, i18n.t('bot.support.sent', lang))
         except Exception:
-            tg.send_message(chat_id, "Не удалось отправить обращение, попробуйте позже.")
+            tg.send_message(chat_id, i18n.t('bot.support.failed', lang))
         return
 
     def arg_after(cmd):
@@ -567,6 +592,6 @@ def handle_update(db: Session, update: dict) -> None:
     elif text.startswith("/ask"):
         _cmd_ask(db, chat_id, user, arg_after("/ask"))
     elif text.startswith("/"):
-        tg.send_message(chat_id, "Команды: /agenda, /newmeeting, /tasks, /mood, /risks, /ask, /knowledge, /support, /language, /menu.")
+        tg.send_message(chat_id, i18n.t('bot.commands', lang))
     else:
         _cmd_ask(db, chat_id, user, text)
