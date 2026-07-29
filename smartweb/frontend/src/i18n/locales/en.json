@@ -1910,5 +1910,32 @@
     "inn_bin": "INN/BIN {{v1}}",
     "polzovatel_id_zaprosil_udalenie_akkaunta": "User {{v1}} ({{v2}}, id={{v3}}) requested account deletion.",
     "dobro_pozhalovat_imya": "Welcome, {{v1}}"
+  },
+  "survey": {
+    "q.usage.title": "How do you plan to use OneOnOne?",
+    "q.multiHint": "You can choose several options",
+    "q.singleHint": "Choose one option",
+    "o.meetings": "Hold 1-on-1 meetings",
+    "o.tasks": "Assign and track tasks",
+    "o.goals": "Manage goals and OKRs",
+    "o.development": "Develop the team",
+    "o.mood": "Track mood and risks",
+    "o.ai": "Use the AI assistant",
+    "q.role.title": "What is your role?",
+    "o.teamLead": "Team lead",
+    "o.hr": "HR or People Partner",
+    "o.ceo": "Company executive",
+    "o.specialist": "Individual contributor",
+    "q.size.title": "How big is your team?",
+    "o.size5": "Up to 5 people",
+    "o.size30": "6-30 people",
+    "o.size100": "31-100 people",
+    "o.size100plus": "More than 100 people",
+    "q.priority.title": "What matters most to you right now?",
+    "o.regularity": "Regular meetings",
+    "o.clarity": "Clear task tracking",
+    "o.burnout": "Mood and burnout risk",
+    "o.growth": "Employee growth and development",
+    "o.time": "Saving time on routine work"
   }
 }

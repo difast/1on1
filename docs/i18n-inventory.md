@@ -2,7 +2,7 @@
 
 Файл генерируется скриптом `tools/i18n-inventory.py` — не редактируйте вручную.
 
-В словарях (`ru.json`): **1868** ключей.
+В словарях (`ru.json`): **1893** ключей.
 
 Ниже — строки с кириллицей, которые ещё захардкожены в коде и не вынесены
 в словари, сгруппированные по разделам продукта.
@@ -11,7 +11,7 @@
 |---|---|
 | Веб | 562 |
 | Мобильное приложение | 524 |
-| Бэкенд (письма, бот, уведомления) | 578 |
+| Бэкенд (письма, бот, уведомления) | 527 |
 
 ## Юридические документы — 521
 
@@ -135,9 +135,9 @@ def _matches(sub: WebhookSubscription, event_type: str)
 - `smartweb/backend/app/models/user.py` — 1: )
     telegram = Column(String(100), nullable=True)  # @hand
 
-## Развитие — 124
+## Развитие — 115
 
-- `smartweb/backend/app/routers/development.py` — 63: Правило; Тимлид; База знаний
+- `smartweb/backend/app/routers/development.py` — 54: Правило; Тимлид; База знаний
 - `smartweb/frontend/src/components/Development.jsx` — 25: Новичок; Базовый; Уверенный
 - `mobile/src/screens/DevelopmentScreen.tsx` — 20: Новичок; Базовый; Уверенный
 - `smartweb/backend/app/models/development.py` — 14: Новичок; Базовый; Уверенный
@@ -232,14 +232,6 @@ const ICON_COLORS = {
     </span>
     <p style={{ color: 'var(--color-
 
-## Взаимодействия — 50
-
-- `smartweb/frontend/src/components/InteractionsPanel.jsx` — 20: Совместная работа; Предложение помощи; Консультация
-- `smartweb/backend/app/routers/interaction.py` — 15: Предложение совместной работы; Предложение помощи; Запрос консультации
-- `mobile/src/components/InteractionsModal.tsx` — 14: Совместная работа; Предложение помощи; Консультация
-- `smartweb/backend/app/models/interaction.py` — 1: )
-    outcome = Column(String(20), nullable=True)  # discuss
-
 ## Тариф и оплата — 47
 
 - `smartweb/frontend/src/components/Billing.jsx` — 21: Без подписки: доступ к платным функциям закрыт.; Одна команда до 5 человек: встречи 1-на-1, задачи, заметки, ; Команде до 30 человек: групповые встречи, аналитика, Цели, Р
@@ -272,13 +264,12 @@ class AssignManagerReq(BaseModel):
 - `mobile/src/screens/OneAiScreen.tsx` — 16: Проблемы, риски и вовлечённость команды за период.; Эффективность и динамика конкретного сотрудника.; Черновик обратной связи по задачам, встречам, целям и развит
 - `smartweb/backend/app/routers/oneai.py` — 5: Доступ только от своего имени; Проанализируй данные и дай рекомендации.; \n\nЗапрос пользователя: {data.message}
 
-## Онбординг — 31
+## Взаимодействия — 35
 
-- `smartweb/backend/app/services/survey.py` — 27: Как вы планируете использовать OneOnOne?; Можно выбрать несколько вариантов; Проводить встречи 1-на-1
-- `smartweb/frontend/src/components/SurveyPage.jsx` — 2: export default function SurveyPage({ user, onDone }) {
-  con; style={{ padding: '48px 20px' }}>
-      <div style={{ width:
-- `smartweb/backend/app/routers/survey.py` — 2: Пользователь не найден; Можно изменять только свой опросник
+- `smartweb/frontend/src/components/InteractionsPanel.jsx` — 20: Совместная работа; Предложение помощи; Консультация
+- `mobile/src/components/InteractionsModal.tsx` — 14: Совместная работа; Предложение помощи; Консультация
+- `smartweb/backend/app/models/interaction.py` — 1: )
+    outcome = Column(String(20), nullable=True)  # discuss
 
 ## Цели — 28
 
@@ -403,6 +394,13 @@ export async function buildPitContext(user: AppUser, is; Задачи:; (${statu
 ## Письма — 5
 
 - `smartweb/backend/app/services/mailer.py` — 5: SMTP не настроен (нет SMTP_HOST/SMTP_USER в окружении); Письмо отправлено: %s -> %s; Ошибка отправки письма '%s' на %s: %s
+
+## Онбординг — 4
+
+- `smartweb/frontend/src/components/SurveyPage.jsx` — 2: export default function SurveyPage({ user, onDone }) {
+  con; style={{ padding: '48px 20px' }}>
+      <div style={{ width:
+- `smartweb/backend/app/routers/survey.py` — 2: Пользователь не найден; Можно изменять только свой опросник
 
 ## Кабинет участника — 3
 

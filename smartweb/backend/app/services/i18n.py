@@ -593,6 +593,167 @@ TEXTS: dict[str, dict[str, str]] = {
         "en": "Share how your day went — it takes less than a minute.",
         "kz": "Бүгінгі көңіл-күйіңізді белгілеңіз — бір минуттан аз уақыт алады.",
     },
+    # ── Взаимодействия и развитие ────────────────────────────────────────────
+    "interaction.type.collab": {
+        "ru": "Предложение совместной работы",
+        "en": "Collaboration proposal",
+        "kz": "Бірлескен жұмыс ұсынысы",
+    },
+    "interaction.type.help": {
+        "ru": "Предложение помощи",
+        "en": "Offer of help",
+        "kz": "Көмек ұсынысы",
+    },
+    "interaction.type.consultation": {
+        "ru": "Запрос консультации",
+        "en": "Consultation request",
+        "kz": "Кеңес сұрауы",
+    },
+    "interaction.type.discussion": {
+        "ru": "Обсуждение",
+        "en": "Discussion",
+        "kz": "Талқылау",
+    },
+    "interaction.type.recommendation": {
+        "ru": "Рекомендация",
+        "en": "Recommendation",
+        "kz": "Ұсыныс",
+    },
+    "interaction.generic": {
+        "ru": "Взаимодействие",
+        "en": "Interaction",
+        "kz": "Өзара әрекет",
+    },
+    "interaction.newDiscussion": {
+        "ru": "Новое обсуждение",
+        "en": "New discussion",
+        "kz": "Жаңа талқылау",
+    },
+    "interaction.recommended": {
+        "ru": "Вас рекомендовали",
+        "en": "You have been recommended",
+        "kz": "Сізді ұсынды",
+    },
+    "interaction.colleagueRec": {
+        "ru": "Рекомендация коллеги",
+        "en": "Colleague recommendation",
+        "kz": "Әріптестің ұсынысы",
+    },
+    "interaction.newReply": {
+        "ru": "Новый ответ",
+        "en": "New reply",
+        "kz": "Жаңа жауап",
+    },
+    "interaction.accepted.title": {
+        "ru": "Предложение принято",
+        "en": "Proposal accepted",
+        "kz": "Ұсыныс қабылданды",
+    },
+    "interaction.declined.title": {
+        "ru": "Предложение отклонено",
+        "en": "Proposal declined",
+        "kz": "Ұсыныс қабылданбады",
+    },
+    "interaction.body.fromTopic": {
+        "ru": "{name}: {topic}",
+        "en": "{name}: {topic}",
+        "kz": "{name}: {topic}",
+    },
+    "interaction.body.recommends": {
+        "ru": "{name} рекомендует {subject}",
+        "en": "{name} recommends {subject}",
+        "kz": "{name} {subject} ұсынады",
+    },
+    "interaction.body.accepted": {
+        "ru": "{name} принял(а) совместную работу",
+        "en": "{name} accepted the collaboration",
+        "kz": "{name} бірлескен жұмысты қабылдады",
+    },
+    "interaction.body.declined": {
+        "ru": "{name} отклонил(а)",
+        "en": "{name} declined",
+        "kz": "{name} қабылдамады",
+    },
+    "interaction.fallback.discussion": {
+        "ru": "обсуждение",
+        "en": "discussion",
+        "kz": "талқылау",
+    },
+    "interaction.fallback.expert": {
+        "ru": "эксперт",
+        "en": "expert",
+        "kz": "сарапшы",
+    },
+    "dev.notify.stepAssigned": {
+        "ru": "Назначен шаг развития",
+        "en": "Development step assigned",
+        "kz": "Даму қадамы тағайындалды",
+    },
+    "dev.notify.planComment": {
+        "ru": "Комментарий к плану развития",
+        "en": "Comment on the development plan",
+        "kz": "Даму жоспарына пікір",
+    },
+    "dev.notify.feedback": {
+        "ru": "Обратная связь по развитию",
+        "en": "Development feedback",
+        "kz": "Даму бойынша кері байланыс",
+    },
+    "dev.notify.growthAssigned": {
+        "ru": "Назначено направление роста",
+        "en": "Growth area assigned",
+        "kz": "Даму бағыты тағайындалды",
+    },
+    "dev.notify.growthAccepted": {
+        "ru": "Направление роста принято",
+        "en": "Growth area accepted",
+        "kz": "Даму бағыты қабылданды",
+    },
+    "dev.notify.growthDeclined": {
+        "ru": "Направление роста отклонено",
+        "en": "Growth area declined",
+        "kz": "Даму бағыты қабылданбады",
+    },
+    "dev.notify.targetReached": {
+        "ru": "Достигнут целевой уровень",
+        "en": "Target level reached",
+        "kz": "Мақсатты деңгейге жетті",
+    },
+    "dev.rec.closeGap": {
+        "ru": "Закрыть разрыв по навыку «{skill}»",
+        "en": "Close the gap in the “{skill}” skill",
+        "kz": "«{skill}» дағдысы бойынша алшақтықты жабу",
+    },
+    "dev.rec.levels": {
+        "ru": "Текущий уровень — {cur}, целевой — {des}. Добавьте шаг плана, чтобы двигаться к цели.",
+        "en": "Current level is {cur}, target is {des}. Add a plan step to move towards the goal.",
+        "kz": "Ағымдағы деңгей — {cur}, мақсатты — {des}. Мақсатқа жылжу үшін жоспарға қадам қосыңыз.",
+    },
+    "dev.rec.material": {
+        "ru": "Материал базы знаний: {title}",
+        "en": "Knowledge base material: {title}",
+        "kz": "Білім қоры материалы: {title}",
+    },
+    "dev.rec.studyMaterial": {
+        "ru": "Изучите материал, связанный с этим навыком.",
+        "en": "Study the material related to this skill.",
+        "kz": "Осы дағдыға қатысты материалды оқып шығыңыз.",
+    },
+    "dev.pitTitle": {
+        "ru": "Пит: как развивать «{skill}»",
+        "en": "Pit: how to develop “{skill}”",
+        "kz": "Пит: «{skill}» дағдысын қалай дамытуға болады",
+    },
+    "dev.skillProgress": {
+        "ru": "{name}: навык «{skill}» — {level}",
+        "en": "{name}: skill “{skill}” — {level}",
+        "kz": "{name}: «{skill}» дағдысы — {level}",
+    },
+    "interaction.fallback.member": {
+        "ru": "Участник",
+        "en": "Team member",
+        "kz": "Қатысушы",
+    },
 }
 
 

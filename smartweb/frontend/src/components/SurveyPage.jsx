@@ -128,9 +128,9 @@ export default function SurveyPage({ user, onDone }) {
           <p style={{ fontSize: 12, fontWeight: 700, color: '#93B4FD', letterSpacing: '0.04em', marginBottom: 8 }}>
             Вопрос {step + 1} из {total}
           </p>
-          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{q.title}</h2>
-          {q.subtitle && (
-            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>{q.subtitle}</p>
+          <h2 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 4 }}>{t(q.titleKey)}</h2>
+          {q.subtitleKey && (
+            <p style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)', marginBottom: 18 }}>{t(q.subtitleKey)}</p>
           )}
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 18 }}>
@@ -162,7 +162,7 @@ export default function SurveyPage({ user, onDone }) {
                       </svg>
                     )}
                   </span>
-                  <span style={{ fontSize: 14, fontWeight: 500 }}>{opt.label}</span>
+                  <span style={{ fontSize: 14, fontWeight: 500 }}>{t(opt.labelKey)}</span>
                 </button>
               )
             })}
