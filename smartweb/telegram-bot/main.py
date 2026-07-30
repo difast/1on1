@@ -87,10 +87,28 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="OneOnOne Telegram Bot", version="1.0.0", lifespan=lifespan)
 
 
-@app.get("/health")
-def health():
-    """Health-check для платформы. Секретов не отдаём."""
+def _health_payload() -> dict:
     return {"status": "ok", "service": "telegram-bot", "has_token": bool(tg.bot_token())}
+
+
+# Health-check платформы ходит на / и /healthz — без этих маршрутов Timeweb
+# получает 404, считает контейнер нерабочим и перезапускает его по кругу.
+# Те же пути есть у API, поэтому держим их и здесь. Секретов не отдаём.
+# HEAD разрешаем явно: FastAPI сам его не добавляет к GET, а платформа проверяет
+# живость и запросом HEAD / — без этого приходит 405 и контейнер перезапускается.
+@app.api_route("/", methods=["GET", "HEAD"])
+def root():
+    return _health_payload()
+
+
+@app.api_route("/healthz", methods=["GET", "HEAD"])
+def healthz():
+    return _health_payload()
+
+
+@app.api_route("/health", methods=["GET", "HEAD"])
+def health():
+    return _health_payload()
 
 
 @app.post("/webhook")
