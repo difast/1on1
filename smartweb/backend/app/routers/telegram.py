@@ -1,12 +1,10 @@
-"""Telegram-авторизация: вход через Login Widget, Mini App, привязка по коду.
-
-Приём апдейтов бота живёт в отдельном приложении smartweb/telegram-bot.
+"""Telegram-авторизация: вебхук бота, вход через Login Widget, привязка по коду.
 
 Email/пароль остаётся основным способом входа — здесь только дополнение.
 Единый идентификатор — users.telegram_id; для одного человека не создаём два
 профиля (см. attach_telegram_to_user / resolve_web_login в services.telegram).
 """
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request, Header
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from datetime import datetime
@@ -17,10 +15,14 @@ from app.config import settings
 from app.models.user import User
 from app.models.telegram import TelegramLinkRequest
 from app.schemas.user import UserOut
-from app.utils.auth import create_access_token
+from app.utils.auth import require_admin, create_access_token
 from app.services import telegram as tg
 
 router = APIRouter()
+
+
+def _web_url() -> str:
+    return (settings.app_web_url or "").rstrip("/")
 
 
 @router.get("/config")
@@ -32,12 +34,34 @@ def tg_config():
     }
 
 
-# ---- Вебхук бота -----------------------------------------------------------
-# Приём апдейтов Telegram живёт в ОТДЕЛЬНОМ приложении smartweb/telegram-bot:
-# у входящего канала должен быть один владелец, иначе Telegram шлёт апдейты на
-# один URL, а второе приложение молча перерегистрирует вебхук на себя.
-# Здесь остаются только эндпоинты для веба и приложения (Mini App, Login Widget,
-# привязка по коду) — их вызывают наши клиенты, а не Telegram.
+# ---- Вебхук бота ------------------------------------------------------------
+
+@router.post("/webhook")
+async def webhook(
+    request: Request,
+    db: Session = Depends(get_db),
+    x_telegram_bot_api_secret_token: Optional[str] = Header(None),
+):
+    """Приём апдейтов Telegram. Обязательна проверка секретного заголовка —
+    иначе кто угодно мог бы слать фейковые апдейты (Этап 5)."""
+    if not tg.verify_webhook_secret(x_telegram_bot_api_secret_token):
+        raise HTTPException(status_code=403, detail="Forbidden")
+
+    # Защита от двойной обработки: если сервер работает в режиме polling, апдейты
+    # уже забирает getUpdates. Случайно оставшийся вебхук молча игнорируем, чтобы
+    # одно и то же сообщение не обработалось дважды.
+    if (settings.telegram_mode or "webhook").lower() == "polling":
+        return {"ok": True}
+
+    update = await request.json()
+    try:
+        from app.services import telegram_bot
+        telegram_bot.handle_update(db, update)
+    except Exception:
+        # Никогда не роняем вебхук — иначе Telegram будет ретраить и копить очередь.
+        pass
+    return {"ok": True}
+
 
 # ---- Вход в Mini App через initData (Этап 1) --------------------------------
 
@@ -125,3 +149,36 @@ def link_by_code(data: LinkByCode, db: Session = Depends(get_db)):
     req.consumed = True
     db.commit()
     return {"status": "linked", "user": UserOut.model_validate(target).model_dump()}
+
+
+# ---- Разовая настройка вебхука (админ) -------------------------------------
+
+@router.post("/set-webhook")
+def set_webhook(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Зарегистрировать вебхук у Telegram. URL берём из app_web_url."""
+    web = _web_url()
+    if not web:
+        raise HTTPException(status_code=400, detail="APP_WEB_URL не задан")
+    result = tg.set_webhook(f"{web}/api/telegram/webhook")
+    return result
+
+
+@router.get("/webhook-info")
+def webhook_info(_admin=Depends(require_admin)):
+    """Диагностика доставки апдейтов: в каком режиме работает бот, задан ли
+    токен, какой вебхук видит сам Telegram и какая была последняя ошибка.
+    Секреты не отдаём — только факт их наличия."""
+    web = _web_url()
+    info = tg.get_webhook_info()
+    result = (info or {}).get("result") or {}
+    return {
+        "mode": (settings.telegram_mode or "webhook").lower(),
+        "has_token": bool(tg.bot_token()),
+        "secret_source": "env" if (settings.telegram_webhook_secret or "").strip()
+                         else ("derived" if tg.bot_token() else "none"),
+        "expected_url": f"{web}/api/telegram/webhook" if web else "",
+        "telegram_url": result.get("url") or "",
+        "pending_update_count": result.get("pending_update_count"),
+        "last_error_message": result.get("last_error_message") or "",
+        "last_error_date": result.get("last_error_date"),
+    }
