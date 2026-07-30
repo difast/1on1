@@ -10,7 +10,9 @@ SHA256(bot_token); вебхук — по секретному заголовку
 import hashlib
 import hmac
 import json
+import logging
 import secrets
+import socket
 import string
 import time
 from datetime import datetime, timedelta
@@ -22,6 +24,8 @@ from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.user import User
 from app.models.telegram import TelegramLinkRequest
+
+_log = logging.getLogger("telegram.api")
 
 API_BASE = "https://api.telegram.org"
 _CODE_TTL_MIN = 30
@@ -230,17 +234,57 @@ def resolve_web_login(db: Session, tg: dict, link_user_id: int | None = None):
 
 # ---- Bot API ----------------------------------------------------------------
 
-def _api_post(method: str, payload: dict, timeout: float = 8) -> httpx.Response:
-    """POST к Telegram Bot API с принудительным IPv4.
+# Резервный режим обращения к Bot API: включается сам после первой ошибки
+# семейства адресов и дальше используется до перезапуска процесса.
+#
+# История: раньше здесь стояла жёсткая привязка исходящего сокета
+# httpx.HTTPTransport(local_address="0.0.0.0") против [Errno 99] Cannot assign
+# requested address. Она давала обратный эффект — каждый вызов Bot API падал с
+# [Errno -9] Address family for hostname not supported, потому что при заданном
+# локальном IPv4-адресе разрешение имени для IPv6-кандидата возвращает
+# EAI_ADDRFAMILY. Ломались и getUpdates, и sendMessage: бот не мог ни получать
+# апдейты, ни отвечать. Остальные исходящие вызовы того же контейнера (AI-шлюз,
+# Яндекс OAuth) работают через обычный httpx — значит виновата была привязка.
+#
+# Теперь сначала пробуем обычный запрос, а IPv4 обеспечиваем только при
+# необходимости: резолвим A-запись сами и идём на literal-IP, сохраняя SNI и
+# заголовок Host, чтобы проверка сертификата шла по имени api.telegram.org.
+_API_HOST = "api.telegram.org"
+_force_ipv4 = False
 
-    На Timeweb api.telegram.org резолвится в том числе в IPv6, а у контейнера
-    исходящего IPv6 нет — connect падает с [Errno 99] Cannot assign requested
-    address (и вебхук, и polling). Привязка локального сокета к 0.0.0.0
-    заставляет httpx открывать IPv4-соединение. Токен добавляется здесь."""
-    token = bot_token()
-    transport = httpx.HTTPTransport(local_address="0.0.0.0")
-    with httpx.Client(timeout=timeout, transport=transport) as client:
-        return client.post(f"{API_BASE}/bot{token}/{method}", json=payload)
+
+def _resolve_ipv4(host: str) -> str | None:
+    try:
+        infos = socket.getaddrinfo(host, 443, socket.AF_INET, socket.SOCK_STREAM)
+    except OSError:
+        return None
+    return infos[0][4][0] if infos else None
+
+
+def _api_post(method: str, payload: dict, timeout: float = 8) -> httpx.Response:
+    """POST к Telegram Bot API. Токен добавляется здесь, наружу не отдаётся."""
+    global _force_ipv4
+    path = f"/bot{bot_token()}/{method}"
+    with httpx.Client(timeout=timeout) as client:
+        if not _force_ipv4:
+            try:
+                return client.post(f"{API_BASE}{path}", json=payload)
+            except httpx.TransportError as e:
+                # Сетевой сбой на уровне соединения — пробуем через IPv4-литерал.
+                # Ошибки HTTP (4xx/5xx) сюда не попадают, они возвращаются как ответ.
+                _log.warning("Bot API: %s — пробуем принудительный IPv4", e)
+        ip = _resolve_ipv4(_API_HOST)
+        if not ip:
+            raise httpx.ConnectError(f"не удалось получить IPv4-адрес {_API_HOST}")
+        resp = client.post(
+            f"https://{ip}{path}", json=payload,
+            headers={"Host": _API_HOST},
+            extensions={"sni_hostname": _API_HOST},
+        )
+        if not _force_ipv4:
+            _force_ipv4 = True
+            _log.info("Bot API: перешли на принудительный IPv4 (%s)", ip)
+        return resp
 
 
 def notify_user(db: Session, user_id: int, title: str, body: str | None = None) -> None:
@@ -269,9 +313,16 @@ def send_message(chat_id: int, text: str, reply_markup: dict | None = None,
     if parse_mode:
         payload["parse_mode"] = parse_mode
     try:
-        _api_post("sendMessage", payload)
-    except Exception:
-        pass
+        resp = _api_post("sendMessage", payload)
+        # Telegram отвечает 200 даже на логические отказы редко, но 4xx бывает
+        # (бот заблокирован пользователем, неверный chat_id) — это важно видеть.
+        if resp.status_code >= 400:
+            _log.warning("sendMessage -> HTTP %s %s", resp.status_code, resp.text[:200])
+    except Exception as e:
+        # Не роняем вебхук/цикл, но и не теряем причину: раньше здесь был
+        # молчаливый pass, из-за чего полная неработоспособность Bot API никак
+        # себя не проявляла в логах.
+        _log.warning("sendMessage error: %s", e)
 
 
 def answer_callback(callback_query_id: str, text: str | None = None) -> None:
@@ -284,8 +335,8 @@ def answer_callback(callback_query_id: str, text: str | None = None) -> None:
         payload["text"] = text
     try:
         _api_post("answerCallbackQuery", payload)
-    except Exception:
-        pass
+    except Exception as e:
+        _log.warning("answerCallbackQuery error: %s", e)
 
 
 def edit_message_text(chat_id: int, message_id: int, text: str, reply_markup: dict | None = None) -> None:
@@ -297,8 +348,8 @@ def edit_message_text(chat_id: int, message_id: int, text: str, reply_markup: di
     payload["reply_markup"] = reply_markup or {"inline_keyboard": []}
     try:
         _api_post("editMessageText", payload)
-    except Exception:
-        pass
+    except Exception as e:
+        _log.warning("editMessageText error: %s", e)
 
 
 def set_webhook(url: str) -> dict:
