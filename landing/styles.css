@@ -372,3 +372,125 @@ html,body{overflow-x:hidden}
 .foot-doc-menu{display:flex;flex-direction:column;gap:10px;padding:10px 0 2px 12px}
 .foot-doc-menu a{font-size:13px;color:rgba(255,255,255,.5);text-decoration:none;transition:color .15s;line-height:1.4}
 .foot-doc-menu a:hover{color:#5AA0FF}
+
+
+/* ══ БЛОКИ ЛЕНДИНГА: РАЗНЫЕ ФОРМАТЫ ПОДАЧИ ═════════════════════════════════
+   Раньше все секции после hero были устроены одинаково (бейдж, заголовок,
+   список «иконка + подзаголовок + строка текста») и все появлялись одной и той
+   же анимацией. Одинаковая подача читалась как нехватка содержания. Ниже —
+   форматы под разные типы информации: карта платформы, сравнение «до/после»,
+   поток шагов, разделение двух AI, роли, интеграции и конкретные факты.
+   Дизайн-система не меняется: используются те же переменные, шрифты и радиусы. */
+
+/* ── Карта платформы: обзор всех модулей одним экраном (статично, без анимации) */
+.pmap{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:48px}
+.pmap-card{background:var(--bg1);border:1px solid var(--brd);border-radius:12px;padding:20px;transition:border-color .2s,background .2s}
+.pmap-card:hover{border-color:var(--brd2);background:var(--bg2)}
+.pmap-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.pmap-card h4{font-size:14px;font-weight:600;margin-bottom:6px}
+.pmap-card p{font-size:12.5px;color:var(--txt2);line-height:1.6}
+.pmap-tag{display:inline-block;margin-top:10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);border:1px solid var(--brd);border-radius:99px;padding:2px 8px}
+
+/* ── Сравнение «до / после»: показывает выигрыш, а не перечисляет функции */
+.ba{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;margin-top:48px;border:1px solid var(--brd);border-radius:16px;overflow:hidden}
+.ba-col{padding:30px 28px}
+.ba-col.before{background:rgba(255,255,255,.02)}
+.ba-col.after{background:rgba(10,108,255,.05)}
+.ba-arrow{display:flex;align-items:center;justify-content:center;padding:0 6px;background:var(--brd);width:1px}
+.ba-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:18px}
+.ba-col.before .ba-lbl{color:var(--txt3)}
+.ba-col.after .ba-lbl{color:#5AA0FF}
+.ba-list{list-style:none;display:flex;flex-direction:column;gap:13px}
+.ba-list li{font-size:13.5px;line-height:1.6;display:flex;gap:11px;align-items:flex-start}
+.ba-list li::before{flex-shrink:0;width:15px;text-align:center;font-weight:700}
+.ba-col.before .ba-list li{color:var(--txt2)}
+.ba-col.before .ba-list li::before{content:'—';color:rgba(255,255,255,.22)}
+.ba-col.after .ba-list li{color:rgba(255,255,255,.82)}
+.ba-col.after .ba-list li::before{content:'✓';color:#5AA0FF}
+
+/* ── Поток шагов: последовательность, а не набор равнозначных пунктов */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:48px;border:1px solid var(--brd);border-radius:16px;overflow:hidden}
+.flow-step{padding:26px 24px;border-right:1px solid var(--brd);position:relative}
+.flow-step:last-child{border-right:none}
+.flow-n{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;line-height:1;color:rgba(255,255,255,.12);margin-bottom:14px}
+.flow-step h4{font-size:14px;font-weight:600;margin-bottom:7px}
+.flow-step p{font-size:12.5px;color:var(--txt2);line-height:1.65}
+.flow-step.done .flow-n{color:rgba(90,160,255,.5)}
+
+/* ── Два AI: ONE AI и Пит показаны раздельно, чтобы их не путали */
+.ai2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:48px}
+.ai2-card{border:1px solid var(--brd);border-radius:16px;padding:32px 30px;display:flex;flex-direction:column}
+.ai2-card.one{background:linear-gradient(180deg,rgba(10,108,255,.07),rgba(10,108,255,.02))}
+.ai2-card.pit{background:linear-gradient(180deg,rgba(124,58,237,.07),rgba(124,58,237,.02))}
+.ai2-name{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.ai2-role{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+.ai2-card.one .ai2-role{color:#5AA0FF}
+.ai2-card.pit .ai2-role{color:#A78BFA}
+.ai2-lead{font-size:14px;color:var(--txt2);line-height:1.7;margin-bottom:22px}
+.ai2-list{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:22px}
+.ai2-list li{font-size:13px;color:rgba(255,255,255,.78);line-height:1.6;display:flex;gap:10px}
+.ai2-list li::before{content:'·';font-weight:700;font-size:17px;line-height:1.1;flex-shrink:0}
+.ai2-card.one .ai2-list li::before{color:#5AA0FF}
+.ai2-card.pit .ai2-list li::before{color:#A78BFA}
+.ai2-who{margin-top:auto;padding-top:18px;border-top:1px solid var(--brd);font-size:12px;color:var(--txt3);line-height:1.6}
+.ai2-who b{color:rgba(255,255,255,.7);font-weight:600}
+
+/* ── Роли: кому и что даёт платформа */
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+.role{background:var(--bg1);border:1px solid var(--brd);border-radius:14px;padding:26px 24px;display:flex;flex-direction:column}
+.role-top{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5AA0FF;margin-bottom:12px}
+.role h4{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;letter-spacing:-.01em}
+.role-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.role-list li{font-size:13px;color:var(--txt2);line-height:1.6;display:flex;gap:9px}
+.role-list li::before{content:'→';color:rgba(90,160,255,.55);flex-shrink:0}
+
+/* ── Интеграции: честно разделены на работающие и запланированные */
+.integr{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px}
+.integr-group{border:1px solid var(--brd);border-radius:16px;padding:28px 26px}
+.integr-group.live{background:rgba(34,197,94,.04)}
+.integr-group.soon{background:rgba(255,255,255,.02)}
+.integr-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.integr-dot{width:7px;height:7px;border-radius:50%}
+.integr-group.live .integr-dot{background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.integr-group.soon .integr-dot{background:rgba(255,255,255,.28)}
+.integr-head span{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.integr-group.live .integr-head span{color:#86EFAC}
+.integr-group.soon .integr-head span{color:var(--txt3)}
+.integr-items{list-style:none;display:flex;flex-direction:column;gap:14px}
+.integr-items li{display:flex;flex-direction:column;gap:3px}
+.integr-items b{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.88)}
+.integr-items small{font-size:12px;color:var(--txt2);line-height:1.55}
+.integr-group.soon .integr-items b{color:var(--txt2)}
+
+/* ── Конкретные факты вместо неподтверждённых отзывов */
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+.fact{background:var(--bg1);border:1px solid var(--brd);border-radius:14px;padding:26px 24px}
+.fact-n{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;line-height:1;letter-spacing:-.03em;color:#5AA0FF;margin-bottom:12px}
+.fact h4{font-size:14px;font-weight:600;margin-bottom:7px}
+.fact p{font-size:13px;color:var(--txt2);line-height:1.65}
+.facts-note{margin-top:22px;font-size:12.5px;color:var(--txt3);line-height:1.6;max-width:760px}
+
+/* ── Адаптивность новых блоков */
+@media(max-width:1100px){
+  .pmap{grid-template-columns:repeat(2,1fr)}
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .flow-step:nth-child(2){border-right:none}
+  .flow-step:nth-child(-n+2){border-bottom:1px solid var(--brd)}
+  .roles{grid-template-columns:repeat(2,1fr)}
+  .facts{grid-template-columns:1fr 1fr}
+}
+@media(max-width:860px){
+  .ai2,.integr{grid-template-columns:1fr}
+  .ba{grid-template-columns:1fr}
+  .ba-arrow{display:none}
+  .ba-col.before{border-bottom:1px solid var(--brd)}
+}
+@media(max-width:640px){
+  .pmap{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .flow-step{border-right:none;border-bottom:1px solid var(--brd)}
+  .flow-step:last-child{border-bottom:none}
+  .roles,.facts{grid-template-columns:1fr}
+  .ba-col,.integr-group,.ai2-card{padding:24px 20px}
+  .fact-n{font-size:32px}
+}

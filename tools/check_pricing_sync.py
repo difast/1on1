@@ -54,7 +54,7 @@ def main():
         "team": ("Team", 0, 49990, "year", 30, 1, "49 990 ₽/год"),
         "business": ("Business", 0, 0, "contract", None, None, "Цена договорная"),
         "enterprise": ("Enterprise", 0, 0, "contract", None, None,
-                       "от 1 000 000 ₽/год, цена договорная"),
+                       "Цена по запросу"),
     }
     for code, (name, pm, py, period, users, teams, label) in expected.items():
         p = plans.get(code)
@@ -111,13 +111,13 @@ def main():
 
     # ── 3. Лендинг ──────────────────────────────────────────────────────────
     pricing = read("landing/pricing.html")
-    for needle in ("1 490₽", "49 990₽", "Цена договорная", "от 1 млн ₽/год",
+    for needle in ("1 490₽", "49 990₽", "Цена договорная", "Цена по запросу",
                    "До <strong>5</strong> пользователей", "До <strong>30</strong> пользователей",
                    "30–100+</strong> пользователей"):
         expect(needle in pricing, f"landing/pricing.html: не найдено «{needle}»")
     # Проверяем именно витринные строки старой сетки, а не любое вхождение цифр:
     # «1 490₽» законно содержит «490₽», а комментарий про Lattice — «₽/чел·мес».
-    for stale in ('<span class="monthly">490₽</span>', '349₽',
+    for stale in ('<span class="monthly">490₽</span>', '349₽', '1 млн', '1 000 000',
                   '<small> /чел·мес</small>', '>Компания</div>', '>Старт</div>'):
         expect(stale not in pricing, f"landing/pricing.html: осталась старая сетка — «{stale}»")
     expect(pricing.count("Скоро") >= 4 or pricing.count("скоро") >= 4,
@@ -135,9 +135,16 @@ def main():
 
     # ── 5. Мобильное приложение ─────────────────────────────────────────────
     tariff = read("mobile/src/screens/TariffScreen.tsx")
-    for needle in ("1 490 ₽/мес", "49 990 ₽/год", "Цена договорная",
-                   "до 5 пользователей, 1 команда", "до 30 пользователей, 1 команда"):
-        expect(needle in tariff, f"TariffScreen.tsx: не найдено «{needle}»")
+    # Экран берёт подписи из словаря, поэтому проверяем связку ключ -> значение,
+    # а не литералы в .tsx: иначе перевод интерфейса ломает проверку тарифов.
+    import json as _json
+    ru = _json.loads(read("mobile/src/i18n/locales/ru.json"))["ui"]
+    for key, value in (("1_490_mes", "1 490 ₽/мес"), ("49_990_god", "49 990 ₽/год"),
+                       ("cena_dogovornaya", "Цена договорная"), ("cena_po_zaprosu", "Цена по запросу"),
+                       ("do_5_polzovateley_1_komanda", "до 5 пользователей, 1 команда"),
+                       ("do_30_polzovateley_1_komanda", "до 30 пользователей, 1 команда")):
+        expect(f"ui.{key}" in tariff, f"TariffScreen.tsx: не используется ключ ui.{key}")
+        expect(ru.get(key) == value, f"ru.json: ui.{key} = {ru.get(key)!r}, ожидалось {value!r}")
     for stale in ("'Старт'", "'Команда'", "'Компания'"):
         expect(stale not in tariff, f"TariffScreen.tsx: осталось старое название {stale}")
 
@@ -159,7 +166,7 @@ def main():
                f"legal_docs.json ({key}): цена Team разошлась")
         expect(rows.get("Business", [None, None])[1] == "Цена договорная",
                f"legal_docs.json ({key}): цена Business разошлась")
-        expect(rows.get("Enterprise", [None, None])[1] == "от 1 000 000 ₽/год, цена договорная",
+        expect(rows.get("Enterprise", [None, None])[1] == "цена по запросу",
                f"legal_docs.json ({key}): цена Enterprise разошлась")
         expect(rows.get("Start", [None, None, None])[2] == "до 5",
                f"legal_docs.json ({key}): лимит пользователей Start разошёлся")

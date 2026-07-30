@@ -1856,8 +1856,6 @@
     "net_celey": "no goals",
     "noya": "Nov",
     "okt": "Oct",
-    "ot_1_000_000_god": "from 1,000,000 RUB/year",
-    "ot_1_000_000_god_cena": "from 1,000,000 RUB/year, price on request",
     "polnyy_dostup": "full access",
     "risk_vygoraniya": "burnout risk",
     "sen": "Sep",
@@ -1945,7 +1943,8 @@
     "inn_bin": "INN/BIN {{v1}}",
     "polzovatel_id_zaprosil_udalenie_akkaunta": "User {{v1}} ({{v2}}, id={{v3}}) requested account deletion.",
     "dobro_pozhalovat_imya": "Welcome, {{v1}}",
-    "itog": "Outcome"
+    "itog": "Outcome",
+    "cena_po_zaprosu": "Price on request"
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",

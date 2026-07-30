@@ -16,7 +16,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Тарифы — OneOnOne</title>
-<meta name="description" content="Тарифы OneOnOne: Start 1 490 руб в месяц, Team 49 990 руб в год, Business и Enterprise по договору.">
+<meta name="description" content="Тарифы AI-платформы OneOnOne: Start 1 490 руб в месяц, Team 49 990 руб в год, Business и Enterprise — цена по запросу.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -32,6 +32,23 @@
 
 /* Plan cards */
 .plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin-top:56px}
+/* Выравнивание карточек по единой сетке.
+   Раньше карточки были независимыми блоками: у тарифов разное число пунктов в
+   списках, поэтому заголовок «Функции» и сноска внизу оказывались на разной
+   высоте (расхождение доходило до 240px), а кнопки расходились на 2px из-за
+   разной высоты бейджа. Теперь каждая карточка — subgrid родительской сетки:
+   все 11 её элементов лежат в общих строках, значит цена, описание, кнопка,
+   оба заголовка разделов, списки и сноска выравниваются между тарифами
+   автоматически, независимо от длины текста. */
+.plan{display:flex;flex-direction:column}
+.plan-note{margin-top:auto}   /* запасной вариант: сноска прижата к низу карточки */
+@supports(grid-template-rows:subgrid){
+  @media(min-width:1281px){
+    .plans-grid{grid-template-rows:repeat(11,auto)}
+    .plan{display:grid;grid-row:1 / -1;grid-template-rows:subgrid}
+    .plan-note{margin-top:0}
+  }
+}
 .plan{padding:30px 20px 40px;position:relative;border-right:1px solid rgba(255,255,255,.06);transition:background .2s}
 .plan:last-child{border-right:none}
 .plan:hover{background:rgba(255,255,255,.025)}
@@ -57,11 +74,11 @@
 .plan-divider{height:1px;background:rgba(255,255,255,.07);margin:0 0 20px}
 .plan-section-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.25);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px}
 .plan-features{list-style:none;display:flex;flex-direction:column;gap:9px;margin-bottom:20px}
-.plan-features li{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
+.plan-features li{display:block;position:relative;padding-left:24px;font-size:13px;color:rgba(255,255,255,.65);line-height:1.5}
 /* Фиксированная ширина иконки строки: галочка и тире занимают одинаковое
    место, поэтому текст функции начинается с единого отступа независимо от
    символа. */
-.plan-features li::before{content:'✓';color:#0A6CFF;font-weight:700;font-size:12px;flex-shrink:0;margin-top:1px;display:inline-block;width:14px;text-align:center}
+.plan-features li::before{content:'✓';position:absolute;left:0;top:0;color:#0A6CFF;font-weight:700;font-size:12px;width:14px;text-align:center;line-height:1.6}
 .plan-features li.no{color:rgba(255,255,255,.2)}
 .plan-features li.no::before{content:'—';color:rgba(255,255,255,.15)}
 .plan-features li strong{color:#fff;font-weight:600}
@@ -153,8 +170,8 @@
 
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
-  <a href="/#features" onclick="closeMM()">Возможности</a>
-  <a href="/features" onclick="closeMM()">1-on-1 встречи</a>
+  <a href="/#platform" onclick="closeMM()">Платформа</a>
+  <a href="/#roles" onclick="closeMM()">Кому подходит</a>
   <a href="/pricing" onclick="closeMM()">Тарифы</a>
   <div class="mm-btns">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost" onclick="closeMM()">Войти</a>
@@ -166,8 +183,8 @@
 <nav>
   <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
-    <a href="/#features">Возможности</a>
-    <a href="/features">1-on-1 встречи</a>
+    <a href="/#platform">Платформа</a>
+    <a href="/#roles">Кому подходит</a>
     <a href="/pricing" style="color:#fff">Тарифы</a>
   </div>
   <div class="nav-r">
@@ -299,7 +316,7 @@
         <span class="plan-badge">&nbsp;</span>
         <div class="plan-name" style="color:rgba(90,160,255,.6)">Enterprise</div>
         <div class="plan-price" style="font-size:26px">
-          <span class="monthly">от 1 млн ₽/год</span>
+          <span class="monthly">Цена по запросу</span>
         </div>
         <div class="plan-desc">Крупным организациям.<br>Интеграции, SSO/SAML, SLA.</div>
         <a href="mailto:enterprise@oneononehq.com?subject=Тариф Enterprise OneOnOne" class="plan-btn ent">Связаться с нами</a>
@@ -319,7 +336,7 @@
           <li>Поддержка 24/7, персональный менеджер</li>
           <li class="soon">Автотранскрипция встреч — скоро</li>
         </ul>
-        <div class="plan-note">Цена договорная, от 1 000 000 ₽ в год. Условия и состав услуг фиксируются в договоре.</div>
+        <div class="plan-note">Цена рассчитывается индивидуально под масштаб и требования организации. Условия и состав услуг фиксируются в договоре.</div>
       </div>
     </div>
   </div>
@@ -367,7 +384,7 @@
       </thead>
       <tbody>
         <tr class="cat-row"><td colspan="5">Тариф</td></tr>
-        <tr><td>Стоимость</td><td>1 490 ₽/мес</td><td class="pop-col">49 990 ₽/год</td><td>Цена договорная</td><td>от 1 млн ₽/год</td></tr>
+        <tr><td>Стоимость</td><td>1 490 ₽/мес</td><td class="pop-col">49 990 ₽/год</td><td>Цена договорная</td><td>Цена по запросу</td></tr>
         <tr><td>Пользователей</td><td>до 5</td><td class="pop-col">до 30</td><td>30–100+</td><td>без ограничений</td></tr>
         <tr><td>Команд</td><td>1</td><td class="pop-col">1</td><td>несколько</td><td>без ограничений</td></tr>
         <tr><td>Пробный период</td><td>14 дней, полный доступ</td><td class="pop-col">14 дней, без ONE AI и Развития</td><td>—</td><td>—</td></tr>
@@ -495,7 +512,7 @@
       <div class="footer-logo"><div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span></div>
       <div class="footer-cols">
         <div class="footer-col">
-          <a href="/#features">Возможности</a>
+          <a href="/#platform">Платформа</a>
           <a href="/pricing" style="color:#fff">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
