@@ -1864,8 +1864,6 @@
     "net_celey": "нет целей",
     "noya": "ноя",
     "okt": "окт",
-    "ot_1_000_000_god": "от 1 000 000 ₽/год",
-    "ot_1_000_000_god_cena": "от 1 000 000 ₽/год, цена договорная",
     "polnyy_dostup": "полный доступ",
     "risk_vygoraniya": "риск выгорания",
     "sen": "сен",
@@ -1953,7 +1951,8 @@
     "inn_bin": "ИНН/БИН {{v1}}",
     "polzovatel_id_zaprosil_udalenie_akkaunta": "Пользователь {{v1}} ({{v2}}, id={{v3}}) запросил удаление аккаунта.",
     "dobro_pozhalovat_imya": "Добро пожаловать, {{v1}}",
-    "itog": "Итог"
+    "itog": "Итог",
+    "cena_po_zaprosu": "Цена по запросу"
   },
   "survey": {
     "q.usage.title": "Как вы планируете использовать OneOnOne?",

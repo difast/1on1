@@ -15,8 +15,8 @@
 <!-- /Yandex.Metrika counter -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>OneOnOne — Частые вопросы</title>
-<meta name="description" content="Ответы на частые вопросы об OneOnOne: тарифы, данные, AI-ассистент Пит и возможности платформы.">
+<title>OneOnOne — частые вопросы</title>
+<meta name="description" content="Ответы на частые вопросы об AI-платформе OneOnOne: тарифы, данные, интеграции, ONE AI и Пит.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -28,8 +28,8 @@
 <nav>
   <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
-    <a href="/#features">Возможности</a>
-    <a href="/features">1-on-1 встречи</a>
+    <a href="/#platform">Платформа</a>
+    <a href="/#roles">Кому подходит</a>
     <a href="/pricing">Тарифы</a>
   </div>
   <div class="nav-r">
@@ -59,9 +59,9 @@
 <section class="cta-section block-card" id="ctaSection">
   <div class="lift-door lift-l"></div>
   <div class="lift-door lift-r"></div>
-  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>Начните за 5 минут</div>
-  <h2 class="cta-h df cta-child" style="opacity:0">Первая встреча —<br>через пять минут.</h2>
-  <p class="cta-sub cta-child" style="opacity:0">Никаких сложных настроек. Создайте команду и пригласите коллег прямо сейчас.</p>
+  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>14 дней бесплатно, без карты</div>
+  <h2 class="cta-h df cta-child" style="opacity:0">Соберите команду<br>за пять минут.</h2>
+  <p class="cta-sub cta-child" style="opacity:0">Создайте команду, пригласите коллег и работайте со встречами, задачами, целями и развитием в одном месте. Настройка не требуется.</p>
   <div class="cta-btns cta-child" style="opacity:0">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc btn-xl">Создать аккаунт →</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost btn-lg">Войти</a>
@@ -75,8 +75,8 @@
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <a href="/#features">Возможности</a>
-          <a href="/#pricing">Тарифы</a>
+          <a href="/#platform">Платформа</a>
+          <a href="/pricing">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
@@ -134,7 +134,7 @@ history.scrollRestoration='manual';window.scrollTo(0,0);
 const rio=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.target.classList.add('vis');rio.unobserve(x.target)}})},{threshold:.07});
 document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el=>rio.observe(el));
 const ctaSec=document.getElementById('ctaSection');
-if(ctaSec){const ctaObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(!entry.isIntersecting)return;ctaObs.unobserve(ctaSec);ctaSec.classList.add('elevator-open');setTimeout(()=>{if(typeof anime!=='undefined'){anime({targets:ctaSec.querySelectorAll('.cta-child'),opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})}},1200)})},{threshold:0.08});ctaObs.observe(ctaSec)}
+if(ctaSec){const ctaObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(!entry.isIntersecting)return;ctaObs.unobserve(ctaSec);ctaSec.classList.add('elevator-open');setTimeout(()=>{const kids=ctaSec.querySelectorAll('.cta-child');if(typeof anime!=='undefined'){anime({targets:kids,opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})}else{kids.forEach(k=>{k.style.opacity='1'})}},1200)})},{threshold:0.08});ctaObs.observe(ctaSec)}
 document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
 </script>
 <script src="/store.js"></script>

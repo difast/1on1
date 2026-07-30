@@ -15,9 +15,9 @@
 <!-- /Yandex.Metrika counter -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>OneOnOne — AI-платформа для 1-on-1 встреч</title>
+<title>OneOnOne — AI-платформа для управления и развития команд</title>
 <link rel="icon" type="image/png" href="/favicon.png">
-<meta name="description" content="Умные 1-on-1 встречи с AI-ассистентом, аналитикой команды и трекингом задач.">
+<meta name="description" content="AI-платформа для управления командой: встречи 1-на-1, задачи, цели и OKR, развитие сотрудников, аналитика и два AI-помощника — ONE AI и Пит.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -202,14 +202,6 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .pbtn.prim:hover{background:#0852D6}
 
 /* ── TESTIMONIALS */
-.tgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:52px}
-.tcard{background:var(--bg1);border:1px solid var(--brd);border-radius:12px;padding:28px;transition:border-color .2s}
-.tcard:hover{border-color:var(--brd2)}
-.tquote{font-size:15px;color:var(--txt2);line-height:1.75;margin-bottom:24px;font-style:italic}
-.tauth{display:flex;align-items:center;gap:12px}
-.tav{width:36px;height:36px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff}
-.tname{font-size:14px;font-weight:600;color:var(--txt)}
-.trole{font-size:12px;color:var(--txt3)}
 
 /* ── CTA */
 .cta-section{padding:120px 40px;text-align:center;background:linear-gradient(180deg,rgba(10,108,255,.08) 0%,var(--bg) 100%);position:relative;overflow:hidden}
@@ -274,7 +266,6 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   .wrap{padding:0 20px}
   .panel-grid{grid-template-columns:1fr}
   .panel-vis{border-left:none;border-top:1px solid var(--brd);min-height:240px}
-  .tgrid{grid-template-columns:1fr}
   .pgrid{grid-template-columns:1fr 1fr}
   .cta-section{padding:80px 24px}
   .section{padding:72px 0}
@@ -299,8 +290,6 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   .block-card{margin:0 10px 10px;border-radius:14px}
   .pricing-section{padding:56px 0}
   .pgrid{grid-template-columns:1fr}
-  .tcard{padding:20px 16px}
-  .tquote{font-size:14px}
   .cta-h{font-size:clamp(26px,8vw,72px)}
   .cta-sub{font-size:15px}
   nav{padding:10px 14px}
@@ -332,15 +321,137 @@ html,body{overflow-x:hidden}
   .nav-r{display:none}
 }
 .soon-tag{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:99px;font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:rgba(255,255,255,.55);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);vertical-align:middle}
+/* ══ БЛОКИ ЛЕНДИНГА: РАЗНЫЕ ФОРМАТЫ ПОДАЧИ ═════════════════════════════════
+   Раньше все секции после hero были устроены одинаково (бейдж, заголовок,
+   список «иконка + подзаголовок + строка текста») и все появлялись одной и той
+   же анимацией. Одинаковая подача читалась как нехватка содержания. Ниже —
+   форматы под разные типы информации: карта платформы, сравнение «до/после»,
+   поток шагов, разделение двух AI, роли, интеграции и конкретные факты.
+   Дизайн-система не меняется: используются те же переменные, шрифты и радиусы. */
+
+/* ── Карта платформы: обзор всех модулей одним экраном (статично, без анимации) */
+.pmap{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:48px}
+.pmap-card{background:var(--bg1);border:1px solid var(--brd);border-radius:12px;padding:20px;transition:border-color .2s,background .2s}
+.pmap-card:hover{border-color:var(--brd2);background:var(--bg2)}
+.pmap-ico{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.pmap-card h4{font-size:14px;font-weight:600;margin-bottom:6px}
+.pmap-card p{font-size:12.5px;color:var(--txt2);line-height:1.6}
+.pmap-tag{display:inline-block;margin-top:10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);border:1px solid var(--brd);border-radius:99px;padding:2px 8px}
+
+/* ── Сравнение «до / после»: показывает выигрыш, а не перечисляет функции */
+.ba{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;margin-top:48px;border:1px solid var(--brd);border-radius:16px;overflow:hidden}
+.ba-col{padding:30px 28px}
+.ba-col.before{background:rgba(255,255,255,.02)}
+.ba-col.after{background:rgba(10,108,255,.05)}
+.ba-arrow{display:flex;align-items:center;justify-content:center;padding:0 6px;background:var(--brd);width:1px}
+.ba-lbl{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;margin-bottom:18px}
+.ba-col.before .ba-lbl{color:var(--txt3)}
+.ba-col.after .ba-lbl{color:#5AA0FF}
+.ba-list{list-style:none;display:flex;flex-direction:column;gap:13px}
+.ba-list li{font-size:13.5px;line-height:1.6;display:flex;gap:11px;align-items:flex-start}
+.ba-list li::before{flex-shrink:0;width:15px;text-align:center;font-weight:700}
+.ba-col.before .ba-list li{color:var(--txt2)}
+.ba-col.before .ba-list li::before{content:'—';color:rgba(255,255,255,.22)}
+.ba-col.after .ba-list li{color:rgba(255,255,255,.82)}
+.ba-col.after .ba-list li::before{content:'✓';color:#5AA0FF}
+
+/* ── Поток шагов: последовательность, а не набор равнозначных пунктов */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin-top:48px;border:1px solid var(--brd);border-radius:16px;overflow:hidden}
+.flow-step{padding:26px 24px;border-right:1px solid var(--brd);position:relative}
+.flow-step:last-child{border-right:none}
+.flow-n{font-family:'Playfair Display',serif;font-size:34px;font-weight:700;line-height:1;color:rgba(255,255,255,.12);margin-bottom:14px}
+.flow-step h4{font-size:14px;font-weight:600;margin-bottom:7px}
+.flow-step p{font-size:12.5px;color:var(--txt2);line-height:1.65}
+.flow-step.done .flow-n{color:rgba(90,160,255,.5)}
+
+/* ── Два AI: ONE AI и Пит показаны раздельно, чтобы их не путали */
+.ai2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:48px}
+.ai2-card{border:1px solid var(--brd);border-radius:16px;padding:32px 30px;display:flex;flex-direction:column}
+.ai2-card.one{background:linear-gradient(180deg,rgba(10,108,255,.07),rgba(10,108,255,.02))}
+.ai2-card.pit{background:linear-gradient(180deg,rgba(124,58,237,.07),rgba(124,58,237,.02))}
+.ai2-name{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;letter-spacing:-.02em;margin-bottom:4px}
+.ai2-role{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:18px}
+.ai2-card.one .ai2-role{color:#5AA0FF}
+.ai2-card.pit .ai2-role{color:#A78BFA}
+.ai2-lead{font-size:14px;color:var(--txt2);line-height:1.7;margin-bottom:22px}
+.ai2-list{list-style:none;display:flex;flex-direction:column;gap:11px;margin-bottom:22px}
+.ai2-list li{font-size:13px;color:rgba(255,255,255,.78);line-height:1.6;display:flex;gap:10px}
+.ai2-list li::before{content:'·';font-weight:700;font-size:17px;line-height:1.1;flex-shrink:0}
+.ai2-card.one .ai2-list li::before{color:#5AA0FF}
+.ai2-card.pit .ai2-list li::before{color:#A78BFA}
+.ai2-who{margin-top:auto;padding-top:18px;border-top:1px solid var(--brd);font-size:12px;color:var(--txt3);line-height:1.6}
+.ai2-who b{color:rgba(255,255,255,.7);font-weight:600}
+
+/* ── Роли: кому и что даёт платформа */
+.roles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+.role{background:var(--bg1);border:1px solid var(--brd);border-radius:14px;padding:26px 24px;display:flex;flex-direction:column}
+.role-top{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#5AA0FF;margin-bottom:12px}
+.role h4{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;margin-bottom:12px;letter-spacing:-.01em}
+.role-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.role-list li{font-size:13px;color:var(--txt2);line-height:1.6;display:flex;gap:9px}
+.role-list li::before{content:'→';color:rgba(90,160,255,.55);flex-shrink:0}
+
+/* ── Интеграции: честно разделены на работающие и запланированные */
+.integr{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:48px}
+.integr-group{border:1px solid var(--brd);border-radius:16px;padding:28px 26px}
+.integr-group.live{background:rgba(34,197,94,.04)}
+.integr-group.soon{background:rgba(255,255,255,.02)}
+.integr-head{display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.integr-dot{width:7px;height:7px;border-radius:50%}
+.integr-group.live .integr-dot{background:#22C55E;box-shadow:0 0 0 3px rgba(34,197,94,.18)}
+.integr-group.soon .integr-dot{background:rgba(255,255,255,.28)}
+.integr-head span{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.integr-group.live .integr-head span{color:#86EFAC}
+.integr-group.soon .integr-head span{color:var(--txt3)}
+.integr-items{list-style:none;display:flex;flex-direction:column;gap:14px}
+.integr-items li{display:flex;flex-direction:column;gap:3px}
+.integr-items b{font-size:13.5px;font-weight:600;color:rgba(255,255,255,.88)}
+.integr-items small{font-size:12px;color:var(--txt2);line-height:1.55}
+.integr-group.soon .integr-items b{color:var(--txt2)}
+
+/* ── Конкретные факты вместо неподтверждённых отзывов */
+.facts{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:48px}
+.fact{background:var(--bg1);border:1px solid var(--brd);border-radius:14px;padding:26px 24px}
+.fact-n{font-family:'Playfair Display',serif;font-size:38px;font-weight:700;line-height:1;letter-spacing:-.03em;color:#5AA0FF;margin-bottom:12px}
+.fact h4{font-size:14px;font-weight:600;margin-bottom:7px}
+.fact p{font-size:13px;color:var(--txt2);line-height:1.65}
+.facts-note{margin-top:22px;font-size:12.5px;color:var(--txt3);line-height:1.6;max-width:760px}
+
+/* ── Адаптивность новых блоков */
+@media(max-width:1100px){
+  .pmap{grid-template-columns:repeat(2,1fr)}
+  .flow{grid-template-columns:repeat(2,1fr)}
+  .flow-step:nth-child(2){border-right:none}
+  .flow-step:nth-child(-n+2){border-bottom:1px solid var(--brd)}
+  .roles{grid-template-columns:repeat(2,1fr)}
+  .facts{grid-template-columns:1fr 1fr}
+}
+@media(max-width:860px){
+  .ai2,.integr{grid-template-columns:1fr}
+  .ba{grid-template-columns:1fr}
+  .ba-arrow{display:none}
+  .ba-col.before{border-bottom:1px solid var(--brd)}
+}
+@media(max-width:640px){
+  .pmap{grid-template-columns:1fr}
+  .flow{grid-template-columns:1fr}
+  .flow-step{border-right:none;border-bottom:1px solid var(--brd)}
+  .flow-step:last-child{border-bottom:none}
+  .roles,.facts{grid-template-columns:1fr}
+  .ba-col,.integr-group,.ai2-card{padding:24px 20px}
+  .fact-n{font-size:32px}
+}
+
 </style>
 </head>
 <body>
 
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
-  <a href="/#features" onclick="closeMM()">Возможности</a>
-  <a href="/features" onclick="closeMM()">1-on-1 встречи</a>
+  <a href="/#platform" onclick="closeMM()">Платформа</a>
+  <a href="/#roles" onclick="closeMM()">Кому подходит</a>
   <a href="/pricing" onclick="closeMM()">Тарифы</a>
+  <a href="/faq" onclick="closeMM()">FAQ</a>
   <div class="mm-btns">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost" onclick="closeMM()">Войти</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc" onclick="closeMM()">Начать →</a>
@@ -351,9 +462,10 @@ html,body{overflow-x:hidden}
 <nav>
   <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
-    <a href="/#features">Возможности</a>
-    <a href="/features">1-on-1 встречи</a>
+    <a href="/#platform">Платформа</a>
+    <a href="/#roles">Кому подходит</a>
     <a href="/pricing">Тарифы</a>
+    <a href="/faq">FAQ</a>
   </div>
   <div class="nav-r">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost">Войти</a>
@@ -371,15 +483,69 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 
 <!-- HERO -->
 <section class="hero block-card" id="home" style="margin-top:20px">
-  <div class="hero-badge" id="heroBadge"><div class="bdot"></div>AI-платформа нового поколения</div>
-  <h1 class="hh df" id="heroH">Управляйте командой<br><em>по-новому</em></h1>
-  <p class="hero-sub" id="heroSub">Умные 1-on-1 встречи, AI-ассистент Пит, аналитика и трекинг задач — в одном инструменте.</p>
+  <div class="hero-badge" id="heroBadge"><div class="bdot"></div>AI-операционная система для команды</div>
+  <h1 class="hh df" id="heroH">Вся работа с командой<br><em>в одной платформе</em></h1>
+  <p class="hero-sub" id="heroSub">Встречи 1-на-1, задачи, цели и OKR, развитие сотрудников, аналитика команды и два AI-помощника. Одно рабочее пространство вместо пяти разрозненных сервисов.</p>
   <div class="hero-btns" id="heroBtns">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc btn-xl">Начать бесплатно →</a>
-    <a href="#features" class="btn btn-ghost-hero btn-lg">Смотреть возможности</a>
+    <a href="#platform" class="btn btn-ghost-hero btn-lg">Что внутри платформы</a>
   </div>
 </section>
 
+
+<!-- ── КАРТА ПЛАТФОРМЫ: обзор всех модулей одним экраном -->
+<section class="section block-card" id="platform">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-purple">Платформа целиком</div>
+      <h2 class="sh df">Восемь модулей.<br>Одно рабочее пространство.</h2>
+      <p class="sh-sub">Управление людьми обычно разложено по разным сервисам: встречи в календаре, задачи в трекере, цели в таблице, развитие в документе, аналитика нигде. OneOnOne собирает это в одну систему с общими данными.</p>
+    </div>
+    <div class="pmap">
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(59,130,246,.12);color:rgb(59,130,246)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+        <h4>Встречи 1-на-1</h4>
+        <p>Регулярные и спонтанные, повестка, заметки, история по каждому сотруднику.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(34,197,94,.12);color:rgb(34,197,94)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h4>Задачи</h4>
+        <p>Постановка прямо на встрече, подзадачи, совместные задачи с общим прогрессом.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(245,158,11,.12);color:rgb(245,158,11)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg></div>
+        <h4>Цели и OKR</h4>
+        <p>Личные и командные цели, прогресс в процентах, обсуждение и обратная связь.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(124,58,237,.12);color:rgb(124,58,237)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+        <h4>Развитие</h4>
+        <p>Матрица навыков, разрыв между текущим и целевым уровнем, планы роста.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(236,72,153,.12);color:rgb(236,72,153)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg></div>
+        <h4>Настроение</h4>
+        <p>Анонимные чек-ины, тренды по команде, предупреждение о риске выгорания.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(6,182,212,.12);color:rgb(6,182,212)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <h4>Аналитика</h4>
+        <p>Дашборд руководителя, зоны риска, вовлечённость, экспорт в Excel и CSV.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(99,102,241,.12);color:rgb(99,102,241)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a7 7 0 0 0-7 7c0 2.4 1.2 4.5 3 5.7V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.3c1.8-1.2 3-3.3 3-5.7a7 7 0 0 0-7-7z"/><line x1="9" y1="22" x2="15" y2="22"/></svg></div>
+        <h4>ONE AI и Пит</h4>
+        <p>Стратегический анализ команды и ежедневный помощник сотрудника — раздельно.</p>
+      </div>
+      <div class="pmap-card">
+        <div class="pmap-ico" style="background:rgba(148,163,184,.12);color:rgb(148,163,184)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.8 1.8"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7L12 19"/></svg></div>
+        <h4>Интеграции</h4>
+        <p>Google Calendar, Яндекс Календарь, вебхуки. Bitrix24 — в планах.</p>
+        <span class="pmap-tag">Часть — скоро</span>
+      </div>
+    </div>
+  </div>
+</section>
 
 <style>
 /* ── IPHONE 17 PRO MAX MOCKUP */
@@ -540,31 +706,31 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 <!-- ── MEETINGS -->
 <section class="section bg-blue block-card" id="features">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-badge badge-blue">01 — Встречи</div>
-      <h2 class="sh df">Умное расписание.<br>Без лишних усилий.</h2>
-      <p class="sh-sub">AI подбирает оптимальное время, отправляет уведомления и сохраняет историю каждой встречи.</p>
+    <div>
+      <div class="sec-badge badge-blue">01 — Встречи 1-на-1</div>
+      <h2 class="sh df">Ни один сотрудник<br>не выпадает из виду.</h2>
+      <p class="sh-sub">Платформа сама считает, сколько дней прошло с последнего разговора с каждым человеком, и предупреждает руководителя, когда пауза затянулась. История встреч, повестка и договорённости остаются в карточке сотрудника, а не в личных заметках.</p>
     </div>
-    <div class="panel panel-blue reveal" style="margin-top:48px">
+    <div class="panel panel-blue" style="margin-top:48px">
       <div class="panel-grid">
         <div class="panel-text">
           <ul class="flist">
             <li>
               <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
-              <div><h4>AI-слоты</h4><p>Анализирует загрузку команды и предлагает лучшее время для встречи автоматически.</p></div>
+              <div><h4>Подбор времени по загрузке команды</h4><p>AI смотрит календари и уже назначенные встречи и предлагает три конкретных слота вместо переписки о том, кому когда удобно.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
-              <div><h4>Заметки по встрече<span class="soon-tag">Скоро: автотранскрипция</span></h4><p>Ключевые моменты встречи фиксируются в заметках, история всегда под рукой. Автоматическая транскрипция записи готовится к запуску.</p></div>
+              <div><h4>Повестка и заметки в одном месте<span class="soon-tag">Скоро: автотранскрипция</span></h4><p>Повестка готовится до встречи, договорённости фиксируются во время. На следующей встрече видно, что обсуждали в прошлый раз. Автоматическая транскрипция записи готовится к запуску.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-blue"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
-              <div><h4>Умные уведомления</h4><p>Напоминания участникам, алерт если встреча не проводилась больше N дней.</p></div>
+              <div><h4>Задачи и цели прямо из разговора</h4><p>Договорились на встрече — задача и цель создаются здесь же и попадают в общий трекинг, а не теряются до следующего раза.</p></div>
             </li>
           </ul>
           <div class="stat-pill">
-            <div class="stat-n c-blue"><span data-count="94" data-suffix="%">0%</span></div>
-            <div class="stat-d">команд проводят встречи вовремя</div>
+            <div class="stat-n c-blue">100%</div>
+            <div class="stat-d">Заполненность истории встреч по сотруднику: платформа хранит все разговоры без ограничения по срокам</div>
           </div>
         </div>
         <div class="panel-vis">
@@ -595,12 +761,12 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 <!-- ── TASKS -->
 <section class="section bg-green block-card" id="how">
   <div class="wrap">
-    <div class="reveal">
+    <div>
       <div class="sec-badge badge-green">02 — Задачи</div>
-      <h2 class="sh df">Задачи рождаются<br>прямо на встрече.</h2>
-      <p class="sh-sub">Ставьте задачи во время разговора, AI декомпозирует их на шаги и отслеживает выполнение.</p>
+      <h2 class="sh df">Договорённость<br>становится задачей.</h2>
+      <p class="sh-sub">Задача ставится в момент разговора и сразу связана с сотрудником, встречей и целью. AI разбивает крупную задачу на конкретные шаги, а совместные задачи считают общий прогресс по частям каждого исполнителя.</p>
     </div>
-    <div class="panel panel-green reveal" style="margin-top:48px">
+    <div class="panel panel-green" style="margin-top:48px">
       <div class="panel-grid">
         <div class="panel-vis" style="order:-1">
           <div class="mock">
@@ -626,15 +792,15 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
           <ul class="flist">
             <li>
               <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
-              <div><h4>Создание на встрече</h4><p>Пит слушает разговор и предлагает оформить задачу прямо в ходе встречи.</p></div>
+              <div><h4>Связь с контекстом</h4><p>У задачи видно, на какой встрече она появилась и к какой цели относится — через месяц не нужно вспоминать, откуда она взялась.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg></div>
-              <div><h4>AI-декомпозиция</h4><p>Большие задачи автоматически разбиваются на конкретные подшаги с дедлайнами.</p></div>
+              <div><h4>AI-декомпозиция</h4><p>Из формулировки «подготовить квартальный отчёт» AI собирает четыре конкретных шага с дедлайнами — не общие советы, а действия по этой задаче.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-green"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
-              <div><h4>Авто-завершение</h4><p>Задача закрывается автоматически когда выполнены все подзадачи.</p></div>
+              <div><h4>Совместная работа</h4><p>Несколько исполнителей, у каждого своя часть и свой статус. Общий прогресс задачи считается из частей автоматически.</p></div>
             </li>
           </ul>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="sec-link c-green">Попробовать</a>
@@ -644,15 +810,82 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   </div>
 </section>
 
+<!-- ── 03 ЦЕЛИ И OKR: формат «до / после», а не список функций -->
+<section class="section block-card" id="goals">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-blue" style="background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.25);color:#FCD34D">03 — Цели и OKR</div>
+      <h2 class="sh df">Цели живут в системе,<br>а не в таблице.</h2>
+      <p class="sh-sub">Личные и командные цели с измеримым прогрессом, обсуждением и обратной связью. Платформа сама подсказывает, когда заявленный статус расходится с фактическим прогрессом и сроком.</p>
+    </div>
+    <div class="ba">
+      <div class="ba-col before">
+        <div class="ba-lbl">Как обычно</div>
+        <ul class="ba-list">
+          <li>Цели записаны в таблице, к которой возвращаются раз в квартал</li>
+          <li>Прогресс существует только в голове сотрудника</li>
+          <li>Руководитель узнаёт о срыве, когда срок уже прошёл</li>
+          <li>Обратная связь по цели теряется в переписке</li>
+          <li>Связи между целью, задачами и встречами нет</li>
+        </ul>
+      </div>
+      <div class="ba-arrow"></div>
+      <div class="ba-col after">
+        <div class="ba-lbl">В OneOnOne</div>
+        <ul class="ba-list">
+          <li>Цель видна обеим сторонам на каждой встрече 1-на-1</li>
+          <li>Прогресс в процентах, обновляется по ходу работы</li>
+          <li>Платформа предупреждает: по сроку и прогрессу статус ближе к «под риском»</li>
+          <li>Обратная связь и комментарии хранятся вместе с целью</li>
+          <li>Цель связана с задачами и обсуждается на встречах</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 04 РАЗВИТИЕ: формат «поток шагов» — показывает процесс, а не набор пунктов -->
+<section class="section block-card" id="development">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-purple" style="background:rgba(124,58,237,.12);border-color:rgba(124,58,237,.28);color:#C4B5FD">04 — Развитие сотрудников</div>
+      <h2 class="sh df">План развития,<br>который не пылится.</h2>
+      <p class="sh-sub">Навыки по единой шкале от новичка до эксперта, видимый разрыв между текущим и целевым уровнем, конкретные шаги роста и история изменений уровня. Руководитель видит матрицу компетенций всей команды, сотрудник — свой путь.</p>
+    </div>
+    <div class="flow">
+      <div class="flow-step done">
+        <div class="flow-n">01</div>
+        <h4>Фиксируем уровень</h4>
+        <p>Навык из справочника, текущий и целевой уровень по общей шкале 1–5. Оценки сопоставимы между сотрудниками, а не «сильный» и «средний» на глаз.</p>
+      </div>
+      <div class="flow-step done">
+        <div class="flow-n">02</div>
+        <h4>Видим разрыв</h4>
+        <p>Разница между текущим и целевым уровнем показана числом. Платформа сама предлагает закрыть разрыв, если по навыку нет ни одного шага плана.</p>
+      </div>
+      <div class="flow-step done">
+        <div class="flow-n">03</div>
+        <h4>Составляем шаги</h4>
+        <p>Шаги плана со сроками и статусами. Часть предлагает AI: как развивать конкретный навык с текущего уровня до целевого, а не абстрактное «пройти курс».</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-n">04</div>
+        <h4>Отслеживаем прогресс</h4>
+        <p>История уровня по датам, прогресс плана из статусов шагов, обзор компетенций по всей команде для руководителя и HR.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ── MOOD -->
 <section class="section bg-pink block-card">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-badge badge-pink">03 — Настроение</div>
-      <h2 class="sh df">Знайте как себя<br>чувствует команда.</h2>
-      <p class="sh-sub">Ежедневные опросы, AI-анализ трендов, алерты при снижении — держите руку на пульсе команды.</p>
+    <div>
+      <div class="sec-badge badge-pink">05 — Настроение команды</div>
+      <h2 class="sh df">Увидеть выгорание<br>до заявления об уходе.</h2>
+      <p class="sh-sub">Короткий анонимный чек-ин в конце дня, тренд по команде и предупреждение руководителю, когда настроение конкретного человека падает несколько дней подряд. Ответы участников анонимны: тимлид получает обобщённую картину, а не чужие формулировки.</p>
     </div>
-    <div class="panel panel-pink reveal" style="margin-top:48px">
+    <div class="panel panel-pink" style="margin-top:48px">
       <div class="panel-grid">
         <div class="panel-text">
           <ul class="flist">
@@ -703,12 +936,12 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 <!-- ── ANALYTICS -->
 <section class="section bg-cyan block-card">
   <div class="wrap">
-    <div class="reveal">
-      <div class="sec-badge badge-cyan">04 — Аналитика</div>
-      <h2 class="sh df">Дашборд тимлида.<br>Всё в одном месте.</h2>
-      <p class="sh-sub">Частота встреч, зоны риска, активность за 12 недель. Принимайте решения на основе данных.</p>
+    <div>
+      <div class="sec-badge badge-cyan">06 — Аналитика команды</div>
+      <h2 class="sh df">Готовый отчёт по команде<br>за полминуты.</h2>
+      <p class="sh-sub">Руководителю не нужно сводить данные из календаря, трекера и переписок: частота встреч, закрытые и просроченные задачи, динамика настроения и зоны риска по каждому сотруднику собираются автоматически. Выгрузка в Excel — для отчёта HR или руководству.</p>
     </div>
-    <div class="panel panel-cyan reveal" style="margin-top:48px">
+    <div class="panel panel-cyan" style="margin-top:48px">
       <div class="panel-grid">
         <div class="panel-vis" style="order:-1">
           <div style="display:flex;flex-direction:column;gap:16px;width:100%;max-width:340px">
@@ -741,19 +974,59 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
           <ul class="flist">
             <li>
               <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
-              <div><h4>Зоны риска</h4><p>Пит выделяет сотрудников с которыми давно не было встреч или снизилась продуктивность.</p></div>
+              <div><h4>Зоны риска по каждому</h4><p>Платформа помечает сотрудников, с которыми давно не было встречи, у кого копятся незакрытые задачи или падает настроение — и объясняет, по какому именно признаку.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></div>
-              <div><h4>Экспорт CSV</h4><p>Все данные можно выгрузить для отчётов HR или руководству. Без ограничений.</p></div>
+              <div><h4>Выгрузка для HR и руководства</h4><p>Excel-отчёт с карточками по каждому участнику и сводкой по команде. Готовый документ, а не сырой дамп таблицы.</p></div>
             </li>
             <li>
               <div class="flist-icon icon-cyan"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
-              <div><h4>Учёт рабочего времени</h4><p>Кнопки прихода и ухода. Статистика присутствия в дашборде тимлида.</p></div>
+              <div><h4>Учёт рабочего времени</h4><p>Отметки прихода и ухода, статистика присутствия и переработок в дашборде руководителя.</p></div>
             </li>
           </ul>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="sec-link c-cyan">Открыть дашборд</a>
         </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 07 ДВА AI: ONE AI и Пит разграничены, чтобы их не путали -->
+<section class="section block-card" id="ai">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-purple">07 — Два AI, разные задачи</div>
+      <h2 class="sh df">ONE AI и Пит —<br>это не одно и то же.</h2>
+      <p class="sh-sub">В платформе два AI-интерфейса, и они решают разные задачи. Один работает со стратегией руководителя, другой — с ежедневной работой сотрудника. Их не нужно выбирать: они дополняют друг друга.</p>
+    </div>
+    <div class="ai2">
+      <div class="ai2-card one">
+        <div class="ai2-name">ONE AI</div>
+        <div class="ai2-role">Стратегический анализ для руководителя</div>
+        <p class="ai2-lead">Разбирает состояние команды на данных платформы и готовит выводы, к которым руководитель иначе шёл бы часами вручную. Работает разделами: каждый отвечает на отдельный управленческий вопрос.</p>
+        <ul class="ai2-list">
+          <li>Анализ команды: проблемы, риски и вовлечённость за период</li>
+          <li>Анализ конкретного сотрудника: эффективность и динамика</li>
+          <li>Черновик обратной связи по задачам, встречам, целям и развитию</li>
+          <li>Подготовка к встрече 1-на-1: темы и вопросы под конкретного человека</li>
+          <li>Анализ настроения и целей, рекомендации по управлению</li>
+          <li>Кросс-командная аналитика по организации — на старших тарифах</li>
+        </ul>
+        <div class="ai2-who"><b>Кому:</b> руководителю, HR, руководству компании. Отвечает на вопрос «что происходит с командой и что с этим делать».</div>
+      </div>
+      <div class="ai2-card pit">
+        <div class="ai2-name">Пит</div>
+        <div class="ai2-role">Ежедневный помощник в работе</div>
+        <p class="ai2-lead">Оперативный ассистент внутри рабочего дня: точка входа в знания компании, задачи и поддержку. Работает в вебе, в приложении и в Telegram-боте — там, где человек уже находится.</p>
+        <ul class="ai2-list">
+          <li>Диалог о своих задачах, встречах и команде на обычном языке</li>
+          <li>Поиск по базе знаний компании: регламенты, инструкции, ответы</li>
+          <li>Действия из чата: создать задачу, назначить встречу, поставить статус</li>
+          <li>Подсказки при подготовке повестки и шаги по конкретной задаче</li>
+          <li>Обращение в поддержку прямо из диалога</li>
+        </ul>
+        <div class="ai2-who"><b>Кому:</b> любому сотруднику, каждый день. Отвечает на вопрос «как мне сделать то, что нужно сейчас».</div>
       </div>
     </div>
   </div>
@@ -764,21 +1037,21 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   <div class="wrap">
     <div class="pit-grid">
       <div class="reveal">
-        <div class="sec-badge badge-purple">05 — AI-ассистент</div>
-        <h2 class="sh df">Познакомьтесь<br>с <em style="color:#5AA0FF;font-style:italic">Питом.</em></h2>
-        <p class="sh-sub">Персональный AI на базе Claude. Знает вашу команду, встречи и задачи — просто спросите на русском.</p>
+        <div class="sec-badge badge-purple">08 — Пит в работе</div>
+        <h2 class="sh df">Пит отвечает<br><em style="color:#5AA0FF;font-style:italic">там, где вы.</em></h2>
+        <p class="sh-sub">Веб, мобильное приложение и Telegram-бот — один и тот же помощник с одним контекстом. Спрашивайте на русском, английском или казахском: интерфейс и ответы идут на выбранном языке.</p>
         <ul class="flist" style="margin-top:32px">
           <li>
             <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96-.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24A2.5 2.5 0 0 1 9.5 2"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96-.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24A2.5 2.5 0 0 0 14.5 2"/></svg></div>
-            <div><h4>Знает контекст команды</h4><p>Пит помнит все встречи, задачи и настроение каждого участника команды.</p></div>
+            <div><h4>Знает ваш рабочий контекст</h4><p>Видит ваши встречи, задачи, цели и команду — не нужно объяснять, о ком и о чём идёт речь.</p></div>
           </li>
           <li>
             <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <div><h4>Общение на русском</h4><p>Спрашивайте как коллегу: «Кто давно не встречался?» или «Создай задачу Максиму».</p></div>
+            <div><h4>Три языка интерфейса</h4><p>Русский, английский и казахский — в вебе, в приложении и в боте. Язык хранится в профиле и применяется везде, включая письма и уведомления.</p></div>
           </li>
           <li>
             <div class="flist-icon icon-purple"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg></div>
-            <div><h4>Действует, не только отвечает</h4><p>Пит создаёт встречи, ставит задачи, анализирует тренды — не просто информирует.</p></div>
+            <div><h4>Действует, а не только отвечает</h4><p>Создаёт задачи и встречи, меняет статусы, оформляет обращение в поддержку — прямо из диалога.</p></div>
           </li>
         </ul>
         <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="sec-link c-purple">Попробовать Пита</a>
@@ -931,36 +1204,132 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   </div>
 </section>
 
-<!-- TESTIMONIALS -->
-<section class="section block-card">
+<!-- ── 09 РОЛИ: продукт полезен всем участникам процесса -->
+<section class="section block-card" id="roles">
   <div class="wrap">
-    <div class="reveal" style="text-align:center">
-      <h2 class="sh df" style="margin:0 auto">Тимлиды о нас</h2>
-      <p class="sh-sub" style="margin:14px auto 0">Сотни команд уже используют OneOnOne для роста.</p>
+    <div>
+      <div class="sec-badge badge-blue">09 — Кому подходит</div>
+      <h2 class="sh df">Одна платформа —<br>четыре разных выгоды.</h2>
+      <p class="sh-sub">Управление людьми затрагивает не только руководителя. В OneOnOne у каждой роли свой вход и своя польза, но данные общие — поэтому картина у всех сходится.</p>
     </div>
-    <div class="tgrid reveal">
-      <div class="tcard">
-        <p class="tquote">«Пит напомнил мне что я не говорил с Сашей уже 3 недели. Оказалось он выгорал. Теперь такое не проходит мимо.»</p>
-        <div class="tauth">
-          <div class="tav" style="background:#3B82F6">Д</div>
-          <div><div class="tname">Дмитрий К.</div><div class="trole">Tech Lead · Fintech стартап</div></div>
-        </div>
+    <div class="roles">
+      <div class="role">
+        <div class="role-top">Руководитель</div>
+        <h4>Прозрачное управление</h4>
+        <ul class="role-list">
+          <li>Видит по каждому: когда была встреча, что в работе, какое настроение</li>
+          <li>Получает предупреждение о риске, а не узнаёт постфактум</li>
+          <li>Готовится к 1-на-1 по подсказкам ONE AI за минуты</li>
+          <li>Отчёт по команде собирается сам, без ручной сводки</li>
+        </ul>
       </div>
-      <div class="tcard">
-        <p class="tquote">«Раньше я вёл встречи в Notion и забывал задачи. Теперь всё автоматически. Команда стала заметно продуктивнее.»</p>
-        <div class="tauth">
-          <div class="tav" style="background:#EC4899">А</div>
-          <div><div class="tname">Анна С.</div><div class="trole">Engineering Manager · e-commerce</div></div>
-        </div>
+      <div class="role">
+        <div class="role-top">Сотрудник</div>
+        <h4>Понятные ожидания</h4>
+        <ul class="role-list">
+          <li>Знает свои цели и видит прогресс по ним, а не догадывается</li>
+          <li>Получает обратную связь регулярно и в письменном виде</li>
+          <li>Имеет план развития с конкретными шагами и сроками</li>
+          <li>Спрашивает Пита о регламентах вместо поиска по чатам</li>
+        </ul>
       </div>
-      <div class="tcard">
-        <p class="tquote">«Mood tracking — это killer feature. Я вижу тренды заранее и успеваю поговорить с человеком до того как проблема станет серьёзной.»</p>
-        <div class="tauth">
-          <div class="tav" style="background:#10B981">П</div>
-          <div><div class="tname">Павел Р.</div><div class="trole">CTO · Product компания</div></div>
-        </div>
+      <div class="role">
+        <div class="role-top">HR</div>
+        <h4>Данные вместо ощущений</h4>
+        <ul class="role-list">
+          <li>Вовлечённость и настроение в динамике по командам</li>
+          <li>Матрица компетенций: где в организации дефицит навыков</li>
+          <li>Сигналы риска выгорания и оттока до заявления об уходе</li>
+          <li>Выгрузка в Excel для отчётности и обзоров</li>
+        </ul>
+      </div>
+      <div class="role">
+        <div class="role-top">Руководство компании</div>
+        <h4>Единая картина</h4>
+        <ul class="role-list">
+          <li>Состояние всех команд в одном месте, без сбора отчётов</li>
+          <li>Кросс-командная аналитика по организации в ONE AI</li>
+          <li>Видно, как цели команд связаны с задачами и результатом</li>
+          <li>Управление доступами и настройками из админ-панели</li>
+        </ul>
       </div>
     </div>
+  </div>
+</section>
+
+<!-- ── 10 ИНТЕГРАЦИИ: честно разделены реализованные и запланированные -->
+<section class="section block-card" id="integrations">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-green">10 — Интеграции</div>
+      <h2 class="sh df">Встраивается<br>в вашу инфраструктуру.</h2>
+      <p class="sh-sub">Не нужно отказываться от инструментов, к которым привыкла команда. OneOnOne подключается к тому, что уже используется, и остаётся единым местом для управления людьми.</p>
+    </div>
+    <div class="integr">
+      <div class="integr-group live">
+        <div class="integr-head"><span class="integr-dot"></span><span>Работает сейчас</span></div>
+        <ul class="integr-items">
+          <li><b>Google Calendar</b><small>Двусторонняя синхронизация встреч 1-на-1: событие появляется в рабочем календаре и обновляется при переносе.</small></li>
+          <li><b>Яндекс Календарь</b><small>Та же синхронизация для компаний на Яндекс 360. Подключение — по OAuth, без ручного экспорта файлов.</small></li>
+          <li><b>Вебхуки</b><small>События платформы уходят в ваши системы: можно связать с внутренним порталом, чатом или BI-контуром.</small></li>
+          <li><b>Вход через Яндекс ID и Telegram</b><small>Сотрудник входит корпоративным аккаунтом, отдельные пароли заводить не обязательно.</small></li>
+          <li><b>Telegram-бот</b><small>Повестка, задачи, чек-ин настроения и Пит — прямо в мессенджере, без открытия платформы.</small></li>
+        </ul>
+      </div>
+      <div class="integr-group soon">
+        <div class="integr-head"><span class="integr-dot"></span><span>В планах</span></div>
+        <ul class="integr-items">
+          <li><b>Bitrix24 — скоро</b><small>Синхронизация сотрудников и задач с корпоративным порталом.</small></li>
+          <li><b>Автотранскрипция встреч — скоро</b><small>Расшифровка записи и автоматические заметки. Функция в разработке и пока не входит ни в один тариф.</small></li>
+          <li><b>SSO и SAML — по договору</b><small>Единый корпоративный вход для крупных организаций на тарифе Enterprise.</small></li>
+          <li><b>Кастомные интеграции — по запросу</b><small>Подключение к внутренним системам компании обсуждается отдельно.</small></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── 11 КОНКРЕТИКА вместо неподтверждённых отзывов -->
+<section class="section block-card" id="facts">
+  <div class="wrap">
+    <div>
+      <div class="sec-badge badge-cyan">11 — Что это даёт на практике</div>
+      <h2 class="sh df">Конкретно,<br>без общих слов.</h2>
+      <p class="sh-sub">Вместо обещаний «мощной аналитики» — что именно платформа делает и на каких данных.</p>
+    </div>
+    <div class="facts">
+      <div class="fact">
+        <div class="fact-n">30 сек</div>
+        <h4>Отчёт по команде вместо ручной сводки</h4>
+        <p>Руководитель открывает дашборд и видит частоту встреч, закрытые и просроченные задачи, динамику настроения и зоны риска по каждому. Раньше это собиралось из календаря, трекера и переписок вручную.</p>
+      </div>
+      <div class="fact">
+        <div class="fact-n">3 канала</div>
+        <h4>Один помощник в вебе, приложении и Telegram</h4>
+        <p>Пит работает с одним и тем же контекстом во всех трёх интерфейсах. Чек-ин настроения и повестку можно закрыть из мессенджера, не открывая платформу.</p>
+      </div>
+      <div class="fact">
+        <div class="fact-n">1–5</div>
+        <h4>Единая шкала навыков вместо оценок на глаз</h4>
+        <p>Уровни от новичка до эксперта одинаковы для всех сотрудников, поэтому компетенции сопоставимы между людьми и командами, а разрыв до целевого уровня виден числом.</p>
+      </div>
+      <div class="fact">
+        <div class="fact-n">Заранее</div>
+        <h4>Предупреждение о риске выгорания</h4>
+        <p>Платформа отслеживает, что настроение сотрудника падает несколько дней подряд, с ним давно не было встречи или копятся незакрытые задачи — и сообщает руководителю с указанием причины.</p>
+      </div>
+      <div class="fact">
+        <div class="fact-n">3 языка</div>
+        <h4>Русский, английский, казахский</h4>
+        <p>Язык хранится в профиле и применяется во всех клиентах: веб, приложение, Telegram-бот, письма и push-уведомления. Сотрудники одной команды могут работать на разных языках.</p>
+      </div>
+      <div class="fact">
+        <div class="fact-n">Без лимита</div>
+        <h4>История не исчезает</h4>
+        <p>Встречи, заметки, задачи, цели и история уровней навыков хранятся без ограничения по срокам на всех платных тарифах — включая младший.</p>
+      </div>
+    </div>
+    <p class="facts-note">Мы не публикуем отзывы и кейсы, которых пока нет: продукт молодой. Вместо этого описываем ровно то, что платформа уже умеет — проверить можно на бесплатном пробном периоде, без ввода платёжных данных.</p>
   </div>
 </section>
 
@@ -968,9 +1337,9 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 <section class="cta-section block-card" id="ctaSection">
   <div class="lift-door lift-l"></div>
   <div class="lift-door lift-r"></div>
-  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>Начните за 5 минут</div>
-  <h2 class="cta-h df cta-child" style="opacity:0">Первая встреча —<br>через пять минут.</h2>
-  <p class="cta-sub cta-child" style="opacity:0">Никаких сложных настроек. Создайте команду и пригласите коллег прямо сейчас.</p>
+  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>14 дней бесплатно, без карты</div>
+  <h2 class="cta-h df cta-child" style="opacity:0">Соберите команду<br>за пять минут.</h2>
+  <p class="cta-sub cta-child" style="opacity:0">Создайте команду, пригласите коллег и работайте со встречами, задачами, целями и развитием в одном месте. Настройка не требуется.</p>
   <div class="cta-btns cta-child" style="opacity:0">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc btn-xl">Создать аккаунт →</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost btn-lg">Войти</a>
@@ -985,16 +1354,23 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </div>
       <div class="footer-cols">
         <div class="footer-col">
-          <a href="/#features">Возможности</a>
+          <a href="/#platform">Платформа</a>
+          <a href="/#roles">Кому подходит</a>
           <a href="/pricing">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
         <div class="footer-col">
-          <a href="/features">1-on-1 встречи</a>
-          <a href="/pit">AI-ассистент Пит</a>
-          <a href="/tasks">Трекинг задач</a>
+          <a href="/features">Встречи 1-на-1</a>
+          <a href="/tasks">Задачи</a>
+          <a href="/#goals">Цели и OKR</a>
+          <a href="/#development">Развитие</a>
+        </div>
+        <div class="footer-col">
           <a href="/analytics">Аналитика команды</a>
+          <a href="/#ai">ONE AI и Пит</a>
+          <a href="/pit">Пит подробно</a>
+          <a href="/#integrations">Интеграции</a>
         </div>
         <div class="footer-col">
           <a href="/faq">FAQ</a>
@@ -1049,7 +1425,16 @@ window.scrollTo(0,0)
 
 // ── HERO ENTRANCE
 ;(function(){
-  if(typeof anime==='undefined')return
+  // Текст и кнопки hero скрыты в CSS (opacity:0) и показываются анимацией.
+  // Если anime.js не загрузился — а он приходит со стороннего CDN, который у
+  // части аудитории недоступен, — без этой ветки весь hero оставался пустым:
+  // ни заголовка, ни подзаголовка, ни кнопок. Показываем всё сразу.
+  if(typeof anime==='undefined'){
+    ['heroBadge','heroH','heroSub','heroBtns'].forEach(function(id){
+      var el=document.getElementById(id); if(el) el.style.opacity='1'
+    })
+    return
+  }
   anime.timeline({easing:'easeOutExpo'})
     .add({targets:'#heroBadge',opacity:[0,1],translateY:[12,0],duration:700,delay:200})
     .add({targets:'#heroH',opacity:[0,1],translateY:[40,0],duration:1000},'-=400')
@@ -1092,8 +1477,11 @@ if(ctaSec){
       ctaObs.unobserve(ctaSec)
       ctaSec.classList.add('elevator-open')
       setTimeout(()=>{
+        const kids=ctaSec.querySelectorAll('.cta-child')
         if(typeof anime!=='undefined'){
-          anime({targets:ctaSec.querySelectorAll('.cta-child'),opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})
+          anime({targets:kids,opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})
+        }else{
+          kids.forEach(k=>{k.style.opacity='1'})   // без anime.js текст CTA обязан быть виден
         }
       },1200)
     })
@@ -1102,20 +1490,32 @@ if(ctaSec){
 }
 
 // ── PANEL STAGGER
-const pio=new IntersectionObserver(e=>{
-  e.forEach(entry=>{
-    if(!entry.isIntersecting)return
-    pio.unobserve(entry.target)
-    const items=entry.target.querySelectorAll('.flist li,.tcard,.pcard')
-    if(items.length&&typeof anime!=='undefined'){
-      anime({targets:items,opacity:[0,1],translateY:[24,0],duration:700,delay:anime.stagger(80),easing:'easeOutExpo'})
-    }
+// Лёгкая ступенчатая анимация — только внутри панелей с перечнем возможностей.
+// Блочных fade-in по всей странице больше нет: новые секции свёрстаны статично,
+// чтобы движение не заменяло содержание.
+if(typeof anime!=='undefined'){
+  const pio=new IntersectionObserver(e=>{
+    e.forEach(entry=>{
+      if(!entry.isIntersecting)return
+      pio.unobserve(entry.target)
+      const items=entry.target.querySelectorAll('.flist li')
+      if(items.length){
+        anime({targets:items,opacity:[0,1],translateY:[24,0],duration:700,delay:anime.stagger(80),easing:'easeOutExpo'})
+      }
+    })
+  },{threshold:.05})
+  document.querySelectorAll('.panel').forEach(g=>{
+    g.querySelectorAll('.flist li').forEach(i=>{i.style.opacity='0'})
+    pio.observe(g)
   })
-},{threshold:.05})
-document.querySelectorAll('.panel,.tgrid,.pgrid').forEach(g=>{
-  g.querySelectorAll('.flist li,.tcard,.pcard').forEach(i=>{i.style.opacity='0'})
-  pio.observe(g)
-})
+}
+</script>
+<script>
+// Если anime.js не загрузился (CDN недоступен), ничего не должно остаться скрытым.
+if(typeof anime==='undefined'){
+  document.querySelectorAll('.cta-child').forEach(el=>{el.style.opacity='1'})
+  document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el=>el.classList.add('vis'))
+}
 </script>
 <script src="/store.js"></script>
 <script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){n.classList.toggle("scrolled",window.scrollY>12)};window.addEventListener("scroll",s,{passive:true});s();})();</script>

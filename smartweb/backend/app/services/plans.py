@@ -200,7 +200,7 @@ PLAN_SEED = [
         "sort_order": 5,
         "limits": {
             "public": True, "billing_period": "contract",
-            "price_label": "от 1 000 000 ₽/год, цена договорная",
+            "price_label": "Цена по запросу",
             "users_label": "без ограничений",
             "max_teams": None, "max_users": None, "max_members_per_team": None, "min_seats": 30,
             "max_meetings_per_month": None, "history_days": None,
