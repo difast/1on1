@@ -23,6 +23,7 @@
 <link rel="icon" type="image/png" href="/favicon.png">
 <link rel="stylesheet" href="/styles.css">
 <style>
+.doc-block{overflow:visible}
 .doc-wrap{max-width:880px;margin:0 auto;padding:40px 24px 90px}
 .doc-hero{text-align:center;padding:80px 20px 8px}
 .doc-nav{position:sticky;top:0;display:flex;flex-wrap:wrap;gap:8px;padding:14px 4px;background:rgba(20,20,22,.85);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);z-index:20}
@@ -48,6 +49,7 @@
   <a href="/#platform" onclick="closeMM()">Платформа</a>
   <a href="/#roles" onclick="closeMM()">Кому подходит</a>
   <a href="/pricing" onclick="closeMM()">Тарифы</a>
+  <a href="/faq" onclick="closeMM()">FAQ</a>
   <div class="mm-btns">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost" onclick="closeMM()">Войти</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc" onclick="closeMM()">Начать →</a>
@@ -61,7 +63,8 @@
   <div class="nav-links">
     <a href="/#platform">Платформа</a>
     <a href="/#roles">Кому подходит</a>
-    <a href="/pricing" style="color:#fff">Тарифы</a>
+    <a href="/pricing">Тарифы</a>
+    <a href="/faq">FAQ</a>
   </div>
   <div class="nav-r">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost">Войти</a>
@@ -72,6 +75,7 @@
   </button>
 </nav>
 
+<section class="block-card doc-block">
 <div class="doc-hero">
   <div class="sec-badge badge-purple" style="margin:0 auto 16px">Документы</div>
   <h1 class="sh df" style="font-size:clamp(32px,4.5vw,52px);text-align:center;margin:0 auto">Правовые документы</h1>
@@ -120,28 +124,39 @@
 <!-- LEGAL:GENERATED:END -->
 </div>
 
+</section>
+
 <footer class="site-footer">
   <div class="footer-top">
     <div>
-      <div class="footer-logo"><div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span></div>
+      <div class="footer-logo">
+        <div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
+      </div>
       <div class="footer-cols">
         <div class="footer-col">
           <a href="/#platform">Платформа</a>
-          <a href="/pricing" style="color:#fff">Тарифы</a>
+          <a href="/#roles">Кому подходит</a>
+          <a href="/pricing">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
         <div class="footer-col">
-          <a href="/features">1-on-1 встречи</a>
-          <a href="/pit">AI-ассистент Пит</a>
-          <a href="/tasks">Трекинг задач</a>
+          <a href="/features">Встречи 1-на-1</a>
+          <a href="/tasks">Задачи</a>
+          <a href="/#goals">Цели и OKR</a>
+          <a href="/#development">Развитие</a>
+        </div>
+        <div class="footer-col">
           <a href="/analytics">Аналитика команды</a>
+          <a href="/#ai">ONE AI и Пит</a>
+          <a href="/pit">Пит подробно</a>
+          <a href="/#integrations">Интеграции</a>
         </div>
         <div class="footer-col">
           <a href="/faq">FAQ</a>
           <a href="/about">О продукте</a>
           <a href="/documents">Документы</a>
-</div>
+        </div>
       </div>
     </div>
     <div class="footer-right">
@@ -159,10 +174,12 @@
       </a>
     </div>
   </div>
+
   <hr class="footer-divider">
+
   <div class="footer-bottom">
     <div class="footer-contacts">
-      <span>Связаться с нами</span>
+      <span>OneOnOne — AI-платформа для управления и развития команд</span>
       <a href="mailto:support@oneononehq.com">support@oneononehq.com</a>
     </div>
     <div class="footer-socials">
@@ -177,6 +194,7 @@
       </span>
     </div>
   </div>
+
   <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 

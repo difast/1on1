@@ -25,18 +25,40 @@
 </head>
 <body>
 <!-- NAV -->
+<!-- MOBILE MENU -->
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/#platform" onclick="closeMM()">Платформа</a>
+  <a href="/#roles" onclick="closeMM()">Кому подходит</a>
+  <a href="/pricing" onclick="closeMM()">Тарифы</a>
+  <a href="/faq" onclick="closeMM()">FAQ</a>
+  <div class="mm-btns">
+    <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost" onclick="closeMM()">Войти</a>
+    <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc" onclick="closeMM()">Начать →</a>
+  </div>
+</div>
+
+<!-- NAV -->
 <nav>
   <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
     <a href="/#platform">Платформа</a>
     <a href="/#roles">Кому подходит</a>
     <a href="/pricing">Тарифы</a>
+    <a href="/faq" style="color:#fff">FAQ</a>
   </div>
   <div class="nav-r">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost">Войти</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc">Начать →</a>
   </div>
+  <button class="burger" id="burger" aria-label="Меню" onclick="toggleMM()">
+    <span></span><span></span><span></span>
+  </button>
 </nav>
+
+<script>
+function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
+function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
+</script>
 <section class="page-hero block-card" style="margin-top:20px">
   <div class="page-eyebrow">Поддержка</div>
   <h1 class="page-h1">Частые <em>вопросы</em></h1>
@@ -45,7 +67,7 @@
 <section class="section block-card ">
   <div class="wrap">
 <div class="faq-wrap reveal" style="padding-top:8px;padding-bottom:40px">
-  <div class="faq-item"><button class="faq-q">Что такое OneOnOne?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div class="faq-a"><p>Это платформа для тимлидов, которая помогает проводить регулярные 1-on-1 встречи, ставить задачи, отслеживать настроение команды и принимать решения на основе аналитики. В центре — AI-ассистент Пит на базе Claude.</p></div></div>
+  <div class="faq-item"><button class="faq-q">Что такое OneOnOne?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div class="faq-a"><p>AI-платформа для управления, развития и повышения эффективности команд. В одном месте: встречи 1-на-1, задачи, цели и OKR, развитие сотрудников, настроение и аналитика команды. Плюс два AI-интерфейса — ONE AI для стратегического анализа руководителю и Пит для ежедневной работы сотрудника.</p></div></div>
   <div class="faq-item"><button class="faq-q">Нужно ли платить, чтобы начать?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div class="faq-a"><p>Нет. Начать можно с пробного периода: 14 дней без карты. На тарифе Start доступны все его функции, на Team пробный период ограничен — ONE AI и Развитие на нём недоступны. Дальше Start стоит 1 490 ₽ в месяц (до 5 пользователей), Team — 49 990 ₽ в год (до 30 пользователей).</p></div></div>
   <div class="faq-item"><button class="faq-q">Кто такой Пит и как он работает?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div class="faq-a"><p>Пит — это AI-ассистент, который знает контекст вашей команды: встречи, задачи и настроение. Он не просто отвечает на вопросы, а выполняет действия — создаёт встречи, ставит задачи, предлагает слоты для переноса и подсвечивает зоны риска. Общаться можно на русском.</p></div></div>
   <div class="faq-item"><button class="faq-q">Безопасны ли мои данные?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button><div class="faq-a"><p>Данные команды используются только внутри вашего рабочего пространства и для ответов Пита. Мы не обучаем модели на ваших данных и не передаём их третьим лицам. Любую аналитику можно выгрузить в CSV.</p></div></div>
@@ -76,21 +98,28 @@
       <div class="footer-cols">
         <div class="footer-col">
           <a href="/#platform">Платформа</a>
+          <a href="/#roles">Кому подходит</a>
           <a href="/pricing">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
         <div class="footer-col">
-          <a href="/features">1-on-1 встречи</a>
-          <a href="/pit">AI-ассистент Пит</a>
-          <a href="/tasks">Трекинг задач</a>
+          <a href="/features">Встречи 1-на-1</a>
+          <a href="/tasks">Задачи</a>
+          <a href="/#goals">Цели и OKR</a>
+          <a href="/#development">Развитие</a>
+        </div>
+        <div class="footer-col">
           <a href="/analytics">Аналитика команды</a>
+          <a href="/#ai">ONE AI и Пит</a>
+          <a href="/pit">Пит подробно</a>
+          <a href="/#integrations">Интеграции</a>
         </div>
         <div class="footer-col">
           <a href="/faq">FAQ</a>
           <a href="/about">О продукте</a>
           <a href="/documents">Документы</a>
-</div>
+        </div>
       </div>
     </div>
     <div class="footer-right">
@@ -108,10 +137,12 @@
       </a>
     </div>
   </div>
+
   <hr class="footer-divider">
+
   <div class="footer-bottom">
     <div class="footer-contacts">
-      <span>OneOnOne — AI-платформа для 1-on-1 встреч</span>
+      <span>OneOnOne — AI-платформа для управления и развития команд</span>
       <a href="mailto:support@oneononehq.com">support@oneononehq.com</a>
     </div>
     <div class="footer-socials">
@@ -126,6 +157,7 @@
       </span>
     </div>
   </div>
+
   <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>

@@ -173,6 +173,7 @@
   <a href="/#platform" onclick="closeMM()">Платформа</a>
   <a href="/#roles" onclick="closeMM()">Кому подходит</a>
   <a href="/pricing" onclick="closeMM()">Тарифы</a>
+  <a href="/faq" onclick="closeMM()">FAQ</a>
   <div class="mm-btns">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost" onclick="closeMM()">Войти</a>
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc" onclick="closeMM()">Начать →</a>
@@ -186,6 +187,7 @@
     <a href="/#platform">Платформа</a>
     <a href="/#roles">Кому подходит</a>
     <a href="/pricing" style="color:#fff">Тарифы</a>
+    <a href="/faq">FAQ</a>
   </div>
   <div class="nav-r">
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost">Войти</a>
@@ -196,7 +198,8 @@
   </button>
 </nav>
 
-<!-- HERO -->
+<!-- HERO + КАРТОЧКИ ТАРИФОВ: один блок стопки -->
+<section class="block-card">
 <div class="pr-hero">
   <div class="sec-badge badge-purple" style="margin:0 auto 16px">Тарифы</div>
   <h1 class="sh df" style="font-size:clamp(36px,5vw,64px);text-align:center;max-width:640px;margin:0 auto">Простые и честные<br>тарифы</h1>
@@ -342,8 +345,10 @@
   </div>
 </section>
 
+</section>
+
 <!-- CALCULATOR -->
-<section class="calc-section">
+<section class="calc-section block-card">
   <div class="wrap">
     <div style="text-align:center">
       <h2 class="sh df" style="margin:0 auto">Калькулятор стоимости</h2>
@@ -509,25 +514,34 @@
 <footer class="site-footer">
   <div class="footer-top">
     <div>
-      <div class="footer-logo"><div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span></div>
+      <div class="footer-logo">
+        <div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
+      </div>
       <div class="footer-cols">
         <div class="footer-col">
           <a href="/#platform">Платформа</a>
-          <a href="/pricing" style="color:#fff">Тарифы</a>
+          <a href="/#roles">Кому подходит</a>
+          <a href="/pricing">Тарифы</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
           <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
         <div class="footer-col">
-          <a href="/features">1-on-1 встречи</a>
-          <a href="/pit">AI-ассистент Пит</a>
-          <a href="/tasks">Трекинг задач</a>
+          <a href="/features">Встречи 1-на-1</a>
+          <a href="/tasks">Задачи</a>
+          <a href="/#goals">Цели и OKR</a>
+          <a href="/#development">Развитие</a>
+        </div>
+        <div class="footer-col">
           <a href="/analytics">Аналитика команды</a>
+          <a href="/#ai">ONE AI и Пит</a>
+          <a href="/pit">Пит подробно</a>
+          <a href="/#integrations">Интеграции</a>
         </div>
         <div class="footer-col">
           <a href="/faq">FAQ</a>
           <a href="/about">О продукте</a>
           <a href="/documents">Документы</a>
-</div>
+        </div>
       </div>
     </div>
     <div class="footer-right">
@@ -545,10 +559,12 @@
       </a>
     </div>
   </div>
+
   <hr class="footer-divider">
+
   <div class="footer-bottom">
     <div class="footer-contacts">
-      <span>Связаться с нами</span>
+      <span>OneOnOne — AI-платформа для управления и развития команд</span>
       <a href="mailto:support@oneononehq.com">support@oneononehq.com</a>
     </div>
     <div class="footer-socials">
@@ -563,6 +579,7 @@
       </span>
     </div>
   </div>
+
   <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 
