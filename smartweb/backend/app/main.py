@@ -311,6 +311,8 @@ async def _telegram_polling_loop():
         log.warning("polling: deleteWebhook error: %s", e)
 
     offset: int | None = None
+    fails = 0          # подряд идущих сбоев getUpdates
+    alive = False      # первый успешный ответ уже залогирован
     from app.services import telegram_bot
     while True:
         try:
@@ -318,9 +320,19 @@ async def _telegram_polling_loop():
         except asyncio.CancelledError:
             raise
         except Exception as e:
-            log.warning("polling: getUpdates error: %s", e)
-            await asyncio.sleep(5)  # backoff, чтобы не долбить API при сбое
+            fails += 1
+            # Логируем первый сбой и затем каждый двадцатый: при полной
+            # недоступности Bot API прежний код писал одну и ту же строку
+            # тысячи раз и топил в ней остальные логи.
+            if fails == 1 or fails % 20 == 0:
+                log.warning("polling: getUpdates error (%s подряд): %s", fails, e)
+            # Пауза растёт с числом сбоев, но не больше 60 секунд.
+            await asyncio.sleep(min(5 * fails, 60))
             continue
+        if not alive or fails:
+            log.info("polling: getUpdates ok, апдейтов в пачке: %s", len(updates))
+            alive = True
+        fails = 0
         for upd in updates:
             offset = int(upd["update_id"]) + 1
             db = SessionLocal()
