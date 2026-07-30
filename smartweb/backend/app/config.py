@@ -46,10 +46,9 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""    # напр. oneononehq_bot (без @) — публично
     telegram_webhook_secret: str = ""  # секрет для проверки заголовка вебхука
     app_web_url: str = ""              # базовый URL веба для ссылок из бота
-    # Режим получения апдейтов от Telegram: "webhook" (по умолчанию) или
-    # "polling". polling полезен, когда входящий трафик до сервера фильтруется
-    # и Telegram не может достучаться до вебхука — бот сам ходит за апдейтами.
-    telegram_mode: str = "webhook"     # webhook | polling
+    # Публичный адрес приложения бота (smartweb/telegram-bot) — именно на него
+    # Telegram шлёт апдейты. Приём вебхука живёт только там, у API его нет.
+    bot_public_url: str = ""           # напр. https://bot.example.com
 
     # --- AI Gateway (OpenAI-совместимый шлюз, напр. Timeweb AI Gateway). ---
     # Единый провайдер и единая модель для ВСЕХ AI-функций продукта (Пит, ONE AI,

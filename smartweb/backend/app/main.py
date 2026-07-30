@@ -242,96 +242,6 @@ async def _mood_summary_loop():
         await asyncio.sleep(60)
 
 
-async def _telegram_webhook_setup():
-    """Самопроверка вебхука при старте (режим webhook).
-
-    Бот молчал в проде именно из-за этого шага: вебхук нужно было один раз
-    зарегистрировать вручную админским запросом, и после смены домена или
-    пересоздания сервиса регистрация терялась — Telegram переставал доставлять
-    апдейты, а сервер об этом никак не сообщал. Теперь при каждом старте
-    сверяем фактический URL из getWebhookInfo с ожидаемым и перерегистрируем
-    вебхук, если он не совпал (setWebhook идемпотентен)."""
-    import logging
-    from app.config import settings
-    from app.services import telegram as tg
-    log = logging.getLogger("telegram.webhook")
-
-    if (settings.telegram_mode or "webhook").lower() != "webhook":
-        return
-    if not tg.bot_token():
-        return
-    web = (settings.app_web_url or "").rstrip("/")
-    if not web:
-        log.warning("APP_WEB_URL не задан — вебхук Telegram не зарегистрирован")
-        return
-
-    await asyncio.sleep(5)  # дать серверу подняться, иначе Telegram упрётся в 502
-    expected = f"{web}/api/telegram/webhook"
-    try:
-        info = await asyncio.to_thread(tg.get_webhook_info)
-        current = ((info or {}).get("result") or {}).get("url") or ""
-        last_error = ((info or {}).get("result") or {}).get("last_error_message") or ""
-        if current == expected and not last_error:
-            log.info("webhook уже зарегистрирован: %s", current)
-            return
-        log.warning("перерегистрируем вебхук: было %r, ошибка %r", current, last_error)
-        res = await asyncio.to_thread(tg.set_webhook, expected)
-        log.info("setWebhook -> %s", res)
-    except Exception as e:
-        log.warning("проверка вебхука не удалась: %s", e)
-
-
-async def _telegram_polling_loop():
-    """Long polling для Telegram — альтернатива вебхуку (TELEGRAM_MODE=polling).
-    Нужен, когда входящий трафик до сервера фильтруется и Telegram не может
-    достучаться до вебхука: бот сам ходит за апдейтами через getUpdates.
-
-    Перед стартом ОБЯЗАТЕЛЬНО снимаем вебхук (deleteWebhook) — иначе getUpdates
-    отдаёт 409, а сам факт двойного канала грозил бы двойной обработкой.
-    Каждый апдейт обрабатываем в отдельной сессии БД тем же handle_update, что
-    и вебхук, — общая логика, без дублирования обработчиков."""
-    import logging
-    from app.config import settings
-    from app.database import SessionLocal
-    from app.services import telegram as tg
-    log = logging.getLogger("telegram.polling")
-
-    if (settings.telegram_mode or "webhook").lower() != "polling":
-        return
-    if not tg.bot_token():
-        log.warning("TELEGRAM_MODE=polling, но TELEGRAM_BOT_TOKEN не задан — polling не запущен")
-        return
-
-    await asyncio.sleep(5)  # дать серверу подняться
-    # Снимаем вебхук (без сброса накопленной очереди — обработаем её).
-    try:
-        res = await asyncio.to_thread(tg.delete_webhook, False)
-        log.info("polling: deleteWebhook -> %s", res)
-    except Exception as e:
-        log.warning("polling: deleteWebhook error: %s", e)
-
-    offset: int | None = None
-    from app.services import telegram_bot
-    while True:
-        try:
-            updates = await asyncio.to_thread(tg.get_updates, offset, 25)
-        except asyncio.CancelledError:
-            raise
-        except Exception as e:
-            log.warning("polling: getUpdates error: %s", e)
-            await asyncio.sleep(5)  # backoff, чтобы не долбить API при сбое
-            continue
-        for upd in updates:
-            offset = int(upd["update_id"]) + 1
-            db = SessionLocal()
-            try:
-                await asyncio.to_thread(telegram_bot.handle_update, db, upd)
-            except Exception as e:
-                log.warning("polling: handle_update error: %s", e)
-            finally:
-                db.close()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _seed_billing()
@@ -339,18 +249,13 @@ async def lifespan(app: FastAPI):
     mood_task = asyncio.create_task(_mood_reminder_loop())
     mood_summary_task = asyncio.create_task(_mood_summary_loop())
     billing_task = asyncio.create_task(_billing_sweep_loop())
-    # Polling запускается сам, только если TELEGRAM_MODE=polling (иначе выходит
-    # сразу и остаётся штатный режим вебхука).
-    tg_poll_task = asyncio.create_task(_telegram_polling_loop())
-    # В режиме webhook — сверяем регистрацию вебхука у Telegram и чиним её.
-    tg_hook_task = asyncio.create_task(_telegram_webhook_setup())
+    # Апдейты Telegram принимает отдельное приложение smartweb/telegram-bot —
+    # ни вебхука, ни polling в API нет (один владелец входящего канала).
     yield
     task.cancel()
     mood_task.cancel()
     mood_summary_task.cancel()
     billing_task.cancel()
-    tg_poll_task.cancel()
-    tg_hook_task.cancel()
 
 app = FastAPI(title="Smart 1-on-1", version="0.1.3", lifespan=lifespan)
 
@@ -387,7 +292,7 @@ _AUTH_PUBLIC_EXACT = {
     "/api/auth/register", "/api/auth/login", "/api/auth/admin-login",
     "/api/auth/forgot-password", "/api/auth/reset-password",
     "/api/auth/confirm-email", "/api/auth/resend-confirmation",
-    "/api/telegram/config", "/api/telegram/webhook",
+    "/api/telegram/config",
     "/api/auth/yandex/config", "/api/auth/yandex/authorize", "/api/auth/yandex/callback",
     "/api/telegram/miniapp-auth", "/api/telegram/callback", "/api/telegram/link",
     "/api/billing/plans", "/api/billing/webhooks/cloudpayments",
