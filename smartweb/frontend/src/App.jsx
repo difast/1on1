@@ -11,7 +11,7 @@ import ConfirmEmailPage from './components/ConfirmEmailPage'
 import ResetPasswordPage from './components/ResetPasswordPage'
 import IntegrationCallbackPage from './components/IntegrationCallbackPage'
 import YandexAuthCallbackPage from './components/YandexAuthCallbackPage'
-import { authMe, getUser, detectRegion } from './api/client'
+import { authMe, getUser } from './api/client'
 import i18n, { setExplicitLang } from './i18n'
 
 const TG_SESSION_KEY = 'tg_session'
@@ -142,7 +142,9 @@ function App() {
       i18n.changeLanguage(appUser.preferred_language)
       setExplicitLang(appUser.preferred_language)
     }
-    detectRegion(appUser.id).catch(() => {})
+    // Определение региона по IP отключено заглушкой на бэкенде: отображения
+    // цены по региону в продукте нет, и запрос на каждый вход не нужен.
+    // Вернуть вместе с региональными ценами: detectRegion(appUser.id)
   }, [appUser?.id])
 
   const handleOnboardingComplete = (user) => {

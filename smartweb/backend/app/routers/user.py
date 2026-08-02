@@ -5,6 +5,7 @@ from typing import List, Optional
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from app.database import get_db
+from app.config import settings
 from app.utils.auth import require_admin, require_user
 from app.models.user import User
 from app.models.team import Team
@@ -493,12 +494,17 @@ def release_push_token(user_id: int, data: PushTokenReq, db: Session = Depends(g
 
 @router.post("/{user_id}/detect-region")
 def detect_region(user_id: int, request: Request, db: Session = Depends(get_db)):
-    """Определить регион по IP и сохранить как ПРЕДПОЛАГАЕМЫЙ (Этап 5). Не меняет
-    ничего в интерфейсе — значение используется позже в биллинге. Резолвим IP
-    только если регион ещё не сохранён (кэш), чтобы не дёргать гео на каждый вход."""
+    """Определить регион по IP и сохранить как ПРЕДПОЛАГАЕМЫЙ.
+
+    ЗАГЛУШКА: отображения цены по региону в продукте нет — валюта и цена у всех
+    одинаковые. Пока функции нет, эндпоинт отвечает пустым значением и в базу
+    ничего не пишет: определять регион ради неиспользуемого поля незачем.
+    Включается вместе с региональными ценами (REGION_PRICING_ENABLED=1)."""
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    if not settings.region_pricing_enabled:
+        return {"detected_region": None, "cached": False, "stub": True}
     if user.detected_region:
         return {"detected_region": user.detected_region, "cached": True}
     try:
