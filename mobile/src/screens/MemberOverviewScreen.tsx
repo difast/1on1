@@ -16,6 +16,7 @@ import { MeetingItem } from '../components/MeetingItem';
 import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { NotificationBell } from '../components/NotificationBell';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function MemberOverviewScreen() {
   const { t } = useI18n();
@@ -307,7 +308,7 @@ export default function MemberOverviewScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
@@ -639,7 +640,7 @@ export default function MemberOverviewScreen() {
         {upcomingMeetings.length === 0 && otherMembers.length === 0 && notes.length === 0 && (
           <EmptyState icon="people-outline" title={t('ui.komanda_pusta')} description={t('ui.zhdem_kogda_timlid_dobavit_uchastnikov')} />
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

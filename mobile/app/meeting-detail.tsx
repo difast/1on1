@@ -15,6 +15,7 @@ import {
 } from '../src/lib/api';
 import { getCoaching, buildMeetingFeedback } from '../src/lib/coaching';
 import type { AppColors } from '../src/constants/colors';
+import { KeyboardAwareScroll } from '../src/components/KeyboardAvoider';
 
 // Подпись статуса — ключ словаря, текст собирается на языке интерфейса.
 const STATUS_KEY: Record<string, string> = {
@@ -180,7 +181,7 @@ export default function MeetingDetailScreen() {
 
   if (loading || !meeting) {
     return (
-      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.loadingWrap}><ActivityIndicator color={colors.accent} size="large" /></View>
       </SafeAreaView>
     );
@@ -212,7 +213,7 @@ export default function MeetingDetailScreen() {
   const canConfirm = canAct && ['requested', 'pending', 'scheduled'].includes(meeting.status);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
@@ -222,7 +223,7 @@ export default function MeetingDetailScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScroll contentContainerStyle={styles.content}>
         {/* Main card */}
         <View style={styles.card}>
           <View style={styles.avatarRow}>
@@ -414,7 +415,7 @@ export default function MeetingDetailScreen() {
             </TouchableOpacity>
           </View>
         </View>
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }
@@ -447,7 +448,7 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   },
   callBtnText: { fontSize: 16, fontWeight: '700', color: '#fff' },
   actions: { gap: 10 },
-  actionRow: { flexDirection: 'row', gap: 10 },
+  actionRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
   confirmBtn: {
     flex: 1, backgroundColor: c.success, borderRadius: 12, paddingVertical: 13,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6,

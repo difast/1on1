@@ -10,6 +10,7 @@ import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
 import { authChangePassword } from '../lib/api';
 import type { AppColors } from '../constants/colors';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function SettingsScreen() {
   const { t } = useI18n();
@@ -65,12 +66,12 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>{t('ui.nastroyki')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScroll contentContainerStyle={styles.content}>
         {/* Appearance */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>{t('ui.oformlenie')}</Text>
@@ -215,7 +216,7 @@ export default function SettingsScreen() {
             </View>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

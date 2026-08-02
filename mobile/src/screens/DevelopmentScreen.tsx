@@ -23,6 +23,7 @@ import {
   getTeamDevelopment, getTeams, createGoal,
   type Development, type DevSkill, type DevStep, type DevRecommendation, type TeamDevelopment,
 } from '../lib/api';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 const LEVELS = [1, 2, 3, 4, 5];
 const CATEGORIES = ['technical', 'product', 'communication', 'management'];
@@ -267,7 +268,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
   const openRecs = dev.recommendations.filter(r => r.status === 'new');
 
   return (
-    <ScrollView contentContainerStyle={styles.content}
+    <KeyboardAwareScroll contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.accent} />}>
       <Text style={styles.intro}>{t('ui.vash_put_razvitiya_navyki_s_urovnyami')}</Text>
 
@@ -358,7 +359,7 @@ function MemberDevelopment({ meId, colors }: { meId: number; colors: AppColors }
           <Text style={[styles.muted, { marginTop: 6 }]}>{t('ui.progress_i_status_vedutsya_vo_vkladke')}</Text>
         </View>
       ))}
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -486,7 +487,7 @@ export default function DevelopmentScreen() {
   const router = useRouter();
   const isLead = (activeRole ?? user?.role) === 'team_lead';
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={{ width: 28 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />

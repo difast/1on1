@@ -11,6 +11,7 @@ import { useAuth } from '../context/auth';
 import { getNotifications, markRead, markAllRead } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
+import { EmptyState } from '../components/EmptyState';
 
 const TYPE_ICON: Record<string, { name: keyof typeof Ionicons.glyphMap; color: string }> = {
   broadcast:          { name: 'megaphone-outline',     color: '#ef4444' },
@@ -119,7 +120,7 @@ export default function NotificationsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+      <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.header}><Text style={styles.headerTitle}>{t('ui.uvedomleniya')}</Text></View>
         <ActivityIndicator style={{ marginTop: 48 }} color={colors.accent} />
       </SafeAreaView>
@@ -127,7 +128,7 @@ export default function NotificationsScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity onPress={goBack} style={{ marginRight: 8 }}>
@@ -157,10 +158,11 @@ export default function NotificationsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
         contentContainerStyle={notifications.length === 0 ? styles.emptyContainer : { paddingBottom: 24 }}
         ListEmptyComponent={
-          <View style={styles.emptyWrap}>
-            <Ionicons name="notifications-off-outline" size={48} color={colors.textMuted} />
-            <Text style={styles.emptyTitle}>{t('ui.net_uvedomleniy')}</Text>
-          </View>
+          <EmptyState
+            icon="notifications-off-outline"
+            title={t('ui.net_uvedomleniy')}
+            description={t('ui.uvedomleniya_o_vstrechah_zadachah_i_celyah_poya')}
+          />
         }
         renderItem={({ item: n }) => {
           const isBroadcast = n.is_broadcast;

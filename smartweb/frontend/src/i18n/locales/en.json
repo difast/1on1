@@ -1409,7 +1409,7 @@
     "administrator": "Administrator",
     "izmenit_sotrudnika": "Edit employee",
     "dobavit_sotrudnika": "Add employee",
-    "skopirovat_ssylku": "Copy link",
+    "skopirovat_ssylku": "Copy the code",
     "provozhu_1_on_1_vstrechi_upravlyayu": "I run 1-on-1s and manage the team and its tasks",
     "uchastvuyu_vo_vstrechah_rabotayu_nad_zadachami": "I take part in meetings and work on tasks",
     "vybrat_drugoe": "Choose another",
@@ -1947,7 +1947,11 @@
     "polzovatel_id_zaprosil_udalenie_akkaunta": "User {{v1}} ({{v2}}, id={{v3}}) requested account deletion.",
     "dobro_pozhalovat_imya": "Welcome, {{v1}}",
     "itog": "Outcome",
-    "cena_po_zaprosu": "Price on request"
+    "cena_po_zaprosu": "Price on request",
+    "priglasit": "Invite",
+    "priglasit_v_komandu": "Invite to the team",
+    "novyy_kod_sdelaet_staryy_nedeystvitelnym": "A new code invalidates the previous one — anyone holding the old code will not be able to join.",
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Notifications about meetings, tasks and goals will appear here."
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",

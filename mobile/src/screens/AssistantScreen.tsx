@@ -76,7 +76,7 @@ export default function AssistantScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         {router.canGoBack() && (
           <TouchableOpacity onPress={() => router.back()} style={{ marginRight: 8 }}>

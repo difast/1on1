@@ -6,6 +6,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/theme';
 import type { AppColors } from '../../constants/colors';
+import { KeyboardAvoider } from '../KeyboardAvoider';
 
 export interface PickItem { id: number; label: string; sub?: string; }
 
@@ -42,6 +43,9 @@ export function EntityPicker({
       </TouchableOpacity>
 
       <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        {/* Поле поиска в центре экрана: без подъёма клавиатура закрывала список
+            результатов, выбирать было не из чего. */}
+        <KeyboardAvoider>
         <Pressable style={styles.backdrop} onPress={() => setOpen(false)}>
           <Pressable style={styles.sheet} onPress={() => {}}>
             <View style={styles.searchRow}>
@@ -76,6 +80,7 @@ export function EntityPicker({
             />
           </Pressable>
         </Pressable>
+        </KeyboardAvoider>
       </Modal>
     </View>
   );

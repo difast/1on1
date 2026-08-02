@@ -11,6 +11,7 @@ import type { AppColors } from '../constants/colors';
 import { getBillingMe } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 type Status = 'loading' | 'error' | 'ready';
 
 // Запасные подписи: обычно название и цену тарифа отдаёт бэкенд
@@ -77,7 +78,7 @@ export default function TariffScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
@@ -94,7 +95,7 @@ export default function TariffScreen() {
       )}
 
       {status === 'ready' && (
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScroll contentContainerStyle={styles.content}>
           <View style={styles.planCard}>
             <Text style={styles.planLabel}>{t('ui.tekuschiy_tarif')}</Text>
             <Text style={styles.planName}>{planName}</Text>
@@ -174,7 +175,7 @@ export default function TariffScreen() {
           </View>
 
           <Text style={styles.note}>{t('ui.avtotranskripciya_vstrech_poka_nedostupna_skor')}</Text>
-        </ScrollView>
+        </KeyboardAwareScroll>
       )}
     </SafeAreaView>
   );

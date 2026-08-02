@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../../context/theme';
 import type { AppColors } from '../../constants/colors';
 import { getManagers, createManager, updateManager, deleteManager, StaffMember } from '../../lib/api';
+import { KeyboardAwareScroll } from '../KeyboardAvoider';
 
 // Вкладка «Сотрудники» на мобильном (задача 2): полный CRUD над тем же реестром,
 // что и в вебе. Роли согласованы с ролевой моделью продукта. Без эмодзи.
@@ -78,7 +79,7 @@ export function EmployeesTab() {
   const field = (k: keyof FormState, v: string) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <View style={{ gap: 16 }}>
+    <KeyboardAwareScroll contentContainerStyle={{ gap: 16 }}>
       {/* Форма */}
       <View style={styles.card}>
         <Text style={styles.cardTitle}>{editingId ? t('ui.izmenit_sotrudnika') : t('ui.dobavit_sotrudnika')}</Text>
@@ -144,7 +145,7 @@ export function EmployeesTab() {
           </View>
         ))
       )}
-    </View>
+    </KeyboardAwareScroll>
   );
 }
 

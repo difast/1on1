@@ -18,6 +18,7 @@ import { TaskAssignees } from '../components/TaskAssignees';
 import { ClosedTodayCard } from '../components/ClosedTodayCard';
 import { ActivityIndicator } from 'react-native';
 import { parseFeatureLock, openPricing } from '../lib/featureLock';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 const ALL_STATUSES: TaskStatus[] = ['in_progress', 'blocked', 'review', 'done'];
@@ -231,7 +232,7 @@ export default function LeadTasksScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
@@ -343,7 +344,7 @@ export default function LeadTasksScreen() {
             })}
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

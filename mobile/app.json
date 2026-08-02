@@ -2,7 +2,7 @@
   "expo": {
     "name": "OneOnOne",
     "slug": "oneonone",
-    "version": "1.0.0",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "oneonone",
@@ -22,7 +22,8 @@
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.oneonone.app"
+      "bundleIdentifier": "com.oneonone.app",
+      "buildNumber": "30"
     },
     "android": {
       "adaptiveIcon": {
@@ -30,7 +31,7 @@
         "backgroundColor": "#13389E"
       },
       "package": "com.oneonone.app",
-      "versionCode": 2,
+      "versionCode": 30,
       "googleServicesFile": "./google-services.json",
       "useNextNotificationsApi": true,
       "permissions": ["POST_NOTIFICATIONS"]

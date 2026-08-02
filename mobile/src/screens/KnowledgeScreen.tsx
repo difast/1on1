@@ -9,6 +9,7 @@ import type { AppColors } from '../constants/colors';
 import { getKnowledgeArticles } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 type Status = 'loading' | 'error' | 'ready';
 
 export default function KnowledgeScreen() {
@@ -36,7 +37,7 @@ export default function KnowledgeScreen() {
   }, []);
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
@@ -49,7 +50,7 @@ export default function KnowledgeScreen() {
       {status === 'error' && <View style={styles.center}><Text style={styles.muted}>{t('ui.ne_udalos_zagruzit_poprobuyte_pozzhe')}</Text></View>}
 
       {status === 'ready' && (
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScroll contentContainerStyle={styles.content}>
           {articles.length === 0 ? (
             <View style={styles.center}>
               <Ionicons name="book-outline" size={40} color={colors.textMuted} />
@@ -73,7 +74,7 @@ export default function KnowledgeScreen() {
               );
             })
           )}
-        </ScrollView>
+        </KeyboardAwareScroll>
       )}
     </SafeAreaView>
   );

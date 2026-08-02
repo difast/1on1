@@ -18,6 +18,7 @@ import { Status3DIcon } from '../components/Status3DIcon';
 import { TaskAssignees } from '../components/TaskAssignees';
 import { ClosedTodayCard } from '../components/ClosedTodayCard';
 import { parseFeatureLock, openPricing } from '../lib/featureLock';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 type TaskStatus = 'in_progress' | 'blocked' | 'review' | 'done';
 
@@ -171,7 +172,7 @@ export default function MemberTasksScreen() {
         )}
       </View>
 
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
@@ -250,7 +251,7 @@ export default function MemberTasksScreen() {
             ))}
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

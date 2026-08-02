@@ -1417,7 +1417,7 @@
     "administrator": "Администратор",
     "izmenit_sotrudnika": "Изменить сотрудника",
     "dobavit_sotrudnika": "Добавить сотрудника",
-    "skopirovat_ssylku": "Скопировать ссылку",
+    "skopirovat_ssylku": "Скопировать код",
     "provozhu_1_on_1_vstrechi_upravlyayu": "Провожу 1-on-1 встречи, управляю командой и задачами",
     "uchastvuyu_vo_vstrechah_rabotayu_nad_zadachami": "Участвую во встречах, работаю над задачами",
     "vybrat_drugoe": "Выбрать другое",
@@ -1955,7 +1955,11 @@
     "polzovatel_id_zaprosil_udalenie_akkaunta": "Пользователь {{v1}} ({{v2}}, id={{v3}}) запросил удаление аккаунта.",
     "dobro_pozhalovat_imya": "Добро пожаловать, {{v1}}",
     "itog": "Итог",
-    "cena_po_zaprosu": "Цена по запросу"
+    "cena_po_zaprosu": "Цена по запросу",
+    "priglasit": "Пригласить",
+    "priglasit_v_komandu": "Пригласить в команду",
+    "novyy_kod_sdelaet_staryy_nedeystvitelnym": "Новый код сделает прежний недействительным — участники со старым кодом присоединиться не смогут.",
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Уведомления о встречах, задачах и целях появятся здесь."
   },
   "survey": {
     "q.usage.title": "Как вы планируете использовать OneOnOne?",

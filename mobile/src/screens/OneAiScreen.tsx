@@ -15,6 +15,7 @@ import { Spinner } from '../components/Spinner';
 import { getOneAiSections, oneAiQuery, getTeams, getTeam, type OneAiSection } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 // Подсказка раздела — из словаря по идентификатору раздела.
 const sectionHint = (t: (k: string) => string, id: string) => t(`oneaiSections.${id}`);
 const NEEDS_MEMBER = ['employee_analysis', 'feedback_prep'];
@@ -84,7 +85,7 @@ export default function OneAiScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={{ width: 28 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
@@ -94,7 +95,7 @@ export default function OneAiScreen() {
       </View>
 
       {sections === null ? <Spinner /> : (
-        <ScrollView contentContainerStyle={styles.content}>
+        <KeyboardAwareScroll contentContainerStyle={styles.content}>
           <Text style={styles.intro}>{t('ui.strategicheskiy_ai_analiz_po_vashim_dannym')}</Text>
 
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
@@ -171,7 +172,7 @@ export default function OneAiScreen() {
           {!result && !loading && !locked && (
             <EmptyState icon="sparkles-outline" title={t('ui.one_ai_gotov_k_analizu')} description={t('ui.vyberite_razdel_i_zaprosite_razvernutyy_analiz')} />
           )}
-        </ScrollView>
+        </KeyboardAwareScroll>
       )}
     </SafeAreaView>
   );
