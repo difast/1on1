@@ -41,6 +41,50 @@ _TIMEOUT = 10.0
 _MAX_DELIVERIES_KEPT = 50    # сколько последних доставок хранить на подписку
 
 
+class UnsafeWebhookUrl(ValueError):
+    """Адрес вебхука ведёт во внутреннюю сеть — доставлять туда нельзя."""
+
+
+def validate_target_url(url: str) -> str:
+    """Проверить, что адрес вебхука указывает наружу, а не внутрь инфраструктуры.
+
+    Вебхук — это запрос, который наш сервер делает по адресу, заданному
+    пользователем. Без проверки тимлид может указать внутренний адрес
+    (http://169.254.169.254/ — служба метаданных облака, http://127.0.0.1:8000/ —
+    наш же API, http://10.x.x.x/ — соседние службы), и сервер сходит туда от
+    своего имени, изнутри периметра. Код ответа при этом виден в журнале
+    доставок. Это классический SSRF, поэтому внутренние адреса отклоняем.
+
+    Проверяем и имя, и все адреса, в которые оно разрешается: имя вида
+    internal.example.com может указывать на 127.0.0.1.
+    """
+    import ipaddress
+    import socket
+    from urllib.parse import urlparse
+
+    parsed = urlparse((url or "").strip())
+    if parsed.scheme not in ("http", "https"):
+        raise UnsafeWebhookUrl("URL должен начинаться с http:// или https://")
+    host = parsed.hostname
+    if not host:
+        raise UnsafeWebhookUrl("В адресе не указан хост")
+
+    try:
+        infos = socket.getaddrinfo(host, parsed.port or (443 if parsed.scheme == "https" else 80),
+                                   proto=socket.IPPROTO_TCP)
+    except OSError:
+        raise UnsafeWebhookUrl("Не удалось определить адрес хоста")
+
+    for info in infos:
+        ip = ipaddress.ip_address(info[4][0])
+        if (ip.is_private or ip.is_loopback or ip.is_link_local
+                or ip.is_reserved or ip.is_multicast or ip.is_unspecified):
+            raise UnsafeWebhookUrl(
+                "Адрес указывает на внутреннюю сеть. Укажите публично доступный URL."
+            )
+    return url.strip()
+
+
 def sign(secret: str, body: bytes) -> str:
     """HMAC-SHA256(secret, body) в base64 — значение заголовка подписи."""
     digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).digest()

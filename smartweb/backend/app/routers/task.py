@@ -18,6 +18,9 @@ from app.services import entitlements
 from app.services import ai_service
 from app.services import task_collab
 from app.models.task_activity import TaskActivity, TaskComment
+from app.utils.auth import require_user
+from app.utils import ratelimit
+from app.utils.validation import ShortStr, OptShortStr, TextStr, OptTextStr, EntityId
 
 router = APIRouter()
 
@@ -97,21 +100,30 @@ def _recompute_task_from_assignees(task: Task):
 # ── AI advice (декомпозиция задач) ───────────────────────────────────────────
 
 class TaskAIRequest(PydanticBaseModel):
-    title: str
-    status: Optional[str] = None
-    due_date: Optional[str] = None
-    role: str = "member"
+    # Заголовок задачи уходит в промпт модели — ограничиваем длину, иначе один
+    # запрос уносит в AI Gateway сколько угодно текста за наш счёт.
+    title: ShortStr
+    status: OptShortStr = None
+    due_date: OptShortStr = None
+    role: ShortStr = "member"
     user_id: Optional[int] = None
 
 
 @router.post("/ai-advice")
-def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db)):
+def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db),
+                       current=Depends(require_user)):
+    """AI-декомпозиция задачи.
+
+    Требует авторизации. Раньше user_id приходил в теле запроса, и при его
+    отсутствии тарифная проверка пропускалась целиком — эндпоинт обращался к
+    платной модели для любого анонимного клиента.
+    """
+    ratelimit.check(ratelimit.AI_USER, str(current.id))
+    ratelimit.check(ratelimit.AI_USER_HOURLY, str(current.id))
     # Тарифное ограничение (Задача 3): AI-декомпозиция доступна не на всех тарифах.
     # Если функция недоступна — вернём мягкое 402 feature_locked (фронт покажет
     # понятное сообщение со ссылкой на тарифы), а не техническую ошибку.
-    if data.user_id is not None:
-        user = db.query(User).filter(User.id == data.user_id).first()
-        entitlements.require_feature(db, user, "ai_decomposition")
+    entitlements.require_feature(db, current, "ai_decomposition")
 
     role_ctx = "тимлида" if data.role == "lead" else "участника команды"
     due_ctx = f" Срок: {data.due_date}." if data.due_date else ""
@@ -387,14 +399,14 @@ def update_assignee(assignee_id: int, data: AssigneeStatusUpdate, db: Session = 
 # ── Совместная работа над задачей (39.2 / 39.3) ───────────────────────────────
 
 class AssigneeAddIn(PydanticBaseModel):
-    user_id: int
-    actor_id: int
-    part_description: Optional[str] = None
+    user_id: EntityId
+    actor_id: EntityId
+    part_description: OptTextStr = None
 
 
 class CommentIn(PydanticBaseModel):
-    author_id: int
-    body: str
+    author_id: EntityId
+    body: TextStr
 
 
 def _require_lead(db: Session, task: Task, actor_id: int):

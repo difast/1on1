@@ -7,18 +7,26 @@ from datetime import datetime
 from app.database import get_db
 from app.models.knowledge import KnowledgeArticle
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, LongTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 router = APIRouter()
 
 class ArticleCreate(BaseModel):
-    team_id: Optional[int] = None
-    author_id: Optional[int] = None
-    title: str
-    content: Optional[str] = None
+    team_id: OptEntityId = None
+    author_id: OptEntityId = None
+    title: ShortStr
+    content: OptLongTextStr = None
     is_admin: bool = False
 
 class ArticleUpdate(BaseModel):
-    title: Optional[str] = None
-    content: Optional[str] = None
+    title: OptShortStr = None
+    content: OptLongTextStr = None
 
 class ArticleOut(BaseModel):
     id: int

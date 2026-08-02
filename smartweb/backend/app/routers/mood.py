@@ -14,6 +14,14 @@ from app.utils.auth import get_current_user
 from app.services import mood_service
 from app.services import ai_service
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, LongTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 router = APIRouter()
 
 
@@ -47,10 +55,13 @@ def _is_team_lead(db: Session, team_id: int, user_id: int) -> bool:
 
 
 class MoodCreate(BaseModel):
-    team_id: int
-    user_id: Optional[int] = None
-    answers: Optional[List[str]] = None
-    score: Optional[int] = None
+    team_id: EntityId
+    user_id: OptEntityId = None
+    # Ответы опроса настроения: список коротких строк ограниченной длины.
+    answers: Optional[Annotated[List[Annotated[str, Field(max_length=500)]],
+                                Field(max_length=50)]] = None
+    # Оценка настроения — шкала 1..5, как в интерфейсе.
+    score: Optional[Annotated[int, Field(ge=1, le=5)]] = None
 
 
 @router.post("/")

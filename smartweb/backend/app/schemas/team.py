@@ -2,9 +2,15 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+from app.utils.validation import (
+    NameStr, OptNameStr, ShortStr, OptShortStr, TextStr, OptTextStr,
+    LongTextStr, OptLongTextStr, EntityId, OptEntityId,
+)
+
+
 class TeamCreate(BaseModel):
-    name: str
-    team_lead_id: int
+    name: NameStr
+    team_lead_id: EntityId
 
 class TeamOut(BaseModel):
     id: int
@@ -43,5 +49,5 @@ class TeamDetailOut(TeamOut):
     organization: Optional[dict] = None
 
 class JoinByCode(BaseModel):
-    invite_code: str
-    user_id: int
+    invite_code: ShortStr
+    user_id: EntityId

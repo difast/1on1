@@ -6,6 +6,7 @@ from typing import List, Optional
 from datetime import datetime
 
 from app.database import get_db
+from app.utils.validation import escape_like
 from app.utils.auth import get_current_user
 from app.services.notification_service import NotificationService
 from app.services import entitlements
@@ -162,7 +163,7 @@ def _ensure_rule_recommendations(db: Session, user_id: int):
         # База знаний: материал по навыку.
         if ("knowledge", us.skill_id) not in have_rule:
             art = (db.query(KnowledgeArticle)
-                   .filter(KnowledgeArticle.title.ilike(f"%{sname}%"),
+                   .filter(KnowledgeArticle.title.ilike(f"%{escape_like(sname)}%", escape="\\"),
                            or_(KnowledgeArticle.team_id == team_id, KnowledgeArticle.team_id.is_(None)))
                    .first())
             if art:
@@ -201,7 +202,7 @@ def create_skill(data: SkillCreate, db: Session = Depends(get_db), current=Depen
     category = data.category if data.category in SKILL_CATEGORIES else "technical"
     tid = data.team_id if data.team_id is not None else _user_team_id(db, data.actor_id)
     existing = (db.query(Skill)
-                .filter(Skill.name.ilike(name),
+                .filter(Skill.name.ilike(escape_like(name), escape="\\"),
                         or_(Skill.team_id == tid, Skill.team_id.is_(None))).first())
     if existing:
         return {"id": existing.id, "team_id": existing.team_id, "name": existing.name,
@@ -272,7 +273,7 @@ def add_user_skill(data: UserSkillCreate, db: Session = Depends(get_db), current
             raise HTTPException(status_code=400, detail="Укажите навык")
         category = data.category if data.category in SKILL_CATEGORIES else "technical"
         skill = (db.query(Skill)
-                 .filter(Skill.name.ilike(name), or_(Skill.team_id == team_id, Skill.team_id.is_(None)))
+                 .filter(Skill.name.ilike(escape_like(name), escape="\\"), or_(Skill.team_id == team_id, Skill.team_id.is_(None)))
                  .first())
         if not skill:
             skill = Skill(team_id=team_id, name=name, category=category, created_by=data.actor_id)
@@ -495,8 +496,11 @@ def add_step_comment(step_id: int, data: GoalCommentCreate, db: Session = Depend
     else:
         NotificationService(db).create_notification(
             user_id=step.user_id, type="dev_feedback",
+            # Получатель уведомления — владелец плана развития, ему и подбираем
+            # язык. Имени target_id в этой функции нет: обращение к нему падало
+            # с NameError на каждой обратной связи тимлида по шагу развития.
             title=i18n.t("dev.notify.feedback" if kind == "feedback" else "dev.notify.planComment",
-                         _lang(db, target_id)),
+                         _lang(db, step.user_id)),
             body=f"{actor_name}: {snippet}", data={"step_id": step.id})
     db.refresh(step)
     return _serialize_step(db, step)

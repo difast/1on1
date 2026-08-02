@@ -2,6 +2,11 @@ import httpx
 from sqlalchemy.orm import Session
 from app.models.notification import Notification
 from app.models.user import User
+# Модуль переводов используется по всему файлу (заголовки и тексты уведомлений
+# на языке получателя), но импорт был пропущен: каждый вызов, отправляющий
+# уведомление, падал с NameError, а вместе с ним и сам запрос — создание
+# встречи, назначение задачи и прочее возвращали 500 уже ПОСЛЕ записи в базу.
+from app.services import i18n
 
 EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 

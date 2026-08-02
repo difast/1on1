@@ -1,23 +1,49 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, BackgroundTasks, Request
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import List
+from pydantic import BaseModel, Field
+from typing import Annotated, List
 import httpx, os, json, uuid, asyncio
 from app.database import get_db, SessionLocal
 from app.models.meeting import Meeting
 from app.models.task import Task
 from app.models.user import User
 from app.services.notification_service import NotificationService
+from app.utils.auth import require_user
+from app.utils import ratelimit
+from app.utils.validation import EntityId
 
 router = APIRouter()
+
+
+def _require_meeting_participant(db: Session, meeting: Meeting, user) -> None:
+    """Доступ к записи и расшифровке встречи — только её участникам.
+
+    Участник встречи 1-on-1 — это её тимлид и сотрудник. Для группового созвона
+    дополнительно проверяем членство в команде.
+    """
+    if user is None:
+        raise HTTPException(status_code=401, detail="Не авторизовано")
+    if user.id in (meeting.team_lead_id, meeting.member_id):
+        return
+    if meeting.group_id and meeting.team_id:
+        from app.models.team import TeamMember
+        in_team = db.query(TeamMember).filter(
+            TeamMember.team_id == meeting.team_id,
+            TeamMember.user_id == user.id,
+        ).first()
+        if in_team:
+            return
+    raise HTTPException(status_code=403, detail="Нет доступа к этой встрече")
 
 
 # ─── Spontaneous call ────────────────────────────────────────────────────────
 
 class StartCallBody(BaseModel):
-    lead_id: int
-    team_id: int
-    member_ids: List[int]
+    lead_id: EntityId
+    team_id: EntityId
+    # Число приглашённых в спонтанный созвон ограничено: каждый получает
+    # уведомление, без границы один запрос порождает их сколько угодно.
+    member_ids: Annotated[List[EntityId], Field(max_length=200)]
     is_group: bool = False
 
 
@@ -277,19 +303,62 @@ async def _analyze_and_create_tasks(meeting: Meeting, transcript: str, db: Sessi
 
 # ─── Endpoints ───────────────────────────────────────────────────────────────
 
+# Запись созвона целиком читается в память, поэтому верхняя граница
+# обязательна: без неё загрузка файла произвольного размера укладывает процесс
+# по памяти (сам файл плюс копия в фоновой задаче). 40 МБ с запасом
+# покрывают часовой разговор в ogg/opus.
+MAX_RECORDING_BYTES = 40 * 1024 * 1024
+ALLOWED_AUDIO_TYPES = {
+    "audio/ogg", "audio/opus", "audio/webm", "audio/mpeg", "audio/mp4",
+    "audio/wav", "audio/x-wav", "audio/aac", "audio/m4a", "audio/x-m4a",
+    "video/webm", "video/mp4",
+}
+
+
 @router.post("/meetings/{meeting_id}/upload-recording")
 async def upload_recording(
     meeting_id: int,
     background_tasks: BackgroundTasks,
+    request: Request,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current=Depends(require_user),
 ):
+    """Приём записи созвона на расшифровку.
+
+    Раньше эндпоинт был открыт и без ограничений: любой мог отправить файл
+    любого размера к любой встрече.
+    """
+    ratelimit.check(ratelimit.UPLOAD, str(current.id))
+
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+        raise HTTPException(status_code=404, detail="Встреча не найдена")
+    _require_meeting_participant(db, meeting, current)
 
-    audio_data = await file.read()
-    content_type = file.content_type or "audio/ogg"
+    content_type = (file.content_type or "audio/ogg").split(";")[0].strip().lower()
+    if content_type not in ALLOWED_AUDIO_TYPES:
+        raise HTTPException(status_code=415,
+                            detail="Неподдерживаемый формат записи. Ожидается аудио или видео со звуком.")
+
+    # Читаем частями и обрываем при превышении: узнать размер заранее нельзя,
+    # заголовку Content-Length доверять нельзя, а read() целиком уже был бы
+    # тем самым переполнением памяти, от которого мы защищаемся.
+    chunks, total = [], 0
+    while True:
+        chunk = await file.read(1024 * 1024)
+        if not chunk:
+            break
+        total += len(chunk)
+        if total > MAX_RECORDING_BYTES:
+            raise HTTPException(
+                status_code=413,
+                detail=f"Файл больше допустимого размера ({MAX_RECORDING_BYTES // (1024 * 1024)} МБ)",
+            )
+        chunks.append(chunk)
+    audio_data = b"".join(chunks)
+    if not audio_data:
+        raise HTTPException(status_code=400, detail="Пустой файл")
 
     background_tasks.add_task(_transcribe_and_analyze, meeting_id, audio_data, content_type)
 
@@ -297,10 +366,13 @@ async def upload_recording(
 
 
 @router.get("/meetings/{meeting_id}/transcript")
-def get_transcript(meeting_id: int, db: Session = Depends(get_db)):
+def get_transcript(meeting_id: int, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+        raise HTTPException(status_code=404, detail="Встреча не найдена")
+    # Расшифровка разговора — чувствительные данные: отдаём только участникам.
+    _require_meeting_participant(db, meeting, current)
     return {
         "has_transcript": bool(meeting.call_transcript),
         "transcript": meeting.call_transcript,

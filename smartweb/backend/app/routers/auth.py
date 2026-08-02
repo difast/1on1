@@ -10,7 +10,7 @@ import logging
 import secrets
 from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, Query, BackgroundTasks, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
 
@@ -25,6 +25,7 @@ from app.schemas.user import UserOut
 from app.utils.passwords import hash_password, verify_password
 from app.utils.auth import create_access_token, create_admin_token, get_current_user, require_admin
 from app.services import mailer, i18n
+from app.utils import ratelimit
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -38,13 +39,15 @@ class AdminLoginReq(BaseModel):
 
 
 @router.post("/admin-login")
-def admin_login(data: AdminLoginReq):
+def admin_login(data: AdminLoginReq, request: Request):
     """Вход в админ-панель по паролю. Возвращает админ-JWT, который клиент кладёт
     в Authorization — тогда запросы проходят гейт AUTH_ENFORCE и require_admin.
 
     Пароль берётся ТОЛЬКО из окружения (ADMIN_PASSWORD). Значения по умолчанию
     нет: пока переменная не задана, вход в админку недоступен (503 — ошибка
     конфигурации), а не открыт по зашитому в репозиторий паролю."""
+    # Подбор пароля админки: пять попыток за пятнадцать минут с одного адреса.
+    ratelimit.check_request(ratelimit.ADMIN_LOGIN, request)
     expected = os.getenv("ADMIN_PASSWORD", "")
     if not expected:
         raise HTTPException(status_code=503,
@@ -127,7 +130,10 @@ def _send_confirmation(bg: BackgroundTasks, db: Session, user: User) -> None:
 # ── регистрация / вход ───────────────────────────────────────────────────────
 
 @router.post("/register", response_model=RegisterOut)
-def register(data: RegisterReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def register(data: RegisterReq, background_tasks: BackgroundTasks, request: Request,
+             db: Session = Depends(get_db)):
+    # Массовая регистрация с одного адреса: пять аккаунтов в час.
+    ratelimit.check_request(ratelimit.REGISTER, request)
     email = _validate_email(data.email)
     _validate_password(data.password)
     if db.query(User).filter(User.email == email).first():
@@ -171,11 +177,19 @@ def _email_unconfirmed_detail(email: str) -> dict:
 
 
 @router.post("/login", response_model=TokenOut)
-def login(data: LoginReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
+          db: Session = Depends(get_db)):
     email = _norm_email(data.email)
+    # Два лимита сразу: по адресу клиента (перебор паролей одного аккаунта) и
+    # по самому аккаунту (перебор одного аккаунта с разных адресов).
+    ratelimit.check_request(ratelimit.LOGIN_IP, request)
+    ratelimit.check(ratelimit.LOGIN_ACCOUNT, email)
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(data.password, user.password_hash):
         raise HTTPException(401, "Неверный email или пароль")
+    # Вход удался — счётчик неудачных попыток по аккаунту сбрасываем, чтобы
+    # человек, вспомнивший пароль с четвёртого раза, не ждал пять минут.
+    ratelimit.reset(ratelimit.LOGIN_ACCOUNT, email)
     if user.is_blocked:
         raise HTTPException(403, "Аккаунт заблокирован")
     # Жёсткая блокировка входа до подтверждения почты (Задача 2.4). Проверка —
@@ -249,7 +263,15 @@ def confirm_email_link(token: str = Query(...), db: Session = Depends(get_db)):
 
 
 @router.post("/resend-confirmation")
-def resend_confirmation(data: ResendReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def resend_confirmation(data: ResendReq, background_tasks: BackgroundTasks, request: Request,
+                        db: Session = Depends(get_db)):
+    # Защита от рассылки писем на чужой адрес: лимит и по отправителю (IP), и
+    # по адресу получателя.
+    ratelimit.check_request(ratelimit.EMAIL_IP, request)
+    if data.email:
+        ratelimit.check(ratelimit.EMAIL_TARGET, _norm_email(data.email))
+    elif data.user_id is not None:
+        ratelimit.check(ratelimit.EMAIL_TARGET, f"uid:{data.user_id}")
     q = db.query(User)
     if data.user_id is not None:
         user = q.filter(User.id == data.user_id).first()
@@ -266,8 +288,13 @@ def resend_confirmation(data: ResendReq, background_tasks: BackgroundTasks, db: 
 # ── сброс пароля (забыл пароль) ──────────────────────────────────────────────
 
 @router.post("/forgot-password")
-def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, db: Session = Depends(get_db)):
+def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, request: Request,
+                    db: Session = Depends(get_db)):
     email = _norm_email(data.email)
+    # То же, что и у повторной отправки подтверждения: без лимита форма
+    # «забыл пароль» превращается в средство спама на любой адрес.
+    ratelimit.check_request(ratelimit.EMAIL_IP, request)
+    ratelimit.check(ratelimit.EMAIL_TARGET, email)
     user = db.query(User).filter(User.email == email).first()
     # Не раскрываем, есть ли аккаунт. Письмо уходит только если есть пароль.
     # Логируем причину (без утечки наружу — ответ всегда {ok: true}), чтобы в
@@ -287,7 +314,9 @@ def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, db: Sess
 
 
 @router.post("/reset-password", response_model=TokenOut)
-def reset_password(data: ResetReq, db: Session = Depends(get_db)):
+def reset_password(data: ResetReq, request: Request, db: Session = Depends(get_db)):
+    # Перебор токена сброса.
+    ratelimit.check_request(ratelimit.LOGIN_IP, request)
     _validate_password(data.new_password)
     row = _consume_token(db, data.token, "reset")
     if row is None:

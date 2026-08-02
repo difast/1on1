@@ -2,25 +2,31 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 
 class TaskProposalCreate(BaseModel):
-    from_user_id: int
-    to_user_id: int
-    title: str
-    description: Optional[str] = None
+    from_user_id: EntityId
+    to_user_id: EntityId
+    title: ShortStr
+    description: OptLongTextStr = None
     due_date: Optional[datetime] = None
-    team_id: Optional[int] = None
+    team_id: OptEntityId = None
 
 
 class TaskProposalAction(BaseModel):
     """accept / decline — выполняет получатель предложения."""
-    user_id: int
+    user_id: EntityId
 
 
 class TaskProposalComment(BaseModel):
     """Комментарий в обсуждении предложения (обе стороны)."""
-    user_id: int
-    note: str
+    user_id: EntityId
+    note: TextStr
 
 
 class TaskProposalEventOut(BaseModel):

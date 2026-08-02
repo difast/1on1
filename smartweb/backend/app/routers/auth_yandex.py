@@ -19,6 +19,14 @@ from app.schemas.user import UserOut
 from app.utils.auth import create_access_token, get_current_user
 from app.services import oauth_state, yandex_auth, yandex_id
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, OptTextStr, UrlStr, TokenStr, EntityId, OptEntityId,
+    OptPushTokenStr,
+)
+
+
 router = APIRouter()
 log = logging.getLogger("auth_yandex")
 
@@ -71,8 +79,8 @@ def callback_target(state: str = Query(...)):
 
 
 class CallbackReq(BaseModel):
-    code: str
-    state: str
+    code: TokenStr
+    state: TokenStr
 
 
 @router.post("/callback")

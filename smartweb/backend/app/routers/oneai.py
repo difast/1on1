@@ -1,7 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
-from typing import Optional
+from pydantic import BaseModel, StringConstraints
+from typing import Annotated, Optional
+
+from app.utils import ratelimit
+from app.utils.validation import ShortStr, EntityId, OptEntityId
 
 from app.database import get_db
 from app.utils.auth import get_current_user
@@ -14,15 +17,26 @@ router = APIRouter()
 
 
 class OneAiQuery(BaseModel):
-    actor_id: int
-    section: str
-    target_user_id: Optional[int] = None
-    team_id: Optional[int] = None
-    message: Optional[str] = None
+    actor_id: EntityId
+    section: ShortStr
+    target_user_id: OptEntityId = None
+    team_id: OptEntityId = None
+    # Свободный запрос пользователя уходит в модель. Ограничение длины — и
+    # против гигантского запроса, и против расхода токенов AI Gateway.
+    message: Optional[Annotated[str, StringConstraints(max_length=2000)]] = None
 
 
 def _enforce_actor(current, actor_id: int):
-    if current is not None and current.id != actor_id:
+    """Действовать можно только от своего имени.
+
+    Раньше условие было `if current is not None and current.id != actor_id` —
+    при отсутствующем или неверном токене current равен None, проверка
+    проходила, и ONE AI отвечал анонимному клиенту с любым actor_id. Теперь
+    отсутствие пользователя — это 401.
+    """
+    if current is None:
+        raise HTTPException(status_code=401, detail="Не авторизовано")
+    if current.id != actor_id:
         raise HTTPException(status_code=403, detail="Доступ только от своего имени")
 
 
@@ -41,6 +55,10 @@ def query(data: OneAiQuery, db: Session = Depends(get_db), current=Depends(get_c
     """Стратегический аналитический запрос ONE AI. Права и сбор контекста —
     в общем AI-слое (ai_context) ДО обращения к модели, тот же слой, что у Пита."""
     _enforce_actor(current, data.actor_id)
+    # ONE AI — тяжёлый аналитический запрос: собирает контекст по команде и
+    # уходит в модель с большим промптом. Лимит отдельный, строже обычного.
+    ratelimit.check(ratelimit.AI_HEAVY, str(current.id))
+    ratelimit.check(ratelimit.AI_USER_HOURLY, str(current.id))
     actor = db.query(User).filter(User.id == data.actor_id).first()
     # ONE AI — функция тарифа Team и выше (на пробном периоде Team недоступна):
     # мягкое тарифное уведомление, а не техническая ошибка.

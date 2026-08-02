@@ -1,23 +1,28 @@
 from pydantic import BaseModel
-from typing import Optional
 from app.schemas.user import UserOut
+from app.utils.validation import (
+    NameStr, EmailStr, OptEmailStr, PasswordStr, TokenStr, ShortStr, OptShortStr,
+    EntityId, OptEntityId,
+)
 
-# email как обычная строка: формат проверяется в роутере регулярным выражением
-# (без зависимости email-validator, чтобы не расширять requirements).
+# Формат email и требования к паролю проверяются в роутере (_validate_email,
+# _validate_password): там понятные сообщения на языке пользователя. В схеме —
+# только верхние границы длины, чтобы гигантское тело запроса отсекалось до
+# разбора и до похода в базу.
 
 
 class RegisterReq(BaseModel):
-    name: str
-    email: str
-    password: str
+    name: NameStr
+    email: EmailStr
+    password: PasswordStr
     # Роль по умолчанию пустая — выбирается в онбординге (тимлид/участник).
-    role: str = ""
-    title: Optional[str] = None
+    role: ShortStr = ""
+    title: OptShortStr = None
 
 
 class LoginReq(BaseModel):
-    email: str
-    password: str
+    email: EmailStr
+    password: PasswordStr
 
 
 class TokenOut(BaseModel):
@@ -34,30 +39,30 @@ class RegisterOut(BaseModel):
 
 
 class ConfirmReq(BaseModel):
-    token: str
+    token: TokenStr
 
 
 class ResendReq(BaseModel):
     # достаточно одного из полей
-    user_id: Optional[int] = None
-    email: Optional[str] = None
+    user_id: OptEntityId = None
+    email: OptEmailStr = None
 
 
 class ForgotReq(BaseModel):
-    email: str
+    email: EmailStr
 
 
 class ResetReq(BaseModel):
-    token: str
-    new_password: str
+    token: TokenStr
+    new_password: PasswordStr
 
 
 class ChangePasswordReq(BaseModel):
-    user_id: int
-    current_password: str
-    new_password: str
+    user_id: EntityId
+    current_password: PasswordStr
+    new_password: PasswordStr
 
 
 class AddEmailReq(BaseModel):
-    user_id: int
-    email: str
+    user_id: EntityId
+    email: EmailStr

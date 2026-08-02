@@ -18,6 +18,14 @@ from app.models.knowledge import KnowledgeArticle
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app import online as online_cache
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, OptTextStr, UrlStr, TokenStr, EntityId, OptEntityId,
+    OptPushTokenStr,
+)
+
+
 router = APIRouter()
 
 @router.post("/{user_id}/heartbeat")
@@ -466,7 +474,7 @@ def _release_push_token(db: Session, token: str, keep_user_id: int | None = None
 
 
 class PushTokenReq(BaseModel):
-    push_token: Optional[str] = None
+    push_token: OptPushTokenStr = None
 
 
 @router.post("/{user_id}/push-token/release")

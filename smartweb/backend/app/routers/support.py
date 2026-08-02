@@ -8,14 +8,22 @@ from app.models.support_ticket import SupportTicket
 from app.models.ticket_message import TicketMessage
 from app.models.user import User
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, LongTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 router = APIRouter()
 
 # ── Schemas ──────────────────────────────────────────────────
 
 class TicketCreate(BaseModel):
-    user_id: int
-    subject: str
-    body: str
+    user_id: EntityId
+    subject: ShortStr
+    body: LongTextStr
 
 class MessageOut(BaseModel):
     id: int
@@ -41,7 +49,7 @@ class TicketOut(BaseModel):
         from_attributes = True
 
 class ReplyCreate(BaseModel):
-    body: str
+    body: LongTextStr
 
 # ── Helpers ───────────────────────────────────────────────────
 

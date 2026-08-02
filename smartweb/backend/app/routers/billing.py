@@ -19,6 +19,14 @@ from app.services.payments_base import get_provider
 from app.services import subscriptions as subs
 from app.services import plan_change
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, OptTextStr, UrlStr, TokenStr, EntityId, OptEntityId,
+    OptPushTokenStr,
+)
+
+
 router = APIRouter()
 
 
@@ -116,10 +124,11 @@ def _amount_kopecks(plan) -> int:
 
 
 class CheckoutReq(BaseModel):
-    plan_code: str
-    period: str = "month"          # игнорируется: период задаёт сам тариф
-    seats: int = 1
-    user_id: int | None = None
+    plan_code: ShortStr
+    period: ShortStr = "month"     # игнорируется: период задаёт сам тариф
+    # Число мест влияет на сумму списания — верхняя граница обязательна.
+    seats: Annotated[int, Field(ge=1, le=10000)] = 1
+    user_id: OptEntityId = None
 
 
 @router.post("/checkout")
@@ -177,10 +186,10 @@ def checkout(data: CheckoutReq, db: Session = Depends(get_db), current=Depends(g
 
 
 class ChangeReq(BaseModel):
-    plan_code: str
-    period: str = "month"
-    seats: int = 1
-    user_id: int | None = None
+    plan_code: ShortStr
+    period: ShortStr = "month"
+    seats: Annotated[int, Field(ge=1, le=10000)] = 1
+    user_id: OptEntityId = None
 
 
 @router.post("/change/preview")
@@ -192,7 +201,7 @@ def change_preview(data: ChangeReq, db: Session = Depends(get_db), current=Depen
 
 
 class CancelReq(BaseModel):
-    user_id: int | None = None
+    user_id: OptEntityId = None
 
 
 @router.post("/cancel")

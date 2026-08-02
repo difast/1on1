@@ -4,13 +4,21 @@ from datetime import datetime
 
 from app.schemas.goal import GoalCommentOut, GoalOut
 
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 
 # ── Навыки (справочник) ───────────────────────────────────────────────────────
 class SkillCreate(BaseModel):
-    actor_id: int
-    name: str
-    category: str = "technical"
-    team_id: Optional[int] = None
+    actor_id: EntityId
+    name: ShortStr
+    category: ShortStr = "technical"
+    team_id: OptEntityId = None
 
 
 class SkillOut(BaseModel):
@@ -26,22 +34,23 @@ class SkillOut(BaseModel):
 
 # ── Навык сотрудника (уровни) ─────────────────────────────────────────────────
 class UserSkillCreate(BaseModel):
-    actor_id: int
-    user_id: int
-    skill_id: Optional[int] = None       # существующий навык из справочника…
-    skill_name: Optional[str] = None     # …или новый (заведём в справочник команды)
-    category: str = "technical"
-    current_level: int = 1
-    desired_level: Optional[int] = None
+    actor_id: EntityId
+    user_id: EntityId
+    skill_id: OptEntityId = None         # существующий навык из справочника…
+    skill_name: OptShortStr = None       # …или новый (заведём в справочник команды)
+    category: ShortStr = "technical"
+    # Уровни владения навыком — шкала 1..5, как в интерфейсе развития.
+    current_level: Annotated[int, Field(ge=1, le=5)] = 1
+    desired_level: Optional[Annotated[int, Field(ge=1, le=5)]] = None
     target_date: Optional[datetime] = None
 
 
 class UserSkillUpdate(BaseModel):
-    actor_id: int
-    current_level: Optional[int] = None
-    desired_level: Optional[int] = None
+    actor_id: EntityId
+    current_level: Optional[Annotated[int, Field(ge=1, le=5)]] = None
+    desired_level: Optional[Annotated[int, Field(ge=1, le=5)]] = None
     target_date: Optional[datetime] = None
-    note: Optional[str] = None           # заметка к изменению уровня (в историю)
+    note: OptTextStr = None              # заметка к изменению уровня (в историю)
 
 
 class SkillHistoryOut(BaseModel):
@@ -73,26 +82,26 @@ class UserSkillOut(BaseModel):
 
 # ── Шаги плана развития ───────────────────────────────────────────────────────
 class StepCreate(BaseModel):
-    actor_id: int
-    user_id: int                         # чей план
-    title: str
-    description: Optional[str] = None
-    skill_id: Optional[int] = None
-    goal_id: Optional[int] = None
-    task_id: Optional[int] = None
-    meeting_id: Optional[int] = None
+    actor_id: EntityId
+    user_id: EntityId                    # чей план
+    title: ShortStr
+    description: OptLongTextStr = None
+    skill_id: OptEntityId = None
+    goal_id: OptEntityId = None
+    task_id: OptEntityId = None
+    meeting_id: OptEntityId = None
     due_date: Optional[datetime] = None
 
 
 class StepUpdate(BaseModel):
-    actor_id: int
-    title: Optional[str] = None
-    description: Optional[str] = None
-    skill_id: Optional[int] = None
-    goal_id: Optional[int] = None
+    actor_id: EntityId
+    title: OptShortStr = None
+    description: OptLongTextStr = None
+    skill_id: OptEntityId = None
+    goal_id: OptEntityId = None
     due_date: Optional[datetime] = None
-    status: Optional[str] = None
-    progress: Optional[int] = None
+    status: OptShortStr = None
+    progress: Optional[Annotated[int, Field(ge=0, le=100)]] = None
 
 
 class StepOut(BaseModel):
@@ -122,19 +131,19 @@ class StepOut(BaseModel):
 # ── Рекомендации ──────────────────────────────────────────────────────────────
 class RecommendationCreate(BaseModel):
     # Назначение направления роста тимлидом (source=lead) или произвольная реко.
-    actor_id: int
-    user_id: int
-    skill_id: Optional[int] = None
-    title: str
-    body: Optional[str] = None
-    target_level: Optional[int] = None
+    actor_id: EntityId
+    user_id: EntityId
+    skill_id: OptEntityId = None
+    title: ShortStr
+    body: OptLongTextStr = None
+    target_level: Optional[Annotated[int, Field(ge=1, le=5)]] = None
     target_date: Optional[datetime] = None
 
 
 class RecommendationAction(BaseModel):
-    actor_id: int
-    action: str                          # accept | dismiss
-    note: Optional[str] = None
+    actor_id: EntityId
+    action: ShortStr                     # accept | dismiss
+    note: OptTextStr = None
 
 
 class RecommendationOut(BaseModel):

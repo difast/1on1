@@ -10,6 +10,7 @@ Supabase убран полностью. Токен — наш JWT, подпис�
                      Именно её вешаем на все защищённые эндпоинты (Этап 8).
   require_admin    — доступ только администратору.
 """
+import hmac
 import os
 import jwt  # PyJWT
 from datetime import datetime, timedelta, timezone
@@ -109,16 +110,22 @@ def require_admin(
 
     Админ-JWT работает независимо от ADMIN_API_TOKEN и проходит гейт AUTH_ENFORCE,
     поэтому админ-панель функционирует и при включённой принудительной авторизации.
+
+    ВАЖНО про прежнее поведение: раньше последней строкой стояло `return user`
+    для случая, когда ADMIN_API_TOKEN не задан. Это означало, что при незаданной
+    переменной гвард пропускал ЛЮБОЙ запрос — включая анонимный, поскольку user
+    в таком случае равен None. То есть все админ-эндпоинты (биллинг, статистика,
+    рассылка уведомлений всем пользователям, диагностика SMTP) были открыты.
+    Теперь запасного прохода нет: без одного из трёх подтверждений — отказ.
     """
     # 1) Админ-JWT (по паролю) — основной путь для админ-панели.
     if _admin_claim_from_header(authorization):
         return None
+    # 2) Сервис-токен для машинного доступа, если он настроен.
     admin_token = os.getenv("ADMIN_API_TOKEN", "")
-    if admin_token:
-        if x_admin_token and x_admin_token == admin_token:
-            return user
-        if user is not None and getattr(user, "role", None) == "admin":
-            return user
-        raise HTTPException(status_code=403, detail="Только для администратора")
-    # ADMIN_API_TOKEN не настроен — прежнее поведение (совместимость).
-    return user
+    if admin_token and x_admin_token and hmac.compare_digest(x_admin_token, admin_token):
+        return user
+    # 3) Пользователь с ролью администратора в самой базе.
+    if user is not None and getattr(user, "role", None) == "admin":
+        return user
+    raise HTTPException(status_code=403, detail="Только для администратора")

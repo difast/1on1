@@ -14,6 +14,7 @@ from datetime import datetime, timedelta, date
 from typing import Optional, Tuple
 from fastapi import HTTPException
 from sqlalchemy.orm import Session
+from app.utils.validation import escape_like
 
 from app.models.user import User
 from app.models.team import Team, TeamMember
@@ -132,8 +133,13 @@ def knowledge_snippets(db: Session, actor_id: int, query: Optional[str] = None) 
     q = db.query(KnowledgeArticle).filter(
         or_(KnowledgeArticle.team_id == team_id, KnowledgeArticle.team_id.is_(None)))
     if query:
-        q = q.filter(or_(KnowledgeArticle.title.ilike(f"%{query}%"),
-                         KnowledgeArticle.content.ilike(f"%{query}%")))
+        # Спецсимволы шаблона (% и _) экранируем: инъекции SQL здесь нет —
+        # шаблон уходит отдельным параметром, — но без экранирования запрос из
+        # одних процентов заставляет базу перебирать таблицу целиком, а сами
+        # символы молча меняют смысл поиска.
+        pat = f"%{escape_like(query)}%"
+        q = q.filter(or_(KnowledgeArticle.title.ilike(pat, escape="\\"),
+                         KnowledgeArticle.content.ilike(pat, escape="\\")))
     arts = q.order_by(KnowledgeArticle.updated_at.desc()).limit(KNOWLEDGE_LIMIT).all()
     if not arts:
         return "Материалы базы знаний по запросу не найдены."

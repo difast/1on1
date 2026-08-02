@@ -57,32 +57,31 @@ rc, out, err = run({"SECRET_KEY": "s2"}, f"""
 """)
 check("чужой SECRET_KEY не расшифровывает токен", out == "None", out + err)
 
-# 5. Пароль администратора не зашит в код
-rc, out, err = run({"ADMIN_PASSWORD": ""}, """
-    from fastapi import HTTPException
-    from app.routers.auth import admin_login, AdminLoginReq
-    try:
-        admin_login(AdminLoginReq(password="1on12026")); print("LET_IN")
-    except HTTPException as e:
-        print(e.status_code)
-""")
+# 5. Пароль администратора не зашит в код.
+# Проверяем через HTTP-слой: у эндпоинта есть зависимость Request, поэтому
+# вызывать функцию напрямую нельзя — да и проверять надо всю цепочку целиком.
+ADMIN_HTTP = """
+    import os, tempfile, warnings
+    warnings.filterwarnings("ignore")
+    fd, path = tempfile.mkstemp(suffix=".sqlite"); os.close(fd)
+    os.environ["DATABASE_URL"] = "sqlite:///" + path
+    from fastapi.testclient import TestClient
+    import app.main as m
+    c = TestClient(m.app, raise_server_exceptions=False)
+    print(c.post("/api/auth/admin-login", json={"password": %r}).status_code)
+"""
+
+rc, out, err = run({"ADMIN_PASSWORD": "", "SECRET_KEY": "s", "JWT_SECRET": "s"},
+                   ADMIN_HTTP % "1on12026")
 check("старый пароль 1on12026 не пускает в админку", out == "503", out + err)
 
-rc, out, err = run({"ADMIN_PASSWORD": "real-admin-pass"}, """
-    from fastapi import HTTPException
-    from app.routers.auth import admin_login, AdminLoginReq
-    try:
-        admin_login(AdminLoginReq(password="1on12026")); print("LET_IN")
-    except HTTPException as e:
-        print(e.status_code)
-""")
+rc, out, err = run({"ADMIN_PASSWORD": "real-admin-pass", "SECRET_KEY": "s", "JWT_SECRET": "s"},
+                   ADMIN_HTTP % "1on12026")
 check("при заданном ADMIN_PASSWORD старый пароль -> 401", out == "401", out + err)
 
-rc, out, err = run({"ADMIN_PASSWORD": "real-admin-pass"}, """
-    from app.routers.auth import admin_login, AdminLoginReq
-    print(bool(admin_login(AdminLoginReq(password="real-admin-pass")).get("token")))
-""")
-check("верный ADMIN_PASSWORD выдаёт токен", out == "True", out + err)
+rc, out, err = run({"ADMIN_PASSWORD": "real-admin-pass", "SECRET_KEY": "s", "JWT_SECRET": "s"},
+                   ADMIN_HTTP % "real-admin-pass")
+check("верный ADMIN_PASSWORD выдаёт токен", out == "200", out + err)
 
 print("\nПровалов:", len(fails), fails)
 sys.exit(1 if fails else 0)

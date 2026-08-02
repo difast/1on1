@@ -18,6 +18,14 @@ from app.models.integration import (
 )
 from app.models.team import Team
 from app.utils.auth import get_current_user, require_user
+
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, OptTextStr, UrlStr, TokenStr, EntityId, OptEntityId,
+    OptPushTokenStr,
+)
+
 from app.services import crypto
 from app.services import oauth_state
 from app.services.calendar_base import get_calendar_provider, SUPPORTED_PROVIDERS, CalendarAuthError
@@ -109,8 +117,8 @@ def authorize(provider: str, user_id: int = Query(...),
 
 
 class CallbackReq(BaseModel):
-    code: str
-    state: str
+    code: TokenStr
+    state: TokenStr
 
 
 @router.post("/{provider}/callback")
@@ -203,10 +211,12 @@ def _require_team_lead(db: Session, team_id: int, user) -> Team:
 
 
 class WebhookCreateReq(BaseModel):
-    team_id: int
-    user_id: int
-    url: str
-    events: list[str] | None = None
+    team_id: EntityId
+    user_id: EntityId
+    url: UrlStr
+    # Список типов событий ограничен по длине: без границы в JSON-колонку
+    # кладётся произвольно большой массив.
+    events: Annotated[list[ShortStr], Field(max_length=50)] | None = None
 
 
 @router.post("/webhooks")
@@ -214,11 +224,15 @@ def create_webhook(data: WebhookCreateReq, db: Session = Depends(get_db),
                    current=Depends(require_user)):
     """Добавить исходящий вебхук (только тимлид команды). Секрет генерируется."""
     _require_team_lead(db, data.team_id, current)
-    if not (data.url.startswith("http://") or data.url.startswith("https://")):
-        raise HTTPException(422, "URL должен начинаться с http:// или https://")
+    # Проверка не только схемы, но и того, что адрес ведёт наружу: иначе сервер
+    # можно заставить ходить по внутренним адресам от своего имени (SSRF).
+    try:
+        target = webhook_service.validate_target_url(data.url)
+    except webhook_service.UnsafeWebhookUrl as e:
+        raise HTTPException(422, str(e))
     valid = [e for e in (data.events or []) if e in webhook_service.EVENTS]
     sub = WebhookSubscription(
-        team_id=data.team_id, created_by=data.user_id, url=data.url.strip(),
+        team_id=data.team_id, created_by=data.user_id, url=target,
         secret=secrets.token_hex(24), events=valid or None, active=True,
     )
     db.add(sub); db.commit(); db.refresh(sub)

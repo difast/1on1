@@ -2,10 +2,18 @@ from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime
 
+from app.utils.validation import (
+    NameStr, OptNameStr, ShortStr, OptShortStr, TextStr, OptTextStr,
+    LongTextStr, OptLongTextStr, EntityId, OptEntityId,
+)
+from typing import Annotated
+from pydantic import Field
+
+
 
 class AssigneeIn(BaseModel):
-    user_id: int
-    part_description: Optional[str] = None
+    user_id: EntityId
+    part_description: OptTextStr = None
 
 
 class AssigneeOut(BaseModel):
@@ -28,16 +36,16 @@ class ProgressOut(BaseModel):
 
 
 class TaskCreate(BaseModel):
-    meeting_id: Optional[int] = None
-    team_id: Optional[int] = None
-    assigned_to: int
-    assigned_by: int
-    title: str
-    description: Optional[str] = None
+    meeting_id: OptEntityId = None
+    team_id: OptEntityId = None
+    assigned_to: EntityId
+    assigned_by: EntityId
+    title: ShortStr
+    description: OptLongTextStr = None
     due_date: Optional[datetime] = None
     # Совместная задача (Задача 4): несколько ответственных со своими частями.
     # Если не передано — обычная задача с одним ответственным (обратная совместимость).
-    assignees: Optional[List[AssigneeIn]] = None
+    assignees: Optional[Annotated[List[AssigneeIn], Field(max_length=100)]] = None
 
 
 class TaskOut(BaseModel):
@@ -63,13 +71,13 @@ class TaskOut(BaseModel):
 
 
 class TaskUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
+    title: OptShortStr = None
+    description: OptLongTextStr = None
     due_date: Optional[datetime] = None
     completed: Optional[bool] = None
-    status: Optional[str] = None
+    status: OptShortStr = None
 
 
 class AssigneeStatusUpdate(BaseModel):
-    status: Optional[str] = None
-    part_description: Optional[str] = None
+    status: OptShortStr = None
+    part_description: OptTextStr = None

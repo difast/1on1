@@ -2,15 +2,21 @@ from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+from app.utils.validation import (
+    NameStr, OptNameStr, ShortStr, OptShortStr, TextStr, OptTextStr,
+    LongTextStr, OptLongTextStr, EntityId, OptEntityId,
+)
+
+
 
 class NoteCreate(BaseModel):
-    user_id: int
-    content: str
-    meeting_id: Optional[int] = None
+    user_id: EntityId
+    content: LongTextStr
+    meeting_id: OptEntityId = None
 
 
 class NoteUpdate(BaseModel):
-    content: str
+    content: LongTextStr
 
 
 class NoteOut(BaseModel):

@@ -1,15 +1,23 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime
 
+from app.utils.validation import (
+    NameStr, OptNameStr, EmailStr, ShortStr, OptShortStr,
+    OptAvatarStr, OptPushTokenStr,
+)
+
+# Ограничения длины стоят только на ВХОДЯЩИХ схемах (UserCreate/UserUpdate).
+# UserOut описывает ответ и берёт данные из базы — обрезать их не нужно.
+
 class UserCreate(BaseModel):
-    name: str
-    email: str
-    role: str = "member"
-    title: Optional[str] = None
-    telegram: Optional[str] = None
-    linkedin: Optional[str] = None
-    github: Optional[str] = None
+    name: NameStr
+    email: EmailStr
+    role: ShortStr = "member"
+    title: OptShortStr = None
+    telegram: OptShortStr = None
+    linkedin: OptShortStr = None
+    github: OptShortStr = None
 
 class UserOut(BaseModel):
     id: int
@@ -42,17 +50,19 @@ class UserOut(BaseModel):
         from_attributes = True
 
 class UserUpdate(BaseModel):
-    name: Optional[str] = None
-    role: Optional[str] = None
-    title: Optional[str] = None
-    telegram: Optional[str] = None
-    linkedin: Optional[str] = None
-    github: Optional[str] = None
-    avatar: Optional[str] = None
-    push_token: Optional[str] = None
+    name: OptNameStr = None
+    role: OptShortStr = None
+    title: OptShortStr = None
+    telegram: OptShortStr = None
+    linkedin: OptShortStr = None
+    github: OptShortStr = None
+    # Аватар приходит как data URI: ограничение не даёт положить в строку
+    # базы произвольно большой файл.
+    avatar: OptAvatarStr = None
+    push_token: OptPushTokenStr = None
     # Язык интерфейса — сохраняется после ручного выбора, чтобы не определять
     # заново при каждом визите (Этап 6).
-    preferred_language: Optional[str] = None
+    preferred_language: OptShortStr = None
     pricing_hint_shown: Optional[bool] = None  # флаг показанной рекомендации тарифа
     onboarding_tour_done: Optional[bool] = None  # флаг прохождения онбординг-гида
     onboarding_survey_done: Optional[bool] = None  # флаг прохождения/пропуска опросника

@@ -6,17 +6,28 @@
 Ничего не блокирует: у пространства может не быть компании. Данные понадобятся
 позже, на этапе оплаты. Ручной ввод — запасной вариант, если DaData не нашла.
 """
-from fastapi import APIRouter, Depends, HTTPException, Query
+import json
+
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import Optional
 import httpx
 
 from app.database import get_db
+from app.utils import ratelimit
 from app.config import settings
 from app.models.team import Team, TeamMember
 from app.models.company import CompanyProfile
 from app.utils.auth import require_user
+
+from typing import Annotated
+from pydantic import Field
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, LongTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
 
 router = APIRouter()
 
@@ -92,13 +103,23 @@ def _fetch(method: str, key: str, query: str, count: int) -> list:
 
 @router.get("/suggest")
 def suggest_company(
-    query: str = Query(..., min_length=2),
-    country: str = Query("all"),
+    request: Request,
+    query: str = Query(..., min_length=2, max_length=200),
+    country: str = Query("all", max_length=10),
+    current=Depends(require_user),
 ):
     """Прокси к DaData. Без параметра country ищет и по РФ, и по КЗ и объединяет
     результаты — страна берётся из выбранной подсказки. Без ключа -> пустой
-    список + configured=false (UI покажет ручной ввод)."""
+    список + configured=false (UI покажет ручной ввод).
+
+    Требует авторизации и ограничен по частоте: за каждым запросом стоит платный
+    вызов внешнего справочника. Открытый эндпоинт означал бы, что квоту DaData
+    может израсходовать кто угодно.
+    """
+    ratelimit.check(ratelimit.SUGGEST, str(current.id))
     country = (country or "all").lower()
+    if country not in ("all", "ru", "kz"):
+        raise HTTPException(422, "Допустимые значения country: all, ru, kz")
     key = settings.dadata_api_key
     if not key:
         return {"configured": False, "suggestions": []}
@@ -164,17 +185,19 @@ def get_company(team_id: int, db: Session = Depends(get_db), user=Depends(requir
 
 
 class CompanyIn(BaseModel):
-    country: str = "RU"
-    source: Optional[str] = None   # dadata | manual
-    name: Optional[str] = None
-    inn: Optional[str] = None
-    kpp: Optional[str] = None
-    ogrn: Optional[str] = None
-    legal_address: Optional[str] = None
-    industry: Optional[str] = None
-    management: Optional[str] = None
-    status: Optional[str] = None
-    size: Optional[int] = None      # размер компании (сотрудников)
+    country: ShortStr = "RU"
+    source: OptShortStr = None     # dadata | manual
+    name: OptShortStr = None
+    inn: OptShortStr = None
+    kpp: OptShortStr = None
+    ogrn: OptShortStr = None
+    legal_address: OptTextStr = None
+    industry: OptShortStr = None
+    management: OptShortStr = None
+    status: OptShortStr = None
+    # Размер компании: верхняя граница отсекает заведомо невозможные значения,
+    # по которым потом считается подсказка тарифа.
+    size: Optional[Annotated[int, Field(ge=0, le=10_000_000)]] = None
     data: Optional[dict] = None    # сырой ответ DaData
 
 
@@ -203,7 +226,13 @@ def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_d
     c.management = (payload.management or "").strip() or None
     c.status = (payload.status or "").strip() or None
     c.size = payload.size if (payload.size and payload.size > 0) else None
-    c.data = payload.data
+    # Сырой ответ справочника кладём в JSON-колонку, но не доверяем ему слепо:
+    # это внешние данные, которые клиент к тому же может подменить. Отсекаем
+    # заведомо ненормальный объём, чтобы в базу не попал произвольный документ.
+    raw = payload.data
+    if raw is not None and len(json.dumps(raw, ensure_ascii=False)) > 20000:
+        raise HTTPException(422, "Слишком большой объём данных справочника")
+    c.data = raw
     team.has_company = True
     db.commit(); db.refresh(c)
     return {"has_company": True, "company": _company_dict(c)}

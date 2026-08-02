@@ -11,6 +11,7 @@ from sqlalchemy import text
 _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
+from app.utils import ratelimit
 from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex
 
 
@@ -463,6 +464,28 @@ def _auth_token_valid(authorization: str | None) -> bool:
         return True
     except Exception:
         return False
+
+
+@app.middleware("http")
+async def _global_rate_limit(request, call_next):
+    """Верхняя граница частоты запросов к API с одного адреса.
+
+    Точечные лимиты (вход, письма, AI) стоят на своих эндпоинтах и намного
+    строже. Этот потолок — общая страховка от простого наводнения запросами:
+    300 запросов в минуту заметно выше того, что создаёт интерфейс при обычной
+    работе, поэтому живой пользователь его не замечает.
+
+    Health-проверки платформы не считаем: иначе частый опрос от Timeweb сам
+    упёрся бы в лимит и контейнер начали бы перезапускать.
+    """
+    path = request.url.path
+    if request.method != "OPTIONS" and path.startswith("/api/") and not path.startswith("/api/health"):
+        try:
+            ratelimit.check_request(ratelimit.GLOBAL_API, request)
+        except HTTPException as e:
+            return _JSONResponse({"detail": e.detail}, status_code=429,
+                                 headers=dict(e.headers or {}))
+    return await call_next(request)
 
 
 @app.middleware("http")

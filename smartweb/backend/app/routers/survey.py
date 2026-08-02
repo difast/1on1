@@ -19,6 +19,14 @@ from app.schemas.user import UserOut
 from app.utils.auth import get_current_user
 from app.services.survey import SURVEY_QUESTIONS, sanitize_answers
 
+from typing import Annotated
+from pydantic import Field, field_validator
+from app.utils.validation import (
+    ShortStr, OptShortStr, TextStr, OptTextStr, LongTextStr, OptLongTextStr,
+    EntityId, OptEntityId,
+)
+
+
 router = APIRouter()
 
 
@@ -29,12 +37,28 @@ def get_config():
 
 
 class SubmitReq(BaseModel):
-    user_id: int
+    user_id: EntityId
+    # Ответы опросника: произвольный словарь, но с границей на число ключей и
+    # длину значений — иначе в JSON-колонку кладётся сколько угодно данных.
     answers: dict = {}
+
+    @field_validator("answers")
+    @classmethod
+    def _bound_answers(cls, v: dict) -> dict:
+        if len(v) > 50:
+            raise ValueError("Слишком много ответов в опроснике (максимум 50)")
+        for key, val in v.items():
+            if len(str(key)) > 100:
+                raise ValueError("Слишком длинный идентификатор вопроса")
+            if isinstance(val, str) and len(val) > 2000:
+                raise ValueError("Слишком длинный ответ (максимум 2000 символов)")
+            if isinstance(val, list) and len(val) > 50:
+                raise ValueError("Слишком много вариантов в ответе")
+        return v
 
 
 class SkipReq(BaseModel):
-    user_id: int
+    user_id: EntityId
 
 
 def _resolve_user(db: Session, current, user_id: int) -> User:
