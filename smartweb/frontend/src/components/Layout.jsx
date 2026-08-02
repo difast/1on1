@@ -14,6 +14,7 @@ import { toast } from '../lib/ui'
 import { useTranslation } from 'react-i18next'
 import { SUPPORTED_LANGS, setExplicitLang } from '../i18n'
 import { useSurface } from '../lib/surface'
+import ErrorBoundary from './ErrorBoundary'
 
 const TOAST_META = {
   new_task:           { icon: '+', color: '#4f46e5' },
@@ -1315,7 +1316,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
         onClose={() => setShowAvatarModal(false)}
       />
       <LegalModal open={showDocs} onClose={() => setShowDocs(false)} />
-      <Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} readOnly={isTg} onClose={() => setShowBilling(false)} />
+      <ErrorBoundary resetKey={showBilling}><Billing open={showBilling} currentUser={currentUser} initialPlan={billingPlan} readOnly={isTg} onClose={() => setShowBilling(false)} /></ErrorBoundary>
 
       {/* Закрыто сегодня (Задача 2): список закрытых сегодня задач по роли. */}
       {showClosedToday && (

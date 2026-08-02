@@ -47,13 +47,13 @@ const Check = () => (
   <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M11.5 3.5l-6 6L2.5 6.8" stroke="var(--color-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
 )
 
-const fmt = (v) => (v === null || v === undefined || v < 0) ? 'без ограничений' : v
+const fmt = (t, v) => (v === null || v === undefined || v < 0) ? t('ui.bez_ogranicheniy') : v
 
-function planBullets(p) {
+function planBullets(t, p) {
   const l = p.limits || {}, f = l.features || {}
   const out = []
   out.push(l.users_label || (l.max_users != null ? t('ui.do_polzovateley', { v1: l.max_users }) : t('ui.polzovateley_bez_limita')))
-  out.push(l.max_teams === 1 ? t('ui.1_komanda') : t('ui.komand_2', { v1: fmt(l.max_teams) }))
+  out.push(l.max_teams === 1 ? t('ui.1_komanda') : t('ui.komand_2', { v1: fmt(t, l.max_teams) }))
   for (const [key, label] of FEATURE_LABELS) {
     if (f[key]) out.push(label)
     if (out.length >= 7) break
@@ -250,7 +250,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
                   </div>
                   <div className="bill-desc">{DESC[p.code] || ''}</div>
                   <ul className="bill-feats">
-                    {planBullets(p).map((b, i) => (<li key={i}><Check />{b}</li>))}
+                    {planBullets(t, p).map((b, i) => (<li key={i}><Check />{b}</li>))}
                     {!isFreeState && COMING_SOON.map(([k, label]) => (
                       <li key={k} style={{ opacity: .55 }}><Check />{label} — скоро</li>
                     ))}

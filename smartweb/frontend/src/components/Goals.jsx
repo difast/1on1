@@ -312,6 +312,7 @@ export function GoalForm({ onCreate, onCancel, submitLabel, placeholder }) {
 
 // ── командная цель глазами сотрудника (только чтение + обсуждение) ────────────
 function TeamGoalCard({ goal, meId, onChanged }) {
+  const { t } = useTranslation()
   const [expanded, setExpanded] = useState(false)
   const c = STATUS_COLOR[goal.status] || STATUS_COLOR.not_started
   return (

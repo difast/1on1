@@ -140,6 +140,7 @@ function buildContinuousAxis(series, startISO, endISO) {
 }
 
 function CompareRow({ label, cur, prev, unit = '', invert = false }) {
+  const { t } = useTranslation()
   const delta = (cur ?? 0) - (prev ?? 0)
   const up = delta > 0, down = delta < 0
   // invert: для «плохих» метрик рост = красный. Здесь метрики позитивные.

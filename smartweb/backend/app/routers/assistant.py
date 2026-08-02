@@ -6,6 +6,7 @@ from app.database import get_db
 from app.models.user import User
 from app.services import entitlements
 from app.prompts import PIT_SYSTEM_PROMPT
+from app.services import ai_text
 
 router = APIRouter()
 
@@ -74,6 +75,10 @@ def pit_chat(data: ChatRequest, db: Session = Depends(get_db)):
 
     from app.services.ai_service import call_llm
     reply = call_llm(system, messages, max_tokens=600)
+    # Промпт запрещает разметку, но модель не всегда следует инструкции —
+    # подчищаем остатки, чтобы символы * и # не попали в интерфейс.
+    if reply is not None:
+        reply = ai_text.strip_markdown(reply)
     if reply is None:
         raise HTTPException(status_code=503, detail="AI временно недоступен, попробуйте ещё раз")
     return {"reply": reply}

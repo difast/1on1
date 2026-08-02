@@ -52,6 +52,14 @@ export const deleteUser = (id: number) =>
 export const updateUser = (id: number, data: unknown) =>
   req(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
 
+/** Отвязать push-токен устройства от аккаунта при выходе.
+ *  Без этого уведомления прежнего пользователя продолжают приходить на
+ *  устройство, на котором уже работает другой человек. */
+export const releasePushToken = (id: number, pushToken?: string | null) =>
+  req(`/users/${id}/push-token/release`, {
+    method: 'POST', body: JSON.stringify({ push_token: pushToken ?? null }),
+  });
+
 // Teams
 export const createTeam = (data: unknown) =>
   req('/teams/', { method: 'POST', body: JSON.stringify(data) });
@@ -204,7 +212,13 @@ export type OneAiSection = { key: string; title: string; scope: string };
 export const getOneAiSections = (actorId: number) =>
   req<{ sections: OneAiSection[] }>(`/oneai/sections?actor_id=${actorId}`);
 export const oneAiQuery = (data: { actor_id: number; section: string; target_user_id?: number; team_id?: number; message?: string }) =>
-  req<{ reply: string; based_on: any }>('/oneai/query', { method: 'POST', body: JSON.stringify(data) });
+  req<{
+    reply: string;
+    // Разобранная сервером структура ответа: интерфейс рисует её своими
+    // средствами вместо вывода сплошного текста с символами разметки.
+    structured?: { summary: string; insights: { title: string; text: string }[]; actions: string[]; text: string };
+    based_on: any;
+  }>('/oneai/query', { method: 'POST', body: JSON.stringify(data) });
 
 // Per-user summary stats (включает closed_today — закрытые сегодня, по роли)
 export const getUserStats = (userId: number) =>

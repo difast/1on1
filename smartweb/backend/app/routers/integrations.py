@@ -17,7 +17,7 @@ from app.models.integration import (
     CalendarIntegration, WebhookSubscription, WebhookDelivery,
 )
 from app.models.team import Team
-from app.utils.auth import get_current_user
+from app.utils.auth import get_current_user, require_user
 from app.services import crypto
 from app.services import oauth_state
 from app.services.calendar_base import get_calendar_provider, SUPPORTED_PROVIDERS, CalendarAuthError
@@ -63,17 +63,27 @@ def _calendar_status(db: Session, user_id: int) -> list[dict]:
 
 @router.get("/status")
 def status(user_id: int = Query(...), team_id: int | None = Query(None),
-           db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """Состояние всех интеграций пользователя/команды для отрисовки вкладки."""
-    webhooks = []
+           db: Session = Depends(get_db), current=Depends(require_user)):
+    """Состояние интеграций для отрисовки вкладки.
+
+    Календари — личные: отдаём только свои. Вебхуки — административные: список
+    и секреты подписи возвращаются только тимлиду запрошенной команды, участник
+    получает пустой список, даже если знает team_id."""
+    if user_id != current.id:
+        raise HTTPException(403, "Можно смотреть только свои интеграции")
+    webhooks, can_manage_webhooks = [], False
     if team_id is not None:
-        for sub in (db.query(WebhookSubscription)
-                    .filter(WebhookSubscription.team_id == team_id)
-                    .order_by(WebhookSubscription.id.desc()).all()):
-            webhooks.append(_webhook_dict(db, sub))
+        team = db.query(Team).filter(Team.id == team_id).first()
+        can_manage_webhooks = bool(team and team.team_lead_id == current.id)
+        if can_manage_webhooks:
+            for sub in (db.query(WebhookSubscription)
+                        .filter(WebhookSubscription.team_id == team_id)
+                        .order_by(WebhookSubscription.id.desc()).all()):
+                webhooks.append(_webhook_dict(db, sub))
     return {
         "calendars": _calendar_status(db, user_id),
         "webhooks": webhooks,
+        "can_manage_webhooks": can_manage_webhooks,
         "webhook_events": list(webhook_service.EVENTS),
         "coming_soon": COMING_SOON,
     }
@@ -83,8 +93,10 @@ def status(user_id: int = Query(...), team_id: int | None = Query(None),
 
 @router.get("/{provider}/authorize")
 def authorize(provider: str, user_id: int = Query(...),
-              db: Session = Depends(get_db), current=Depends(get_current_user)):
+              db: Session = Depends(get_db), current=Depends(require_user)):
     """Вернуть URL страницы согласия OAuth. Клиент делает по нему переход."""
+    if user_id != current.id:
+        raise HTTPException(403, "Можно подключать только свой календарь")
     if provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(404, "Неизвестный провайдер")
     cp = get_calendar_provider(provider)
@@ -143,8 +155,10 @@ def callback(provider: str, data: CallbackReq, db: Session = Depends(get_db)):
 
 @router.post("/{provider}/disconnect")
 def disconnect(provider: str, user_id: int = Query(...),
-               db: Session = Depends(get_db), current=Depends(get_current_user)):
-    """Отключить календарь: удалить сохранённые токены."""
+               db: Session = Depends(get_db), current=Depends(require_user)):
+    """Отключить календарь: удалить сохранённые токены (только свой)."""
+    if user_id != current.id:
+        raise HTTPException(403, "Можно отключать только свой календарь")
     integ = (db.query(CalendarIntegration)
              .filter(CalendarIntegration.user_id == user_id,
                      CalendarIntegration.provider == provider).first())
@@ -176,11 +190,14 @@ def _webhook_dict(db: Session, sub: WebhookSubscription) -> dict:
     }
 
 
-def _require_team_lead(db: Session, team_id: int, user_id: int) -> Team:
+def _require_team_lead(db: Session, team_id: int, user) -> Team:
+    """Вебхуки — административная функция уровня команды: смотреть и менять их
+    может только тимлид. Личность берётся из токена (параметр user_id в запросе
+    подделывается, поэтому доверять ему нельзя)."""
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
         raise HTTPException(404, "Команда не найдена")
-    if team.team_lead_id != user_id:
+    if not user or team.team_lead_id != user.id:
         raise HTTPException(403, "Управлять Webhook может только тимлид команды")
     return team
 
@@ -194,9 +211,9 @@ class WebhookCreateReq(BaseModel):
 
 @router.post("/webhooks")
 def create_webhook(data: WebhookCreateReq, db: Session = Depends(get_db),
-                   current=Depends(get_current_user)):
+                   current=Depends(require_user)):
     """Добавить исходящий вебхук (только тимлид команды). Секрет генерируется."""
-    _require_team_lead(db, data.team_id, data.user_id)
+    _require_team_lead(db, data.team_id, current)
     if not (data.url.startswith("http://") or data.url.startswith("https://")):
         raise HTTPException(422, "URL должен начинаться с http:// или https://")
     valid = [e for e in (data.events or []) if e in webhook_service.EVENTS]
@@ -210,7 +227,9 @@ def create_webhook(data: WebhookCreateReq, db: Session = Depends(get_db),
 
 @router.get("/webhooks")
 def list_webhooks(team_id: int = Query(...), db: Session = Depends(get_db),
-                  current=Depends(get_current_user)):
+                  current=Depends(require_user)):
+    """Только тимлид: в ответе отдаётся секрет подписи вебхука."""
+    _require_team_lead(db, team_id, current)
     subs = (db.query(WebhookSubscription)
             .filter(WebhookSubscription.team_id == team_id)
             .order_by(WebhookSubscription.id.desc()).all())
@@ -218,24 +237,24 @@ def list_webhooks(team_id: int = Query(...), db: Session = Depends(get_db),
 
 
 @router.delete("/webhooks/{webhook_id}")
-def delete_webhook(webhook_id: int, user_id: int = Query(...),
-                   db: Session = Depends(get_db), current=Depends(get_current_user)):
+def delete_webhook(webhook_id: int, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
     sub = db.query(WebhookSubscription).filter(WebhookSubscription.id == webhook_id).first()
     if not sub:
         return {"ok": True}
-    _require_team_lead(db, sub.team_id, user_id)
+    _require_team_lead(db, sub.team_id, current)
     db.delete(sub); db.commit()
     return {"ok": True}
 
 
 @router.post("/webhooks/{webhook_id}/test")
-def test_webhook(webhook_id: int, user_id: int = Query(...),
-                 db: Session = Depends(get_db), current=Depends(get_current_user)):
+def test_webhook(webhook_id: int, db: Session = Depends(get_db),
+                 current=Depends(require_user)):
     """Отправить тестовое событие, чтобы получатель проверил приём и подпись."""
     sub = db.query(WebhookSubscription).filter(WebhookSubscription.id == webhook_id).first()
     if not sub:
         raise HTTPException(404, "Webhook не найден")
-    _require_team_lead(db, sub.team_id, user_id)
+    _require_team_lead(db, sub.team_id, current)
     webhook_service.dispatch(db, sub.team_id, "webhook.test",
                              {"message": "Тестовое событие OneOnOne", "team_id": sub.team_id})
     return {"ok": True}
@@ -243,7 +262,11 @@ def test_webhook(webhook_id: int, user_id: int = Query(...),
 
 @router.get("/webhooks/{webhook_id}/deliveries")
 def webhook_deliveries(webhook_id: int, db: Session = Depends(get_db),
-                       current=Depends(get_current_user)):
+                       current=Depends(require_user)):
+    sub = db.query(WebhookSubscription).filter(WebhookSubscription.id == webhook_id).first()
+    if not sub:
+        raise HTTPException(404, "Webhook не найден")
+    _require_team_lead(db, sub.team_id, current)
     rows = (db.query(WebhookDelivery)
             .filter(WebhookDelivery.subscription_id == webhook_id)
             .order_by(WebhookDelivery.id.desc()).limit(50).all())

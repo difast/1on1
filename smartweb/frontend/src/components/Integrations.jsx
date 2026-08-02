@@ -166,7 +166,7 @@ export default function Integrations({ user, teamId }) {
     if (!user?.id) return
     getIntegrationsStatus(user.id, teamId)
       .then(r => setData(r.data))
-      .catch(() => setData({ calendars: [], webhooks: [], webhook_events: [], coming_soon: [] }))
+      .catch(() => setData({ calendars: [], webhooks: [], webhook_events: [], coming_soon: [], can_manage_webhooks: false }))
       .finally(() => setLoading(false))
   }, [user?.id, teamId])
 
@@ -186,6 +186,9 @@ export default function Integrations({ user, teamId }) {
   const webhooks = data?.webhooks || []
   const events = data?.webhook_events || []
   const comingSoon = data?.coming_soon || []
+  // Признак приходит с сервера (он же и проверяет право), интерфейс его только
+  // отражает: участник видит календари, но не видит административный раздел.
+  const canManageWebhooks = !!data?.can_manage_webhooks
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 22, maxWidth: 720 }}>
@@ -197,14 +200,14 @@ export default function Integrations({ user, teamId }) {
         </div>
       </div>
 
-      {teamId ? (
+      {canManageWebhooks && (teamId ? (
         <WebhookCard teamId={teamId} userId={user.id} webhooks={webhooks} events={events} onChange={load} notify={notify} />
       ) : (
         <div className="card" style={{ padding: 18 }}>
           <span style={{ fontWeight: 700, fontSize: 15 }}>Webhook</span>
           <p style={{ fontSize: 13, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>{t('ui.vyberite_komandu_na_vkladke_komandy_chtoby')}</p>
         </div>
-      )}
+      ))}
 
       <div className="card" style={{ padding: 18 }}>
         <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--color-text-primary)' }}>{t('ui.skoro_2')}</span>

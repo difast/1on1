@@ -33,7 +33,7 @@ export default function OneAiScreen() {
   const [target, setTarget] = useState<number | null>(null);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{ reply: string; based_on: any } | null>(null);
+  const [result, setResult] = useState<{ reply: string; structured?: { summary: string; insights: { title: string; text: string }[]; actions: string[]; text: string }; based_on: any } | null>(null);
   const [locked, setLocked] = useState<string | null>(null);
 
   useEffect(() => {
@@ -131,8 +131,40 @@ export default function OneAiScreen() {
 
           {result && (
             <View style={styles.card}>
-              <Text style={styles.body}>{result.reply}</Text>
-              {result.based_on && <Text style={[styles.muted, { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }]}>Основано на данных: {basedOnText(result.based_on)}</Text>}
+              {/* Структуру рисует интерфейс: акцентная карточка с главным выводом,
+                  блоки наблюдений и нумерованный список действий. Разметочных
+                  символов в тексте нет — сервер отдаёт разобранную структуру. */}
+              {result.structured?.summary ? (
+                <View style={styles.summaryBox}>
+                  <Text style={styles.summaryLabel}>{t('oneai.summary')}</Text>
+                  <Text style={styles.summaryText}>{result.structured.summary}</Text>
+                </View>
+              ) : null}
+
+              {(result.structured?.insights ?? []).map((ins: any, i: number) => (
+                <View key={i} style={{ marginBottom: 12 }}>
+                  <Text style={styles.insightTitle}>{ins.title}</Text>
+                  <Text style={styles.insightText}>{ins.text}</Text>
+                </View>
+              ))}
+
+              {(result.structured?.actions ?? []).length > 0 && (
+                <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 12, marginTop: 4 }}>
+                  <Text style={styles.summaryLabel}>{t('oneai.actions')}</Text>
+                  {(result.structured?.actions ?? []).map((a: string, i: number) => (
+                    <View key={i} style={{ flexDirection: 'row', gap: 10, marginTop: 8 }}>
+                      <Text style={styles.actionNum}>{i + 1}</Text>
+                      <Text style={[styles.body, { flex: 1 }]}>{a}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {!result.structured?.summary && !(result.structured?.insights ?? []).length && (
+                <Text style={styles.body}>{result.structured?.text || result.reply}</Text>
+              )}
+
+              {result.based_on && <Text style={[styles.muted, { marginTop: 12, borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 10 }]}>{t('labels.basedOn')}: {basedOnText(result.based_on)}</Text>}
             </View>
           )}
 
@@ -157,6 +189,12 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   cardTitle: { fontSize: 16, fontWeight: '700', color: c.textPrimary },
   muted: { fontSize: 12, color: c.textMuted, lineHeight: 17 },
   body: { fontSize: 14, color: c.textPrimary, lineHeight: 21 },
+  summaryBox: { backgroundColor: c.accentLight, borderWidth: 1, borderColor: c.accent, borderRadius: 12, padding: 14, marginBottom: 16 },
+  summaryLabel: { fontSize: 11, fontWeight: '700', letterSpacing: 0.8, textTransform: 'uppercase', color: c.accent, marginBottom: 6 },
+  summaryText: { fontSize: 15, fontWeight: '600', color: c.textPrimary, lineHeight: 22 },
+  insightTitle: { fontSize: 13, fontWeight: '700', color: c.textPrimary, marginBottom: 3 },
+  insightText: { fontSize: 13.5, color: c.textSecondary, lineHeight: 20 },
+  actionNum: { fontSize: 14, fontWeight: '700', color: c.accent },
   input: { borderWidth: 1, borderColor: c.border, borderRadius: 8, padding: 10, fontSize: 14, color: c.textPrimary, backgroundColor: c.bg, minHeight: 44, textAlignVertical: 'top' },
   primaryBtn: { backgroundColor: c.accent, borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
   primaryBtnText: { color: '#fff', fontWeight: '600', fontSize: 14 },

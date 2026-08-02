@@ -1,8 +1,7 @@
-import { useState, useEffect, useLayoutEffect, useCallback } from 'react'
+import { useState, useEffect, useLayoutEffect, useCallback, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import useEscapeKey from '../lib/useEscapeKey'
 import { updateUser } from '../api/client'
-import { useIsTelegram } from '../lib/surface'
 
 /*
  * Первый запуск: контекстный тур в формате spotlight / coachmark (как в
@@ -37,66 +36,50 @@ const STEPS = {
 const PAD = 8            // отступ подсветки вокруг элемента
 const TIP_W = 300        // ширина подсказки
 
-// Позиционируем подсказку у элемента, а не по центру экрана. Выбираем сторону
-// по доступному месту и прижимаем к границам вьюпорта.
+// Позиционируем подсказку у элемента, а не по центру экрана. Сторону выбираем
+// по доступному месту и прижимаем к границам вьюпорта по ОБЕИМ осям.
 //
-// На узком вьюпорте (Mini App, isTg) считаем координаты численно с реальной
-// шириной контейнера и клампим по обеим осям, чтобы окошко и кнопки «Далее»/
-// «Пропустить» не обрезались краем экрана. На вебе поведение прежнее.
-function placeTip(rect, prefer, isTg) {
-  const vw = window.innerWidth, vh = window.innerHeight
-
-  if (isTg) {
-    const width = Math.min(TIP_W, vw - 24)
-    const estH = 210  // оценка высоты подсказки для вертикального клампа
-    const below = vh - rect.bottom, above = rect.top
-    let place = prefer
-    if (place === 'bottom' && below < estH && above > below) place = 'top'
-    if (place === 'top' && above < estH && below > above) place = 'bottom'
-    if (place === 'left' && rect.left < width + 24) place = 'bottom'
-
-    let top, left
-    if (place === 'left') {
-      top = rect.top + rect.height / 2 - estH / 2
-      left = rect.left - width - 16
-    } else if (place === 'top') {
-      top = rect.top - estH - 12
-      left = rect.left + rect.width / 2 - width / 2
-    } else {
-      top = rect.bottom + 12
-      left = rect.left + rect.width / 2 - width / 2
-    }
-    left = Math.max(12, Math.min(left, vw - width - 12))
-    top = Math.max(12, Math.min(top, vh - estH - 12))
-    return { place, top, left, width, transform: 'none' }
-  }
-
-  // Веб — прежнее поведение (с transform), не меняем.
+// Раньше веб-ветка считала только горизонтальный кламп, а по вертикали ставила
+// координату без ограничений и полагалась на transform. Второй шаг привязан к
+// плавающей кнопке Пита, которая висит внизу экрана: подсказка центрировалась
+// по ней и уезжала за нижнюю границу — кнопки «Далее» и «Пропустить» были
+// недоступны. Порог выбора стороны тоже был жёстким числом (150), меньше
+// реальной высоты окна, поэтому «снизу» выбиралось там, где места не хватало.
+//
+// Теперь та же численная логика, что уже применялась для Mini App, работает
+// везде, а вместо оценки высоты используется реально измеренная (tipH).
+function placeTip(rect, prefer, vw, vh, tipW, tipH) {
+  const M = 12                       // отступ от краёв экрана
+  const GAP = 12                     // зазор между элементом и подсказкой
+  const width = Math.min(tipW, vw - M * 2)
   const below = vh - rect.bottom, above = rect.top
+
   let place = prefer
-  if (place === 'bottom' && below < 150 && above > below) place = 'top'
-  if (place === 'top' && above < 150 && below > above) place = 'bottom'
-  if (place === 'left' && rect.left < TIP_W + 24) place = 'bottom'
+  // Сторону меняем, сравнивая с ФАКТИЧЕСКОЙ высотой подсказки, а не с догадкой.
+  if (place === 'bottom' && below < tipH + GAP && above > below) place = 'top'
+  if (place === 'top' && above < tipH + GAP && below > above) place = 'bottom'
+  if (place === 'left' && rect.left < width + GAP * 2) place = below >= above ? 'bottom' : 'top'
 
   let top, left
   if (place === 'left') {
-    top = rect.top + rect.height / 2
-    left = rect.left - TIP_W - 16
+    top = rect.top + rect.height / 2 - tipH / 2
+    left = rect.left - width - GAP - 4
   } else if (place === 'top') {
-    top = rect.top - 12
-    left = rect.left + rect.width / 2 - TIP_W / 2
-  } else { // bottom
-    top = rect.bottom + 12
-    left = rect.left + rect.width / 2 - TIP_W / 2
+    top = rect.top - tipH - GAP
+    left = rect.left + rect.width / 2 - width / 2
+  } else {
+    top = rect.bottom + GAP
+    left = rect.left + rect.width / 2 - width / 2
   }
-  left = Math.max(12, Math.min(left, vw - TIP_W - 12))
-  const transform = place === 'left' ? 'translateY(-50%)' : place === 'top' ? 'translateY(-100%)' : 'none'
-  return { place, top, left, width: TIP_W, transform }
+
+  // Кламп по обеим осям: подсказка всегда целиком в пределах вьюпорта.
+  left = Math.max(M, Math.min(left, vw - width - M))
+  top = Math.max(M, Math.min(top, Math.max(M, vh - tipH - M)))
+  return { place, top, left, width }
 }
 
 export default function WelcomeTour({ currentUser }) {
   const { t } = useTranslation()
-  const isTg = useIsTelegram()
   const role = currentUser?.role === 'team_lead' ? 'team_lead' : 'member'
   const key = currentUser?.id ? `tour_done_${currentUser.id}` : null
 
@@ -106,6 +89,14 @@ export default function WelcomeTour({ currentUser }) {
   const [i, setI] = useState(0)
   const [rect, setRect] = useState(null)
   const [open, setOpen] = useState(false)
+  // Реальные размеры подсказки и вьюпорта: позиция считается по ним, а не по
+  // зашитым числам, поэтому окно не уезжает за край на любом разрешении.
+  const tipRef = useRef(null)
+  const [tipH, setTipH] = useState(210)
+  const [vp, setVp] = useState(() => ({
+    w: typeof window === 'undefined' ? 1024 : window.innerWidth,
+    h: typeof window === 'undefined' ? 768 : window.innerHeight,
+  }))
 
   const finish = useCallback(() => {
     try { if (key) localStorage.setItem(key, '1') } catch {}
@@ -152,14 +143,24 @@ export default function WelcomeTour({ currentUser }) {
       const el = document.querySelector(resolved[i].sel)
       if (el) setRect(el.getBoundingClientRect())
     }
+    const onResize = () => { setVp({ w: window.innerWidth, h: window.innerHeight }); measure() }
     measure()
-    window.addEventListener('resize', measure)
+    onResize()
+    window.addEventListener('resize', onResize)
     window.addEventListener('scroll', measure, true)
     return () => {
-      window.removeEventListener('resize', measure)
+      window.removeEventListener('resize', onResize)
       window.removeEventListener('scroll', measure, true)
     }
   }, [open, i, resolved])
+
+  // Высоту берём после отрисовки: у шагов разной длины текста она разная, а от
+  // неё зависит и выбор стороны, и вертикальный кламп.
+  useLayoutEffect(() => {
+    if (!open || !tipRef.current) return
+    const h = tipRef.current.getBoundingClientRect().height
+    if (h && Math.abs(h - tipH) > 1) setTipH(h)
+  }, [open, i, rect, tipH])
 
   useEscapeKey(finish, open)
   if (!open || !resolved[i] || !rect) return null
@@ -167,7 +168,7 @@ export default function WelcomeTour({ currentUser }) {
   const total = resolved.length
   const last = i === total - 1
   const step = resolved[i]
-  const tip = placeTip(rect, step.place || 'bottom', isTg)
+  const tip = placeTip(rect, step.place || 'bottom', vp.w, vp.h, TIP_W, tipH)
 
   return (
     <div role="dialog" aria-modal="true" aria-label={t('ui.znakomstvo_s_produktom')}
@@ -188,13 +189,13 @@ export default function WelcomeTour({ currentUser }) {
       <div style={{ position: 'fixed', inset: 0 }} onClick={e => e.stopPropagation()} />
 
       {/* Подсказка рядом с элементом */}
-      <div style={{
+      <div ref={tipRef} style={{
         position: 'fixed', top: tip.top, left: tip.left, width: tip.width,
-        transform: tip.transform,
-        // В Mini App гарантируем, что окошко с кнопками влезает по вертикали.
-        maxHeight: isTg ? 'calc(100vh - 24px)' : undefined,
-        overflowY: isTg ? 'auto' : undefined,
-        boxSizing: isTg ? 'border-box' : undefined,
+        // Ограничение по высоте — на всех поверхностях, а не только в Mini App:
+        // на низком окне браузера подсказка иначе вылезала за нижний край.
+        maxHeight: 'calc(100vh - 24px)',
+        overflowY: 'auto',
+        boxSizing: 'border-box',
         background: 'var(--color-surface)', color: 'var(--color-text-primary)',
         border: '1px solid var(--color-border)', borderRadius: 14,
         boxShadow: '0 12px 40px rgba(0,0,0,0.35)', padding: '16px 18px',
