@@ -54,8 +54,20 @@ def authorize(platform: str = Query("web", pattern="^(web|mobile)$"),
         if current is None or current.id != link_user_id:
             raise HTTPException(status_code=401, detail="Не авторизовано")
         user_id = current.id
-    state = oauth_state.make_state(user_id, STATE_FLOW)
+    is_mobile = (platform or "web").lower() == "mobile"
+    state = oauth_state.make_state(user_id, STATE_FLOW, platform="mobile" if is_mobile else None)
     return {"url": yandex_id.authorize_url(state, platform), "state": state}
+
+
+@router.get("/callback-target")
+def callback_target(state: str = Query(...)):
+    """Куда странице возврата отдать результат: остаться в вебе или перебросить
+    в приложение. Решение принимается по метке платформы в state."""
+    platform = oauth_state.read_platform(state)
+    return {
+        "platform": platform or "web",
+        "app_redirect": yandex_id.app_redirect_uri() if platform == "mobile" else "",
+    }
 
 
 class CallbackReq(BaseModel):

@@ -125,7 +125,9 @@
     "confirmHint": "Follow the link in the email to continue. Your workspace opens once the address is confirmed.",
     "resendEmail": "Resend email",
     "resendSent": "Email sent again.",
-    "serverUnavailable": "Server unavailable"
+    "serverUnavailable": "Server unavailable",
+    "yandexReturningToApp": "Taking you back to the app...",
+    "yandexOpenApp": "Open the app"
   },
   "profile": {
     "title": "Profile",
