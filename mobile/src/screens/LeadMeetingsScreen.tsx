@@ -21,6 +21,7 @@ import { MeetingProposalsModal } from '../components/MeetingProposalsModal';
 import { TaskProposalsModal } from '../components/TaskProposalsModal';
 import { InteractionsModal } from '../components/InteractionsModal';
 import { SpontaneousCallModal } from '../components/SpontaneousCallModal';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function LeadMeetingsScreen() {
   const { t } = useI18n();
@@ -392,7 +393,7 @@ export default function LeadMeetingsScreen() {
             {teamMembers.length === 0 ? (
               <Text style={styles.modalHint}>{t('ui.net_uchastnikov_v_komandah')}</Text>
             ) : (
-              <ScrollView style={{ maxHeight: 160 }} keyboardShouldPersistTaps="handled">
+              <KeyboardAwareScroll style={{ maxHeight: 160 }} keyboardShouldPersistTaps="handled">
                 {teamMembers.map(m => {
                   const selected = groupMode ? groupSelected.includes(m.user_id) : createMemberId === m.user_id;
                   return (
@@ -416,7 +417,7 @@ export default function LeadMeetingsScreen() {
                     </TouchableOpacity>
                   );
                 })}
-              </ScrollView>
+              </KeyboardAwareScroll>
             )}
 
             <Text style={styles.modalLabel}>{t('ui.data_i_vremya')}</Text>

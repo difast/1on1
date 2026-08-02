@@ -13,6 +13,7 @@ import type { AppColors } from '../constants/colors';
 import { getTeams, getMemberTeam, getTeamCompany, suggestCompany, saveTeamCompany } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 type Status = 'loading' | 'error' | 'view' | 'empty';
 
 const EMPTY_FORM = {
@@ -169,7 +170,7 @@ export default function CompanyScreen() {
   ].filter((f) => f.value !== null && f.value !== undefined && `${f.value}`.length > 0) : [];
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => (editing ? setEditing(false) : router.back())} style={styles.backBtn} hitSlop={10}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
@@ -182,7 +183,7 @@ export default function CompanyScreen() {
       {status === 'error' && <View style={styles.center}><Text style={styles.muted}>{t('ui.ne_udalos_zagruzit_poprobuyte_pozzhe')}</Text></View>}
 
       {(status === 'view' || status === 'empty') && (
-        <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           {!editing && status === 'view' && (
             <>
               <View style={styles.card}>
@@ -268,7 +269,7 @@ export default function CompanyScreen() {
               </TouchableOpacity>
             </>
           )}
-        </ScrollView>
+        </KeyboardAwareScroll>
       )}
     </SafeAreaView>
   );

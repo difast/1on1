@@ -12,6 +12,8 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
 import { StatusBadge } from '../components/StatusBadge';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
+import { EmptyState } from '../components/EmptyState';
 
 function RiskSignalCard({ signal, colors }: { signal: any; colors: AppColors }) {
   const { t } = useI18n();
@@ -121,15 +123,16 @@ export default function LeadAnalyticsScreen() {
         <Text style={styles.headerTitle}>{t('ui.analitika')}</Text>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {teams.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.noData}>{t('ui.net_dannyh_dlya_otobrazheniya')}</Text>
-            <Text style={styles.noDataSub}>{t('ui.sozdayte_komandu_i_provedite_vstrechi')}</Text>
-          </View>
+          <EmptyState
+            icon="stats-chart-outline"
+            title={t('ui.net_dannyh_dlya_otobrazheniya')}
+            description={t('ui.sozdayte_komandu_i_provedite_vstrechi')}
+          />
         ) : (
           <>
             {/* Team selector */}
@@ -154,7 +157,7 @@ export default function LeadAnalyticsScreen() {
             {teams[selectedTeam] && <TeamStats team={teams[selectedTeam]} topics={topics} />}
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

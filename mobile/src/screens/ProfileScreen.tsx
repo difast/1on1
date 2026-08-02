@@ -15,6 +15,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Avatar } from '../components/Avatar';
 import { LegalDocsModal } from '../components/LegalDocsModal';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function ProfileScreen() {
   const { colors, toggleTheme, isDark } = useTheme();
@@ -233,7 +234,7 @@ export default function ProfileScreen() {
         <Text style={styles.headerTitle}>{t('profile.title')}</Text>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
+      <KeyboardAwareScroll contentContainerStyle={styles.content}>
         {/* Avatar */}
         <View style={styles.avatarSection}>
           <TouchableOpacity onPress={handleAvatarChange} disabled={uploadingAvatar}>
@@ -606,17 +607,6 @@ export default function ProfileScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuRow}
-            onPress={() => router.push({ pathname: '/(tabs)/analytics', params: { from: 'profile' } } as any)}
-            activeOpacity={0.7}
-          >
-            <View style={styles.menuIconWrap}>
-              <Ionicons name="bar-chart-outline" size={18} color={colors.textSecondary} />
-            </View>
-            <Text style={styles.menuRowTitle}>{t('nav.analytics')}</Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.menuRow}
             onPress={() => router.push({ pathname: '/(tabs)/notifications', params: { from: 'profile' } } as any)}
             activeOpacity={0.7}
           >
@@ -683,7 +673,7 @@ export default function ProfileScreen() {
             </Text>
           </TouchableOpacity>
         </View>
-      </ScrollView>
+      </KeyboardAwareScroll>
       <LegalDocsModal visible={showDocs} onClose={() => setShowDocs(false)} />
     </SafeAreaView>
   );

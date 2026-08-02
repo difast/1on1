@@ -10,6 +10,7 @@ import type { AppColors } from '../constants/colors';
 import {
   getTaskActivity, getTaskComments, addTaskComment, addTaskAssignee, removeTaskAssigneeById, getTaskById,
 } from '../lib/api';
+import { KeyboardAwareScroll } from './KeyboardAvoider';
 
 const ACTION_KEY: Record<string, string> = {
   created: 'created', status_changed: 'statusChanged',
@@ -96,7 +97,7 @@ export function TaskCollabModal({
           ))}
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {tab === 'activity' && (
             activity === null ? <ActivityIndicator color={colors.accent} style={{ marginTop: 24 }} /> :
             activity.length === 0 ? <Text style={styles.empty}>{t('ui.poka_net_sobytiy')}</Text> :
@@ -160,7 +161,7 @@ export function TaskCollabModal({
               {!canManage && <Text style={styles.hint}>{t('ui.izmenyat_sostav_mozhet_tolko_timlid')}</Text>}
             </>
           )}
-        </ScrollView>
+        </KeyboardAwareScroll>
       </SafeAreaView>
     </Modal>
   );

@@ -1409,7 +1409,7 @@
     "administrator": "Әкімші",
     "izmenit_sotrudnika": "Қызметкерді өзгерту",
     "dobavit_sotrudnika": "Қызметкер қосу",
-    "skopirovat_ssylku": "Сілтемені көшіру",
+    "skopirovat_ssylku": "Кодты көшіру",
     "provozhu_1_on_1_vstrechi_upravlyayu": "1-on-1 кездесулер өткіземін, команда мен тапсырмаларды басқарамын",
     "uchastvuyu_vo_vstrechah_rabotayu_nad_zadachami": "Кездесулерге қатысамын, тапсырмалармен жұмыс істеймін",
     "vybrat_drugoe": "Басқасын таңдау",
@@ -1947,7 +1947,11 @@
     "polzovatel_id_zaprosil_udalenie_akkaunta": "{{v1}} пайдаланушысы ({{v2}}, id={{v3}}) аккаунтты жоюды сұрады.",
     "dobro_pozhalovat_imya": "Қош келдіңіз, {{v1}}",
     "itog": "Қорытынды",
-    "cena_po_zaprosu": "Бағасы сұраныс бойынша"
+    "cena_po_zaprosu": "Бағасы сұраныс бойынша",
+    "priglasit": "Шақыру",
+    "priglasit_v_komandu": "Командаға шақыру",
+    "novyy_kod_sdelaet_staryy_nedeystvitelnym": "Жаңа код бұрынғысын жарамсыз етеді — ескі коды барлар қосыла алмайды.",
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Кездесулер, тапсырмалар және мақсаттар туралы хабарламалар осында пайда болады."
   },
   "survey": {
     "q.usage.title": "OneOnOne қызметін қалай пайдаланбақсыз?",

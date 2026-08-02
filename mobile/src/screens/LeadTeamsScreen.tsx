@@ -22,6 +22,7 @@ import { EmptyState } from '../components/EmptyState';
 import { DateTimePickerField } from '../components/DateTimePickerField';
 import { Spinner } from '../components/Spinner';
 import { NotificationBell } from '../components/NotificationBell';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 
 const STATUS_BADGE_KEY: Record<string, string> = {
@@ -36,7 +37,7 @@ const STATUS_BADGE_VARIANT: Record<string, 'green' | 'amber' | 'red'> = {
   red: 'red',
 };
 
-type SheetType = 'createTeam' | 'addMember' | 'scheduleMeeting' | 'addTask' | null;
+type SheetType = 'createTeam' | 'addMember' | 'invite' | 'scheduleMeeting' | 'addTask' | null;
 
 export default function LeadTeamsScreen() {
   const { t } = useI18n();
@@ -81,6 +82,8 @@ export default function LeadTeamsScreen() {
   const [coAssignees, setCoAssignees] = useState<Record<number, string>>({});
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
+  // Поиск участников раскрывается по кнопке, а не занимает место постоянно.
+  const [searchOpen, setSearchOpen] = useState(false);
 
   const bottomSheetRef = useRef<BottomSheet>(null);
   const snapPoints = useMemo(() => ['50%', '85%'], []);
@@ -312,7 +315,7 @@ export default function LeadTeamsScreen() {
         </View>
       </View>
 
-      <ScrollView
+      <KeyboardAwareScroll
         style={{ flex: 1 }}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
@@ -412,40 +415,35 @@ export default function LeadTeamsScreen() {
         {/* Team detail */}
         {selectedTeamId && !loadingTeam && teamDetail && (
           <View style={{ gap: 12 }}>
-            {/* Invite banner */}
-            <TouchableOpacity style={styles.inviteBanner} onPress={handleCopyInvite}>
-              <View style={styles.inviteIcon}>
-                <Ionicons name="link-outline" size={20} color={colors.accent} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.inviteLabel}>{t('ui.kod_priglasheniya')}</Text>
-                <Text style={styles.inviteCode}>{teamDetail.invite_code}</Text>
-              </View>
-              <View style={{ gap: 6 }}>
-                <TouchableOpacity style={styles.copyBtn} onPress={handleCopyInvite}>
-                  <Text style={styles.copyBtnText}>{copied ? t('ui.skopirovano_2') : t('ui.skopirovat')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.addMemberBtn} onPress={() => openSheet('addMember')}>
-                  <Text style={styles.addMemberBtnText}>{t('ui.uchastnika')}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.newCodeBtn, regenerating && styles.btnDisabled]}
-                  onPress={handleRegenerateCode}
-                  disabled={regenerating}
-                >
-                  <Text style={styles.newCodeBtnText}>{regenerating ? '...' : t('ui.novyy_kod')}</Text>
-                </TouchableOpacity>
-              </View>
-            </TouchableOpacity>
+            {/* Две компактные кнопки вместо развёрнутого блока приглашения и
+                постоянно видимого поля поиска: все действия сохранены, но
+                перенесены в вызываемый интерфейс — как на вебе. */}
+            <View style={styles.actionRow}>
+              <TouchableOpacity style={styles.actionBtn} onPress={() => openSheet('invite')} activeOpacity={0.85}>
+                <Ionicons name="person-add-outline" size={17} color={colors.accent} />
+                <Text style={styles.actionBtnText}>{t('ui.priglasit')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.actionBtn, searchOpen && { borderColor: colors.accent, backgroundColor: colors.accentLight }]}
+                onPress={() => { setSearchOpen(v => !v); if (searchOpen) setMemberSearch(''); }}
+                activeOpacity={0.85}
+              >
+                <Ionicons name={searchOpen ? 'close-outline' : 'search-outline'} size={17} color={colors.accent} />
+                <Text style={styles.actionBtnText}>{searchOpen ? t('common.close') : t('common.search')}</Text>
+              </TouchableOpacity>
+            </View>
 
-            {/* Members search — always visible when team is selected */}
-            <TextInput
-              style={styles.memberSearchInput}
-              value={memberSearch}
-              onChangeText={setMemberSearch}
-              placeholder={t('ui.poisk_uchastnikov_2')}
-              placeholderTextColor={colors.textMuted}
-            />
+            {searchOpen && (
+              <TextInput
+                style={styles.memberSearchInput}
+                value={memberSearch}
+                onChangeText={setMemberSearch}
+                placeholder={t('ui.poisk_uchastnikov_2')}
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+                returnKeyType="search"
+              />
+            )}
 
             {/* Members */}
             {allMembers.length === 0 ? (
@@ -571,7 +569,7 @@ export default function LeadTeamsScreen() {
         )}
 
         {selectedTeamId && loadingTeam && <Spinner />}
-      </ScrollView>
+      </KeyboardAwareScroll>
 
       {/* Bottom Sheet */}
       <BottomSheet
@@ -607,6 +605,30 @@ export default function LeadTeamsScreen() {
                   <Text style={styles.sheetBtnText}>{formLoading ? t('ui.sozdanie') : t('common.create')}</Text>
                 </TouchableOpacity>
               </View>
+            </>
+          )}
+
+          {sheetType === 'invite' && (
+            <>
+              <Text style={styles.sheetTitle}>{t('ui.priglasit_v_komandu')}</Text>
+              <Text style={styles.sheetLabel}>{t('ui.kod_priglasheniya')}</Text>
+              <View style={styles.inviteCodeBox}>
+                <Text style={styles.inviteCode}>{teamDetail?.invite_code}</Text>
+              </View>
+              <TouchableOpacity style={[styles.sheetBtn, { marginTop: 12 }]} onPress={handleCopyInvite}>
+                <Text style={styles.sheetBtnText}>{copied ? t('ui.skopirovano_2') : t('ui.skopirovat_ssylku')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.sheetBtnSecondary, { marginTop: 10 }]} onPress={() => setSheetType('addMember')}>
+                <Text style={styles.sheetBtnSecondaryText}>{t('ui.dobavit_uchastnika')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.sheetBtnSecondary, { marginTop: 10 }, regenerating && styles.btnDisabled]}
+                onPress={handleRegenerateCode}
+                disabled={regenerating}
+              >
+                <Text style={styles.sheetBtnSecondaryText}>{regenerating ? t('common.loading') : t('ui.novyy_kod')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.sheetHint}>{t('ui.novyy_kod_sdelaet_staryy_nedeystvitelnym')}</Text>
             </>
           )}
 
@@ -814,6 +836,17 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   teamTabText: { fontSize: 14, fontWeight: '500', color: c.textSecondary },
   teamTabTextActive: { color: '#fff' },
 
+  actionRow: { flexDirection: 'row', gap: 10, flexWrap: 'wrap' },
+  actionBtn: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7,
+    borderWidth: 1, borderColor: c.border, backgroundColor: c.surface,
+    borderRadius: 10, paddingVertical: 11, paddingHorizontal: 12,
+  },
+  actionBtnText: { fontSize: 14, fontWeight: '600', color: c.textPrimary },
+  inviteCodeBox: {
+    backgroundColor: c.blue50, borderWidth: 1, borderColor: c.blue200,
+    borderRadius: 10, paddingVertical: 14, alignItems: 'center', marginTop: 4,
+  },
   inviteBanner: {
     backgroundColor: c.blue50,
     borderRadius: 12,

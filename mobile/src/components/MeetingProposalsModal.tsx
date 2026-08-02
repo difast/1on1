@@ -9,6 +9,7 @@ import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { DateTimePickerField } from './DateTimePickerField';
 import { getProposals, createProposal, acceptProposal, declineProposal, counterProposal } from '../lib/api';
+import { KeyboardAwareScroll } from './KeyboardAvoider';
 
 const statusLabel = (t: (k: string) => string, st: string) =>
   t(`labels.interactionStatus.${st === 'pending' ? 'sent' : st}`);
@@ -164,7 +165,7 @@ export function MeetingProposalsModal({
           ))}
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {tab === 'new' ? (
             <View style={{ gap: 14 }}>
               <View>
@@ -198,7 +199,7 @@ export function MeetingProposalsModal({
             if (list.length === 0) return <Text style={styles.emptyList}>{tab === 'inbox' ? t('ui.net_predlozheniy_ozhidayuschih_otveta') : t('ui.predlozheniy_poka_net')}</Text>;
             return list.map(renderCard);
           })()}
-        </ScrollView>
+        </KeyboardAwareScroll>
       </SafeAreaView>
     </Modal>
   );

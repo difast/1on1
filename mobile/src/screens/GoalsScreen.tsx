@@ -20,6 +20,7 @@ import {
   getTeams, getTeamGoals, getTeamSharedGoals, getGoal, getMemberTeam,
   type Goal, type GoalComment, type TeamGoals,
 } from '../lib/api';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 // Подпись статуса цели — из словаря по ключу (failed -> missed).
 const goalStatusLabel = (t: (k: string) => string, st: string) =>
@@ -400,7 +401,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
   const history = goals.filter(g => !OPEN_STATUSES.includes(g.status));
 
   return (
-    <ScrollView
+    <KeyboardAwareScroll
       contentContainerStyle={styles.content}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await load(); setRefreshing(false); }} tintColor={colors.accent} />}
     >
@@ -438,7 +439,7 @@ function MemberGoals({ meId, colors }: { meId: number; colors: AppColors }) {
 
       {history.length > 0 && <Text style={[styles.sectionTitle, { marginTop: 8 }]}>{t('ui.istoriya')}</Text>}
       {history.map(g => <OwnGoalCard key={g.id} goal={g} meId={meId} colors={colors} onChanged={onChanged} onRemoved={onRemoved} />)}
-    </ScrollView>
+    </KeyboardAwareScroll>
   );
 }
 
@@ -617,7 +618,7 @@ export default function GoalsScreen() {
   const isLead = (activeRole ?? user?.role) === 'team_lead';
 
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'left', 'right']}>
+    <SafeAreaView style={styles.root} edges={['top', 'left', 'right', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10} style={{ width: 28 }}>
           <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />

@@ -10,6 +10,7 @@ import type { AppColors } from '../constants/colors';
 import {
   getInteractions, createInteraction, acceptInteraction, declineInteraction, replyInteraction, closeInteraction,
 } from '../lib/api';
+import { KeyboardAwareScroll } from './KeyboardAvoider';
 
 const TYPE_KEY: Record<string, string> = {
   collab_proposal: 'collab', help_offer: 'help',
@@ -181,7 +182,7 @@ export function InteractionsModal({
           ))}
         </View>
 
-        <ScrollView contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
+        <KeyboardAwareScroll contentContainerStyle={{ padding: 16, gap: 10, paddingBottom: 40 }} keyboardShouldPersistTaps="handled">
           {tab === 'new' ? (
             <View style={{ gap: 12 }}>
               <Text style={styles.label}>{t('ui.tip')}</Text>
@@ -264,7 +265,7 @@ export function InteractionsModal({
             if (list.length === 0) return <Text style={styles.empty}>{tab === 'inbox' ? t('ui.net_vhodyaschih_ozhidayuschih_otveta') : t('ui.vzaimodeystviy_poka_net')}</Text>;
             return list.map(renderCard);
           })()}
-        </ScrollView>
+        </KeyboardAwareScroll>
       </SafeAreaView>
     </Modal>
   );

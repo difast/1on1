@@ -11,6 +11,7 @@ import { getMemberAnalytics } from '../lib/api';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
 import { Spinner } from '../components/Spinner';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function MemberAnalyticsScreen() {
   const { t } = useI18n();
@@ -46,7 +47,7 @@ export default function MemberAnalyticsScreen() {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('ui.analitika')}</Text>
       </View>
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
@@ -147,7 +148,7 @@ export default function MemberAnalyticsScreen() {
                 график). Полные графики доступны в веб-версии. */}
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
     </SafeAreaView>
   );
 }

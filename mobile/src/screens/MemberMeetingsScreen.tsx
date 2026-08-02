@@ -20,6 +20,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Spinner } from '../components/Spinner';
 import { WeekCalendar } from '../components/WeekCalendar';
 import { DateTimePickerField } from '../components/DateTimePickerField';
+import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
 export default function MemberMeetingsScreen() {
   const { t } = useI18n();
@@ -300,7 +301,7 @@ export default function MemberMeetingsScreen() {
         onChanged={loadMeetings}
       />
 
-      <ScrollView
+      <KeyboardAwareScroll
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
@@ -413,7 +414,7 @@ export default function MemberMeetingsScreen() {
             )}
           </>
         )}
-      </ScrollView>
+      </KeyboardAwareScroll>
 
       {/* Request meeting sheet */}
       <BottomSheet
