@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getToken, setToken, clearToken } from '../lib/authToken';
 import { setLang, translate, type Lang } from '../lib/i18n';
 import { authLogin, authRegister, authMe, authForgotPassword, authResendConfirmationByEmail, joinTeam, createTeam } from '../lib/api';
+import { releaseDevicePushToken } from '../lib/push';
 
 export interface AppUser {
   id: number;
@@ -245,6 +246,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signOut = async () => {
+    // Порядок важен: запросу на отвязку нужен ещё живой токен авторизации,
+    // поэтому снимаем привязку устройства ДО очистки сессии.
+    const uid = user?.id;
+    if (uid) { try { await releaseDevicePushToken(uid); } catch {} }
     await clearToken();
     setUserState(null);
     setSession(null);

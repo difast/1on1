@@ -7,7 +7,7 @@ from app.database import get_db
 from app.utils.auth import get_current_user
 from app.models.user import User
 from app.services import entitlements
-from app.services import ai_context
+from app.services import ai_context, ai_text
 from app.services.ai_service import call_llm
 
 router = APIRouter()
@@ -58,7 +58,16 @@ def query(data: OneAiQuery, db: Session = Depends(get_db), current=Depends(get_c
         user_msg += f"\n\nЗапрос пользователя: {data.message}"
     user_msg += f"\n\n=== ДАННЫЕ (только на них основывай ответ) ===\n{context}\n=== КОНЕЦ ДАННЫХ ==="
 
-    reply = call_llm(ai_context.ONEAI_SYSTEM, [{"role": "user", "content": user_msg}], max_tokens=1100)
+    # Ответ короче прежнего: модель отдаёт выводы, а не пересказ данных.
+    reply = call_llm(ai_context.ONEAI_SYSTEM, [{"role": "user", "content": user_msg}], max_tokens=700)
     if reply is None:
         raise HTTPException(status_code=503, detail="ONE AI временно недоступен, попробуйте ещё раз")
-    return {"reply": reply, "based_on": based_on}
+    structured = ai_text.parse_oneai(reply)
+    # reply оставляем для совместимости со старыми сборками клиентов: там же
+    # лежит текстовый вариант, если структуру разобрать не удалось.
+    plain = structured["text"] or "\n".join(
+        [structured["summary"]]
+        + [f"{i['title']}: {i['text']}" for i in structured["insights"]]
+        + structured["actions"]
+    ).strip()
+    return {"reply": plain, "structured": structured, "based_on": based_on}

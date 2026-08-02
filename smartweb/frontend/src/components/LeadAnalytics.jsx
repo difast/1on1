@@ -47,6 +47,7 @@ function StatCard({ value, suffix, label, accent, danger, warning, icon, delay =
 
 // ─── Heatmap (GitHub-style, weekly) ──────────────────────────────────────────
 function Heatmap({ weeks }) {
+  const { t } = useTranslation()
   const max = Math.max(...weeks.map(w => w.count), 1)
   const getColor = (count) => {
     if (count === 0) return 'var(--gray-200)'
@@ -179,6 +180,7 @@ function memberStatus(s) {
 }
 
 function MemberRow({ s, delay }) {
+  const { t } = useTranslation()
   const [vis, setVis] = useState(false)
   useEffect(() => { const t = setTimeout(() => setVis(true), delay); return () => clearTimeout(t) }, [delay])
   const trend = moodTrend(s.mood_trend)

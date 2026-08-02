@@ -1,6 +1,6 @@
 import { Platform, Linking } from 'react-native';
 import Constants from 'expo-constants';
-import { updateUser } from './api';
+import { updateUser, releasePushToken } from './api';
 import { translate } from './i18n';
 
 // Lazy-require so that an OLD build (OTA-updated but WITHOUT the
@@ -50,6 +50,24 @@ export async function ensureNotificationPermission(): Promise<void> {
   } catch {}
 }
 
+// Последний выданный устройству токен: нужен при выходе, чтобы точно указать
+// серверу, какую привязку снимать (в момент выхода запрашивать токен у системы
+// уже поздно — разрешения могут быть отозваны, а сеть недоступна).
+let lastToken: string | null = null;
+
+/** Отвязать токен устройства от аккаунта при выходе из него.
+ *  Вызывать ДО очистки сессии: запросу нужен ещё действующий Bearer-токен. */
+export async function releaseDevicePushToken(userId: number): Promise<void> {
+  try {
+    await releasePushToken(userId, lastToken);
+  } catch {
+    // Сеть недоступна — привязку всё равно снимет вход следующего пользователя:
+    // сервер при регистрации токена убирает его у всех прочих аккаунтов.
+  } finally {
+    lastToken = null;
+  }
+}
+
 /** Ask permission, get the Expo push token, save it to the backend (push_token). */
 export async function registerPushToken(userId: number): Promise<void> {
   if (!Notifications?.getExpoPushTokenAsync) return;
@@ -64,7 +82,7 @@ export async function registerPushToken(userId: number): Promise<void> {
     if (status !== 'granted') return;
 
     const token = (await Notifications.getExpoPushTokenAsync({ projectId: PROJECT_ID })).data;
-    if (token) await updateUser(userId, { push_token: token });
+    if (token) { lastToken = token; await updateUser(userId, { push_token: token }); }
   } catch {
     // Emulator / no Google Play / offline / no native module — ignore.
   }

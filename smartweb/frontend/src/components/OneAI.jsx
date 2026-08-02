@@ -115,7 +115,55 @@ export default function OneAI({ user }) {
 
         {result && !result.locked && (
           <div className="card" style={{ padding: 20 }}>
-            <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{result.reply}</p>
+            {/* Структуру рисует интерфейс: акцентная карточка с главным выводом,
+                блоки наблюдений и список действий. Сырых символов разметки в
+                тексте нет — модель отвечает без markdown, остатки чистит сервер.
+                Если структуру разобрать не удалось, показываем обычный текст. */}
+            {result.structured?.summary ? (
+              <div style={{
+                background: 'var(--color-accent-bg, rgba(10,108,255,.08))',
+                border: '1px solid var(--color-accent-border, rgba(10,108,255,.22))',
+                borderRadius: 12, padding: '14px 16px', marginBottom: 18,
+              }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-accent)', marginBottom: 6 }}>
+                  {t('oneai.summary')}
+                </div>
+                <p style={{ fontSize: 15, lineHeight: 1.55, fontWeight: 600, color: 'var(--color-text-primary)', margin: 0 }}>
+                  {result.structured.summary}
+                </p>
+              </div>
+            ) : null}
+
+            {result.structured?.insights?.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 18 }}>
+                {result.structured.insights.map((ins, i) => (
+                  <div key={i}>
+                    <h4 style={{ fontSize: 13, fontWeight: 700, color: 'var(--color-text-primary)', margin: '0 0 4px' }}>{ins.title}</h4>
+                    <p style={{ fontSize: 13.5, lineHeight: 1.6, color: 'var(--color-text-secondary)', margin: 0 }}>{ins.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {result.structured?.actions?.length > 0 && (
+              <div style={{ borderTop: '1px solid var(--gray-100)', paddingTop: 14 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--color-text-muted)', marginBottom: 8 }}>
+                  {t('oneai.actions')}
+                </div>
+                <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 8, margin: 0, padding: 0 }}>
+                  {result.structured.actions.map((a, i) => (
+                    <li key={i} style={{ display: 'flex', gap: 10, fontSize: 13.5, lineHeight: 1.55, color: 'var(--color-text-primary)' }}>
+                      <span style={{ color: 'var(--color-accent)', fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                      <span>{a}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {!result.structured?.summary && !result.structured?.insights?.length && (
+              <p style={{ fontSize: 14, lineHeight: 1.6, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>{result.structured?.text || result.reply}</p>
+            )}
             {result.based_on && (
               <p style={{ fontSize: 11, color: 'var(--color-text-muted)', marginTop: 14, borderTop: '1px solid var(--gray-100)', paddingTop: 10 }}>
                 {t('labels.basedOn')}: {result.based_on.facts

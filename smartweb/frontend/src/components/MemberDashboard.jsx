@@ -26,6 +26,8 @@ import MoodPrompt from './MoodPrompt'
 import TaskAIHelper from './TaskAIHelper'
 import SubtaskList from './SubtaskList'
 import UserCard from './UserCard'
+import ErrorBoundary from './ErrorBoundary'
+import Integrations from './Integrations'
 import { useIsTelegram } from '../lib/surface'
 
 export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
@@ -464,6 +466,10 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
             { key: 'oneai', label: 'ONE AI' },
             { key: 'notes', label: t('nav.notes') },
             { key: 'analytics', label: t('nav.analytics') },
+            // Календари — личная настройка сотрудника, а не привилегия тимлида:
+            // вкладка доступна всем. Раздел Webhook внутри неё показывается
+            // только тимлиду — по признаку от сервера, который сам и проверяет право.
+            { key: 'integrations', label: t('nav.integrations') },
           ].map(tab => (
             <button key={tab.key} onClick={() => setActiveTab(tab.key)} className={`tab${activeTab === tab.key ? ' active' : ''}`}>
               {tab.label}
@@ -980,9 +986,12 @@ export default function MemberDashboard({ user, onLogout, onUserUpdate }) {
 
         {activeTab === 'development' && <DevelopmentMember user={user} />}
 
-        {activeTab === 'oneai' && <OneAI user={user} />}
+        {activeTab === 'oneai' && <ErrorBoundary resetKey={activeTab}><OneAI user={user} /></ErrorBoundary>}
 
-        {activeTab === 'analytics' && <MemberAnalytics user={user} teamId={teamId} />}
+        {activeTab === 'analytics' && <ErrorBoundary resetKey={activeTab}><MemberAnalytics user={user} teamId={teamId} /></ErrorBoundary>}
+
+        {/* Интеграции: календари сотрудника. Вебхуки — только у тимлида. */}
+        {activeTab === 'integrations' && <ErrorBoundary resetKey={activeTab}><Integrations user={user} teamId={teamId} /></ErrorBoundary>}
 
       </div>
 

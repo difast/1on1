@@ -351,7 +351,9 @@
     "title": "ONE AI",
     "placeholder": "Describe the task and ONE AI will help",
     "generating": "Preparing the answer...",
-    "error": "ONE AI is unavailable right now. Please try again later."
+    "error": "ONE AI is unavailable right now. Please try again later.",
+    "summary": "Key takeaway",
+    "actions": "What to do"
   },
   "integrations": {
     "title": "Integrations",
@@ -426,7 +428,8 @@
     "industry": "Industry",
     "director": "Director",
     "status": "Status",
-    "size": "Size (employees)"
+    "size": "Size (employees)",
+    "leadOnly": "Only the team lead can edit the organisation details."
   },
   "ui": {
     "oshibka": "Error",

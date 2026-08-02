@@ -53,6 +53,9 @@ export default function CompanyScreen() {
   const [searching, setSearching] = useState(false);
   const [notConfigured, setNotConfigured] = useState(false);
   const [searched, setSearched] = useState(false);
+  // Реквизиты организации меняет только тимлид. Право проверяет сервер (403),
+  // здесь лишь не показываем кнопку, которая всё равно не сработает.
+  const [canEdit, setCanEdit] = useState(false);
   const debounceRef = useRef<any>(null);
 
   useEffect(() => {
@@ -61,14 +64,19 @@ export default function CompanyScreen() {
       if (!user) { setStatus('error'); return; }
       try {
         let tid: number | null = null;
+        let lead = false;
         if ((activeRole ?? user.role) === 'team_lead') {
           const teams = await getTeams().catch(() => []);
-          tid = ((teams as any[]) || []).filter((t: any) => t.team_lead_id === user.id)[0]?.id ?? null;
+          const own = ((teams as any[]) || []).filter((t: any) => t.team_lead_id === user.id)[0];
+          tid = own?.id ?? null;
+          lead = !!own;
         } else {
           const team = await getMemberTeam(user.id).catch(() => null);
           tid = (team as any)?.id ?? null;
+          lead = !!team && (team as any).team_lead_id === user.id;
         }
         if (!alive) return;
+        setCanEdit(lead);
         if (!tid) { setStatus('empty'); return; }
         setTeamId(tid);
         const res = await getTeamCompany(tid);
@@ -185,18 +193,24 @@ export default function CompanyScreen() {
                   </View>
                 ))}
               </View>
-              <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
-                <Text style={styles.primaryBtnText}>{t('ui.redaktirovat')}</Text>
-              </TouchableOpacity>
+              {canEdit ? (
+                <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
+                  <Text style={styles.primaryBtnText}>{t('ui.redaktirovat')}</Text>
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.muted}>{t('company.leadOnly')}</Text>
+              )}
             </>
           )}
 
           {!editing && status === 'empty' && (
             <>
-              <Text style={styles.muted}>{t('ui.rekvizity_kompanii_ne_zapolneny_mozhno_nayti')}</Text>
-              <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
-                <Text style={styles.primaryBtnText}>{t('ui.dobavit_kompaniyu')}</Text>
-              </TouchableOpacity>
+              <Text style={styles.muted}>{canEdit ? t('ui.rekvizity_kompanii_ne_zapolneny_mozhno_nayti') : t('company.leadOnly')}</Text>
+              {canEdit && (
+                <TouchableOpacity style={styles.primaryBtn} onPress={startEdit}>
+                  <Text style={styles.primaryBtnText}>{t('ui.dobavit_kompaniyu')}</Text>
+                </TouchableOpacity>
+              )}
             </>
           )}
 

@@ -18,6 +18,7 @@ const STATUS_CLS   = { in_progress: 'badge-blue', blocked: 'badge-red', review: 
 // Подпись статуса — из словаря по ключу (labels.taskStatus.*).
 const statusLabel = (t, st) => t(`labels.taskStatus.${st}`, { defaultValue: st })
 import UserCard from './UserCard'
+import ErrorBoundary from './ErrorBoundary'
 import LeadAnalytics from './LeadAnalytics'
 import { GoalsLead } from './Goals'
 import { DevelopmentLead } from './Development'
@@ -925,22 +926,22 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
 
         {/* Goals view — сводный просмотр целей команды */}
         {activeView === 'goals' && (
-          <GoalsLead user={user} teams={teams} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} />
+          <ErrorBoundary resetKey={activeView}><GoalsLead user={user} teams={teams} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} /></ErrorBoundary>
         )}
 
         {/* Development view — обзор развития команды */}
         {activeView === 'development' && (
-          <DevelopmentLead user={user} teams={teams} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} />
+          <ErrorBoundary resetKey={activeView}><DevelopmentLead user={user} teams={teams} selectedTeamId={selectedTeamId} onSelectTeam={setSelectedTeamId} /></ErrorBoundary>
         )}
 
         {/* ONE AI — стратегический AI-центр */}
-        {activeView === 'oneai' && <OneAI user={user} />}
+        {activeView === 'oneai' && <ErrorBoundary resetKey={activeView}><OneAI user={user} /></ErrorBoundary>}
 
         {/* Интеграции — календари (Google/Яндекс) и исходящие вебхуки команды */}
-        {activeView === 'integrations' && <Integrations user={user} teamId={selectedTeamId} />}
+        {activeView === 'integrations' && <ErrorBoundary resetKey={activeView}><Integrations user={user} teamId={selectedTeamId} /></ErrorBoundary>}
 
         {/* Analytics view */}
-        {activeView === 'analytics' && <LeadAnalytics key={analyticsKey} user={user} />}
+        {activeView === 'analytics' && <ErrorBoundary resetKey={activeView}><LeadAnalytics key={analyticsKey} user={user} /></ErrorBoundary>}
 
         {/* Notes view */}
         {activeView === 'notes' && (

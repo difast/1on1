@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
-from typing import List
+from typing import List, Optional
 from datetime import datetime, timedelta
+from pydantic import BaseModel
 from app.database import get_db
-from app.utils.auth import require_admin
+from app.utils.auth import require_admin, require_user
 from app.models.user import User
 from app.models.team import Team
 from app.models.meeting import Meeting
@@ -435,11 +436,60 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-    for key, value in data.model_dump(exclude_unset=True).items():
+    fields = data.model_dump(exclude_unset=True)
+    for key, value in fields.items():
         setattr(user, key, value)
+    # Токен устройства принадлежит устройству, а не аккаунту: он должен быть
+    # привязан ровно к одному пользователю. Если тем же токеном раньше
+    # пользовался другой человек (вошёл на этом устройстве до нас), снимаем
+    # старую привязку — иначе пуши прежнего владельца продолжают приходить
+    # на устройство, где сейчас чужая сессия.
+    token = fields.get("push_token")
+    if token:
+        _release_push_token(db, token, keep_user_id=user.id)
     db.commit()
     db.refresh(user)
     return user
+
+
+def _release_push_token(db: Session, token: str, keep_user_id: int | None = None) -> int:
+    """Снять токен устройства со всех пользователей, кроме указанного."""
+    q = db.query(User).filter(User.push_token == token)
+    if keep_user_id is not None:
+        q = q.filter(User.id != keep_user_id)
+    freed = 0
+    for other in q.all():
+        other.push_token = None
+        freed += 1
+    return freed
+
+
+class PushTokenReq(BaseModel):
+    push_token: Optional[str] = None
+
+
+@router.post("/{user_id}/push-token/release")
+def release_push_token(user_id: int, data: PushTokenReq, db: Session = Depends(get_db),
+                       current=Depends(require_user)):
+    """Отвязать push-токен устройства при выходе из аккаунта.
+
+    Без этого шага выход очищал только локальную сессию, а на сервере токен
+    оставался у прежнего пользователя — и уведомления, адресованные ему,
+    продолжали приходить на устройство, которым уже пользуется другой человек.
+
+    Снимаем привязку и у текущего пользователя, и у любого другого аккаунта с
+    этим же токеном: устройство после выхода не должно принадлежать никому."""
+    if user_id != current.id:
+        raise HTTPException(status_code=403, detail="Можно отвязывать только своё устройство")
+    token = (data.push_token or "").strip() or current.push_token
+    freed = 0
+    if token:
+        freed = _release_push_token(db, token)
+    if current.push_token:
+        current.push_token = None
+        freed += 1
+    db.commit()
+    return {"ok": True, "released": freed}
 
 @router.post("/{user_id}/detect-region")
 def detect_region(user_id: int, request: Request, db: Session = Depends(get_db)):

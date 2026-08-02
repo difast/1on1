@@ -14,8 +14,9 @@ import httpx
 
 from app.database import get_db
 from app.config import settings
-from app.models.team import Team
+from app.models.team import Team, TeamMember
 from app.models.company import CompanyProfile
+from app.utils.auth import require_user
 
 router = APIRouter()
 
@@ -125,11 +126,39 @@ def _company_dict(c: CompanyProfile) -> dict:
     }
 
 
-@router.get("/by-team/{team_id}")
-def get_company(team_id: int, db: Session = Depends(get_db)):
+def _team_or_404(db: Session, team_id: int) -> Team:
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
         raise HTTPException(404, "Team not found")
+    return team
+
+
+def _require_member(db: Session, team_id: int, user) -> Team:
+    """Реквизиты компании видны только внутри своей команды."""
+    team = _team_or_404(db, team_id)
+    if team.team_lead_id == user.id:
+        return team
+    is_member = db.query(TeamMember).filter(
+        TeamMember.team_id == team_id, TeamMember.user_id == user.id
+    ).first()
+    if not is_member:
+        raise HTTPException(403, "Нет доступа к этой команде")
+    return team
+
+
+def _require_lead(db: Session, team_id: int, user) -> Team:
+    """Реквизиты компании меняет только тимлид — это данные всей организации.
+    Личность берём из токена, а не из параметра запроса: параметр подделывается.
+    """
+    team = _team_or_404(db, team_id)
+    if team.team_lead_id != user.id:
+        raise HTTPException(403, "Редактировать реквизиты компании может только тимлид команды")
+    return team
+
+
+@router.get("/by-team/{team_id}")
+def get_company(team_id: int, db: Session = Depends(get_db), user=Depends(require_user)):
+    team = _require_member(db, team_id, user)
     c = db.query(CompanyProfile).filter(CompanyProfile.team_id == team_id).first()
     return {"has_company": bool(team.has_company), "company": _company_dict(c) if c else None}
 
@@ -150,12 +179,12 @@ class CompanyIn(BaseModel):
 
 
 @router.put("/by-team/{team_id}")
-def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_db)):
+def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_db),
+                   user=Depends(require_user)):
     """Создать/обновить реквизиты компании пространства и выставить has_company.
-    Требуется хотя бы название — иначе нечего сохранять."""
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        raise HTTPException(404, "Team not found")
+    Требуется хотя бы название — иначе нечего сохранять.
+    Доступ: только тимлид (проверка на сервере, а не скрытием формы)."""
+    team = _require_lead(db, team_id, user)
     if not (payload.name and payload.name.strip()):
         raise HTTPException(400, "Название компании обязательно")
 
@@ -181,11 +210,10 @@ def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_d
 
 
 @router.delete("/by-team/{team_id}")
-def delete_company(team_id: int, db: Session = Depends(get_db)):
-    """Удалить реквизиты (Этап 4). Пространство продолжает работать без компании."""
-    team = db.query(Team).filter(Team.id == team_id).first()
-    if not team:
-        raise HTTPException(404, "Team not found")
+def delete_company(team_id: int, db: Session = Depends(get_db), user=Depends(require_user)):
+    """Удалить реквизиты (Этап 4). Пространство продолжает работать без компании.
+    Доступ: только тимлид."""
+    team = _require_lead(db, team_id, user)
     c = db.query(CompanyProfile).filter(CompanyProfile.team_id == team_id).first()
     if c:
         db.delete(c)
