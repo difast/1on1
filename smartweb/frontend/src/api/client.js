@@ -274,6 +274,8 @@ export const authAddEmail = (userId, email) => api.post('/auth/add-email', { use
 // связанный с подключением Яндекс Календаря (интеграции ниже).
 export const getYandexAuthConfig = () => api.get('/auth/yandex/config')
 export const getYandexAuthUrl = (params) => api.get('/auth/yandex/authorize', { params })
+// Куда отдать результат входа: остаться в вебе или перебросить в приложение.
+export const yandexCallbackTarget = (state) => api.get('/auth/yandex/callback-target', { params: { state } })
 export const completeYandexAuth = (code, state) => api.post('/auth/yandex/callback', { code, state })
 
 // Онбординг-опросник (после подтверждения почты, до выбора роли)

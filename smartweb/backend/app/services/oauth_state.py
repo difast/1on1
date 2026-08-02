@@ -18,11 +18,20 @@ import time
 from app.config import settings
 
 
-def make_state(user_id: int, provider: str) -> str:
-    payload = json.dumps({
+def make_state(user_id: int, provider: str, platform: str | None = None) -> str:
+    """platform ("mobile") записывается в payload открытым полем m.
+
+    Это не секрет и не влияет на проверку подписи: поле нужно странице
+    возврата в вебе, чтобы отличить вход, начатый из приложения, и перебросить
+    результат в приложение по его схеме. Подпись по-прежнему считается по всему
+    payload, поэтому подменить метку, не сломав state, нельзя."""
+    data = {
         "u": user_id, "p": provider,
         "n": secrets.token_hex(8), "t": int(time.time()),
-    })
+    }
+    if platform:
+        data["m"] = platform
+    payload = json.dumps(data)
     mac = hmac.new(settings.secret_key.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
     return base64.urlsafe_b64encode(f"{payload}.{mac}".encode()).decode()
 
@@ -46,5 +55,20 @@ def read_state(state: str, provider: str, max_age: int | None = None) -> int | N
             if ts is not None and (time.time() - int(ts)) > max_age:
                 return None
         return int(data.get("u"))
+    except Exception:
+        return None
+
+
+def read_platform(state: str) -> str | None:
+    """Метка платформы из state без проверки подписи.
+
+    Используется только для выбора места, куда вернуть результат (веб или
+    приложение). Подлинность state всё равно проверяется на обмене кода в
+    read_state, поэтому подделка метки ничего не даёт: она лишь уведёт ответ
+    в приложение, где обмен так же упрётся в проверку подписи."""
+    try:
+        raw = base64.urlsafe_b64decode(state.encode()).decode()
+        payload, _ = raw.rsplit(".", 1)
+        return json.loads(payload).get("m") or None
     except Exception:
         return None

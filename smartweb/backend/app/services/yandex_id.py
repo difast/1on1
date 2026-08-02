@@ -40,12 +40,21 @@ def is_configured() -> bool:
 
 
 def redirect_uri(platform: str = "web") -> str:
-    """Redirect URI потока входа. Для приложения — deep-link на схему
-    приложения: обычный веб-редирект в мобильном клиенте не возвращает
-    пользователя в приложение."""
-    if (platform or "web").lower() == "mobile":
-        return settings.yandex_login_mobile_redirect_uri or ""
+    """Redirect URI потока входа — ОДИН И ТОТ ЖЕ для веба и приложения.
+
+    В панели Yandex OAuth у приложения можно указать только один адрес
+    возврата, и нестандартные схемы вида oneonone:// она не принимает. Поэтому
+    оба потока возвращаются на веб-адрес, а страница возврата, увидев в state
+    метку мобильного входа, перебрасывает результат в приложение по его схеме.
+    Для Яндекса это обычный веб-поток, менять в панели ничего не нужно.
+
+    platform остаётся в сигнатуре: он влияет на метку в state, а не на адрес."""
     return settings.yandex_login_web_redirect
+
+
+def app_redirect_uri() -> str:
+    """Схема приложения, куда веб-страница возврата перебрасывает результат."""
+    return settings.yandex_login_mobile_redirect_uri or ""
 
 
 def authorize_url(state: str, platform: str = "web") -> str:
