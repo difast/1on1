@@ -395,6 +395,10 @@ export const authResendConfirmationByEmail = (email: string) =>
   req<any>('/auth/resend-confirmation', { method: 'POST', body: JSON.stringify({ email }) });
 export const authChangePassword = (data: { user_id: number; current_password: string; new_password: string }) =>
   req<any>('/auth/change-password', { method: 'POST', body: JSON.stringify(data) });
+// Вход в админ-режим: пароль проверяет сервер (переменная ADMIN_PASSWORD).
+// В приложении пароля нет — константа в бандле читается из APK кем угодно.
+export const authAdminLogin = (password: string) =>
+  req<{ token: string }>('/auth/admin-login', { method: 'POST', body: JSON.stringify({ password }) });
 
 // Вход через Yandex ID. Эндпоинты общие с вебом; в приложении отличается
 // только redirect URI — deep-link на схему приложения (platform=mobile).

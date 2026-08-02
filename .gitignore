@@ -2,10 +2,23 @@
 .DS_Store
 Thumbs.db
 
-# Env files
+# Env files — реальные значения переменных не коммитятся никогда.
+# В репозитории живут только *.env.example с плейсхолдерами.
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!*.env.example
+.envrc
+
+# Учётные данные и ключи (на случай, если файл окажется в рабочей копии)
+*.pem
+*.p8
+*.p12
+*.pfx
+*.keystore
+*service-account*.json
+*credentials*.json
+secrets.json
 
 # Editors
 .idea/

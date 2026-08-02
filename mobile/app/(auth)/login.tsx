@@ -11,11 +11,13 @@ import type { AppColors } from '../../src/constants/colors';
 import { mailProviderFor } from '../../src/lib/mailProviders';
 import { useI18n, translate } from '../../src/lib/i18n';
 import YandexLoginButton from '../../src/components/YandexLoginButton';
-import { yandexAuthConfig } from '../../src/lib/api';
+import { yandexAuthConfig, authAdminLogin } from '../../src/lib/api';
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin' | 'confirm_sent';
 
-const ADMIN_CODE = '1on12026';
+// Кода администратора в приложении нет: его проверяет бэкенд по переменной
+// окружения ADMIN_PASSWORD. Любая константа здесь лежала бы в открытом виде
+// внутри APK и извлекалась бы из него распаковкой.
 
 // Бэкенд отдаёт понятные русские сообщения в detail — показываем как есть.
 function translateError(msg: any): string {
@@ -167,8 +169,17 @@ export default function LoginScreen() {
 
   const handleAdminLogin = async () => {
     setError('');
-    if (adminCode.trim() !== ADMIN_CODE) { setError(t('ui.nevernyy_kod_administratora')); return; }
-    await enterAdmin();
+    const code = adminCode.trim();
+    if (!code) { setError(t('ui.nevernyy_kod_administratora')); return; }
+    setLoading(true);
+    try {
+      await authAdminLogin(code);
+      await enterAdmin();
+    } catch (e: any) {
+      const detail = e?.response?.detail;
+      setError(e?.response?.status === 503 && typeof detail === 'string'
+        ? detail : t('ui.nevernyy_kod_administratora'));
+    } finally { setLoading(false); }
   };
 
   if (mode === 'confirm_sent') {

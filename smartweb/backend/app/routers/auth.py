@@ -41,10 +41,15 @@ class AdminLoginReq(BaseModel):
 def admin_login(data: AdminLoginReq):
     """Вход в админ-панель по паролю. Возвращает админ-JWT, который клиент кладёт
     в Authorization — тогда запросы проходят гейт AUTH_ENFORCE и require_admin.
-    Пароль берётся из окружения ADMIN_PASSWORD (по умолчанию — прежний клиентский,
-    ради обратной совместимости до задания переменной)."""
-    expected = os.getenv("ADMIN_PASSWORD", "1on12026")
-    if not data.password or data.password != expected:
+
+    Пароль берётся ТОЛЬКО из окружения (ADMIN_PASSWORD). Значения по умолчанию
+    нет: пока переменная не задана, вход в админку недоступен (503 — ошибка
+    конфигурации), а не открыт по зашитому в репозиторий паролю."""
+    expected = os.getenv("ADMIN_PASSWORD", "")
+    if not expected:
+        raise HTTPException(status_code=503,
+                            detail="Вход в админ-панель не настроен: не задана переменная ADMIN_PASSWORD")
+    if not data.password or not secrets.compare_digest(data.password, expected):
         raise HTTPException(status_code=401, detail="Неверный пароль администратора")
     return {"token": create_admin_token()}
 

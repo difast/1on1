@@ -1,5 +1,8 @@
 version: '3.8'
 
+# Локальный стенд разработки. Все пароли ниже — заведомо тестовые и действуют
+# только внутри compose-сети; в бою используются переменные окружения хостинга.
+
 services:
   postgres:
     image: postgres:16-alpine
@@ -39,7 +42,10 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - CELERY_BROKER_URL=redis://redis:6379/1
       - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - SECRET_KEY=dev-secret-key-change-in-production
+      # ТОЛЬКО для локальной разработки. На боевом стенде значения задаются в
+      # панели хостинга; секретов со значением по умолчанию в коде нет.
+      - SECRET_KEY=dev-only-secret-not-for-production
+      - JWT_SECRET=dev-only-jwt-secret-not-for-production
     depends_on:
       postgres:
         condition: service_healthy

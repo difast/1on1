@@ -11,7 +11,9 @@ import {
   authLogin, authRegister, authForgotPassword, adminLogin, authResendConfirmation,
 } from '../api/client'
 
-const ADMIN_PASSWORD = '1on12026'
+// Пароль администратора в клиенте не хранится: проверку делает только бэкенд
+// (POST /auth/admin-login по переменной окружения ADMIN_PASSWORD). Любая
+// константа здесь попала бы в собранный бандл и была бы видна в браузере.
 
 // Небольшой крутящийся индикатор для кнопок — показываем при долгой загрузке
 // (холодный старт бэкенда). Общий компонент Spinner переиспользуется всем
@@ -143,16 +145,17 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const handleAdminLogin = async (e) => {
     e.preventDefault()
     // Получаем серверный админ-JWT: с ним запросы админки проходят гейт
-    // AUTH_ENFORCE и require_admin. При недоступности эндпоинта (старый бэкенд)
-    // откатываемся на локальную проверку пароля, чтобы вход не ломался.
+    // AUTH_ENFORCE и require_admin. Локального отката на сравнение с зашитым
+    // паролем больше нет — пароль знает только сервер; если эндпоинт недоступен,
+    // показываем ошибку, а не пускаем в админку по клиентской проверке.
     try {
       const { data } = await adminLogin(adminPwd)
       if (data?.token) setToken(data.token)
       onAdminLogin?.()
       return
     } catch (err) {
-      if (err?.response?.status === 401) { setError(t('auth.adminWrongPassword')); return }
-      if (adminPwd === ADMIN_PASSWORD) { onAdminLogin?.(); return }
+      const detail = err?.response?.data?.detail
+      if (err?.response?.status === 503 && typeof detail === 'string') { setError(detail); return }
       setError(t('auth.adminWrongPassword'))
     }
   }

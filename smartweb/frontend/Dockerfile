@@ -7,14 +7,12 @@ RUN npm install
 
 COPY . .
 
+# Единственная переменная сборки веба. Всё, что попадает в бандл через VITE_*,
+# видно любому пользователю в браузере, поэтому секретов здесь нет и быть не
+# может — ключи провайдеров остаются на бэкенде.
+# Аргументы VITE_SUPABASE_* убраны: Supabase из продукта удалён.
 ARG VITE_API_URL
 ENV VITE_API_URL=$VITE_API_URL
-
-ARG VITE_SUPABASE_URL
-ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL
-
-ARG VITE_SUPABASE_ANON_KEY
-ENV VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY
 
 RUN npm run build
 

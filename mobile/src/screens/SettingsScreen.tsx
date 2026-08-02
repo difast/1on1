@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
-import { authChangePassword } from '../lib/api';
+import { authChangePassword, authAdminLogin } from '../lib/api';
 import type { AppColors } from '../constants/colors';
 import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
 
@@ -23,10 +23,18 @@ export default function SettingsScreen() {
   const [adminCode, setAdminCode] = useState('');
   const [adminError, setAdminError] = useState('');
 
-  const ADMIN_CODE = '1on12026';
-
+  // Кода администратора в приложении нет: проверяет бэкенд (ADMIN_PASSWORD).
   const handleAdminUnlock = async () => {
-    if (adminCode !== ADMIN_CODE) { setAdminError(t('ui.nevernyy_kod')); return; }
+    const code = adminCode.trim();
+    if (!code) { setAdminError(t('ui.nevernyy_kod')); return; }
+    try {
+      await authAdminLogin(code);
+    } catch (e: any) {
+      const detail = e?.response?.detail;
+      setAdminError(e?.response?.status === 503 && typeof detail === 'string'
+        ? detail : t('ui.nevernyy_kod'));
+      return;
+    }
     await enterAdmin();
     setShowAdminSection(false);
     setAdminCode('');

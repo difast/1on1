@@ -1,5 +1,14 @@
 from pydantic_settings import BaseSettings
 
+
+class ConfigError(RuntimeError):
+    """Обязательная переменная окружения не задана.
+
+    Поднимается вместо работы на встроенном значении по умолчанию: секрет,
+    зашитый в код, публичен по определению (репозиторий, сборка, история git),
+    поэтому «тихий дефолт» для секрета равносилен его отсутствию."""
+
+
 class Settings(BaseSettings):
     # Реальное значение приходит из окружения (DATABASE_URL). Значение по
     # умолчанию не используется — app/database.py читает os.environ напрямую.
@@ -10,12 +19,18 @@ class Settings(BaseSettings):
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = ""
     celery_result_backend: str = ""
-    secret_key: str = "change-me"
+    # Корневой серверный секрет. Из него выводятся ключи шифрования токенов
+    # календарей (services/crypto.py) и, если не задан JWT_SECRET, ключ подписи
+    # JWT. Значения по умолчанию НЕТ: пустой SECRET_KEY — ошибка конфигурации,
+    # а не тихая работа на общеизвестном ключе (раньше здесь было "change-me",
+    # что делало и подпись токенов, и шифрование токенов календарей
+    # предсказуемыми для любого, кто видел репозиторий).
+    secret_key: str = ""
 
-    # --- Собственная аутентификация (email/пароль + JWT). Supabase убран. ---
-    # Секрет подписи JWT: только из окружения (JWT_SECRET). Fallback на
-    # secret_key оставлен, чтобы локальный запуск не падал, но в проде
-    # обязательно задать JWT_SECRET.
+    # --- Собственная аутентификация (email/пароль + JWT). ---
+    # Секрет подписи JWT: только из окружения (JWT_SECRET). Если не задан,
+    # берётся SECRET_KEY. Если пусты оба — jwt_signing_key поднимает
+    # ConfigError, и вход не работает вовсе (вместо подписи пустым ключом).
     jwt_secret: str = ""
     jwt_expire_days: int = 30
     # Этап 8: принудительная проверка JWT на защищённых эндпоинтах. Когда флаг
@@ -121,8 +136,15 @@ class Settings(BaseSettings):
 
     @property
     def jwt_signing_key(self) -> str:
-        """Ключ подписи JWT: JWT_SECRET из окружения, иначе secret_key."""
-        return self.jwt_secret or self.secret_key
+        """Ключ подписи JWT: JWT_SECRET из окружения, иначе SECRET_KEY.
+
+        Дефолта нет. Если не задан ни один — это ошибка конфигурации: подписывать
+        и проверять токены пустым (или общеизвестным) ключом нельзя, иначе токен
+        может подделать кто угодно."""
+        key = self.jwt_secret or self.secret_key
+        if not key:
+            raise ConfigError("Не задан JWT_SECRET (или SECRET_KEY) — подпись токенов невозможна")
+        return key
 
     @property
     def smtp_sender(self) -> str:

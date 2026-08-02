@@ -344,8 +344,48 @@ async def _telegram_polling_loop():
                 db.close()
 
 
+def _check_required_config() -> None:
+    """Проверка обязательных переменных окружения при старте.
+
+    Секретов со значением по умолчанию в коде нет, поэтому незаданная переменная
+    проявилась бы позже — ошибкой на конкретном запросе. Здесь мы сообщаем о ней
+    сразу и явно, одним списком, чтобы её было видно в логах деплоя.
+
+    Сервер при этом не падает: DATABASE_URL проверяется отдельно (без неё старт
+    невозможен), а остальные переменные выключают только свои функции. Имена и
+    значения секретов не логируются — только факт отсутствия.
+    """
+    import logging
+    log = logging.getLogger("config")
+    required = {
+        "SECRET_KEY": settings.secret_key,
+        "JWT_SECRET": settings.jwt_secret or settings.secret_key,
+    }
+    optional = {
+        "ADMIN_PASSWORD": os.getenv("ADMIN_PASSWORD", ""),
+        "AI_GATEWAY_KEY": settings.ai_gateway_key,
+        "SMTP_PASSWORD": settings.smtp_password,
+        "TELEGRAM_BOT_TOKEN": settings.telegram_bot_token,
+        "DADATA_API_KEY": settings.dadata_api_key,
+        "CLOUDPAYMENTS_API_SECRET": os.getenv("CLOUDPAYMENTS_API_SECRET", ""),
+        "GOOGLE_CLIENT_SECRET": settings.google_client_secret,
+        "YANDEX_CLIENT_SECRET": settings.yandex_client_secret,
+        "YANDEX_LOGIN_CLIENT_SECRET": settings.yandex_login_secret,
+    }
+    missing = [k for k, v in required.items() if not v]
+    if missing:
+        log.error("ОШИБКА КОНФИГУРАЦИИ: не заданы обязательные переменные: %s. "
+                  "Вход и шифрование токенов интеграций работать не будут.",
+                  ", ".join(missing))
+    off = [k for k, v in optional.items() if not v]
+    if off:
+        log.warning("Не заданы переменные — соответствующие функции отключены: %s",
+                    ", ".join(off))
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _check_required_config()
     _seed_billing()
     task = asyncio.create_task(_keep_alive())
     mood_task = asyncio.create_task(_mood_reminder_loop())

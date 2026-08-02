@@ -19,7 +19,7 @@ import hashlib
 import hmac
 import os
 
-from app.config import settings
+from app.config import settings, ConfigError
 
 _MAGIC = b"v1"
 _NONCE_LEN = 16
@@ -27,8 +27,18 @@ _TAG_LEN = 32
 
 
 def _root_key() -> bytes:
+    """Корневой ключ шифрования — ТОЛЬКО из SECRET_KEY, без значения по умолчанию.
+
+    Раньше здесь был откат на строку "change-me": при незаданном SECRET_KEY все
+    токены календарей шифровались ключом, выводимым из общеизвестного значения,
+    то есть дампа БД хватало для их расшифровки. Теперь отсутствие SECRET_KEY —
+    явная ошибка конфигурации: подключить календарь нельзя, но и мнимой защиты
+    тоже нет."""
+    key = settings.secret_key
+    if not key:
+        raise ConfigError("Не задан SECRET_KEY — шифрование токенов интеграций невозможно")
     # SECRET_KEY может быть коротким/строкой — нормализуем в 32 байта.
-    return hashlib.sha256((settings.secret_key or "change-me").encode("utf-8")).digest()
+    return hashlib.sha256(key.encode("utf-8")).digest()
 
 
 def _derive(label: bytes) -> bytes:
