@@ -24,11 +24,11 @@ const BtnSpinner = () => <Spinner />
 const Logo = () => {
   const { t } = useTranslation()
   return (
-  <div style={{ textAlign: 'center', marginBottom: 32 }}>
-    <span className="logo" style={{ fontSize: 26 }}>
+  <div style={{ textAlign: 'center', marginBottom: 12 }}>
+    <span className="logo" style={{ fontSize: 24 }}>
       OneOn<span className="accent">One</span>
     </span>
-    <p style={{ color: 'var(--color-text-muted)', marginTop: 8, fontSize: 14 }}>
+    <p style={{ color: 'var(--color-text-muted)', marginTop: 5, fontSize: 12.5, lineHeight: 1.35, maxWidth: 340, marginLeft: 'auto', marginRight: 'auto' }}>
       {t('auth.tagline')}
     </p>
   </div>
@@ -169,10 +169,10 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const translateError = (msg) => (typeof msg === 'string' ? msg : t('errors.generic'))
 
   return (
-    <div style={{
-      minHeight: '100vh', background: 'var(--color-bg)',
+    <div className="auth-view" style={{
+      background: 'var(--color-bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: 20, fontFamily: 'var(--font-sans)',
+      padding: '16px 20px', fontFamily: 'var(--font-sans)',
     }}>
       <div style={{ width: '100%', maxWidth: 420 }} className="anim-fade">
         <Logo />
@@ -277,11 +277,11 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
         {/* Auth form */}
         {(mode === 'login' || mode === 'register') && (
-          <div className="card anim-slide" style={{ padding: 28 }}>
+          <div className="card anim-slide" style={{ padding: '18px 22px' }}>
             {/* Tabs */}
             <div style={{
               display: 'flex', background: 'var(--color-surface-2)',
-              borderRadius: 'var(--radius-md)', padding: 4, marginBottom: 24,
+              borderRadius: 'var(--radius-md)', padding: 4, marginBottom: 12,
             }}>
               {[
                 { key: 'login', label: t('auth.tabLogin') },
@@ -363,7 +363,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                   Telegram должны быть одного размера, а не вразнобой. */}
               <button
                 type="submit" disabled={loading} className="btn btn-accent"
-                style={{ width: '100%', minHeight: 44, padding: '0 24px', fontSize: 15, marginTop: 4, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
+                style={{ width: '100%', minHeight: 40, padding: '0 24px', fontSize: 15, marginTop: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
               >
                 {loading
                   ? (<><BtnSpinner /> {mode === 'login' ? t('auth.loggingIn') : t('auth.registering')}</>)
@@ -378,7 +378,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                 бэкенде; VK ID пока заглушка «скоро» (Задача 3) и присутствует
                 всегда как анонс будущего способа. Разделитель «Войти через»
                 отделяет ряд от формы. */}
-            <div style={{ marginTop: 16 }}>
+            <div style={{ marginTop: 10 }}>
               <div className="social-divider"><span>{t('auth.loginWith')}</span></div>
               <div className="social-row">
                 {yandexEnabled && (
@@ -401,7 +401,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
             {/* Ниже кнопок входа: восстановление пароля, согласие, админ-вход */}
             {mode === 'login' && (
-              <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <div style={{ textAlign: 'center', marginTop: 8 }}>
                 <button
                   type="button"
                   onClick={() => { setMode('forgot'); setError('') }}
@@ -412,7 +412,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
               </div>
             )}
 
-            <p style={{ textAlign: 'center', fontSize: 12, color: 'var(--color-text-muted)', marginTop: 14, lineHeight: 1.5 }}>
+            <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--color-text-muted)', marginTop: 8, lineHeight: 1.4 }}>
               {mode === 'register' ? t('auth.consentPrefixRegister') : t('auth.consentPrefixLogin')}{' '}
               <button
                 type="button"
@@ -427,7 +427,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                 Визуально обособлен: увеличенный отступ и тонкий разделитель
                 сверху, мельче кегль и приглушённее цвет, чтобы не смотрелся как
                 ещё один вариант входа для обычного пользователя (Задача 5). */}
-            <div style={{ textAlign: 'center', marginTop: 26, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
+            <div style={{ textAlign: 'center', marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--color-border)' }}>
               <button
                 onClick={() => { setMode('admin'); setError('') }}
                 style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--color-text-muted)', opacity: 0.7, letterSpacing: '0.02em' }}
