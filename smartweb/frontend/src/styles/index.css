@@ -339,16 +339,31 @@ h4 { font-size: 1rem; }
 .btn-yandex-black .btn-yandex-badge { background: #FFFFFF; color: #000000; }
 .btn-yandex-white .btn-yandex-badge { background: #FC3F1D; color: #FFFFFF; }
 
+/* ── Страница входа/регистрации: помещается в экран без прокрутки ──────────
+   Экран центрируется по высоте вьюпорта; вертикальные отступы формы поджаты
+   так, чтобы форма (в т.ч. режим регистрации с полем повтора пароля и рядом
+   соц-входа) укладывалась без скролла. Использует dvh, чтобы учитывать
+   динамическую панель браузера на мобильных. */
+.auth-view {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+/* Поджатые отступы полей — только внутри страницы входа, чтобы не влиять на
+   формы в остальном приложении. */
+.auth-view .form-group { margin-bottom: 7px; gap: 4px; }
+.auth-view .input { padding: 8px 14px; }
+.auth-view .form-label { margin-bottom: 3px; font-size: 12.5px; }
+
 /* ── Компактные иконки соц-входа (Яндекс ID, Telegram, VK ID) ──────────────
    Один ряд одинаковых круглых кнопок под формой email/пароля. Размер, сетка и
    отступы едины для всех провайдеров; фирменные цвета берём из брендгайдов
    каждого сервиса. Логотип внутри — official mark в защитном поле. */
 .social-row {
   display: flex; align-items: center; justify-content: center;
-  gap: 16px;
+  gap: 14px;
 }
 .social-icon {
-  width: 52px; height: 52px; border-radius: 50%;
+  width: 44px; height: 44px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
   border: 1px solid transparent; cursor: pointer; padding: 0;
   position: relative;
@@ -395,7 +410,7 @@ h4 { font-size: 1rem; }
    «Войти через» — она же служит подписью к ряду иконок. */
 .social-divider {
   display: flex; align-items: center; gap: 14px;
-  margin: 20px 0 18px;
+  margin: 8px 0 8px;
 }
 .social-divider::before,
 .social-divider::after {
@@ -409,7 +424,7 @@ h4 { font-size: 1rem; }
 }
 .social-hint {
   text-align: center; font-size: 12px; color: var(--color-text-muted);
-  margin-top: 12px; min-height: 16px; transition: opacity 0.2s ease;
+  margin-top: 8px; min-height: 14px; transition: opacity 0.2s ease;
 }
 
 .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: var(--radius-sm); }
