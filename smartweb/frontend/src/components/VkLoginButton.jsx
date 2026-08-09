@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { renderVkOneTap } from '../lib/vkid'
+import { renderVkOneTap, describeVkError } from '../lib/vkid'
 import { completeVkAuth } from '../api/client'
 
 /*
@@ -40,9 +40,14 @@ export default function VkLoginButton({ enabled = false, config = null, onAuth, 
   const { t } = useTranslation()
   const [open, setOpen] = useState(false)
   const [busy, setBusy] = useState(false)
+  // Ошибка держится ВНУТРИ модалки (не закрываем окно молча): показываем
+  // реальный текст ошибки VK ID SDK/бэкенда, чтобы причина была видна на экране,
+  // а не только в консоли.
+  const [modalError, setModalError] = useState('')
   const containerRef = useRef(null)
   const cleanupRef = useRef(null)
   const doneRef = useRef(false)
+  const [attempt, setAttempt] = useState(0)  // «Повторить» пересоздаёт виджет
 
   // Рендер виджета при открытии модалки.
   useEffect(() => {
@@ -62,25 +67,38 @@ export default function VkLoginButton({ enabled = false, config = null, onAuth, 
         } catch (err) {
           try { console.error('[VK ID] backend callback error', err?.response?.status, err?.response?.data) } catch { /* no-op */ }
           const detail = err?.response?.data?.detail
-          onError?.(detail?.message || (typeof detail === 'string' ? detail : t('auth.vkFailed')))
-          setOpen(false)
+          setModalError(`${t('auth.vkBackendError')}: ${detail?.message || (typeof detail === 'string' ? detail : (err?.message || 'error'))}`)
         } finally { if (alive) setBusy(false) }
       },
-      () => { onError?.(t('auth.vkFailed')); setOpen(false) },
+      (e) => {
+        // Ошибка самого виджета VK ID (до обращения к нашему бэкенду): показываем
+        // текст от VK — обычно это проблема настройки приложения VK ID
+        // (redirect URI/домен/публикация), а не нашего кода.
+        try { console.error('[VK ID] widget error', e) } catch { /* no-op */ }
+        if (alive) setModalError(`${t('auth.vkWidgetError')}: ${describeVkError(e) || 'unknown'}`)
+      },
     ).then((cleanup) => { cleanupRef.current = cleanup })
-      .catch(() => { onError?.(t('auth.vkFailed')); setOpen(false) })
+      .catch((e) => {
+        // Не удалось загрузить/инициализировать SDK (например, скрипт VK ID не
+        // подгрузился).
+        try { console.error('[VK ID] sdk load/init error', e) } catch { /* no-op */ }
+        if (alive) setModalError(t('auth.vkSdkLoadError'))
+      })
     return () => {
       alive = false
       try { cleanupRef.current?.() } catch { /* no-op */ }
       cleanupRef.current = null
     }
-  }, [open, config])
+  }, [open, config, attempt])
 
   const handleClick = () => {
     if (!enabled) { onSoon?.(t('auth.vkSoon')); return }
     onError?.('')
+    setModalError('')
     setOpen(true)
   }
+
+  const retry = () => { setModalError(''); doneRef.current = false; setAttempt(a => a + 1) }
 
   return (
     <>
@@ -115,7 +133,17 @@ export default function VkLoginButton({ enabled = false, config = null, onAuth, 
               </button>
             </div>
             {/* Контейнер, в который VK ID SDK монтирует One Tap + QR. */}
-            <div ref={containerRef} className="vk-widget-slot" />
+            <div ref={containerRef} className="vk-widget-slot" style={modalError ? { display: 'none' } : undefined} />
+            {modalError && (
+              <div className="vk-modal-error">
+                <p style={{ fontSize: 13, color: 'var(--color-danger)', wordBreak: 'break-word', marginBottom: 12 }}>
+                  {modalError}
+                </p>
+                <button type="button" className="btn btn-accent" style={{ width: '100%' }} onClick={retry}>
+                  {t('common.retry') || 'ОК'}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}

@@ -379,6 +379,7 @@ h4 { font-size: 1rem; }
 /* Слот, в который VK ID SDK монтирует виджет: минимальная высота, чтобы окно
    не «прыгало» до загрузки виджета. */
 .vk-widget-slot { min-height: 120px; display: flex; justify-content: center; }
+.vk-modal-error { text-align: center; padding: 8px 4px 4px; }
 
 /* ── Компактные иконки соц-входа (Яндекс ID, Telegram, VK ID) ──────────────
    Один ряд одинаковых круглых кнопок под формой email/пароля. Размер, сетка и
