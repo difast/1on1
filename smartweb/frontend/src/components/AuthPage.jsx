@@ -8,7 +8,7 @@ import VkLoginButton from './VkLoginButton'
 import Spinner from '../lib/Spinner'
 import ConfirmEmailModal from './ConfirmEmailModal'
 import {
-  getTelegramConfig, telegramCallback, getYandexAuthConfig,
+  getTelegramConfig, telegramCallback, getYandexAuthConfig, getVkAuthConfig,
   authLogin, authRegister, authForgotPassword, adminLogin, authResendConfirmation,
 } from '../api/client'
 
@@ -54,6 +54,9 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   // Вход через Yandex ID — дополнительный способ рядом с email/паролем и
   // Telegram. Кнопка показывается, только если способ настроен на бэкенде.
   const [yandexEnabled, setYandexEnabled] = useState(false)
+  // Вход через VK ID — рабочая иконка в том же ряду. config: { enabled, app_id,
+  // redirect_url, scope } для инициализации виджета VK ID SDK.
+  const [vkConfig, setVkConfig] = useState(null)
   // Модальное окно подтверждения почты после успешной регистрации (Задача 2).
   // Пока оно открыто, пользователь НЕ в кабинете: токен не выдан.
   const [confirmEmail, setConfirmEmail] = useState('')
@@ -65,7 +68,17 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   useEffect(() => {
     getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
     getYandexAuthConfig().then(r => setYandexEnabled(!!r.data?.enabled)).catch(() => setYandexEnabled(false))
+    getVkAuthConfig().then(r => setVkConfig(r.data)).catch(() => setVkConfig(null))
   }, [])
+
+  // Успешный вход через VK ID: бэкенд уже обменял code и выдал наш JWT (как в
+  // возврате Yandex ID). Сохраняем сессию и уходим в продукт — App восстановит
+  // пользователя по /auth/me и решит про онбординг.
+  const handleVkAuth = (data) => {
+    if (data?.token) setToken(data.token)
+    if (data?.user) localStorage.setItem('smart_user', JSON.stringify(data.user))
+    window.location.replace('/')
+  }
 
   // Колбэк официального виджета: отправляем подписанные данные на бэкенд для
   // проверки hash и входа/регистрации по telegram_id (Этапы 3-5).
@@ -392,7 +405,13 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                     onError={setError}
                   />
                 )}
-                <VkLoginButton onSoon={setSocialHint} />
+                <VkLoginButton
+                  enabled={!!vkConfig?.enabled}
+                  config={vkConfig}
+                  onAuth={handleVkAuth}
+                  onError={setError}
+                  onSoon={setSocialHint}
+                />
               </div>
               <div className="social-hint" aria-live="polite">
                 {tgLoading ? t('auth.telegramLoggingIn') : socialHint}

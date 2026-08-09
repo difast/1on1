@@ -1,15 +1,22 @@
+import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { renderVkOneTap } from '../lib/vkid'
+import { completeVkAuth } from '../api/client'
 
 /*
- * Вход через VK ID — пока ВИЗУАЛЬНАЯ ЗАГЛУШКА. Реальная OAuth-интеграция —
- * отдельная будущая задача. Иконка присутствует в общем ряду соц-входа, чтобы
- * пользователь видел планируемый способ, но помечена как «скоро» (приглушение +
- * бейдж-часики) и по клику сообщает «Скоро будет доступно» — не ведёт в никуда
- * молча и не выглядит как рабочая кнопка.
+ * Вход через VK ID — рабочая компактная иконка в общем ряду соц-входа.
  *
- * Вёрстка уже финальная: когда появится реальная логика, достаточно заменить
- * обработчик onClick на запуск OAuth (по аналогии с YandexLoginButton) и снять
- * флаг `soon` — переделывать разметку/стили не потребуется.
+ * По клику открывается модальное окно с официальным виджетом VK ID SDK
+ * (One Tap + QR-авторизация — QR оставлен включённым по умолчанию, как даёт SDK).
+ * Виджет отдаёт одноразовый code и device_id; обмен на токен и выдача JWT — на
+ * бэкенде (POST /auth/vk/callback), секрет приложения на клиент не попадает.
+ * При успехе вызываем onAuth({ token, user, status }) — дальше страница входа
+ * сохраняет сессию и уводит в продукт (как Telegram/Yandex ID).
+ *
+ * Если способ ещё не настроен на бэкенде (enabled=false) — иконка ведёт себя как
+ * прежняя заглушка «скоро» (onSoon), а не как рабочая кнопка.
+ *
+ * Логотип — официальный знак VK (белый на фирменном синем #0077FF).
  */
 const VkMark = () => (
   <svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -20,7 +27,6 @@ const VkMark = () => (
   </svg>
 )
 
-// Часики-бейдж «скоро».
 const SoonBadge = () => (
   <span className="social-soon-badge" aria-hidden="true">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -30,25 +36,88 @@ const SoonBadge = () => (
   </span>
 )
 
-export default function VkLoginButton({ onSoon }) {
+export default function VkLoginButton({ enabled = false, config = null, onAuth, onError, onSoon }) {
   const { t } = useTranslation()
+  const [open, setOpen] = useState(false)
+  const [busy, setBusy] = useState(false)
+  const containerRef = useRef(null)
+  const cleanupRef = useRef(null)
+  const doneRef = useRef(false)
+
+  // Рендер виджета при открытии модалки.
+  useEffect(() => {
+    if (!open || !config || !containerRef.current) return
+    doneRef.current = false
+    let alive = true
+    renderVkOneTap(
+      containerRef.current,
+      { appId: config.app_id, redirectUrl: config.redirect_url, scope: config.scope },
+      async ({ code, device_id }) => {
+        if (doneRef.current) return
+        doneRef.current = true
+        setBusy(true)
+        try {
+          const { data } = await completeVkAuth({ code, device_id })
+          onAuth?.(data)
+        } catch (err) {
+          const detail = err?.response?.data?.detail
+          onError?.(detail?.message || (typeof detail === 'string' ? detail : t('auth.vkFailed')))
+          setOpen(false)
+        } finally { if (alive) setBusy(false) }
+      },
+      () => { onError?.(t('auth.vkFailed')); setOpen(false) },
+    ).then((cleanup) => { cleanupRef.current = cleanup })
+      .catch(() => { onError?.(t('auth.vkFailed')); setOpen(false) })
+    return () => {
+      alive = false
+      try { cleanupRef.current?.() } catch { /* no-op */ }
+      cleanupRef.current = null
+    }
+  }, [open, config])
 
   const handleClick = () => {
-    // Пока способа нет — показываем понятное сообщение «скоро».
-    onSoon?.(t('auth.vkSoon'))
+    if (!enabled) { onSoon?.(t('auth.vkSoon')); return }
+    onError?.('')
+    setOpen(true)
   }
 
   return (
-    <button
-      type="button"
-      onClick={handleClick}
-      aria-label={`${t('auth.vk')} — ${t('auth.soon')}`}
-      title={`${t('auth.vk')} — ${t('auth.soon')}`}
-      aria-disabled="true"
-      className="social-icon social-icon-vk social-icon-soon"
-    >
-      <VkMark />
-      <SoonBadge />
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={handleClick}
+        aria-label={enabled ? t('auth.vk') : `${t('auth.vk')} — ${t('auth.soon')}`}
+        title={enabled ? t('auth.vk') : `${t('auth.vk')} — ${t('auth.soon')}`}
+        aria-disabled={enabled ? undefined : 'true'}
+        className={`social-icon social-icon-vk${enabled ? '' : ' social-icon-soon'}`}
+      >
+        <VkMark />
+        {!enabled && <SoonBadge />}
+      </button>
+
+      {open && (
+        <div
+          className="vk-modal-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={t('auth.vk')}
+          onClick={(e) => { if (e.target === e.currentTarget && !busy) setOpen(false) }}
+        >
+          <div className="vk-modal card">
+            <div className="vk-modal-head">
+              <span style={{ fontWeight: 600, fontSize: 15 }}>{t('auth.vk')}</span>
+              <button
+                type="button" className="vk-modal-close" aria-label={t('common.close')}
+                onClick={() => { if (!busy) setOpen(false) }}
+              >
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+              </button>
+            </div>
+            {/* Контейнер, в который VK ID SDK монтирует One Tap + QR. */}
+            <div ref={containerRef} className="vk-widget-slot" />
+          </div>
+        </div>
+      )}
+    </>
   )
 }

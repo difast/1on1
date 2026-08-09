@@ -354,6 +354,32 @@ h4 { font-size: 1rem; }
 .auth-view .input { padding: 8px 14px; }
 .auth-view .form-label { margin-bottom: 3px; font-size: 12.5px; }
 
+/* ── Модальное окно входа через VK ID (виджет VK ID SDK: One Tap + QR) ─────── */
+.vk-modal-overlay {
+  position: fixed; inset: 0; z-index: 1000;
+  background: rgba(15, 18, 25, 0.55);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: vk-fade 0.15s ease;
+}
+@keyframes vk-fade { from { opacity: 0 } to { opacity: 1 } }
+.vk-modal {
+  width: 100%; max-width: 380px; padding: 18px 18px 22px;
+  background: var(--color-surface);
+}
+.vk-modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 14px; color: var(--color-text-primary);
+}
+.vk-modal-close {
+  width: 28px; height: 28px; border-radius: 8px; border: none; cursor: pointer;
+  background: var(--color-surface-2); color: var(--color-text-muted);
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.vk-modal-close:hover { background: var(--color-border); color: var(--color-text-primary); }
+/* Слот, в который VK ID SDK монтирует виджет: минимальная высота, чтобы окно
+   не «прыгало» до загрузки виджета. */
+.vk-widget-slot { min-height: 120px; display: flex; justify-content: center; }
+
 /* ── Компактные иконки соц-входа (Яндекс ID, Telegram, VK ID) ──────────────
    Один ряд одинаковых круглых кнопок под формой email/пароля. Размер, сетка и
    отступы едины для всех провайдеров; фирменные цвета берём из брендгайдов

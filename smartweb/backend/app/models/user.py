@@ -23,6 +23,10 @@ class User(Base):
     # Уникальный, nullable: привязка есть не у всех. Матчинг пользователя идёт
     # именно по нему, а не по email (email в Яндексе можно сменить).
     yandex_id = Column(String(64), unique=True, nullable=True)
+    # VK ID — стабильный идентификатор провайдера для входа через VK ID.
+    # Уникальный, nullable: привязка есть не у всех. Матчинг пользователя идёт
+    # по нему, а не по email (email во VK можно сменить/скрыть).
+    vk_id = Column(String(64), unique=True, nullable=True)
     linkedin = Column(String(255), nullable=True)
     github = Column(String(255), nullable=True)
     calendar_token = Column(Text, nullable=True)

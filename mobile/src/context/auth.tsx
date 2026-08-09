@@ -46,6 +46,8 @@ interface AuthContextType {
   // Вход по уже выданному сервером JWT (Yandex ID): токен и профиль приходят
   // из /auth/yandex/callback, пароль в этом потоке не участвует.
   signInWithToken: (token: string, u: AppUser) => Promise<void>;
+  // Вход по одному лишь JWT (VK ID): профиль подтягиваем с /auth/me.
+  signInWithTokenOnly: (token: string) => Promise<void>;
   // Регистрация не входит в кабинет: возвращает email для окна подтверждения.
   signUp: (email: string, password: string) => Promise<{ email: string }>;
   forgotPassword: (email: string) => Promise<void>;
@@ -72,6 +74,7 @@ const AuthContext = createContext<AuthContextType>({
   exitAdmin: async () => {},
   signIn: async () => {},
   signInWithToken: async () => {},
+  signInWithTokenOnly: async () => {},
   signUp: async () => ({ email: '' }),
   forgotPassword: async () => {},
   resendConfirmation: async () => {},
@@ -197,6 +200,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await applyUser(u);
   };
 
+  // Вход через VK ID: приложение получает готовый JWT из deep-link (бэкенд уже
+  // обменял code по client_secret и выдал наш токен). Профиль тянем с /auth/me
+  // тем же loadProfile, что и при восстановлении сессии.
+  const signInWithTokenOnly = async (token: string) => {
+    setProfileError(null);
+    await setToken(token);
+    setSession({ token, email: '' });
+    await loadProfile();
+  };
+
   const signUp = async (email: string, password: string) => {
     setProfileError(null);
     const clean = email.trim();
@@ -265,7 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     <AuthContext.Provider value={{
       session, user, loading, initializing, profileError, activeRole, hasBothRoles, isAdmin, needsOnboarding,
       setUser, setActiveRole, addSecondaryRole, addTeamLeadRole, enterAdmin, exitAdmin,
-      signIn, signInWithToken, signUp, forgotPassword, resendConfirmation, signOut, retryProfile,
+      signIn, signInWithToken, signInWithTokenOnly, signUp, forgotPassword, resendConfirmation, signOut, retryProfile,
     }}>
       {children}
     </AuthContext.Provider>
