@@ -31,8 +31,8 @@ const BRAND: Record<Variant, {
 };
 
 export default function YandexLoginButton({
-  variant = 'red', onError, disabled = false,
-}: { variant?: Variant; onError?: (msg: string) => void; disabled?: boolean }) {
+  variant = 'red', onError, disabled = false, compact = false,
+}: { variant?: Variant; onError?: (msg: string) => void; disabled?: boolean; compact?: boolean }) {
   const { t } = useI18n();
   const [loading, setLoading] = useState(false);
   const c = BRAND[variant];
@@ -52,6 +52,30 @@ export default function YandexLoginButton({
       setLoading(false);
     }
   };
+
+  // Компактная круглая иконка для ряда соц-входа: фирменный красный круг с белым
+  // бейджем «Я» (тот же логотип-бейдж, что и на полной кнопке, перенесён в
+  // компактный формат). Логика входа не меняется.
+  if (compact) {
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={t('auth.yandex')}
+        accessibilityState={{ disabled: loading || disabled, busy: loading }}
+        onPress={start}
+        disabled={loading || disabled}
+        style={({ pressed }) => [
+          styles.iconBtn,
+          { backgroundColor: pressed ? c.bgPressed : c.bg, borderColor: c.border },
+          (loading || disabled) && styles.disabled,
+        ]}
+      >
+        {loading
+          ? <ActivityIndicator size="small" color={c.text} />
+          : <Text style={[styles.iconBadgeText, { color: c.text }]}>Я</Text>}
+      </Pressable>
+    );
+  }
 
   return (
     <Pressable
@@ -96,4 +120,12 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 15, fontWeight: '700', lineHeight: 18 },
   label: { fontSize: 15, fontWeight: '600' },
+
+  // Компактная круглая иконка — единый размер с прочими иконками ряда соц-входа.
+  iconBtn: {
+    width: 52, height: 52, borderRadius: 26,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1,
+  },
+  iconBadgeText: { fontSize: 24, fontWeight: '700', lineHeight: 28 },
 });

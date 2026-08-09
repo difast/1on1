@@ -82,7 +82,7 @@
     "kz": "Қазақша"
   },
   "auth": {
-    "tagline": "Better 1-on-1s with your team",
+    "tagline": "AI platform for managing, developing, and boosting team performance",
     "tabLogin": "Log in",
     "tabRegister": "Sign up",
     "email": "Email",
@@ -95,6 +95,7 @@
     "registering": "Signing up...",
     "forgotPassword": "Forgot your password?",
     "or": "or",
+    "loginWith": "Log in with",
     "yandex": "Log in with Yandex ID",
     "yandexOpening": "Opening Yandex ID...",
     "yandexOpenFailed": "Could not open Yandex ID sign-in",

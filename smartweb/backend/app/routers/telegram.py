@@ -27,10 +27,27 @@ def _web_url() -> str:
 
 @router.get("/config")
 def tg_config():
-    """Публичные данные для рендера виджета на фронте (без секретов)."""
+    """Публичные данные для рендера кнопки входа на фронте (без секретов).
+
+    Видимость кнопки Telegram завязана на ПУБЛИЧНЫЙ bot_username, а не на секретный
+    токен. Причина недавней «пропажи» кнопки: enabled требовал ещё и
+    telegram_bot_token, и когда токен переставал прокидываться в окружение
+    веб-бэкенда (после выноса бота в отдельное приложение), config отдавал
+    enabled=false и весь блок соц-входа скрывал виджет — хотя публичного
+    bot_username, которого достаточно для рендера Login Widget, было достаточно.
+    Токен остаётся обязательным на сервере для проверки подписи в /callback —
+    это отдельная забота и от отображения кнопки не зависит.
+
+    bot_id — числовой префикс токена. Это НЕ секрет (он и так виден в самом
+    виджете Telegram) и нужен фронту для кастомной компактной кнопки, которая
+    вызывает Telegram.Login.auth вместо стандартного iframe-виджета.
+    """
+    token = settings.telegram_bot_token or ""
+    bot_id = token.split(":", 1)[0] if ":" in token else ""
     return {
         "bot_username": settings.telegram_bot_username or "",
-        "enabled": bool(settings.telegram_bot_token and settings.telegram_bot_username),
+        "bot_id": bot_id,
+        "enabled": bool(settings.telegram_bot_username),
     }
 
 

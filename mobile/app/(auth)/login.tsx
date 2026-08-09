@@ -428,16 +428,21 @@ export default function LoginScreen() {
                 : <Text style={styles.btnText}>{mode === 'login' ? `${t('auth.submitLogin')} →` : `${t('auth.submitRegister')} →`}</Text>}
             </TouchableOpacity>
 
-            {/* Соц-вход: Яндекс ID — сразу под кнопкой обычного входа.
-                Дополняет email/пароль, не заменяет его. */}
+            {/* Соц-вход компактной иконкой в ряду с подписью «Войти через» —
+                единый визуальный язык с веб-версией. В приложении из способов
+                соц-входа присутствует только Яндекс ID (Telegram и VK ID —
+                веб-только), поэтому в ряду одна иконка. Дополняет email/пароль,
+                не заменяет его; логика входа прежняя. */}
             {yandexEnabled && (
               <View style={{ marginTop: 16 }}>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
-                  <Text style={styles.dividerText}>{t('auth.or')}</Text>
+                  <Text style={styles.dividerLabel}>{t('auth.loginWith')}</Text>
                   <View style={styles.dividerLine} />
                 </View>
-                <YandexLoginButton onError={setError} />
+                <View style={styles.socialRow}>
+                  <YandexLoginButton compact onError={setError} />
+                </View>
               </View>
             )}
 
@@ -451,12 +456,18 @@ export default function LoginScreen() {
               </TouchableOpacity>
             )}
 
-            <TouchableOpacity
-              style={styles.adminLink}
-              onPress={() => { setMode('admin'); setError(''); }}
-            >
-              <Text style={styles.adminLinkText}>{t('auth.adminLogin')}</Text>
-            </TouchableOpacity>
+            {/* Вход для администратора — служебный, обособлен от обычного входа:
+                увеличенный отступ и тонкий разделитель сверху, мельче кегль и
+                приглушённее цвет, чтобы не смотрелся как равнозначный способ
+                входа для обычного пользователя. */}
+            <View style={styles.adminSep}>
+              <TouchableOpacity
+                onPress={() => { setMode('admin'); setError(''); }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Text style={styles.adminSepText}>{t('auth.adminLogin')}</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -524,9 +535,19 @@ const makeStyles = (c: AppColors) => StyleSheet.create({
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, marginBottom: 16 },
   dividerLine: { flex: 1, height: 1, backgroundColor: c.border },
   dividerText: { fontSize: 12, color: c.textMuted },
+  // Подпись «Войти через» над рядом иконок соц-входа.
+  dividerLabel: { fontSize: 11, fontWeight: '600', letterSpacing: 0.8, color: c.textMuted, textTransform: 'uppercase' },
+  // Ряд компактных иконок соц-входа: единые размеры и отступы.
+  socialRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16 },
 
   adminLink: { alignItems: 'center', marginTop: 18 },
   adminLinkText: { fontSize: 12, color: c.textMuted },
+  // Обособление служебного «Вход для администратора».
+  adminSep: {
+    alignItems: 'center', marginTop: 24, paddingTop: 16,
+    borderTopWidth: 1, borderTopColor: c.border,
+  },
+  adminSepText: { fontSize: 11, color: c.textMuted, opacity: 0.7, letterSpacing: 0.3 },
 
   adminHeader: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
   adminIconWrap: {

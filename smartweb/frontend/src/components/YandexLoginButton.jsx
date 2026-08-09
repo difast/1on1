@@ -4,17 +4,20 @@ import Spinner from '../lib/Spinner'
 import { getYandexAuthUrl } from '../api/client'
 
 /*
- * Кнопка «Войти с Яндекс ID» по брендовым гайдлайнам Yandex ID (официальная
+ * Вход «с Яндекс ID» по брендовым гайдлайнам Yandex ID (официальная
  * формулировка; сокращать «Яндекс ID» нельзя).
  *
- * Разрешённые варианты оформления: фирменный красный (основной), чёрный и
- * белый — задаются классами .btn-yandex* в styles/index.css. Логотип-бейдж,
- * его пропорции, радиус и защитное поле не меняются. Геометрия и состояния
- * наведения/нажатия берутся из общего класса .btn, поэтому кнопка совпадает по
- * высоте, скруглению и поведению с основной кнопкой входа на этой же странице.
+ * Два формата:
+ *  - compact (по умолчанию на странице входа) — круглая иконка в общем ряду
+ *    соц-входа: фирменный красный круг с белым бейджем «Я». Логотип-бейдж, его
+ *    пропорции и защитное поле сохранены с прежней растянутой кнопки, просто
+ *    перенесены в компактный формат.
+ *  - полноширинная кнопка (variant red/black/white) — прежнее оформление,
+ *    оставлено на случай переиспользования в других местах.
  *
  * Клик получает URL страницы согласия у бэкенда (там же выпускается CSRF-state)
- * и уводит браузер на Яндекс. Возврат — на /auth/yandex/callback.
+ * и уводит браузер на Яндекс. Возврат — на /auth/yandex/callback. Логика входа
+ * в обоих форматах одна и та же — компактный вид не влияет на функциональность.
  */
 const VARIANT_CLASS = {
   red: '',
@@ -22,7 +25,7 @@ const VARIANT_CLASS = {
   white: 'btn-yandex-white',
 }
 
-export default function YandexLoginButton({ variant = 'red', onError, disabled = false }) {
+export default function YandexLoginButton({ variant = 'red', onError, disabled = false, compact = false }) {
   const { t } = useTranslation()
   const [loading, setLoading] = useState(false)
 
@@ -40,6 +43,24 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
     }
   }
 
+  if (compact) {
+    return (
+      <button
+        type="button"
+        onClick={start}
+        disabled={loading || disabled}
+        aria-label={t('auth.yandex')}
+        aria-busy={loading || undefined}
+        title={t('auth.yandex')}
+        className="social-icon social-icon-yandex"
+      >
+        {loading
+          ? <Spinner />
+          : <span className="social-badge-ya" aria-hidden="true">Я</span>}
+      </button>
+    )
+  }
+
   return (
     <button
       type="button"
@@ -49,9 +70,6 @@ export default function YandexLoginButton({ variant = 'red', onError, disabled =
       aria-busy={loading || undefined}
       className={`btn btn-yandex ${VARIANT_CLASS[variant] || ''}`.trim()}
       style={{
-        // Та же высота, ширина и кегль, что у основной кнопки входа на этой
-        // странице. Защитное поле вокруг логотипа — gap 10 плюс отступ 20 до
-        // края кнопки (не меньше половины высоты бейджа).
         width: '100%',
         minHeight: 44,
         padding: '0 20px',
