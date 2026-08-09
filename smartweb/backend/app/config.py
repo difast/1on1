@@ -120,6 +120,20 @@ class Settings(BaseSettings):
     # Обычный веб-редирект в приложении не работает — возврат идёт по схеме.
     yandex_login_mobile_redirect_uri: str = "oneonone://auth/yandex/callback"
 
+    # --- Вход через VK ID (вход/регистрация). ---
+    # Отдельный OAuth-поток (VK ID SDK, OAuth 2.1 + PKCE на клиенте, обмен кода
+    # на токен — на бэкенде по client_secret). ВСЕ значения только из окружения:
+    # секрет приложения (VK_CLIENT_SECRET) в код/бандл не попадает.
+    vk_app_id: str = ""            # App ID (публичный, отдаётся фронту для SDK)
+    vk_client_secret: str = ""     # секрет приложения, ТОЛЬКО env, только бэкенд
+    # Redirect URI веба. По умолчанию — app_web_url + /auth/vk/callback. Должен
+    # быть точь-в-точь зарегистрирован в настройках приложения VK ID.
+    vk_login_redirect_uri: str = ""
+    # Deep-link возврата в приложение. VK не принимает кастомные схемы в своём
+    # redirect_uri, поэтому мобильный вход возвращается на веб-адрес, а бэкенд
+    # после обмена кода перебрасывает результат в приложение по этой схеме.
+    vk_login_mobile_redirect_uri: str = "oneonone://auth/vk/callback"
+
     class Config:
         env_file = ".env"
         extra = "ignore"
@@ -169,5 +183,16 @@ class Settings(BaseSettings):
             return self.yandex_login_redirect_uri
         base = (self.app_web_url or "").rstrip("/")
         return f"{base}/auth/yandex/callback" if base else ""
+
+    # --- VK ID (вход): redirect URI веба с откатом на app_web_url ---
+
+    @property
+    def vk_login_web_redirect(self) -> str:
+        """Redirect URI страницы возврата VK ID на вебе (/auth/vk/callback).
+        Должен совпадать с адресом, зарегистрированным в приложении VK ID."""
+        if self.vk_login_redirect_uri:
+            return self.vk_login_redirect_uri
+        base = (self.app_web_url or "").rstrip("/")
+        return f"{base}/auth/vk/callback" if base else ""
 
 settings = Settings()

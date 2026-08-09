@@ -11,7 +11,8 @@ import type { AppColors } from '../../src/constants/colors';
 import { mailProviderFor } from '../../src/lib/mailProviders';
 import { useI18n, translate } from '../../src/lib/i18n';
 import YandexLoginButton from '../../src/components/YandexLoginButton';
-import { yandexAuthConfig, authAdminLogin } from '../../src/lib/api';
+import VkLoginButton from '../../src/components/VkLoginButton';
+import { yandexAuthConfig, vkAuthConfig, authAdminLogin } from '../../src/lib/api';
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin' | 'confirm_sent';
 
@@ -49,10 +50,16 @@ export default function LoginScreen() {
   // Вход через Yandex ID — дополнительный способ рядом с email/паролем.
   // Кнопку показываем, только если способ настроен на бэкенде.
   const [yandexEnabled, setYandexEnabled] = useState(false);
+  // Вход через VK ID — рабочая иконка в том же ряду. redirectUrl — веб-адрес
+  // моста (/auth/vk/callback), который приложение открывает с platform=mobile.
+  const [vkEnabled, setVkEnabled] = useState(false);
+  const [vkRedirect, setVkRedirect] = useState('');
   const submittingRef = useRef(false);
 
   React.useEffect(() => {
     yandexAuthConfig().then(r => setYandexEnabled(!!r?.enabled)).catch(() => setYandexEnabled(false));
+    vkAuthConfig().then(r => { setVkEnabled(!!r?.enabled); setVkRedirect(r?.redirect_url || ''); })
+      .catch(() => { setVkEnabled(false); setVkRedirect(''); });
   }, []);
 
   // Reset submitting state if session disappears (e.g. sign-out while loading)
@@ -428,12 +435,12 @@ export default function LoginScreen() {
                 : <Text style={styles.btnText}>{mode === 'login' ? `${t('auth.submitLogin')} →` : `${t('auth.submitRegister')} →`}</Text>}
             </TouchableOpacity>
 
-            {/* Соц-вход компактной иконкой в ряду с подписью «Войти через» —
-                единый визуальный язык с веб-версией. В приложении из способов
-                соц-входа присутствует только Яндекс ID (Telegram и VK ID —
-                веб-только), поэтому в ряду одна иконка. Дополняет email/пароль,
-                не заменяет его; логика входа прежняя. */}
-            {yandexEnabled && (
+            {/* Соц-вход компактными иконками в ряду с подписью «Войти через» —
+                единый визуальный язык с веб-версией. В приложении доступны
+                Яндекс ID и VK ID (Telegram — веб-только). Дополняют email/пароль,
+                не заменяют его; каждая иконка показывается только если способ
+                включён на бэкенде. */}
+            {(yandexEnabled || vkEnabled) && (
               <View style={{ marginTop: 16 }}>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
@@ -441,7 +448,8 @@ export default function LoginScreen() {
                   <View style={styles.dividerLine} />
                 </View>
                 <View style={styles.socialRow}>
-                  <YandexLoginButton compact onError={setError} />
+                  {yandexEnabled && <YandexLoginButton compact onError={setError} />}
+                  {vkEnabled && <VkLoginButton redirectUrl={vkRedirect} onError={setError} />}
                 </View>
               </View>
             )}

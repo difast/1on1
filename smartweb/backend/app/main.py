@@ -12,7 +12,7 @@ _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
 from app.utils import ratelimit
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex, auth_vk
 
 
 def _seed_billing():
@@ -442,6 +442,7 @@ _AUTH_PUBLIC_EXACT = {
     "/api/auth/confirm-email", "/api/auth/resend-confirmation",
     "/api/telegram/config", "/api/telegram/webhook",
     "/api/auth/yandex/config", "/api/auth/yandex/authorize", "/api/auth/yandex/callback",
+    "/api/auth/vk/config", "/api/auth/vk/callback",
     "/api/telegram/miniapp-auth", "/api/telegram/callback", "/api/telegram/link",
     "/api/billing/plans", "/api/billing/webhooks/cloudpayments",
 }
@@ -521,6 +522,7 @@ app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 # Вход через Yandex ID — отдельный роутер под тем же префиксом /api/auth.
 app.include_router(auth_yandex.router, prefix="/api/auth/yandex", tags=["auth-yandex"])
+app.include_router(auth_vk.router, prefix="/api/auth/vk", tags=["auth-vk"])
 app.include_router(proposal.router, prefix="/api/proposals", tags=["proposals"])
 app.include_router(task_proposal.router, prefix="/api/task-proposals", tags=["task-proposals"])
 app.include_router(goal.router, prefix="/api/goals", tags=["goals"])

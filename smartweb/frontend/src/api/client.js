@@ -278,6 +278,11 @@ export const getYandexAuthUrl = (params) => api.get('/auth/yandex/authorize', { 
 export const yandexCallbackTarget = (state) => api.get('/auth/yandex/callback-target', { params: { state } })
 export const completeYandexAuth = (code, state) => api.post('/auth/yandex/callback', { code, state })
 
+// Вход через VK ID. Виджет VK ID SDK отдаёт code/device_id; обмен на токен и
+// выдача JWT — на бэкенде (секрет приложения на клиент не попадает).
+export const getVkAuthConfig = () => api.get('/auth/vk/config')
+export const completeVkAuth = (payload) => api.post('/auth/vk/callback', payload)
+
 // Онбординг-опросник (после подтверждения почты, до выбора роли)
 export const getSurveyConfig = () => api.get('/survey/config')
 export const submitSurvey = (userId, answers) => api.post('/survey/submit', { user_id: userId, answers })

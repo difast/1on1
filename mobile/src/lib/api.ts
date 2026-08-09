@@ -410,6 +410,12 @@ export const yandexAuthCallback = (code: string, state: string) =>
     method: 'POST', body: JSON.stringify({ code, state }),
   });
 
+// Вход через VK ID. Обмен кода на токен и выдача JWT — на бэкенде (секрет
+// приложения на клиент не попадает). В приложении показываем кнопку только если
+// способ включён; сам вход идёт через веб-мост /auth/vk/callback?platform=mobile,
+// который после обмена перебрасывает JWT в приложение по deep-link.
+export const vkAuthConfig = () => req<{ enabled: boolean; app_id: string; redirect_url: string; scope: string }>('/auth/vk/config');
+
 // Telegram: привязка аккаунта по коду из бота
 export const telegramLink = (user_id: number, code: string) =>
   req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });

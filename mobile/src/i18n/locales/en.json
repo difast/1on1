@@ -96,6 +96,8 @@
     "forgotPassword": "Forgot your password?",
     "or": "or",
     "loginWith": "Log in with",
+    "vk": "Log in with VK ID",
+    "vkFailed": "Could not sign in with VK ID. Please try again.",
     "yandex": "Log in with Yandex ID",
     "yandexOpening": "Opening Yandex ID...",
     "yandexOpenFailed": "Could not open Yandex ID sign-in",
