@@ -339,6 +339,79 @@ h4 { font-size: 1rem; }
 .btn-yandex-black .btn-yandex-badge { background: #FFFFFF; color: #000000; }
 .btn-yandex-white .btn-yandex-badge { background: #FC3F1D; color: #FFFFFF; }
 
+/* ── Компактные иконки соц-входа (Яндекс ID, Telegram, VK ID) ──────────────
+   Один ряд одинаковых круглых кнопок под формой email/пароля. Размер, сетка и
+   отступы едины для всех провайдеров; фирменные цвета берём из брендгайдов
+   каждого сервиса. Логотип внутри — official mark в защитном поле. */
+.social-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px;
+}
+.social-icon {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; cursor: pointer; padding: 0;
+  position: relative;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.social-icon:not(:disabled):hover { transform: translateY(-2px); }
+.social-icon:not(:disabled):active { transform: translateY(0) scale(0.95); }
+.social-icon:focus-visible { outline: 2px solid var(--color-accent); outline-offset: 3px; }
+.social-icon svg { display: block; }
+
+/* Яндекс ID — фирменный красный круг с белым бейджем «Я» (перенос оформления
+   с прежней растянутой кнопки: тот же логотип-бейдж, те же пропорции). */
+.social-icon-yandex { background: #FC3F1D; box-shadow: 0 4px 16px rgba(252, 63, 29, 0.28); }
+.social-icon-yandex:not(:disabled):hover { background: #EC3313; box-shadow: 0 8px 24px rgba(252, 63, 29, 0.36); }
+.social-icon-yandex:not(:disabled):active { background: #D92C0E; }
+.social-icon-yandex .social-badge-ya {
+  font-family: 'YS Text', 'Helvetica Neue', Arial, sans-serif;
+  font-size: 22px; font-weight: 700; line-height: 1; color: #FFFFFF;
+}
+
+/* Telegram — фирменный голубой градиент, белый самолётик. */
+.social-icon-telegram { background: linear-gradient(180deg, #2AABEE 0%, #229ED9 100%); box-shadow: 0 4px 16px rgba(34, 158, 217, 0.28); }
+.social-icon-telegram:not(:disabled):hover { box-shadow: 0 8px 24px rgba(34, 158, 217, 0.4); }
+
+/* VK ID — фирменный синий, белый логотип VK. */
+.social-icon-vk { background: #0077FF; box-shadow: 0 4px 16px rgba(0, 119, 255, 0.28); }
+.social-icon-vk:not(:disabled):hover { box-shadow: 0 8px 24px rgba(0, 119, 255, 0.4); }
+
+/* Заглушка «скоро»: иконка приглушена и не выглядит как рабочая кнопка.
+   Бейдж-часики в углу подсказывает, что способ появится позже. */
+.social-icon-soon { opacity: 0.55; filter: grayscale(0.25); cursor: default; }
+.social-icon-soon:not(:disabled):hover { transform: none; }
+.social-soon-badge {
+  position: absolute; right: -3px; bottom: -3px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: var(--color-surface); border: 1px solid var(--color-border);
+  display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: var(--shadow-xs);
+}
+
+/* Разделитель между формой email/пароля и рядом иконок. Заменяет прежнее
+   блёклое «или»: тонкая линия, затухающая к краям, с центральной подписью
+   «Войти через» — она же служит подписью к ряду иконок. */
+.social-divider {
+  display: flex; align-items: center; gap: 14px;
+  margin: 20px 0 18px;
+}
+.social-divider::before,
+.social-divider::after {
+  content: ''; flex: 1; height: 1px;
+}
+.social-divider::before { background: linear-gradient(90deg, transparent, var(--color-border)); }
+.social-divider::after { background: linear-gradient(90deg, var(--color-border), transparent); }
+.social-divider span {
+  font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+  font-weight: 600; color: var(--color-text-muted); white-space: nowrap;
+}
+.social-hint {
+  text-align: center; font-size: 12px; color: var(--color-text-muted);
+  margin-top: 12px; min-height: 16px; transition: opacity 0.2s ease;
+}
+
 .btn-sm { padding: 7px 13px; font-size: 13px; border-radius: var(--radius-sm); }
 .btn-lg { padding: 13px 24px; font-size: 16px; border-radius: var(--radius-lg); }
 .btn-xl { padding: 16px 32px; font-size: 17px; border-radius: var(--radius-lg); }

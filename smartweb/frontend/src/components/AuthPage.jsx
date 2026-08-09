@@ -4,6 +4,7 @@ import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
 import TelegramLoginButton from './TelegramLoginButton'
 import YandexLoginButton from './YandexLoginButton'
+import VkLoginButton from './VkLoginButton'
 import Spinner from '../lib/Spinner'
 import ConfirmEmailModal from './ConfirmEmailModal'
 import {
@@ -44,8 +45,12 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const [showConsent, setShowConsent] = useState(false)
   const [error, setError] = useState('')
   const [adminPwd, setAdminPwd] = useState('')
-  const [tgConfig, setTgConfig] = useState(null)  // { bot_username, enabled }
+  const [tgConfig, setTgConfig] = useState(null)  // { bot_username, bot_id, enabled }
   const [tgLoading, setTgLoading] = useState(false)
+  // Подсказка «Скоро будет доступно» под рядом соц-иконок — показывается при
+  // клике по заглушке VK ID (Задача 3). Живёт отдельно от error, чтобы не
+  // конфликтовать с ошибками формы.
+  const [socialHint, setSocialHint] = useState('')
   // Вход через Yandex ID — дополнительный способ рядом с email/паролем и
   // Telegram. Кнопка показывается, только если способ настроен на бэкенде.
   const [yandexEnabled, setYandexEnabled] = useState(false)
@@ -284,7 +289,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
               ].map(t => (
                 <button
                   key={t.key}
-                  onClick={() => { setMode(t.key); setError('') }}
+                  onClick={() => { setMode(t.key); setError(''); setSocialHint('') }}
                   style={{
                     flex: 1, padding: '8px 12px', borderRadius: 'var(--radius-sm)',
                     border: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 500,
@@ -367,32 +372,32 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
             </form>
 
-            {/* Соц-вход: Яндекс ID и Telegram — сразу под кнопкой обычного
-                входа. Порядок способов: email/пароль, Яндекс ID, Telegram.
-                Оба дополняют email/пароль, не заменяют его, и показываются
-                только если настроены. */}
-            {(yandexEnabled || (tgConfig?.enabled && tgConfig.bot_username)) && (
-              <div style={{ marginTop: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '4px 0 16px' }}>
-                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
-                  <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>{t('auth.or')}</span>
-                  <div style={{ flex: 1, height: 1, background: 'var(--color-border)' }} />
-                </div>
+            {/* Соц-вход компактным рядом иконок. Порядок способов сохранён:
+                Яндекс ID, Telegram, VK ID. Все дополняют email/пароль, не
+                заменяют его. Яндекс и Telegram показываются, если настроены на
+                бэкенде; VK ID пока заглушка «скоро» (Задача 3) и присутствует
+                всегда как анонс будущего способа. Разделитель «Войти через»
+                отделяет ряд от формы. */}
+            <div style={{ marginTop: 16 }}>
+              <div className="social-divider"><span>{t('auth.loginWith')}</span></div>
+              <div className="social-row">
                 {yandexEnabled && (
-                  <div style={{ marginBottom: tgConfig?.enabled && tgConfig.bot_username ? 12 : 0 }}>
-                    <YandexLoginButton onError={setError} />
-                  </div>
+                  <YandexLoginButton compact onError={setError} />
                 )}
                 {tgConfig?.enabled && tgConfig.bot_username && (
-                  <TelegramLoginButton botUsername={tgConfig.bot_username} onAuth={handleTelegramWidget} />
+                  <TelegramLoginButton
+                    botId={tgConfig.bot_id}
+                    botUsername={tgConfig.bot_username}
+                    onAuth={handleTelegramWidget}
+                    onError={setError}
+                  />
                 )}
-                {tgLoading && (
-                  <p style={{ textAlign: 'center', fontSize: 13, color: 'var(--color-text-muted)', marginTop: 10 }}>
-                    {t('auth.telegramLoggingIn')}
-                  </p>
-                )}
+                <VkLoginButton onSoon={setSocialHint} />
               </div>
-            )}
+              <div className="social-hint" aria-live="polite">
+                {tgLoading ? t('auth.telegramLoggingIn') : socialHint}
+              </div>
+            </div>
 
             {/* Ниже кнопок входа: восстановление пароля, согласие, админ-вход */}
             {mode === 'login' && (
@@ -418,11 +423,14 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
               </button>.
             </p>
 
-            {/* Admin link */}
-            <div style={{ textAlign: 'center', marginTop: 18 }}>
+            {/* Вход для администратора — служебный, не равнозначен обычному входу.
+                Визуально обособлен: увеличенный отступ и тонкий разделитель
+                сверху, мельче кегль и приглушённее цвет, чтобы не смотрелся как
+                ещё один вариант входа для обычного пользователя (Задача 5). */}
+            <div style={{ textAlign: 'center', marginTop: 26, paddingTop: 16, borderTop: '1px solid var(--color-border)' }}>
               <button
                 onClick={() => { setMode('admin'); setError('') }}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12, color: 'var(--color-text-muted)' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 11, color: 'var(--color-text-muted)', opacity: 0.7, letterSpacing: '0.02em' }}
               >
                 {t('auth.adminLogin')}
               </button>
