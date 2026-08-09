@@ -7,13 +7,17 @@
   * ОБМЕН кода на токен делаем ЗДЕСЬ, на бэкенде: приложение VK ID —
     конфиденциальный клиент, аутентифицируется своим `client_secret`, который
     никогда не попадает в браузер;
-  * из ответа обмена и из user_info берём стабильный идентификатор (user_id →
-    vk_id), email (если выдан и подтверждён провайдером), имя/фамилию и аватар.
+  * профиль берём в первую очередь из OpenID Connect `id_token` (VK ID отдаёт
+    его прямо в ответе обмена — это JWT с claims sub/first_name/last_name/email/
+    avatar), а user_info дергаем лишь как запасной источник. Так вход не падает,
+    если отдельный вызов user_info по какой-то причине недоступен.
 
 CSRF: отдельный `state`, как у Yandex ID, здесь НЕ нужен — VK ID SDK
 использует встроенный PKCE (code_challenge/code_verifier) и свой state внутри
 SDK. Дублировать защиту не требуется (см. Этап 1 задачи).
 """
+import base64
+import json
 import logging
 
 import httpx
@@ -24,9 +28,9 @@ from app.config import settings
 TOKEN_URL = "https://id.vk.com/oauth2/auth"
 USER_INFO_URL = "https://id.vk.com/oauth2/user_info"
 
-# Запрашиваемые данные: email + имя/фамилия/фото (аналог набора Yandex ID).
-# В VK ID имя/фамилия/аватар отдаются в user_info по базовому доступу, отдельного
-# скоупа не требуют; отдельно запрашиваем email. Скоуп уходит в SDK на фронте.
+# Запрашиваемые данные: email + имя/фамилия/фото. Имя/фамилия/аватар VK ID
+# отдаёт по базовому доступу (в id_token / user_info), отдельного скоупа не
+# требуют; отдельно запрашиваем email. Скоуп уходит в SDK на фронте.
 LOGIN_SCOPES = "email"
 
 _TIMEOUT = 15.0
@@ -41,80 +45,146 @@ def is_configured() -> bool:
     return bool(settings.vk_app_id and settings.vk_client_secret)
 
 
+def _decode_jwt_payload(token: str) -> dict:
+    """Достать claims из JWT (id_token) без проверки подписи.
+
+    Токен получен прямо в ответе обмена по TLS от id.vk.com в ответ на наш
+    аутентифицированный по client_secret запрос, поэтому источнику доверяем;
+    подпись отдельно не проверяем (для этого нужен JWKS VK)."""
+    try:
+        parts = (token or "").split(".")
+        if len(parts) < 2:
+            return {}
+        seg = parts[1]
+        seg += "=" * (-len(seg) % 4)  # восстановить padding base64url
+        return json.loads(base64.urlsafe_b64decode(seg.encode()).decode("utf-8")) or {}
+    except Exception:
+        return {}
+
+
 def exchange_code(code: str, device_id: str, code_verifier: str | None = None,
                   state: str | None = None) -> dict:
-    """Обменять одноразовый `code` (+ `device_id`) на access_token НА БЭКЕНДЕ.
+    """Обменять одноразовый `code` (+ `device_id`) на токены НА БЭКЕНДЕ.
 
-    Приложение — конфиденциальный клиент: аутентификация по client_secret,
-    поэтому PKCE code_verifier на этой стороне не обязателен. Если SDK всё же
-    передал code_verifier — прокидываем его, хуже не будет.
-    """
-    data = {
+    Разные приложения VK ID принимают РАЗНЫЙ набор параметров обмена: одни как
+    конфиденциальный клиент (аутентификация по client_secret), другие требуют
+    строгий PKCE (code_verifier). Плюс часть приложений хочет redirect_uri в
+    обмене, часть — нет. Точную комбинацию снаружи не угадать, поэтому пробуем
+    по очереди, пока VK не отдаст access_token. Неуспешный обмен (4xx) код не
+    расходует, поэтому попытки безопасны. Тело каждой ошибки логируем — по нему
+    видно реальную причину (invalid_grant, redirect_uri_mismatch,
+    code_verifier required и т.п.)."""
+    base = {
         "grant_type": "authorization_code",
         "code": code,
         "device_id": device_id,
         "client_id": settings.vk_app_id,
-        "client_secret": settings.vk_client_secret,
-        "redirect_uri": settings.vk_login_web_redirect,
     }
-    if code_verifier:
-        data["code_verifier"] = code_verifier
     if state:
-        data["state"] = state
-    r = httpx.post(TOKEN_URL, data=data, timeout=_TIMEOUT)
-    if r.status_code != 200:
-        log.warning("vk id token exchange failed: %s", r.status_code)
-        raise VkAuthError("token_exchange_failed")
-    t = r.json() or {}
-    if not t.get("access_token"):
-        raise VkAuthError("no_access_token")
-    return t
+        base["state"] = state
+
+    secret = settings.vk_client_secret
+    ru = settings.vk_login_web_redirect
+
+    def variant(**extra):
+        d = dict(base)
+        d.update({k: v for k, v in extra.items() if v})
+        return d
+
+    # Порядок: конфиденциальный клиент (с redirect_uri и без) → строгий PKCE.
+    attempts = []
+    if secret:
+        attempts.append(variant(client_secret=secret, redirect_uri=ru, code_verifier=code_verifier))
+        attempts.append(variant(client_secret=secret, code_verifier=code_verifier))
+    if code_verifier:
+        attempts.append(variant(code_verifier=code_verifier, redirect_uri=ru))
+        attempts.append(variant(code_verifier=code_verifier))
+    if ru:
+        attempts.append(variant(redirect_uri=ru))
+
+    # Убираем дубли, сохраняя порядок.
+    seen, uniq = set(), []
+    for d in attempts:
+        key = tuple(sorted((k, v) for k, v in d.items() if k != "code"))
+        if key not in seen:
+            seen.add(key); uniq.append(d)
+
+    last = "no_attempts"
+    for i, data in enumerate(uniq):
+        try:
+            r = httpx.post(TOKEN_URL, data=data, timeout=_TIMEOUT)
+        except Exception as e:
+            last = f"request_error {type(e).__name__}"
+            log.warning("vk id exchange attempt %s: %s", i, last)
+            continue
+        if r.status_code == 200:
+            t = r.json() or {}
+            if t.get("access_token"):
+                return t
+            last = f"no_access_token body={json.dumps(t)[:300]}"
+        else:
+            last = f"HTTP {r.status_code} body={(r.text or '')[:300]}"
+        log.warning("vk id exchange attempt %s (params=%s): %s",
+                    i, sorted(k for k in data if k not in ('code', 'client_secret')), last)
+    raise VkAuthError(f"token_exchange_failed: {last}")
 
 
 def fetch_user_info(access_token: str) -> dict:
-    """Данные пользователя из VK ID user_info (user_id, имя, фамилия, аватар,
-    email/phone при наличии доступа)."""
-    r = httpx.post(USER_INFO_URL, data={
-        "client_id": settings.vk_app_id,
-        "access_token": access_token,
-    }, timeout=_TIMEOUT)
+    """Данные пользователя из VK ID user_info. Запасной источник к id_token:
+    ошибку НЕ пробрасываем как фатальную — вызывающий сам решит, хватило ли
+    данных из id_token."""
+    try:
+        r = httpx.post(USER_INFO_URL, data={
+            "client_id": settings.vk_app_id,
+            "access_token": access_token,
+        }, timeout=_TIMEOUT)
+    except Exception as e:
+        log.warning("vk id user_info request error: %s", type(e).__name__)
+        return {}
     if r.status_code != 200:
-        log.warning("vk id user_info failed: %s", r.status_code)
-        raise VkAuthError("user_info_failed")
+        log.warning("vk id user_info failed: HTTP %s body=%s",
+                    r.status_code, (r.text or "")[:500])
+        return {}
     body = r.json() or {}
-    # VK ID кладёт данные в объект user; на всякий случай поддержим и плоский ответ.
+    # VK ID кладёт данные в объект user; поддержим и плоский ответ.
     return body.get("user") or body
 
 
-def display_name(info: dict) -> str | None:
-    """Имя для профиля: «Имя Фамилия», иначе first_name/screen_name."""
-    first = (info.get("first_name") or "").strip()
-    last = (info.get("last_name") or "").strip()
-    full = " ".join(p for p in (first, last) if p).strip()
-    if full:
-        return full[:255]
-    for key in ("screen_name", "first_name"):
-        v = (info.get(key) or "").strip()
-        if v:
-            return v[:255]
-    return None
+def profile_from_auth(tokens: dict, info: dict | None = None) -> dict:
+    """Нормализованный профиль VK ID: id_token (OIDC) + user_info + поля обмена.
 
-
-def profile_from_auth(tokens: dict, info: dict) -> dict:
-    """Нормализованный профиль VK ID для логики входа.
-
-    Email берём и из ответа обмена, и из user_info — что придёт. Он выдаётся
-    только при согласии на скоуп email и является адресом аккаунта VK, то есть
-    подтверждён провайдером. Пол/телефон — служебные, в модель User не пишем.
+    Порядок источников: user_info -> claims из id_token -> сам ответ обмена.
+    Email выдаётся только при согласии на скоуп email и является адресом
+    аккаунта VK (подтверждён провайдером). Пол/телефон — служебные, не пишем.
     """
-    vk_id = str(info.get("user_id") or tokens.get("user_id") or "").strip()
+    info = info or {}
+    claims = _decode_jwt_payload(tokens.get("id_token") or "")
+
+    def pick(*keys):
+        for src in (info, claims, tokens):
+            for k in keys:
+                v = src.get(k)
+                if v not in (None, ""):
+                    return v
+        return None
+
+    vk_id = str(pick("user_id", "sub") or "").strip()
     if not vk_id:
+        log.warning("vk id: no provider id; info_keys=%s claims_keys=%s token_keys=%s",
+                    list(info.keys()), list(claims.keys()), list(tokens.keys()))
         raise VkAuthError("no_provider_id")
-    email = (info.get("email") or tokens.get("email") or "").strip().lower() or None
-    avatar = (info.get("avatar") or "").strip() or None
+
+    email = (pick("email") or "").strip().lower() or None
+    avatar = (pick("avatar", "photo_200", "photo") or "").strip() or None
+    first = (pick("first_name") or "").strip()
+    last = (pick("last_name") or "").strip()
+    name = " ".join(p for p in (first, last) if p).strip()
+    if not name:
+        name = (pick("screen_name", "name") or "").strip() or None
+
     return {
         "vk_id": vk_id,
         "email": email,
-        "name": display_name(info),
+        "name": name[:255] if name else None,
         "avatar": avatar,
     }
