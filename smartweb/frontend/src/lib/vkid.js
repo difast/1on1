@@ -51,9 +51,22 @@ export async function renderVkOneTap(container, cfg, onCode, onError) {
   const oneTap = new VKID.OneTap()
   oneTap
     .render({ container, showAlternativeLogin: true })
-    .on(VKID.WidgetEvents.ERROR, (e) => onError?.(e))
+    .on(VKID.WidgetEvents.ERROR, (e) => {
+      // Логируем полную ошибку виджета VK ID — она видна в консоли и помогает
+      // отличить сбой на стороне SDK/VK от ошибки нашего бэкенда.
+      try { console.error('[VK ID] widget error', e) } catch { /* no-op */ }
+      onError?.(e)
+    })
     .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload) => {
-      onCode?.({ code: payload.code, device_id: payload.device_id })
+      // Прокидываем всё, что дал SDK: code и device_id обязательны, а
+      // code_verifier/state — если вдруг присутствуют (для строгого PKCE-режима
+      // обмена на бэкенде).
+      onCode?.({
+        code: payload.code,
+        device_id: payload.device_id,
+        code_verifier: payload.code_verifier,
+        state: payload.state,
+      })
     })
   return () => { try { oneTap.close?.() } catch { /* no-op */ } }
 }

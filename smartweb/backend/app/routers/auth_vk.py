@@ -68,6 +68,8 @@ def callback(data: CallbackReq, db: Session = Depends(get_db)):
             data.code, data.device_id,
             code_verifier=data.code_verifier, state=data.state,
         )
+        # user_info — запасной источник: если недоступен, профиль соберётся из
+        # id_token (OIDC), полученного прямо в ответе обмена. Не роняем вход.
         info = vk_id.fetch_user_info(tokens.get("access_token"))
         profile = vk_id.profile_from_auth(tokens, info)
     except vk_id.VkAuthError:

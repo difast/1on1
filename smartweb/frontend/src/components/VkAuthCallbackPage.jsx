@@ -38,10 +38,12 @@ export default function VkAuthCallbackPage() {
 
   // Отправка code/device_id на бэкенд и обработка ответа (общий код для обоих
   // сценариев). Для мобильного — переброс в приложение по deep-link с токеном.
-  const finish = async (code, deviceId) => {
+  const finish = async (code, deviceId, extra = {}) => {
     try {
       const { data } = await completeVkAuth({
-        code, device_id: deviceId, platform: isMobile ? 'mobile' : 'web',
+        code, device_id: deviceId,
+        code_verifier: extra.code_verifier, state: extra.state,
+        platform: isMobile ? 'mobile' : 'web',
       })
       if (isMobile) {
         const base = data?.mobile_redirect || 'oneonone://auth/vk/callback'
@@ -80,7 +82,7 @@ export default function VkAuthCallbackPage() {
             renderVkOneTap(
               containerRef.current,
               { appId: data.app_id, redirectUrl: data.redirect_url, scope: data.scope },
-              ({ code, device_id }) => finish(code, device_id),
+              ({ code, device_id, code_verifier, state }) => finish(code, device_id, { code_verifier, state }),
               () => { setStatus('error'); setMessage(t('auth.vkFailed')) },
             ).catch(() => { setStatus('error'); setMessage(t('auth.vkFailed')) })
           })
