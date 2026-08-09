@@ -8,6 +8,20 @@
 
 let _sdkPromise = null
 
+// Вытащить читаемое сообщение из ошибки VK ID SDK (форма разнится по версиям:
+// { code, text }, { error, error_description }, вложенный .error, Error).
+export function describeVkError(e) {
+  if (!e) return ''
+  if (typeof e === 'string') return e
+  const parts = []
+  const push = (v) => { if (v && typeof v === 'string') parts.push(v) }
+  push(e.error_description); push(e.error_reason); push(e.error)
+  push(e.code); push(e.text); push(e.type); push(e.message)
+  if (e.error && typeof e.error === 'object') { push(e.error.error_description); push(e.error.error) }
+  if (!parts.length) { try { parts.push(JSON.stringify(e)) } catch { /* no-op */ } }
+  return parts.filter(Boolean).slice(0, 2).join(': ')
+}
+
 // Пиннинг мажорной версии 2.x (как в примере VK: @<3.0.0). unpkg сам резолвит
 // в последнюю совместимую сборку.
 const SDK_URL = 'https://unpkg.com/@vkid/sdk@2/dist-sdk/umd/index.js'
