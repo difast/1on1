@@ -115,12 +115,32 @@ def _deliver(subscription_id: int, url: str, secret: str, event_type: str, paylo
                                payload=payload, status="pending", attempts=0)
     db.add(delivery); db.commit(); db.refresh(delivery)
 
+    # Повторная проверка адреса ПЕРЕД самой отправкой (не только при создании
+    # подписки): между валидацией и доставкой DNS-имя могло быть перепривязано к
+    # внутреннему адресу (DNS rebinding). Проверяем текущее разрешение имени, и
+    # если оно теперь ведёт внутрь периметра — не отправляем (защита от SSRF).
+    try:
+        validate_target_url(url)
+    except UnsafeWebhookUrl as e:
+        delivery.status = "failed"; delivery.attempts = 1
+        delivery.last_error = f"unsafe_target: {e}"
+        db.commit()
+        log.warning("webhook delivery blocked (sub=%s, event=%s): unsafe target",
+                    subscription_id, event_type)
+        _trim(db, subscription_id)
+        db.close()
+        return
+
     last_error = None
     status_code = None
     for attempt in range(1, _RETRIES + 1):
         delivery.attempts = attempt
         try:
-            r = httpx.post(url, content=body, headers=headers, timeout=_TIMEOUT)
+            # follow_redirects=False явно: редирект на внутренний адрес — ещё один
+            # вектор SSRF, поэтому переходы по 3xx не выполняем (у httpx это и так
+            # умолчание, но фиксируем намерение).
+            r = httpx.post(url, content=body, headers=headers, timeout=_TIMEOUT,
+                           follow_redirects=False)
             status_code = r.status_code
             if 200 <= r.status_code < 300:
                 delivery.status = "success"; delivery.status_code = status_code

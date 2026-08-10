@@ -3,6 +3,8 @@
 GET /api/billing/plans  -> public tariff catalog (mirrors the pricing page)
 GET /api/billing/me     -> the caller's effective plan, limits and usage
 """
+import logging
+
 from fastapi import APIRouter, Depends, Query, Request, Header, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
@@ -28,6 +30,27 @@ from app.utils.validation import (
 
 
 router = APIRouter()
+
+# Журнал платёжных вебхуков. Пишем ТОЛЬКО безопасные поля для расследования
+# спорных ситуаций (вид уведомления, идентификаторы платежа/подписки, счёт,
+# результат обработки). НИКОГДА не логируем тело формы целиком и платёжные
+# реквизиты (маскированный номер карты и т.п.), чтобы чувствительные данные не
+# оседали в логах.
+wh_log = logging.getLogger("billing.webhook")
+
+
+def _safe_wh_fields(data: dict) -> dict:
+    """Отобрать из разобранного уведомления только безопасные для лога поля."""
+    return {
+        "kind": data.get("kind"),
+        "event": data.get("event"),
+        "external_id": data.get("external_id"),
+        "subscription_id": data.get("subscription_id"),
+        "sub_status": data.get("sub_status"),
+        "account_id": data.get("account_id"),
+        "invoice_id": data.get("invoice_id"),
+        "success": data.get("success"),
+    }
 
 
 @router.get("/plans")
@@ -234,11 +257,15 @@ async def cloudpayments_webhook(
     signature = content_hmac or x_content_hmac
     if not provider.verify_webhook(raw, signature):
         # Return 200 with code!=0 so the provider stops retrying a bad signature,
-        # but never activate anything.
+        # but never activate anything. Логируем сам факт неверной подписи (без тела).
+        wh_log.warning("payment webhook rejected: bad signature")
         raise HTTPException(status_code=401, detail="bad signature")
 
     form = dict((await request.form()))
     data = provider.parse_webhook(form)
+    # Факт получения проверенного вебхука — только безопасные поля, без тела формы
+    # и платёжных реквизитов.
+    wh_log.info("payment webhook received: %s", _safe_wh_fields(data))
 
     # ── Подписочное уведомление (Recurrent/Cancel): меняем статус подписки ──
     # Fail НЕ понижает мгновенно — переводим в grace (past_due); Cancelled —
@@ -263,17 +290,22 @@ async def cloudpayments_webhook(
             subs.cancel(db, sub, at_period_end=True)             # доступ до конца периода
         elif st == "expired":
             subs.downgrade_to_free(db, sub)                      # период истёк
+        wh_log.info("subscription webhook applied: uid=%s sub_status=%s", uid, st)
         return {"code": 0}
 
     # ── Платёжное уведомление (Pay/Fail) ──
-    # Idempotency: дубликаты по внешнему id транзакции игнорируем.
+    # Idempotency: дубликаты по внешнему id транзакции (TransactionId) игнорируем.
+    # Ретраи доставки на стороне CloudPayments — обычная практика, повторная
+    # обработка не должна активировать доступ или создавать дубли.
     ext = str(data.get("external_id") or "")
     if ext and db.query(Payment).filter(Payment.external_id == ext).first():
+        wh_log.info("payment webhook duplicate ignored: external_id=%s", ext)
         return {"code": 0}
 
     invoice_id = data.get("invoice_id")
     pay = db.query(Payment).filter(Payment.id == int(invoice_id)).first() if invoice_id else None
     if not pay:
+        wh_log.info("payment webhook: no matching invoice (invoice_id=%s)", invoice_id)
         return {"code": 0}  # acknowledge; nothing to do
 
     if not data.get("success"):
@@ -284,19 +316,25 @@ async def cloudpayments_webhook(
         if sub and sub.status in ("active", "trialing"):
             subs.set_status(db, sub, "past_due")
         db.commit()
+        wh_log.info("payment webhook: failed payment recorded (invoice_id=%s, uid=%s)",
+                    pay.id, pay.subject_id)
         return {"code": 0}
 
-    pay.status = "succeeded"
-    pay.external_id = ext or pay.external_id
+    # Успешный платёж. ПОРЯДОК ВАЖЕН для атомарности/идемпотентности: сначала
+    # активируем подписку (upsert, идемпотентно по external_id), и только ПОСЛЕ
+    # успеха фиксируем external_id на платеже. Иначе при сбое активации после
+    # записи external_id ретрай был бы отброшен дедупликацией, а подписка так и
+    # осталась бы неактивной.
     info = pay.payload or {}
-    db.commit()
-
-    # Успешный платёж — активируем/продлеваем подписку (в т.ч. выход из grace).
-    subs.activate(
+    sub = subs.activate(
         db, "user", pay.subject_id, info.get("plan_code", "start"),
         period=info.get("period", "month"), seats=info.get("seats", 1),
         provider="cloudpayments", external_id=ext,
     )
-    pay.subscription_id = subs.get_subscription(db, "user", pay.subject_id).id
+    pay.status = "succeeded"
+    pay.external_id = ext or pay.external_id
+    pay.subscription_id = sub.id if sub else None
     db.commit()
+    wh_log.info("payment webhook: subscription activated (invoice_id=%s, uid=%s, plan=%s)",
+                pay.id, pay.subject_id, info.get("plan_code", "start"))
     return {"code": 0}
