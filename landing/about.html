@@ -81,7 +81,7 @@
 
 <!-- NAV -->
 <nav>
-  <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
+  <a href="/" class="logo"><img src="/favicon.svg" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
     <a href="/#platform">Платформа</a>
     <a href="/#roles">Кому подходит</a>
@@ -159,7 +159,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   <div class="footer-top">
     <div>
       <div class="footer-logo">
-        <div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
+        <img src="/favicon.svg" class="footer-logo-mark" alt="OneOnOne"><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
       </div>
       <div class="footer-cols">
         <div class="footer-col">
@@ -218,7 +218,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 
   <div class="footer-bottom">
     <div class="footer-contacts">
-      <span>OneOnOne — AI-платформа для управления и развития команд</span>
+      <span>OneOnOne — AI-платформа для управления, развития и повышения эффективности команд</span>
       <a href="mailto:support@oneononehq.com">support@oneononehq.com</a>
     </div>
     <div class="footer-socials">
@@ -234,7 +234,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
     </div>
   </div>
 
-  <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
+  <div class="footer-copy">© 2026 ООО «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
@@ -246,6 +246,6 @@ if(ctaSec){const ctaObs=new IntersectionObserver(entries=>{entries.forEach(entry
 document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
 </script>
 <script src="/store.js"></script>
-<script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){n.classList.toggle("scrolled",window.scrollY>12)};window.addEventListener("scroll",s,{passive:true});s();})();</script>
+<script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){var y=window.scrollY;if(y>60){n.classList.add("scrolled")}else if(y<20){n.classList.remove("scrolled")}};window.addEventListener("scroll",s,{passive:true});s();})();</script>
 </body>
 </html>

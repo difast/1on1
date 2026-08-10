@@ -146,7 +146,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   <div class="footer-top">
     <div>
       <div class="footer-logo">
-        <div class="footer-logo-mark">1:1</div><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
+        <img src="/favicon.svg" class="footer-logo-mark" alt="OneOnOne"><span class="footer-logo-txt">OneOn<span style="color:#0A6CFF">One</span></span>
       </div>
       <div class="footer-cols">
         <div class="footer-col">
@@ -203,7 +203,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
   <hr class="footer-divider">
   <div class="footer-bottom">
     <div class="footer-contacts">
-      <span>OneOnOne — AI-платформа для управления и развития команд</span>
+      <span>OneOnOne — AI-платформа для управления, развития и повышения эффективности команд</span>
       <a href="mailto:support@oneononehq.com">support@oneononehq.com</a>
     </div>
     <div class="footer-socials">
@@ -218,7 +218,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </span>
     </div>
   </div>
-  <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
+  <div class="footer-copy">© 2026 ООО «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
 <script>
@@ -229,6 +229,6 @@ const ctaSec=document.getElementById('ctaSection');
 if(ctaSec){const ctaObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(!entry.isIntersecting)return;ctaObs.unobserve(ctaSec);ctaSec.classList.add('elevator-open');setTimeout(()=>{const kids=ctaSec.querySelectorAll('.cta-child');if(typeof anime!=='undefined'){anime({targets:kids,opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})}else{kids.forEach(k=>{k.style.opacity='1'})}},1200)})},{threshold:0.08});ctaObs.observe(ctaSec)}
 </script>
 <script src="/store.js"></script>
-<script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){n.classList.toggle("scrolled",window.scrollY>12)};window.addEventListener("scroll",s,{passive:true});s();})();</script>
+<script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){var y=window.scrollY;if(y>60){n.classList.add("scrolled")}else if(y<20){n.classList.remove("scrolled")}};window.addEventListener("scroll",s,{passive:true});s();})();</script>
 </body>
 </html>
