@@ -33,7 +33,7 @@
 <link rel="stylesheet" href="/styles.css">
 <style>
 .docs-wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;gap:44px;align-items:start}
-.docs-nav{position:sticky;top:100px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--brd);padding-right:18px}
+.docs-nav{position:sticky;top:100px;display:flex;flex-direction:column;gap:2px;background:var(--bg1);border:1px solid var(--brd);border-radius:16px;padding:14px}
 .docs-nav a{font-size:14px;color:var(--txt2);padding:8px 12px;border-radius:9px;text-decoration:none;transition:background .15s,color .15s}
 .docs-nav a:hover{background:var(--bg2);color:var(--txt)}
 .docs-body h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,34px);font-weight:700;letter-spacing:-.02em;margin:0 0 14px;scroll-margin-top:96px}
@@ -44,7 +44,7 @@
 .docs-body ul li{display:flex;gap:12px;font-size:15px;color:var(--txt2);line-height:1.7}
 .docs-body ul li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:9px}
 .docs-body strong{color:var(--txt);font-weight:600}
-@media(max-width:820px){.docs-wrap{grid-template-columns:1fr}.docs-nav{position:static;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--brd);padding:0 0 14px;margin-bottom:10px}}
+@media(max-width:820px){.docs-wrap{grid-template-columns:1fr}.docs-nav{position:static;flex-direction:row;flex-wrap:wrap;border:1px solid var(--brd);border-radius:14px;padding:12px;margin-bottom:10px}}
 </style>
 <script type="application/ld+json">
 {
@@ -148,31 +148,38 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </div>
       <div class="footer-cols">
         <div class="footer-col">
+          <div class="footer-col-h">Платформа</div>
           <a href="/#platform">Платформа</a>
           <a href="/#roles">Кому подходит</a>
           <a href="/pricing">Тарифы</a>
-          <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
-          <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
+          <a href="/faq">FAQ</a>
         </div>
         <div class="footer-col">
+          <div class="footer-col-h">Возможности</div>
           <a href="/features">Встречи 1-на-1</a>
           <a href="/tasks">Задачи</a>
           <a href="/#goals">Цели и OKR</a>
           <a href="/#development">Развитие</a>
         </div>
         <div class="footer-col">
-          <a href="/analytics">Аналитика команды</a>
+          <div class="footer-col-h">AI и аналитика</div>
           <a href="/#ai">ONE AI и Пит</a>
           <a href="/pit">Пит подробно</a>
+          <a href="/analytics">Аналитика команды</a>
           <a href="/#integrations">Интеграции</a>
         </div>
         <div class="footer-col">
-          <a href="/faq">FAQ</a>
+          <div class="footer-col-h">Компания</div>
           <a href="/about">О компании</a>
           <a href="/blog">Блог</a>
           <a href="/press">Пресс-кит</a>
           <a href="/docs">Документация</a>
           <a href="/documents">Документы</a>
+        </div>
+        <div class="footer-col">
+          <div class="footer-col-h">Аккаунт</div>
+          <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Войти</a>
+          <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com">Регистрация</a>
         </div>
       </div>
     </div>
