@@ -57,12 +57,12 @@ export default function VkLoginButton({ enabled = false, config = null, onAuth, 
     renderVkOneTap(
       containerRef.current,
       { appId: config.app_id, redirectUrl: config.redirect_url, scope: config.scope, idDomain: config.id_domain },
-      async ({ code, device_id, code_verifier, state }) => {
+      async ({ access_token, user_id }) => {
         if (doneRef.current) return
         doneRef.current = true
         setBusy(true)
         try {
-          const { data } = await completeVkAuth({ code, device_id, code_verifier, state })
+          const { data } = await completeVkAuth({ access_token, user_id })
           onAuth?.(data)
         } catch (err) {
           try { console.error('[VK ID] backend callback error', err?.response?.status, err?.response?.data) } catch { /* no-op */ }

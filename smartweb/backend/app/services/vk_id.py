@@ -136,14 +136,19 @@ def exchange_code(code: str, device_id: str, code_verifier: str | None = None,
 
 
 def fetch_user_info(access_token: str) -> dict:
-    """Данные пользователя из VK ID user_info. Запасной источник к id_token:
-    ошибку НЕ пробрасываем как фатальную — вызывающий сам решит, хватило ли
-    данных из id_token."""
+    """Данные пользователя из VK ID user_info.
+
+    Формат запроса — ТОЧЬ-В-ТОЧЬ как в @vkid/sdk: client_id в query-строке,
+    access_token в теле (application/x-www-form-urlencoded). Раньше оба поля
+    клались в тело, из-за чего VK возвращал ошибку. Ошибку не пробрасываем как
+    фатальную — вызывающий решит, хватило ли данных."""
     try:
-        r = httpx.post(_user_info_url(), data={
-            "client_id": settings.vk_app_id,
-            "access_token": access_token,
-        }, timeout=_TIMEOUT)
+        r = httpx.post(
+            _user_info_url(),
+            params={"client_id": settings.vk_app_id},
+            data={"access_token": access_token},
+            timeout=_TIMEOUT,
+        )
     except Exception as e:
         log.warning("vk id user_info request error: %s", type(e).__name__)
         return {}

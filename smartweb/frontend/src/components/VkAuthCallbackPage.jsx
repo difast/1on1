@@ -48,11 +48,10 @@ export default function VkAuthCallbackPage() {
 
   // Отправка code/device_id на бэкенд и обработка ответа (общий код для обоих
   // сценариев). Для мобильного — переброс в приложение по deep-link с токеном.
-  const finish = async (code, deviceId, extra = {}) => {
+  const finish = async (payload) => {
     try {
       const { data } = await completeVkAuth({
-        code, device_id: deviceId,
-        code_verifier: extra.code_verifier, state: extra.state,
+        ...payload,
         platform: isMobile ? 'mobile' : 'web',
       })
       if (isMobile) {
@@ -77,8 +76,8 @@ export default function VkAuthCallbackPage() {
     if (doneRef.current) return
     if (providerError) { doneRef.current = true; setStatus('error'); setMessage(t('auth.vkFailed')); return }
 
-    // Резервный редирект-поток: код уже в URL.
-    if (urlCode && urlDeviceId) { doneRef.current = true; finish(urlCode, urlDeviceId); return }
+    // Резервный редирект-поток: код уже в URL (обмен сделает бэкенд).
+    if (urlCode && urlDeviceId) { doneRef.current = true; finish({ code: urlCode, device_id: urlDeviceId }); return }
 
     // Мостовой поток приложения: монтируем виджет и ждём LOGIN_SUCCESS.
     if (isMobile) {
@@ -93,7 +92,7 @@ export default function VkAuthCallbackPage() {
             renderVkOneTap(
               containerRef.current,
               { appId: data.app_id, redirectUrl: data.redirect_url, scope: data.scope, idDomain: data.id_domain },
-              ({ code, device_id, code_verifier, state }) => finish(code, device_id, { code_verifier, state }),
+              (res) => finish(res),  // res = { access_token, user_id } — обмен уже сделан на клиенте
               () => { setStatus('error'); setMessage(t('auth.vkFailed')) },
             ).catch(() => { setStatus('error'); setMessage(t('auth.vkFailed')) })
           })
