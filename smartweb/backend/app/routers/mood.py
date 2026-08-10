@@ -13,6 +13,7 @@ from app.models.team import Team, TeamMember
 from app.utils.auth import get_current_user
 from app.services import mood_service
 from app.services import ai_service
+from app.services import tenancy
 
 from typing import Annotated
 from pydantic import Field
@@ -66,6 +67,8 @@ class MoodCreate(BaseModel):
 
 @router.post("/")
 def submit_mood(data: MoodCreate, db: Session = Depends(get_db), current=Depends(get_current_user)):
+    # Изоляция: отправлять настроение можно только в свою команду (организацию).
+    tenancy.assert_team_access(db, current, data.team_id)
     # Автор берётся из токена (надёжно), иначе из тела (совместимость).
     user_id = (current.id if current else None) or data.user_id
 
@@ -152,6 +155,8 @@ def get_my_mood_series(user_id: int, period: str = Query("month"),
 def get_team_mood_summary(team_id: int, db: Session = Depends(get_db),
                           current=Depends(get_current_user)):
     """Анонимная командная сводка (13.3/13.5). Права: только тимлид команды."""
+    # Изоляция организации: сводка доступна только в границах своей команды.
+    tenancy.assert_team_access(db, current, team_id)
     if current and not _is_team_lead(db, team_id, current.id):
         raise HTTPException(status_code=403, detail="Доступ только тимлиду команды")
     summary = mood_service.team_summary(db, team_id)

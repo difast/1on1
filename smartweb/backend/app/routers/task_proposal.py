@@ -13,8 +13,26 @@ from app.schemas.task_proposal import (
 )
 from app.services.notification_service import NotificationService
 from app.services import i18n
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
+
+
+def _assert_tp_access(db: Session, current, p: TaskProposal) -> None:
+    """Изоляция организации для предложения задачи: доступ у сторон или той же
+    организации. Иначе 404."""
+    if not tenancy.enforced():
+        return
+    uid = current.id
+    if uid in (p.from_user_id, p.to_user_id):
+        return
+    if p.team_id is not None and tenancy.can_access_team(db, uid, p.team_id):
+        return
+    if tenancy.can_access_user(db, uid, p.from_user_id) or \
+            tenancy.can_access_user(db, uid, p.to_user_id):
+        return
+    raise HTTPException(status_code=404, detail="Предложение не найдено")
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -85,9 +103,14 @@ def _resolve_team_id(db: Session, p: TaskProposal) -> Optional[int]:
 # ── endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=TaskProposalOut)
-def create_task_proposal(data: TaskProposalCreate, db: Session = Depends(get_db)):
+def create_task_proposal(data: TaskProposalCreate, db: Session = Depends(get_db),
+                         current=Depends(require_user)):
     """Любой участник может предложить задачу другому. Задача НЕ создаётся здесь —
     только после явного принятия получателем."""
+    if tenancy.enforced():
+        data.from_user_id = current.id
+        tenancy.assert_user_access(db, current, data.to_user_id)
+        tenancy.assert_team_access(db, current, data.team_id)
     if data.from_user_id == data.to_user_id:
         raise HTTPException(status_code=400, detail="Нельзя предложить задачу самому себе")
     if not (data.title or "").strip():
@@ -117,7 +140,9 @@ def create_task_proposal(data: TaskProposalCreate, db: Session = Depends(get_db)
 
 
 @router.get("/", response_model=List[TaskProposalOut])
-def list_task_proposals(user_id: int = Query(...), db: Session = Depends(get_db)):
+def list_task_proposals(user_id: int = Query(...), db: Session = Depends(get_db),
+                        current=Depends(require_user)):
+    tenancy.assert_user_access(db, current, user_id)
     rows = (
         db.query(TaskProposal)
         .filter(or_(TaskProposal.from_user_id == user_id, TaskProposal.to_user_id == user_id))
@@ -128,18 +153,24 @@ def list_task_proposals(user_id: int = Query(...), db: Session = Depends(get_db)
 
 
 @router.get("/{proposal_id}", response_model=TaskProposalOut)
-def get_task_proposal(proposal_id: int, db: Session = Depends(get_db)):
+def get_task_proposal(proposal_id: int, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
     p = db.query(TaskProposal).filter(TaskProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Предложение не найдено")
+    _assert_tp_access(db, current, p)
     return _serialize(db, p)
 
 
 @router.post("/{proposal_id}/accept", response_model=TaskProposalOut)
-def accept_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session = Depends(get_db)):
+def accept_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session = Depends(get_db),
+                         current=Depends(require_user)):
     p = db.query(TaskProposal).filter(TaskProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Предложение не найдено")
+    _assert_tp_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status not in ("pending", "discussing"):
         raise HTTPException(status_code=400, detail="Предложение уже закрыто")
     # Право принять — только у получателя (он соглашается взять задачу).
@@ -175,10 +206,14 @@ def accept_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session
 
 
 @router.post("/{proposal_id}/decline", response_model=TaskProposalOut)
-def decline_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session = Depends(get_db)):
+def decline_task_proposal(proposal_id: int, data: TaskProposalAction, db: Session = Depends(get_db),
+                          current=Depends(require_user)):
     p = db.query(TaskProposal).filter(TaskProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Предложение не найдено")
+    _assert_tp_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status not in ("pending", "discussing"):
         raise HTTPException(status_code=400, detail="Предложение уже закрыто")
     if data.user_id != p.to_user_id:
@@ -196,11 +231,15 @@ def decline_task_proposal(proposal_id: int, data: TaskProposalAction, db: Sessio
 
 
 @router.post("/{proposal_id}/comment", response_model=TaskProposalOut)
-def comment_task_proposal(proposal_id: int, data: TaskProposalComment, db: Session = Depends(get_db)):
+def comment_task_proposal(proposal_id: int, data: TaskProposalComment, db: Session = Depends(get_db),
+                          current=Depends(require_user)):
     """Обсуждение предложения до решения: обе стороны обмениваются комментариями."""
     p = db.query(TaskProposal).filter(TaskProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Предложение не найдено")
+    _assert_tp_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status not in ("pending", "discussing"):
         raise HTTPException(status_code=400, detail="Предложение уже закрыто")
     # Комментировать могут только участники предложения.
