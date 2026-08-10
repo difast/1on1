@@ -41,7 +41,9 @@
 {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": "https://oneononehq.com/#organization",
   "name": "OneOnOne",
+  "alternateName": "Один на Один",
   "legalName": "ООО «ОДИН НА ОДИН»",
   "url": "https://oneononehq.com",
   "logo": "https://oneononehq.com/favicon.png",
@@ -50,8 +52,7 @@
   "email": "support@oneononehq.com",
   "foundingDate": "2025-12-15",
   "founder": {
-    "@type": "Person",
-    "name": "Дмитрий Пятаков"
+    "@id": "https://oneononehq.com/about#dmitry-pyatakov"
   },
   "areaServed": [
     "RU",
@@ -92,14 +93,29 @@
     "description": "14 дней бесплатно, без карты"
   },
   "publisher": {
-    "@type": "Organization",
-    "name": "OneOnOne",
-    "url": "https://oneononehq.com"
+    "@id": "https://oneononehq.com/#organization"
   },
   "sameAs": [
     "https://t.me/company_oneonone",
     "https://www.rustore.ru/catalog/app/com.oneonone.app"
   ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@type": "Person",
+  "@id": "https://oneononehq.com/about#dmitry-pyatakov",
+  "name": "Дмитрий Пятаков",
+  "jobTitle": "Founder",
+  "url": "https://www.instagram.com/pyatakov.ceo/",
+  "sameAs": [
+    "https://www.instagram.com/pyatakov.ceo/",
+    "https://t.me/pyatakovvv",
+    "https://vk.ru/pyatakovceo"
+  ],
+  "worksFor": {
+    "@id": "https://oneononehq.com/#organization"
+  }
 }
 </script>
 </head>
