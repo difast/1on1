@@ -21,10 +21,36 @@ from app.models.task_activity import TaskActivity, TaskComment
 from app.utils.auth import require_user
 from app.utils import ratelimit
 from app.utils.validation import ShortStr, OptShortStr, TextStr, OptTextStr, EntityId
+from app.services import tenancy
 
 router = APIRouter()
 
 DONE = "done"
+
+
+def _load_task_for_actor(db: Session, task_id: int, current) -> Task:
+    """Достать задачу и проверить принадлежность организации актора (Блок 3).
+
+    Доступ есть, если задача из команды актора (team_id) либо актор вовлечён в
+    задачу (постановщик/ответственный/участник совместной задачи). У личных
+    задач без team_id проверяется вовлечённость/общая организация. Иначе 404."""
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if tenancy.enforced():
+        uid = current.id
+        involved = uid in (task.assigned_to, task.assigned_by) or \
+            any(a.user_id == uid for a in (task.assignees or []))
+        ok = involved
+        if not ok and task.team_id is not None:
+            ok = tenancy.can_access_team(db, uid, task.team_id)
+        if not ok and task.team_id is None:
+            # личная задача без команды — доступ по общей организации с владельцами
+            ok = tenancy.can_access_user(db, uid, task.assigned_to) or \
+                tenancy.can_access_user(db, uid, task.assigned_by)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Task not found")
+    return task
 
 
 # ── serialization ────────────────────────────────────────────────────────────
@@ -172,9 +198,17 @@ def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db),
 # ── CRUD ─────────────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=TaskOut)
-def create_task(data: TaskCreate, db: Session = Depends(get_db)):
+def create_task(data: TaskCreate, db: Session = Depends(get_db),
+                current=Depends(require_user)):
     payload = data.model_dump()
     assignees_in = payload.pop("assignees", None) or []
+    # Изоляция: задачу можно ставить только в своей организации. Проверяем и по
+    # команде задачи, и по тому, что ответственный/участники — из своей орг.
+    if tenancy.enforced():
+        tenancy.assert_team_access(db, current, payload.get("team_id"))
+        for uid in {payload.get("assigned_to"), *[a.get("user_id") for a in assignees_in]}:
+            if uid:
+                tenancy.assert_user_access(db, current, uid)
 
     # Совместная задача (несколько исполнителей, части, общий прогресс) — функция
     # тарифа Team и выше. Обычная задача с одним ответственным доступна на Start.
@@ -262,6 +296,7 @@ def list_tasks(
     team_id: Optional[int] = Query(None),
     completed: Optional[bool] = Query(None),
     db: Session = Depends(get_db),
+    current=Depends(require_user),
 ):
     query = db.query(Task)
     if assigned_to:
@@ -275,6 +310,17 @@ def list_tasks(
         query = query.filter(Task.team_id == team_id)
     if completed is not None:
         query = query.filter(Task.completed == completed)
+    # Изоляция организации: видны только задачи своих команд ИЛИ те, где актор сам
+    # вовлечён (личные задачи без team_id). Поверх любых query-фильтров, поэтому
+    # подстановка чужого assigned_to/team_id не раскрывает чужие задачи.
+    if tenancy.enforced():
+        uid = current.id
+        ids = tenancy.user_team_ids(db, uid)
+        sub_me = db.query(TaskAssignee.task_id).filter(TaskAssignee.user_id == uid)
+        cond = or_(Task.assigned_to == uid, Task.assigned_by == uid, Task.id.in_(sub_me))
+        if ids:
+            cond = or_(cond, Task.team_id.in_(ids))
+        query = query.filter(cond)
     tasks = query.order_by(Task.created_at.desc()).all()
     return [_serialize(t) for t in tasks]
 
@@ -284,11 +330,13 @@ def _today_start():
 
 
 @router.get("/closed-today/{user_id}", response_model=List[TaskOut])
-def closed_today(user_id: int, db: Session = Depends(get_db)):
+def closed_today(user_id: int, db: Session = Depends(get_db),
+                 current=Depends(require_user)):
     """Задачи, закрытые СЕГОДНЯ (Задача 2), с учётом роли:
       - участник — свои закрытые сегодня;
       - тимлид — закрытые сегодня по всем участникам его команд (суммарно).
     """
+    tenancy.assert_user_access(db, current, user_id)
     start = _today_start()
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
@@ -329,18 +377,16 @@ def closed_today(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{task_id}", response_model=TaskOut)
-def get_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def get_task(task_id: int, db: Session = Depends(get_db),
+             current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
     return _serialize(task)
 
 
 @router.patch("/{task_id}", response_model=TaskOut)
-def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db),
+                current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
 
     updates = data.model_dump(exclude_unset=True)
     prev_status = task.status
@@ -367,12 +413,15 @@ def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db)):
 
 
 @router.patch("/assignee/{assignee_id}", response_model=TaskOut)
-def update_assignee(assignee_id: int, data: AssigneeStatusUpdate, db: Session = Depends(get_db)):
+def update_assignee(assignee_id: int, data: AssigneeStatusUpdate, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
     """Обновить статус/описание части ОДНОГО участника совместной задачи и
     пересчитать сводный статус задачи. Уведомления по чужим частям не шлём."""
     a = db.query(TaskAssignee).filter(TaskAssignee.id == assignee_id).first()
     if not a:
         raise HTTPException(status_code=404, detail="Assignee not found")
+    # Изоляция: назначение принадлежит задаче — проверяем доступ к её организации.
+    _load_task_for_actor(db, a.task_id, current)
     if data.status is not None:
         _apply_status(a, data.status)
     if data.part_description is not None:
@@ -421,10 +470,12 @@ def _require_lead(db: Session, task: Task, actor_id: int):
 
 
 @router.post("/{task_id}/assignees", response_model=TaskOut)
-def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
+    if tenancy.enforced():
+        data.actor_id = current.id
+        tenancy.assert_user_access(db, current, data.user_id)
     _require_lead(db, task, data.actor_id)
     # Добавление второго исполнителя делает задачу совместной — тариф Team и выше.
     from app.services import entitlements
@@ -437,10 +488,11 @@ def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(g
 
 
 @router.delete("/{task_id}/assignees/{assignee_id}", response_model=TaskOut)
-def remove_task_assignee(task_id: int, assignee_id: int, actor_id: int = Query(...), db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def remove_task_assignee(task_id: int, assignee_id: int, actor_id: int = Query(...), db: Session = Depends(get_db),
+                         current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
+    if tenancy.enforced():
+        actor_id = current.id
     _require_lead(db, task, actor_id)
     ok = task_collab.remove_assignee(db, task, assignee_id, actor_id)
     if not ok:
@@ -453,7 +505,9 @@ def remove_task_assignee(task_id: int, assignee_id: int, actor_id: int = Query(.
 
 
 @router.get("/{task_id}/activity", response_model=List[dict])
-def task_activity(task_id: int, db: Session = Depends(get_db)):
+def task_activity(task_id: int, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    _load_task_for_actor(db, task_id, current)
     rows = (
         db.query(TaskActivity)
         .filter(TaskActivity.task_id == task_id)
@@ -469,7 +523,9 @@ def task_activity(task_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{task_id}/comments", response_model=List[dict])
-def list_comments(task_id: int, db: Session = Depends(get_db)):
+def list_comments(task_id: int, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    _load_task_for_actor(db, task_id, current)
     rows = (
         db.query(TaskComment)
         .filter(TaskComment.task_id == task_id)
@@ -485,10 +541,11 @@ def list_comments(task_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{task_id}/comments", response_model=dict)
-def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db),
+                current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
+    if tenancy.enforced():
+        data.author_id = current.id
     if not data.body.strip():
         raise HTTPException(status_code=400, detail="Empty comment")
     c = TaskComment(task_id=task_id, author_id=data.author_id, body=data.body.strip())
@@ -504,10 +561,9 @@ def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db)):
 
 
 @router.delete("/{task_id}")
-def delete_task(task_id: int, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == task_id).first()
-    if not task:
-        raise HTTPException(status_code=404, detail="Task not found")
+def delete_task(task_id: int, db: Session = Depends(get_db),
+                current=Depends(require_user)):
+    task = _load_task_for_actor(db, task_id, current)
     db.delete(task)
     db.commit()
     return {"ok": True}

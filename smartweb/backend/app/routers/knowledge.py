@@ -6,6 +6,8 @@ from datetime import datetime
 
 from app.database import get_db
 from app.models.knowledge import KnowledgeArticle
+from app.utils.auth import require_user
+from app.services import tenancy
 
 from typing import Annotated
 from pydantic import Field
@@ -41,13 +43,20 @@ class ArticleOut(BaseModel):
         from_attributes = True
 
 @router.get("/team/{team_id}", response_model=List[ArticleOut])
-def list_articles(team_id: int, db: Session = Depends(get_db)):
+def list_articles(team_id: int, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    # Изоляция: статьи базы знаний команды видны только своей организации.
+    tenancy.assert_team_access(db, current, team_id)
     return db.query(KnowledgeArticle).filter(
         KnowledgeArticle.team_id == team_id
     ).order_by(KnowledgeArticle.created_at.desc()).all()
 
 @router.post("/", response_model=ArticleOut)
-def create_article(data: ArticleCreate, db: Session = Depends(get_db)):
+def create_article(data: ArticleCreate, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
+    # Создавать статью можно только в своей команде (общая team_id=None — только
+    # админ через свои эндпоинты; здесь пользовательские статьи привязаны к орг).
+    tenancy.assert_team_access(db, current, data.team_id)
     article = KnowledgeArticle(**data.model_dump())
     db.add(article)
     db.commit()
@@ -55,10 +64,12 @@ def create_article(data: ArticleCreate, db: Session = Depends(get_db)):
     return article
 
 @router.patch("/{article_id}", response_model=ArticleOut)
-def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(get_db)):
+def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
     article = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
+    tenancy.assert_object_team(db, current, article, not_found="Article not found")
     for k, v in data.model_dump(exclude_unset=True).items():
         setattr(article, k, v)
     db.commit()
@@ -66,10 +77,12 @@ def update_article(article_id: int, data: ArticleUpdate, db: Session = Depends(g
     return article
 
 @router.delete("/{article_id}")
-def delete_article(article_id: int, db: Session = Depends(get_db)):
+def delete_article(article_id: int, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
     article = db.query(KnowledgeArticle).filter(KnowledgeArticle.id == article_id).first()
     if not article:
         raise HTTPException(status_code=404, detail="Article not found")
+    tenancy.assert_object_team(db, current, article, not_found="Article not found")
     db.delete(article)
     db.commit()
     return {"ok": True}

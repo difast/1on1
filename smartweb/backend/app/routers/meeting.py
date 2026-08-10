@@ -10,12 +10,36 @@ from app.models.team import Team, TeamMember
 from app.models.user import User
 from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, MeetingRequest, GroupMeetingCreate
 from app.services.notification_service import NotificationService
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
 
 
+def _load_meeting_for_actor(db: Session, meeting_id: int, current) -> Meeting:
+    """Достать встречу и проверить, что она принадлежит организации актора.
+
+    Единая точка изоляции для всех операций со встречей по id: доступ есть у
+    участника (member_id), тимлида (team_lead_id) или любого пользователя той же
+    организации (по team_id). Иначе 404 — не подтверждаем существование чужой
+    встречи (защита от IDOR на уровне организации, Блок 3)."""
+    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
+    if not meeting:
+        raise HTTPException(status_code=404, detail="Meeting not found")
+    if tenancy.enforced():
+        uid = current.id
+        allowed = uid in (meeting.member_id, meeting.team_lead_id) or \
+            tenancy.can_access_team(db, uid, meeting.team_id)
+        if not allowed:
+            raise HTTPException(status_code=404, detail="Meeting not found")
+    return meeting
+
+
 @router.post("/group", response_model=List[MeetingOut])
-def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)):
+def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db),
+                         current=Depends(require_user)):
+    # Изоляция: создавать встречи можно только в своей организации (по team_id).
+    tenancy.assert_team_access(db, current, data.team_id)
     """Групповой созвон (Задача 4): назначить встречу нескольким участникам или
     всей команде. Создаём по одной строке Meeting на участника с общим group_id —
     формат 1-на-1 не затрагивается. Каждый участник получает уведомление.
@@ -75,8 +99,11 @@ def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)
     return created
 
 @router.post("/", response_model=MeetingOut)
-def create_meeting(data: MeetingCreate, db: Session = Depends(get_db)):
+def create_meeting(data: MeetingCreate, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
     from app.services import entitlements
+    # Изоляция: встреча создаётся только в команде своей организации.
+    tenancy.assert_team_access(db, current, data.team_id)
     # Права (быстрое действие «Создать встречу» из карточки): прямое назначение
     # встречи доступно только тимлиду команды. Участник вместо этого пользуется
     # предложением встречи (с согласием) — /api/proposals.
@@ -157,6 +184,7 @@ def list_meetings(
     team_lead_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
     db: Session = Depends(get_db),
+    current=Depends(require_user),
 ):
     query = db.query(Meeting)
     if team_id:
@@ -167,20 +195,21 @@ def list_meetings(
         query = query.filter(Meeting.team_lead_id == team_lead_id)
     if status:
         query = query.filter(Meeting.status == status)
+    # Изоляция организации: даже без фильтров клиент видит только встречи своих
+    # команд. Ограничение применяется поверх любых переданных query-параметров,
+    # поэтому подстановка чужого team_id/member_id не раскрывает чужие встречи.
+    query = tenancy.scope_by_team(query, Meeting.team_id, db, current)
     return query.order_by(Meeting.scheduled_date.desc()).all()
 
 @router.get("/{meeting_id}", response_model=MeetingOut)
-def get_meeting(meeting_id: int, db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
-    return meeting
+def get_meeting(meeting_id: int, db: Session = Depends(get_db),
+                current=Depends(require_user)):
+    return _load_meeting_for_actor(db, meeting_id, current)
 
 @router.patch("/{meeting_id}", response_model=MeetingOut)
-def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
+    meeting = _load_meeting_for_actor(db, meeting_id, current)
     updates = data.model_dump(exclude_unset=True)
     for key, value in updates.items():
         setattr(meeting, key, value)
@@ -211,7 +240,9 @@ def update_meeting(meeting_id: int, data: MeetingUpdate, db: Session = Depends(g
     return meeting
 
 @router.post("/request", response_model=MeetingOut)
-def request_meeting(data: MeetingRequest, db: Session = Depends(get_db)):
+def request_meeting(data: MeetingRequest, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
+    tenancy.assert_team_access(db, current, data.team_id)
     team_lead_id = data.team_lead_id
     if not team_lead_id:
         team = db.query(Team).filter(Team.id == data.team_id).first()
@@ -237,10 +268,9 @@ def request_meeting(data: MeetingRequest, db: Session = Depends(get_db)):
     return meeting
 
 @router.post("/{meeting_id}/confirm", response_model=MeetingOut)
-def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+def confirm_meeting(meeting_id: int, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
+    meeting = _load_meeting_for_actor(db, meeting_id, current)
     meeting.status = "confirmed"
     db.commit()
     db.refresh(meeting)
@@ -254,12 +284,11 @@ def confirm_meeting(meeting_id: int, db: Session = Depends(get_db)):
     return meeting
 
 @router.post("/{meeting_id}/end-call", response_model=MeetingOut)
-def end_call(meeting_id: int, db: Session = Depends(get_db)):
+def end_call(meeting_id: int, db: Session = Depends(get_db),
+             current=Depends(require_user)):
     """End an active call — moves the meeting out of 'in_progress' so the
     'call in progress' banner disappears for both participants."""
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+    meeting = _load_meeting_for_actor(db, meeting_id, current)
     if meeting.status == "in_progress":
         meeting.status = "completed"
         db.commit()
@@ -268,10 +297,9 @@ def end_call(meeting_id: int, db: Session = Depends(get_db)):
     return meeting
 
 @router.post("/{meeting_id}/start-call")
-def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends(get_db),
+               current=Depends(require_user)):
+    meeting = _load_meeting_for_actor(db, meeting_id, current)
 
     if not meeting.jitsi_room_name:
         # Групповой созвон (Задача 4): все участники группы заходят в ОДНУ комнату
@@ -316,10 +344,9 @@ def start_call(meeting_id: int, user_id: int = Query(...), db: Session = Depends
 
 
 @router.post("/{meeting_id}/decline", response_model=MeetingOut)
-def decline_meeting(meeting_id: int, db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+def decline_meeting(meeting_id: int, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
+    meeting = _load_meeting_for_actor(db, meeting_id, current)
     meeting.status = "declined"
     db.commit()
     db.refresh(meeting)
@@ -338,10 +365,9 @@ class SlotRequest(PydanticBase):
     cadence_days: int = 14
 
 @router.post("/ai-slots")
-def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db)):
-    meeting = db.query(Meeting).filter(Meeting.id == data.meeting_id).first()
-    if not meeting:
-        raise HTTPException(status_code=404, detail="Meeting not found")
+def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db),
+                 current=Depends(require_user)):
+    meeting = _load_meeting_for_actor(db, data.meeting_id, current)
 
     # Тарифное ограничение (Задача 3): AI-подбор слотов доступен не на всех тарифах.
     from app.services import entitlements

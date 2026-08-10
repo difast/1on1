@@ -12,8 +12,28 @@ from app.schemas.interaction import (
 )
 from app.services.notification_service import NotificationService
 from app.services import task_collab
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
+
+
+def _assert_interaction_access(db: Session, current, it: Interaction) -> None:
+    """Изоляция организации для взаимодействия. Доступ есть, если оно относится к
+    команде актора (team_id) либо актор — одна из вовлечённых сторон, либо он в
+    одной организации с инициатором. Иначе 404 (не раскрываем чужое)."""
+    if not tenancy.enforced():
+        return
+    uid = current.id
+    involved = {it.from_user_id, it.to_user_id, it.subject_user_id,
+                *[p.user_id for p in it.participants]}
+    if uid in involved:
+        return
+    if it.team_id is not None and tenancy.can_access_team(db, uid, it.team_id):
+        return
+    if tenancy.can_access_user(db, uid, it.from_user_id):
+        return
+    raise HTTPException(status_code=404, detail="Interaction not found")
 
 TYPE_TITLE = {
     "collab_proposal": "interaction.type.collab",
@@ -81,9 +101,17 @@ def _is_recipient(it: Interaction, user_id: int) -> bool:
 # ── create ───────────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=dict)
-def create_interaction(data: InteractionCreate, db: Session = Depends(get_db)):
+def create_interaction(data: InteractionCreate, db: Session = Depends(get_db),
+                       current=Depends(require_user)):
     if data.type not in INTERACTION_TYPES:
         raise HTTPException(status_code=400, detail="Unknown interaction type")
+    # Инициатор — текущий пользователь (не произвольный from_user_id), и создавать
+    # взаимодействие можно только в своей организации.
+    if tenancy.enforced():
+        data.from_user_id = current.id
+        tenancy.assert_team_access(db, current, data.team_id)
+        if data.to_user_id:
+            tenancy.assert_user_access(db, current, data.to_user_id)
 
     it = Interaction(
         type=data.type,
@@ -147,7 +175,10 @@ def create_interaction(data: InteractionCreate, db: Session = Depends(get_db)):
 # ── feed / detail ─────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=List[dict])
-def list_interactions(user_id: int = Query(...), db: Session = Depends(get_db)):
+def list_interactions(user_id: int = Query(...), db: Session = Depends(get_db),
+                      current=Depends(require_user)):
+    # Свой фид взаимодействий: чужой user_id из другой организации недоступен.
+    tenancy.assert_user_access(db, current, user_id)
     part_sub = db.query(InteractionParticipant.interaction_id).filter(InteractionParticipant.user_id == user_id)
     rows = (
         db.query(Interaction)
@@ -164,8 +195,10 @@ def list_interactions(user_id: int = Query(...), db: Session = Depends(get_db)):
 
 
 @router.get("/recommendations/{user_id}", response_model=List[dict])
-def list_recommendations(user_id: int, db: Session = Depends(get_db)):
+def list_recommendations(user_id: int, db: Session = Depends(get_db),
+                         current=Depends(require_user)):
     """Рекомендации ПРО участника (он — эксперт). Видны всей команде — в профиле."""
+    tenancy.assert_user_access(db, current, user_id)
     rows = (
         db.query(Interaction)
         .filter(Interaction.type == "recommendation", Interaction.subject_user_id == user_id)
@@ -176,20 +209,26 @@ def list_recommendations(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{interaction_id}", response_model=dict)
-def get_interaction(interaction_id: int, db: Session = Depends(get_db)):
+def get_interaction(interaction_id: int, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
     it = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not it:
         raise HTTPException(status_code=404, detail="Interaction not found")
+    _assert_interaction_access(db, current, it)
     return _serialize(db, it)
 
 
 # ── lifecycle ─────────────────────────────────────────────────────────────────
 
 @router.post("/{interaction_id}/accept", response_model=dict)
-def accept_interaction(interaction_id: int, data: InteractionAction, db: Session = Depends(get_db)):
+def accept_interaction(interaction_id: int, data: InteractionAction, db: Session = Depends(get_db),
+                       current=Depends(require_user)):
     it = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not it:
         raise HTTPException(status_code=404, detail="Interaction not found")
+    _assert_interaction_access(db, current, it)
+    if tenancy.enforced():
+        data.user_id = current.id
     if it.status != "sent":
         raise HTTPException(status_code=400, detail="Interaction is not pending")
     if data.user_id != it.to_user_id:
@@ -224,10 +263,14 @@ def accept_interaction(interaction_id: int, data: InteractionAction, db: Session
 
 
 @router.post("/{interaction_id}/decline", response_model=dict)
-def decline_interaction(interaction_id: int, data: InteractionAction, db: Session = Depends(get_db)):
+def decline_interaction(interaction_id: int, data: InteractionAction, db: Session = Depends(get_db),
+                        current=Depends(require_user)):
     it = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not it:
         raise HTTPException(status_code=404, detail="Interaction not found")
+    _assert_interaction_access(db, current, it)
+    if tenancy.enforced():
+        data.user_id = current.id
     if it.status != "sent":
         raise HTTPException(status_code=400, detail="Interaction is not pending")
     if data.user_id != it.to_user_id:
@@ -242,10 +285,14 @@ def decline_interaction(interaction_id: int, data: InteractionAction, db: Sessio
 
 
 @router.post("/{interaction_id}/reply", response_model=dict)
-def reply_interaction(interaction_id: int, data: InteractionReplyIn, db: Session = Depends(get_db)):
+def reply_interaction(interaction_id: int, data: InteractionReplyIn, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
     it = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not it:
         raise HTTPException(status_code=404, detail="Interaction not found")
+    _assert_interaction_access(db, current, it)
+    if tenancy.enforced():
+        data.user_id = current.id
     if it.type not in ("discussion", "consultation"):
         raise HTTPException(status_code=400, detail="Replies allowed only for discussions and consultations")
     if not data.body.strip():
@@ -269,10 +316,14 @@ def reply_interaction(interaction_id: int, data: InteractionReplyIn, db: Session
 
 
 @router.post("/{interaction_id}/close", response_model=dict)
-def close_interaction(interaction_id: int, data: InteractionClose, db: Session = Depends(get_db)):
+def close_interaction(interaction_id: int, data: InteractionClose, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
     it = db.query(Interaction).filter(Interaction.id == interaction_id).first()
     if not it:
         raise HTTPException(status_code=404, detail="Interaction not found")
+    _assert_interaction_access(db, current, it)
+    if tenancy.enforced():
+        data.user_id = current.id
     allowed = {it.from_user_id, it.to_user_id, *[p.user_id for p in it.participants]}
     if data.user_id not in allowed:
         raise HTTPException(status_code=403, detail="Not a participant")
