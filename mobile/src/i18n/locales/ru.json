@@ -107,6 +107,7 @@
     "yandexCancelled": "Вход через Яндекс ID отменён.",
     "missingParams": "Не хватает данных авторизации.",
     "telegramLoggingIn": "Входим через Telegram...",
+    "telegram": "Войти через Telegram",
     "telegramFailed": "Не удалось войти через Telegram",
     "consentPrefixLogin": "Продолжая, вы даёте",
     "consentPrefixRegister": "Регистрируясь, вы даёте",

@@ -65,6 +65,11 @@ class Settings(BaseSettings):
     # "polling". polling полезен, когда входящий трафик до сервера фильтруется
     # и Telegram не может достучаться до вебхука — бот сам ходит за апдейтами.
     telegram_mode: str = "webhook"     # webhook | polling
+    # Deep-link возврата в приложение после входа через Telegram. Login Widget
+    # работает только в браузере, поэтому мобильный вход идёт через веб-мост
+    # (/auth/telegram/callback?platform=mobile), а бэкенд/страница-мост после
+    # проверки подписи перебрасывает результат в приложение по этой схеме.
+    telegram_mobile_redirect_uri: str = "oneonone://auth/telegram/callback"
 
     # Региональные цены. Отображения цены по региону в продукте НЕТ: валюта у
     # всех тарифов одна (RUB), цена одна. Определение региона по IP было заведено

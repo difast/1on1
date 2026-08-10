@@ -416,6 +416,11 @@ export const yandexAuthCallback = (code: string, state: string) =>
 // который после обмена перебрасывает JWT в приложение по deep-link.
 export const vkAuthConfig = () => req<{ enabled: boolean; app_id: string; redirect_url: string; scope: string }>('/auth/vk/config');
 
+// Вход через Telegram. Login Widget работает только в браузере, поэтому в
+// приложении вход идёт через веб-мост login_url (?platform=mobile), который
+// после проверки подписи перебрасывает JWT в приложение по deep-link.
+export const telegramConfig = () => req<{ enabled: boolean; bot_username: string; login_url: string; mobile_redirect: string }>('/telegram/config');
+
 // Telegram: привязка аккаунта по коду из бота
 export const telegramLink = (user_id: number, code: string) =>
   req<{ status: string; user: any }>('/telegram/link', { method: 'POST', body: JSON.stringify({ user_id, code }) });

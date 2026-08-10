@@ -12,7 +12,8 @@ import { mailProviderFor } from '../../src/lib/mailProviders';
 import { useI18n, translate } from '../../src/lib/i18n';
 import YandexLoginButton from '../../src/components/YandexLoginButton';
 import VkLoginButton from '../../src/components/VkLoginButton';
-import { yandexAuthConfig, vkAuthConfig, authAdminLogin } from '../../src/lib/api';
+import TelegramLoginButton from '../../src/components/TelegramLoginButton';
+import { yandexAuthConfig, vkAuthConfig, telegramConfig, authAdminLogin } from '../../src/lib/api';
 
 type Mode = 'login' | 'register' | 'forgot' | 'forgot_sent' | 'admin' | 'confirm_sent';
 
@@ -54,12 +55,18 @@ export default function LoginScreen() {
   // моста (/auth/vk/callback), который приложение открывает с platform=mobile.
   const [vkEnabled, setVkEnabled] = useState(false);
   const [vkRedirect, setVkRedirect] = useState('');
+  // Вход через Telegram — иконка в том же ряду. loginUrl — веб-мост
+  // (/auth/telegram/callback), который приложение открывает с platform=mobile.
+  const [tgEnabled, setTgEnabled] = useState(false);
+  const [tgLoginUrl, setTgLoginUrl] = useState('');
   const submittingRef = useRef(false);
 
   React.useEffect(() => {
     yandexAuthConfig().then(r => setYandexEnabled(!!r?.enabled)).catch(() => setYandexEnabled(false));
     vkAuthConfig().then(r => { setVkEnabled(!!r?.enabled); setVkRedirect(r?.redirect_url || ''); })
       .catch(() => { setVkEnabled(false); setVkRedirect(''); });
+    telegramConfig().then(r => { setTgEnabled(!!r?.enabled && !!r?.login_url); setTgLoginUrl(r?.login_url || ''); })
+      .catch(() => { setTgEnabled(false); setTgLoginUrl(''); });
   }, []);
 
   // Reset submitting state if session disappears (e.g. sign-out while loading)
@@ -436,11 +443,11 @@ export default function LoginScreen() {
             </TouchableOpacity>
 
             {/* Соц-вход компактными иконками в ряду с подписью «Войти через» —
-                единый визуальный язык с веб-версией. В приложении доступны
-                Яндекс ID и VK ID (Telegram — веб-только). Дополняют email/пароль,
-                не заменяют его; каждая иконка показывается только если способ
-                включён на бэкенде. */}
-            {(yandexEnabled || vkEnabled) && (
+                единый визуальный язык с веб-версией. Порядок как на вебе:
+                Яндекс ID → Telegram → VK ID. Дополняют email/пароль, не заменяют
+                его; каждая иконка показывается только если способ включён на
+                бэкенде. */}
+            {(yandexEnabled || tgEnabled || vkEnabled) && (
               <View style={{ marginTop: 16 }}>
                 <View style={styles.dividerRow}>
                   <View style={styles.dividerLine} />
@@ -449,6 +456,7 @@ export default function LoginScreen() {
                 </View>
                 <View style={styles.socialRow}>
                   {yandexEnabled && <YandexLoginButton compact onError={setError} />}
+                  {tgEnabled && <TelegramLoginButton loginUrl={tgLoginUrl} onError={setError} />}
                   {vkEnabled && <VkLoginButton redirectUrl={vkRedirect} onError={setError} />}
                 </View>
               </View>

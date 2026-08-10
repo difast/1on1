@@ -107,6 +107,7 @@
     "yandexCancelled": "Yandex ID sign-in was cancelled.",
     "missingParams": "Authorization details are missing.",
     "telegramLoggingIn": "Signing in with Telegram...",
+    "telegram": "Log in with Telegram",
     "telegramFailed": "Could not sign in with Telegram",
     "consentPrefixLogin": "By continuing, you agree to our",
     "consentPrefixRegister": "By signing up, you agree to our",

@@ -107,6 +107,7 @@
     "yandexCancelled": "Яндекс ID арқылы кіру тоқтатылды.",
     "missingParams": "Авторизация деректері жеткіліксіз.",
     "telegramLoggingIn": "Telegram арқылы кіру орындалуда...",
+    "telegram": "Telegram арқылы кіру",
     "telegramFailed": "Telegram арқылы кіру мүмкін болмады",
     "consentPrefixLogin": "Жалғастыра отырып, сіз",
     "consentPrefixRegister": "Тіркеле отырып, сіз",
