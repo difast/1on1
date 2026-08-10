@@ -13,6 +13,7 @@ from app import online as online_cache
 from app.schemas.team import TeamCreate, TeamOut, TeamDetailOut, TeamMemberOut, JoinByCode
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -248,6 +249,8 @@ def regenerate_invite_code(team_id: int, db: Session = Depends(get_db),
         raise HTTPException(status_code=404, detail="Team not found")
     if tenancy.enforced() and not tenancy.can_access_team(db, current.id, team_id):
         raise HTTPException(status_code=404, detail="Team not found")
+    # Пересоздание кода-приглашения — управленческое действие: только тимлид.
+    rbac.assert_team_lead(db, current, team_id)
 
     team.invite_code = generate_invite_code()
     db.commit()
@@ -263,6 +266,8 @@ def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Se
         raise HTTPException(status_code=404, detail="Team not found")
     if tenancy.enforced() and not tenancy.can_access_team(db, current.id, team_id):
         raise HTTPException(status_code=404, detail="Team not found")
+    # Управление составом команды (добавление участников) — только тимлид.
+    rbac.assert_team_lead(db, current, team_id)
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

@@ -22,6 +22,7 @@ from app.utils.auth import require_user
 from app.utils import ratelimit
 from app.utils.validation import ShortStr, OptShortStr, TextStr, OptTextStr, EntityId
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -29,11 +30,12 @@ DONE = "done"
 
 
 def _load_task_for_actor(db: Session, task_id: int, current) -> Task:
-    """Достать задачу и проверить принадлежность организации актора (Блок 3).
+    """Достать задачу и проверить право доступа по РОЛИ (Блок 2 + Блок 3).
 
-    Доступ есть, если задача из команды актора (team_id) либо актор вовлечён в
-    задачу (постановщик/ответственный/участник совместной задачи). У личных
-    задач без team_id проверяется вовлечённость/общая организация. Иначе 404."""
+    Доступ есть только если актор вовлечён в задачу (постановщик/ответственный/
+    участник совместной задачи) либо он тимлид команды задачи. Другой участник
+    той же команды чужую задачу НЕ видит. У личных задач без team_id — сам
+    владелец или его тимлид. Иначе 404."""
     task = db.query(Task).filter(Task.id == task_id).first()
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -41,13 +43,11 @@ def _load_task_for_actor(db: Session, task_id: int, current) -> Task:
         uid = current.id
         involved = uid in (task.assigned_to, task.assigned_by) or \
             any(a.user_id == uid for a in (task.assignees or []))
-        ok = involved
-        if not ok and task.team_id is not None:
-            ok = tenancy.can_access_team(db, uid, task.team_id)
+        ok = involved or rbac.leads_team(db, current, task.team_id)
         if not ok and task.team_id is None:
-            # личная задача без команды — доступ по общей организации с владельцами
-            ok = tenancy.can_access_user(db, uid, task.assigned_to) or \
-                tenancy.can_access_user(db, uid, task.assigned_by)
+            # личная задача без команды — владелец или его тимлид
+            ok = rbac.can_view_member(db, current, task.assigned_to) or \
+                rbac.can_view_member(db, current, task.assigned_by)
         if not ok:
             raise HTTPException(status_code=404, detail="Task not found")
     return task
@@ -202,13 +202,15 @@ def create_task(data: TaskCreate, db: Session = Depends(get_db),
                 current=Depends(require_user)):
     payload = data.model_dump()
     assignees_in = payload.pop("assignees", None) or []
-    # Изоляция: задачу можно ставить только в своей организации. Проверяем и по
-    # команде задачи, и по тому, что ответственный/участники — из своей орг.
+    # Изоляция + роль: задача ставится в своей команде; ответственный и
+    # соисполнители — это либо сам актор, либо участники команды, которой он
+    # руководит (участник не может назначить задачу другому участнику).
     if tenancy.enforced():
         tenancy.assert_team_access(db, current, payload.get("team_id"))
         for uid in {payload.get("assigned_to"), *[a.get("user_id") for a in assignees_in]}:
             if uid:
-                tenancy.assert_user_access(db, current, uid)
+                rbac.assert_can_view_member(db, current, uid,
+                                            detail="Назначать задачи можно себе или участникам своей команды")
 
     # Совместная задача (несколько исполнителей, части, общий прогресс) — функция
     # тарифа Team и выше. Обычная задача с одним ответственным доступна на Start.
@@ -310,16 +312,17 @@ def list_tasks(
         query = query.filter(Task.team_id == team_id)
     if completed is not None:
         query = query.filter(Task.completed == completed)
-    # Изоляция организации: видны только задачи своих команд ИЛИ те, где актор сам
-    # вовлечён (личные задачи без team_id). Поверх любых query-фильтров, поэтому
-    # подстановка чужого assigned_to/team_id не раскрывает чужие задачи.
+    # Изоляция по роли (Блок 2): участник видит задачи, где он вовлечён
+    # (ответственный/постановщик/соисполнитель); тимлид дополнительно — все
+    # задачи своих команд. Поверх любых query-фильтров, поэтому чужой
+    # assigned_to/team_id не раскрывает чужие задачи.
     if tenancy.enforced():
         uid = current.id
-        ids = tenancy.user_team_ids(db, uid)
+        led = rbac.led_team_ids(db, current)
         sub_me = db.query(TaskAssignee.task_id).filter(TaskAssignee.user_id == uid)
         cond = or_(Task.assigned_to == uid, Task.assigned_by == uid, Task.id.in_(sub_me))
-        if ids:
-            cond = or_(cond, Task.team_id.in_(ids))
+        if led:
+            cond = or_(cond, Task.team_id.in_(led))
         query = query.filter(cond)
     tasks = query.order_by(Task.created_at.desc()).all()
     return [_serialize(t) for t in tasks]
@@ -336,7 +339,8 @@ def closed_today(user_id: int, db: Session = Depends(get_db),
       - участник — свои закрытые сегодня;
       - тимлид — закрытые сегодня по всем участникам его команд (суммарно).
     """
-    tenancy.assert_user_access(db, current, user_id)
+    # Свои данные видит участник; данные участника — его тимлид (Блок 2).
+    rbac.assert_can_view_member(db, current, user_id)
     start = _today_start()
     user = db.query(User).filter(User.id == user_id).first()
     if not user:

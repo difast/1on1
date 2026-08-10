@@ -15,6 +15,7 @@ from app.services.notification_service import NotificationService
 from app.services import i18n
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -142,7 +143,7 @@ def create_task_proposal(data: TaskProposalCreate, db: Session = Depends(get_db)
 @router.get("/", response_model=List[TaskProposalOut])
 def list_task_proposals(user_id: int = Query(...), db: Session = Depends(get_db),
                         current=Depends(require_user)):
-    tenancy.assert_user_access(db, current, user_id)
+    rbac.assert_can_view_member(db, current, user_id)
     rows = (
         db.query(TaskProposal)
         .filter(or_(TaskProposal.from_user_id == user_id, TaskProposal.to_user_id == user_id))

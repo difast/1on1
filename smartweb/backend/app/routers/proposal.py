@@ -14,6 +14,7 @@ from app.services.notification_service import NotificationService
 from app.services import i18n
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -143,7 +144,8 @@ def create_proposal(data: ProposalCreate, db: Session = Depends(get_db),
 @router.get("/", response_model=List[ProposalOut])
 def list_proposals(user_id: int = Query(...), db: Session = Depends(get_db),
                    current=Depends(require_user)):
-    tenancy.assert_user_access(db, current, user_id)
+    # Свой список предложений видит участник; список участника — его тимлид.
+    rbac.assert_can_view_member(db, current, user_id)
     rows = (
         db.query(MeetingProposal)
         .filter(or_(MeetingProposal.from_user_id == user_id, MeetingProposal.to_user_id == user_id))

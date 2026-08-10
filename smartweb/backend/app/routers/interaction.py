@@ -14,6 +14,7 @@ from app.services.notification_service import NotificationService
 from app.services import task_collab
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -177,8 +178,8 @@ def create_interaction(data: InteractionCreate, db: Session = Depends(get_db),
 @router.get("/", response_model=List[dict])
 def list_interactions(user_id: int = Query(...), db: Session = Depends(get_db),
                       current=Depends(require_user)):
-    # Свой фид взаимодействий: чужой user_id из другой организации недоступен.
-    tenancy.assert_user_access(db, current, user_id)
+    # Свой фид взаимодействий видит участник; фид участника — его тимлид (Блок 2).
+    rbac.assert_can_view_member(db, current, user_id)
     part_sub = db.query(InteractionParticipant.interaction_id).filter(InteractionParticipant.user_id == user_id)
     rows = (
         db.query(Interaction)
