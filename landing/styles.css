@@ -250,7 +250,7 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .site-footer{background:#000;color:#fff;padding:64px 40px 32px}
 .footer-top{display:flex;gap:48px;justify-content:space-between;margin-bottom:48px;flex-wrap:wrap}
 .footer-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:24px;display:flex;align-items:center;gap:10px}
-.footer-logo-mark{width:44px;height:44px;background:linear-gradient(135deg,#0A6CFF,#2563EB);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em}
+.footer-logo-mark{width:44px;height:44px;background:linear-gradient(135deg,#0A6CFF,#2563EB);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em;object-fit:cover}
 .footer-cols{display:flex;gap:36px;flex-wrap:wrap}
 .footer-col{display:flex;flex-direction:column;gap:14px;min-width:130px}
 .footer-col-h{font-size:12px;font-weight:700;letter-spacing:.04em;color:#fff;opacity:.92;margin-bottom:2px}
@@ -290,7 +290,10 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .burger.open span:nth-child(2){opacity:0}
 .burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-.mobile-menu{display:none;position:fixed;inset:0;background:rgba(19,17,28,.97);backdrop-filter:blur(20px);z-index:250;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+/* z-index ниже nav (200): когда меню открыто, верхняя шапка с «крестиком»
+   (бургер) остаётся сверху и кликабельна — иначе оверлей меню перекрывал бургер
+   и меню невозможно было закрыть. */
+.mobile-menu{display:none;position:fixed;inset:0;background:rgba(19,17,28,.97);backdrop-filter:blur(20px);z-index:190;flex-direction:column;align-items:center;justify-content:center;gap:32px}
 .mobile-menu.open{display:flex}
 .mobile-menu a{font-size:24px;font-weight:600;color:var(--txt2);text-decoration:none;transition:color .15s}
 .mobile-menu a:hover{color:var(--txt)}
