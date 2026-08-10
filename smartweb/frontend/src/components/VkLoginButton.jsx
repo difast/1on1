@@ -56,7 +56,7 @@ export default function VkLoginButton({ enabled = false, config = null, onAuth, 
     let alive = true
     renderVkOneTap(
       containerRef.current,
-      { appId: config.app_id, redirectUrl: config.redirect_url, scope: config.scope },
+      { appId: config.app_id, redirectUrl: config.redirect_url, scope: config.scope, idDomain: config.id_domain },
       async ({ code, device_id, code_verifier, state }) => {
         if (doneRef.current) return
         doneRef.current = true

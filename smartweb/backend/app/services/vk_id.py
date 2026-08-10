@@ -24,9 +24,15 @@ import httpx
 
 from app.config import settings
 
-# VK ID OAuth 2.1 (id.vk.com). Обмен кода и профиль — на этих адресах.
-TOKEN_URL = "https://id.vk.com/oauth2/auth"
-USER_INFO_URL = "https://id.vk.com/oauth2/user_info"
+# VK ID OAuth 2.1. Хост берём из настроек (id.vk.ru по умолчанию — как у SDK;
+# при необходимости переключается на id.vk.com одной переменной VK_ID_DOMAIN),
+# чтобы виджет и серверный обмен кода всегда были на одном домене.
+def _token_url() -> str:
+    return f"https://{settings.vk_id_host}/oauth2/auth"
+
+
+def _user_info_url() -> str:
+    return f"https://{settings.vk_id_host}/oauth2/user_info"
 
 # Запрашиваемые данные: email + имя/фамилия/фото. Имя/фамилия/аватар VK ID
 # отдаёт по базовому доступу (в id_token / user_info), отдельного скоупа не
@@ -112,7 +118,7 @@ def exchange_code(code: str, device_id: str, code_verifier: str | None = None,
     last = "no_attempts"
     for i, data in enumerate(uniq):
         try:
-            r = httpx.post(TOKEN_URL, data=data, timeout=_TIMEOUT)
+            r = httpx.post(_token_url(), data=data, timeout=_TIMEOUT)
         except Exception as e:
             last = f"request_error {type(e).__name__}"
             log.warning("vk id exchange attempt %s: %s", i, last)
@@ -134,7 +140,7 @@ def fetch_user_info(access_token: str) -> dict:
     ошибку НЕ пробрасываем как фатальную — вызывающий сам решит, хватило ли
     данных из id_token."""
     try:
-        r = httpx.post(USER_INFO_URL, data={
+        r = httpx.post(_user_info_url(), data={
             "client_id": settings.vk_app_id,
             "access_token": access_token,
         }, timeout=_TIMEOUT)
