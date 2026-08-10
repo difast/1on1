@@ -36,7 +36,7 @@ export function describeVkError(e) {
  * Возвращает функция очистки (снимает виджет).
  */
 export async function renderVkOneTap(container, cfg, onCode, onError) {
-  VKID.Config.init({
+  const initCfg = {
     app: Number(cfg.appId),
     redirectUrl: cfg.redirectUrl,
     responseMode: VKID.ConfigResponseMode.Callback,
@@ -44,7 +44,11 @@ export async function renderVkOneTap(container, cfg, onCode, onError) {
     // Скоупы: email + доступ к имени/фамилии/фото (имя/аватар VK ID отдаёт в
     // user_info по базовому доступу, отдельного скоупа не требуют).
     scope: cfg.scope || 'email',
-  })
+  }
+  // Домен VK ID (id.vk.ru по умолчанию у SDK). Переопределяем на тот, что задан
+  // на бэкенде, чтобы виджет и серверный обмен кода были на одном домене.
+  if (cfg.idDomain) initCfg.__vkidDomain = cfg.idDomain
+  VKID.Config.init(initCfg)
   const oneTap = new VKID.OneTap()
   oneTap
     .render({ container, showAlternativeLogin: true })

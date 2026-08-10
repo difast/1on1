@@ -92,7 +92,7 @@ export default function VkAuthCallbackPage() {
             if (!containerRef.current) return
             renderVkOneTap(
               containerRef.current,
-              { appId: data.app_id, redirectUrl: data.redirect_url, scope: data.scope },
+              { appId: data.app_id, redirectUrl: data.redirect_url, scope: data.scope, idDomain: data.id_domain },
               ({ code, device_id, code_verifier, state }) => finish(code, device_id, { code_verifier, state }),
               () => { setStatus('error'); setMessage(t('auth.vkFailed')) },
             ).catch(() => { setStatus('error'); setMessage(t('auth.vkFailed')) })

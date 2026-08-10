@@ -133,6 +133,12 @@ class Settings(BaseSettings):
     # redirect_uri, поэтому мобильный вход возвращается на веб-адрес, а бэкенд
     # после обмена кода перебрасывает результат в приложение по этой схеме.
     vk_login_mobile_redirect_uri: str = "oneonone://auth/vk/callback"
+    # Домен VK ID. VK мигрировал с vk.com на vk.ru: официальный @vkid/sdk по
+    # умолчанию работает с id.vk.ru, а серверные эндпоинты доступны и на
+    # id.vk.com, и на id.vk.ru. Держим ОДИН домен и для виджета (фронт), и для
+    # обмена кода (бэк), чтобы они не разъезжались. Пусто => id.vk.ru (как
+    # дефолт SDK). Если приложение/сеть требуют .com — задать VK_ID_DOMAIN=id.vk.com.
+    vk_id_domain: str = ""
 
     class Config:
         env_file = ".env"
@@ -194,5 +200,11 @@ class Settings(BaseSettings):
             return self.vk_login_redirect_uri
         base = (self.app_web_url or "").rstrip("/")
         return f"{base}/auth/vk/callback" if base else ""
+
+    @property
+    def vk_id_host(self) -> str:
+        """Хост VK ID для серверных эндпоинтов и виджета. По умолчанию id.vk.ru
+        (совпадает с дефолтом @vkid/sdk)."""
+        return (self.vk_id_domain or "").strip() or "id.vk.ru"
 
 settings = Settings()

@@ -38,6 +38,9 @@ def vk_config():
         "app_id": settings.vk_app_id or "",
         "redirect_url": settings.vk_login_web_redirect,
         "scope": vk_id.LOGIN_SCOPES,
+        # Домен VK ID для виджета (__vkidDomain). Держим тем же, что у серверного
+        # обмена, чтобы фронт и бэк не разъезжались по vk.ru / vk.com.
+        "id_domain": settings.vk_id_host,
     }
 
 
