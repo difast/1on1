@@ -45,9 +45,14 @@ def vk_config():
 
 
 class CallbackReq(BaseModel):
-    code: TokenStr
-    device_id: TokenStr
-    # SDK держит PKCE-verifier у себя; принимаем опционально, если фронт передал.
+    # Основной путь: фронт УЖЕ обменял код на токен официальным методом SDK
+    # (VKID.Auth.exchangeCode — публичный клиент + PKCE, секрет не участвует) и
+    # прислал access_token. По нему мы сами сходим в user_info и выдадим JWT.
+    access_token: Optional[TokenStr] = None
+    user_id: OptShortStr = None
+    # Запасной путь (конфиденциальные приложения): обмен кода на бэкенде.
+    code: Optional[TokenStr] = None
+    device_id: Optional[TokenStr] = None
     code_verifier: Optional[TokenStr] = None
     state: OptShortStr = None
     # "web" — вернуть JWT в JSON; "mobile" — вернуть ещё и адрес возврата в
@@ -67,16 +72,26 @@ def callback(data: CallbackReq, db: Session = Depends(get_db)):
         })
 
     try:
-        tokens = vk_id.exchange_code(
-            data.code, data.device_id,
-            code_verifier=data.code_verifier, state=data.state,
-        )
-        # user_info — запасной источник: если недоступен, профиль соберётся из
-        # id_token (OIDC), полученного прямо в ответе обмена. Не роняем вход.
-        info = vk_id.fetch_user_info(tokens.get("access_token"))
-        profile = vk_id.profile_from_auth(tokens, info)
+        if data.access_token:
+            # Основной путь: токен уже получен на клиенте (PKCE). Сами берём
+            # профиль в user_info (это же валидирует токен: VK отдаст данные
+            # только для нашего client_id) и выдаём JWT.
+            info = vk_id.fetch_user_info(data.access_token)
+            profile = vk_id.profile_from_auth({}, info)
+        elif data.code and data.device_id:
+            # Запасной путь: обмен кода на бэкенде (для конфиденциальных приложений).
+            tokens = vk_id.exchange_code(
+                data.code, data.device_id,
+                code_verifier=data.code_verifier, state=data.state,
+            )
+            info = vk_id.fetch_user_info(tokens.get("access_token"))
+            profile = vk_id.profile_from_auth(tokens, info)
+        else:
+            raise HTTPException(status_code=400, detail="Не переданы данные VK ID для входа.")
     except vk_id.VkAuthError:
         raise HTTPException(status_code=400, detail="Не удалось войти через VK ID. Попробуйте ещё раз.")
+    except HTTPException:
+        raise
     except Exception as e:
         log.warning("vk id oauth error: %s", type(e).__name__)
         raise HTTPException(status_code=502, detail="VK ID временно недоступен. Попробуйте позже.")

@@ -59,15 +59,19 @@ export async function renderVkOneTap(container, cfg, onCode, onError) {
       onError?.(e)
     })
     .on(VKID.OneTapInternalEvents.LOGIN_SUCCESS, (payload) => {
-      // Прокидываем всё, что дал SDK: code и device_id обязательны, а
-      // code_verifier/state — если вдруг присутствуют (для строгого PKCE-режима
-      // обмена на бэкенде).
-      onCode?.({
-        code: payload.code,
-        device_id: payload.device_id,
-        code_verifier: payload.code_verifier,
-        state: payload.state,
-      })
+      // Обмен кода на токен делаем СРАЗУ в браузере официальным методом SDK.
+      // VK ID здесь — публичный клиент с PKCE: code_verifier лежит в cookie на
+      // нашем домене и серверу недоступен, поэтому обмен возможен только на
+      // клиенте. Секрет приложения при этом НЕ участвует. Полученный access_token
+      // уходит на наш бэкенд — он сам сходит в user_info и выдаст наш JWT.
+      VKID.Auth.exchangeCode(payload.code, payload.device_id)
+        .then((tokens) => {
+          onCode?.({ access_token: tokens.access_token, user_id: tokens.user_id })
+        })
+        .catch((e) => {
+          try { console.error('[VK ID] exchangeCode error', e) } catch { /* no-op */ }
+          onError?.(e)
+        })
     })
   return () => { try { oneTap.close?.() } catch { /* no-op */ } }
 }
