@@ -25,6 +25,44 @@ const routes = {
   '/documents': 'documents.html',
 }
 
+// Абсолютный origin публичного сайта (без личного кабинета app.oneononehq.com).
+const SITE_ORIGIN = 'https://oneononehq.com'
+
+// Подсказки для sitemap по каждому маршруту. Любой маршрут из routes, которого
+// нет здесь, получает значения по умолчанию — поэтому добавление новой публичной
+// страницы в routes сразу попадает в sitemap без правок в нескольких местах.
+const sitemapMeta = {
+  '/': { changefreq: 'weekly', priority: '1.0' },
+  '/pricing': { changefreq: 'weekly', priority: '0.9' },
+  '/features': { changefreq: 'monthly', priority: '0.8' },
+  '/pit': { changefreq: 'monthly', priority: '0.8' },
+  '/tasks': { changefreq: 'monthly', priority: '0.7' },
+  '/analytics': { changefreq: 'monthly', priority: '0.7' },
+  '/about': { changefreq: 'monthly', priority: '0.7' },
+  '/docs': { changefreq: 'monthly', priority: '0.7' },
+  '/blog': { changefreq: 'weekly', priority: '0.6' },
+  '/faq': { changefreq: 'monthly', priority: '0.6' },
+  '/press': { changefreq: 'monthly', priority: '0.5' },
+  '/documents': { changefreq: 'monthly', priority: '0.4' },
+}
+const sitemapDefaultMeta = { changefreq: 'monthly', priority: '0.5' }
+
+// Единственный источник правды для sitemap — карта routes выше.
+function buildSitemap() {
+  const rows = Object.keys(routes).map((p) => {
+    const meta = sitemapMeta[p] || sitemapDefaultMeta
+    return `  <url><loc>${SITE_ORIGIN}${p}</loc>` +
+      `<changefreq>${meta.changefreq}</changefreq>` +
+      `<priority>${meta.priority}</priority></url>`
+  })
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<!-- Автогенерируется из routes в server.js. Все публичные страницы лендинга.\n' +
+    '     Личный кабинет (app.oneononehq.com) сюда не входит: он закрыт\n' +
+    '     авторизацией и собственным robots.txt. -->\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+    rows.join('\n') + '\n</urlset>\n'
+}
+
 const mime = {
   '.html': 'text/html; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -43,6 +81,12 @@ const mime = {
 
 http.createServer((req, res) => {
   const urlPath = decodeURIComponent(req.url.split('?')[0])
+
+  // Sitemap генерируется динамически из routes — единый источник правды.
+  if (urlPath === '/sitemap.xml') {
+    res.writeHead(200, { 'Content-Type': 'application/xml; charset=utf-8' })
+    return res.end(buildSitemap())
+  }
 
   // Clean-URL route
   if (routes[urlPath]) {
