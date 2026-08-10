@@ -17,6 +17,7 @@ from app.models.mood import MoodEntry
 from app.models.knowledge import KnowledgeArticle
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app import online as online_cache
+from app.services import tenancy
 
 from typing import Annotated
 from pydantic import Field
@@ -29,7 +30,10 @@ from app.utils.validation import (
 router = APIRouter()
 
 @router.post("/{user_id}/heartbeat")
-def heartbeat(user_id: int, db: Session = Depends(get_db)):
+def heartbeat(user_id: int, db: Session = Depends(get_db),
+              current=Depends(require_user)):
+    if tenancy.enforced():
+        user_id = current.id
     online_cache.ping(user_id)
     # Persist last activity for DAU/WAU metrics (cheap targeted update).
     try:
@@ -41,10 +45,14 @@ def heartbeat(user_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 @router.get("/by-email/{email}", response_model=UserOut)
-def get_user_by_email(email: str, db: Session = Depends(get_db)):
+def get_user_by_email(email: str, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
+    # Разрешение email в профиль требует авторизации: в жёстком режиме доступен
+    # только свой профиль или пользователь своей организации (анти-энумерация).
     user = db.query(User).filter(User.email == email).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    tenancy.assert_user_access(db, current, user.id)
     return user
 
 @router.post("/", response_model=UserOut)
@@ -343,18 +351,35 @@ def get_admin_analytics(db: Session = Depends(get_db), _admin=Depends(require_ad
     }
 
 @router.get("/", response_model=List[UserOut])
-def list_users(db: Session = Depends(get_db)):
+def list_users(db: Session = Depends(get_db), current=Depends(require_user)):
+    # Изоляция: перечисление пользователей ограничено своей организацией.
+    if tenancy.enforced():
+        ids = tenancy.user_team_ids(db, current.id)
+        if not ids:
+            return db.query(User).filter(User.id == current.id).all()
+        from app.models.team import TeamMember, Team
+        member_ids = {current.id}
+        for (uid,) in db.query(TeamMember.user_id).filter(TeamMember.team_id.in_(ids)).all():
+            member_ids.add(uid)
+        for (lid,) in db.query(Team.team_lead_id).filter(Team.id.in_(ids)).all():
+            member_ids.add(lid)
+        return db.query(User).filter(User.id.in_(member_ids)).all()
     return db.query(User).all()
 
 @router.get("/{user_id}", response_model=UserOut)
-def get_user(user_id: int, db: Session = Depends(get_db)):
+def get_user(user_id: int, db: Session = Depends(get_db),
+             current=Depends(require_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Полный профиль (в т.ч. email) — только свой или пользователя своей орг.
+    tenancy.assert_user_access(db, current, user_id)
     return user
 
 @router.get("/{user_id}/stats")
-def get_user_stats(user_id: int, db: Session = Depends(get_db)):
+def get_user_stats(user_id: int, db: Session = Depends(get_db),
+                   current=Depends(require_user)):
+    tenancy.assert_user_access(db, current, user_id)
     from datetime import datetime
     from app.models.team import TeamMember, Team
     meetings = db.query(Meeting).filter(
@@ -393,7 +418,8 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{user_id}/card")
-def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depends(get_db)):
+def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
     """Публичная карточка участника для просмотра коллегами по команде.
 
     Модель видимости: внутри продукта участники команды видят профили друг друга
@@ -408,6 +434,8 @@ def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depend
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Карточка коллеги видна только внутри своей организации.
+    tenancy.assert_user_access(db, current, user_id, detail="User not found")
 
     # Организация = компания рабочего пространства (одна на команду). Берём
     # компанию команды-контекста (откуда открыли карточку) либо первой команды
@@ -441,11 +469,22 @@ def get_user_card(user_id: int, team_id: int | None = None, db: Session = Depend
 
 
 @router.patch("/{user_id}", response_model=UserOut)
-def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db)):
+def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db),
+                current=Depends(require_user)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
+    # Профиль редактирует только его владелец (или администратор). Раньше эндпоинт
+    # был открыт: по чужому id можно было изменить чужой профиль, роль (эскалация
+    # прав) и push-токен (перехват уведомлений).
+    is_admin = getattr(current, "role", None) == "admin"
+    if tenancy.enforced() and current.id != user_id and not is_admin:
+        raise HTTPException(status_code=403, detail="Редактировать можно только свой профиль")
     fields = data.model_dump(exclude_unset=True)
+    # Смену роли (уровень прав) не выполняем по обычному профильному запросу —
+    # только администратор. Иначе пользователь повысил бы себе роль сам.
+    if tenancy.enforced() and "role" in fields and not is_admin:
+        fields.pop("role")
     for key, value in fields.items():
         setattr(user, key, value)
     # Токен устройства принадлежит устройству, а не аккаунту: он должен быть
@@ -501,13 +540,16 @@ def release_push_token(user_id: int, data: PushTokenReq, db: Session = Depends(g
     return {"ok": True, "released": freed}
 
 @router.post("/{user_id}/detect-region")
-def detect_region(user_id: int, request: Request, db: Session = Depends(get_db)):
+def detect_region(user_id: int, request: Request, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
     """Определить регион по IP и сохранить как ПРЕДПОЛАГАЕМЫЙ.
 
     ЗАГЛУШКА: отображения цены по региону в продукте нет — валюта и цена у всех
     одинаковые. Пока функции нет, эндпоинт отвечает пустым значением и в базу
     ничего не пишет: определять регион ради неиспользуемого поля незачем.
     Включается вместе с региональными ценами (REGION_PRICING_ENABLED=1)."""
+    if tenancy.enforced():
+        user_id = current.id
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")

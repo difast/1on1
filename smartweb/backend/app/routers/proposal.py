@@ -12,8 +12,26 @@ from app.schemas.proposal import (
 )
 from app.services.notification_service import NotificationService
 from app.services import i18n
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
+
+
+def _assert_proposal_access(db: Session, current, p: MeetingProposal) -> None:
+    """Изоляция организации для предложения встречи: доступ у сторон предложения
+    или пользователя той же организации. Иначе 404."""
+    if not tenancy.enforced():
+        return
+    uid = current.id
+    if uid in (p.from_user_id, p.to_user_id):
+        return
+    if p.team_id is not None and tenancy.can_access_team(db, uid, p.team_id):
+        return
+    if tenancy.can_access_user(db, uid, p.from_user_id) or \
+            tenancy.can_access_user(db, uid, p.to_user_id):
+        return
+    raise HTTPException(status_code=404, detail="Proposal not found")
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -87,7 +105,12 @@ def _resolve_team_id(db: Session, p: MeetingProposal) -> Optional[int]:
 # ── endpoints ────────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=ProposalOut)
-def create_proposal(data: ProposalCreate, db: Session = Depends(get_db)):
+def create_proposal(data: ProposalCreate, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
+    if tenancy.enforced():
+        data.from_user_id = current.id
+        tenancy.assert_user_access(db, current, data.to_user_id)
+        tenancy.assert_team_access(db, current, data.team_id)
     if data.from_user_id == data.to_user_id:
         raise HTTPException(status_code=400, detail="Cannot propose a meeting to yourself")
     p = MeetingProposal(
@@ -118,7 +141,9 @@ def create_proposal(data: ProposalCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[ProposalOut])
-def list_proposals(user_id: int = Query(...), db: Session = Depends(get_db)):
+def list_proposals(user_id: int = Query(...), db: Session = Depends(get_db),
+                   current=Depends(require_user)):
+    tenancy.assert_user_access(db, current, user_id)
     rows = (
         db.query(MeetingProposal)
         .filter(or_(MeetingProposal.from_user_id == user_id, MeetingProposal.to_user_id == user_id))
@@ -129,18 +154,24 @@ def list_proposals(user_id: int = Query(...), db: Session = Depends(get_db)):
 
 
 @router.get("/{proposal_id}", response_model=ProposalOut)
-def get_proposal(proposal_id: int, db: Session = Depends(get_db)):
+def get_proposal(proposal_id: int, db: Session = Depends(get_db),
+                 current=Depends(require_user)):
     p = db.query(MeetingProposal).filter(MeetingProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
+    _assert_proposal_access(db, current, p)
     return _serialize(db, p)
 
 
 @router.post("/{proposal_id}/accept", response_model=ProposalOut)
-def accept_proposal(proposal_id: int, data: ProposalAction, db: Session = Depends(get_db)):
+def accept_proposal(proposal_id: int, data: ProposalAction, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
     p = db.query(MeetingProposal).filter(MeetingProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
+    _assert_proposal_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status != "pending":
         raise HTTPException(status_code=400, detail="Proposal is not pending")
     if data.user_id != p.awaiting_user_id:
@@ -180,10 +211,14 @@ def accept_proposal(proposal_id: int, data: ProposalAction, db: Session = Depend
 
 
 @router.post("/{proposal_id}/decline", response_model=ProposalOut)
-def decline_proposal(proposal_id: int, data: ProposalAction, db: Session = Depends(get_db)):
+def decline_proposal(proposal_id: int, data: ProposalAction, db: Session = Depends(get_db),
+                     current=Depends(require_user)):
     p = db.query(MeetingProposal).filter(MeetingProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
+    _assert_proposal_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status != "pending":
         raise HTTPException(status_code=400, detail="Proposal is not pending")
     if data.user_id != p.awaiting_user_id:
@@ -203,11 +238,15 @@ def decline_proposal(proposal_id: int, data: ProposalAction, db: Session = Depen
 
 
 @router.post("/{proposal_id}/counter", response_model=ProposalOut)
-def counter_proposal(proposal_id: int, data: ProposalCounter, db: Session = Depends(get_db)):
+def counter_proposal(proposal_id: int, data: ProposalCounter, db: Session = Depends(get_db),
+                     current=Depends(require_user)):
     """Встречное предложение другого времени — новый раунд переговоров."""
     p = db.query(MeetingProposal).filter(MeetingProposal.id == proposal_id).first()
     if not p:
         raise HTTPException(status_code=404, detail="Proposal not found")
+    _assert_proposal_access(db, current, p)
+    if tenancy.enforced():
+        data.user_id = current.id
     if p.status != "pending":
         raise HTTPException(status_code=400, detail="Proposal is not pending")
     if data.user_id != p.awaiting_user_id:

@@ -11,6 +11,7 @@ from app.services.notification_service import NotificationService
 from app.utils.auth import require_user
 from app.utils import ratelimit
 from app.utils.validation import EntityId
+from app.services import tenancy
 
 router = APIRouter()
 
@@ -48,9 +49,17 @@ class StartCallBody(BaseModel):
 
 
 @router.post("/start-call")
-def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db)):
+def start_spontaneous_call(body: StartCallBody, db: Session = Depends(get_db),
+                           current=Depends(require_user)):
     from datetime import datetime
     from app.models.team import Team
+    # Изоляция: созвон инициируется только в своей команде (организации), а
+    # участники приглашаются только из своей организации.
+    if tenancy.enforced():
+        body.lead_id = current.id
+        tenancy.assert_team_access(db, current, body.team_id)
+        for mid in body.member_ids:
+            tenancy.assert_user_access(db, current, mid)
     # Права (быстрое действие «Инициировать звонок» из карточки): спонтанный
     # созвон инициирует только тимлид команды — консистентно с текущей моделью
     # (у участников нет точки входа в спонтанный созвон).

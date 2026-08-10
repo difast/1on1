@@ -44,6 +44,10 @@ from app.models.task import Task  # noqa: E402
 from app.models.note import Note  # noqa: E402
 from app.models.interaction import Interaction  # noqa: E402
 from app.models.knowledge import KnowledgeArticle  # noqa: E402
+from app.models.meeting_proposal import MeetingProposal  # noqa: E402
+from app.models.task_proposal import TaskProposal  # noqa: E402
+from app.models.subtask import SubTask  # noqa: E402
+from app.models.support_ticket import SupportTicket  # noqa: E402
 from app.utils.auth import create_access_token  # noqa: E402
 from app.utils.passwords import hash_password  # noqa: E402
 from app.utils import ratelimit  # noqa: E402
@@ -124,6 +128,25 @@ iA_id = iA.id
 kA = KnowledgeArticle(team_id=teamA, author_id=leadA, title="Статья A", content="знания A")
 db.add(kA); db.commit(); db.refresh(kA)
 kA_id = kA.id
+
+mpA = MeetingProposal(team_id=teamA, from_user_id=leadA, to_user_id=memberA,
+                      proposed_time=_dt.datetime.utcnow(), status="pending",
+                      awaiting_user_id=memberA, last_actor_id=leadA, topic="СЕКРЕТ A предложение")
+db.add(mpA); db.commit(); db.refresh(mpA)
+mpA_id = mpA.id
+
+tpA = TaskProposal(team_id=teamA, from_user_id=leadA, to_user_id=memberA,
+                   title="СЕКРЕТ A задача-предложение", status="pending")
+db.add(tpA); db.commit(); db.refresh(tpA)
+tpA_id = tpA.id
+
+stA = SubTask(task_id=tA_id, title="СЕКРЕТ A подзадача", order_index=0)
+db.add(stA); db.commit(); db.refresh(stA)
+stA_id = stA.id
+
+tkA = SupportTicket(user_id=memberA, subject="СЕКРЕТ A тикет", body="приватное обращение A")
+db.add(tkA); db.commit(); db.refresh(tkA)
+tkA_id = tkA.id
 db.close()
 
 
@@ -206,6 +229,66 @@ r = client.post("/api/oneai/query",
                 json={"actor_id": leadA, "section": "team_analysis", "team_id": teamA},
                 headers=auth(leadB))
 check("AI от чужого имени (actor_id=A, токен B) -> 403", r.status_code == 403, f"код {r.status_code}")
+
+print("\n== Категория: Предложения встреч / задач ==")
+fresh_limits()
+r = client.get(f"/api/proposals/{mpA_id}", headers=auth(leadB))
+check("чужое предложение встречи A недоступно B -> 404", r.status_code == 404, f"код {r.status_code}")
+check("тело не содержит секрет предложения A", LEAK not in r.text)
+r = client.get(f"/api/proposals/?user_id={memberA}", headers=auth(leadB))
+check("чужой список предложений встреч A -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.post(f"/api/proposals/{mpA_id}/accept", json={"user_id": memberA}, headers=auth(leadB))
+check("принять чужое предложение встречи A из B -> 404", r.status_code == 404, f"код {r.status_code}")
+r = client.get(f"/api/task-proposals/{tpA_id}", headers=auth(leadB))
+check("чужое предложение задачи A недоступно B -> 404", r.status_code == 404, f"код {r.status_code}")
+r = client.get(f"/api/task-proposals/?user_id={memberA}", headers=auth(leadB))
+check("чужой список предложений задач A -> 403", r.status_code == 403, f"код {r.status_code}")
+
+print("\n== Категория: Подзадачи и табель (check-in) ==")
+fresh_limits()
+r = client.get(f"/api/subtasks/?task_id={tA_id}", headers=auth(leadB))
+check("подзадачи чужой задачи A -> 404", r.status_code == 404, f"код {r.status_code}")
+r = client.patch(f"/api/subtasks/{stA_id}", json={"completed": True}, headers=auth(leadB))
+check("правка чужой подзадачи A из B -> 404", r.status_code == 404, f"код {r.status_code}")
+r = client.get(f"/api/checkins/today/{memberA}", headers=auth(leadB))
+check("чужой чек-ин A недоступен B -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.get(f"/api/checkins/team/{teamA}", headers=auth(leadB))
+check("чужой табель команды A -> 403", r.status_code == 403, f"код {r.status_code}")
+
+print("\n== Категория: Настроение (запись в чужую команду) ==")
+fresh_limits()
+r = client.post("/api/mood/", json={"team_id": teamA, "score": 1}, headers=auth(leadB))
+check("запись настроения в чужую команду A из B -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.get(f"/api/mood/team/{teamA}/summary", headers=auth(leadB))
+check("сводка настроения чужой команды A -> 403", r.status_code == 403, f"код {r.status_code}")
+
+print("\n== Категория: Профили пользователей ==")
+fresh_limits()
+r = client.get(f"/api/users/{memberA}", headers=auth(leadB))
+check("полный профиль чужого сотрудника A -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.get(f"/api/users/{memberA}/card", headers=auth(leadB))
+check("карточка чужого сотрудника A -> 403/404", r.status_code in (403, 404), f"код {r.status_code}")
+r = client.patch(f"/api/users/{memberA}", json={"role": "admin", "title": "взлом"}, headers=auth(leadB))
+check("правка чужого профиля A из B -> 403", r.status_code == 403, f"код {r.status_code}")
+# Самоэскалацию роли обычный пользователь провести не может.
+r = client.patch(f"/api/users/{memberB}", json={"role": "admin"}, headers=auth(memberB))
+admin_after = None
+if r.status_code == 200:
+    admin_after = r.json().get("role")
+check("самоэскалация роли до admin отклонена", admin_after != "admin", f"роль стала {admin_after}")
+r = client.get("/api/users/", headers=auth(leadB))
+b_ids = {u["id"] for u in r.json()} if r.status_code == 200 else set()
+check("список пользователей B не содержит сотрудников A",
+      memberA not in b_ids and leadA not in b_ids, f"видит {b_ids}")
+
+print("\n== Категория: Обращения в поддержку ==")
+fresh_limits()
+r = client.get(f"/api/support/user/{memberA}", headers=auth(leadB))
+check("чужие тикеты сотрудника A -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.get("/api/support/", headers=auth(leadB))
+check("список всех тикетов без прав админа -> 403", r.status_code == 403, f"код {r.status_code}")
+r = client.post(f"/api/support/{tkA_id}/message", json={"body": "взлом"}, headers=auth(leadB))
+check("дописать в чужой тикет A из B -> 404", r.status_code == 404, f"код {r.status_code}")
 
 print("\n== Сценарий Business-тарифа: несколько команд одной организации ==")
 fresh_limits()

@@ -7,6 +7,16 @@ from app.database import get_db
 from app.models.support_ticket import SupportTicket
 from app.models.ticket_message import TicketMessage
 from app.models.user import User
+from app.utils.auth import require_user, require_admin
+from app.services import tenancy
+
+
+def _assert_ticket_owner(current, ticket) -> None:
+    """Тикет поддержки принадлежит одному пользователю. Обращения к чужому тикету
+    (в т.ч. коллеги из той же организации) запрещены — 404. Персонал отвечает
+    через админ-эндпоинты (require_admin)."""
+    if tenancy.enforced() and current is not None and current.id != ticket.user_id:
+        raise HTTPException(status_code=404, detail="Ticket not found")
 
 from typing import Annotated
 from pydantic import Field
@@ -72,7 +82,11 @@ def _out(ticket: SupportTicket, user: Optional[User]) -> dict:
 # ── Endpoints ─────────────────────────────────────────────────
 
 @router.post("/", response_model=TicketOut)
-def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
+def create_ticket(data: TicketCreate, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    # Тикет создаётся от имени текущего пользователя, а не произвольного user_id.
+    if tenancy.enforced():
+        data.user_id = current.id
     user = db.query(User).filter(User.id == data.user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
@@ -87,7 +101,8 @@ def create_ticket(data: TicketCreate, db: Session = Depends(get_db)):
     return _out(ticket, user)
 
 @router.get("/", response_model=List[TicketOut])
-def list_tickets(db: Session = Depends(get_db)):
+def list_tickets(db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    # Список ВСЕХ тикетов — только для персонала поддержки (админ-панель).
     tickets = (db.query(SupportTicket)
                .options(joinedload(SupportTicket.messages))
                .order_by(SupportTicket.created_at.desc())
@@ -96,7 +111,11 @@ def list_tickets(db: Session = Depends(get_db)):
     return [_out(t, user_map.get(t.user_id)) for t in tickets]
 
 @router.get("/user/{user_id}", response_model=List[TicketOut])
-def list_user_tickets(user_id: int, db: Session = Depends(get_db)):
+def list_user_tickets(user_id: int, db: Session = Depends(get_db),
+                      current=Depends(require_user)):
+    # Пользователь видит только свои тикеты.
+    if tenancy.enforced() and current.id != user_id:
+        raise HTTPException(status_code=403, detail="Доступ только к своим обращениям")
     tickets = (db.query(SupportTicket)
                .options(joinedload(SupportTicket.messages))
                .filter(SupportTicket.user_id == user_id)
@@ -106,12 +125,12 @@ def list_user_tickets(user_id: int, db: Session = Depends(get_db)):
     return [_out(t, user) for t in tickets]
 
 @router.get("/unread-count")
-def unread_count(db: Session = Depends(get_db)):
+def unread_count(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     count = db.query(SupportTicket).filter(SupportTicket.read_by_admin == False).count()
     return {"count": count}
 
 @router.patch("/{ticket_id}/read")
-def mark_read(ticket_id: int, db: Session = Depends(get_db)):
+def mark_read(ticket_id: int, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
@@ -120,13 +139,14 @@ def mark_read(ticket_id: int, db: Session = Depends(get_db)):
     return {"ok": True}
 
 @router.patch("/read-all")
-def mark_all_read(db: Session = Depends(get_db)):
+def mark_all_read(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     db.query(SupportTicket).filter(SupportTicket.read_by_admin == False).update({"read_by_admin": True})
     db.commit()
     return {"ok": True}
 
 @router.post("/{ticket_id}/reply", response_model=TicketOut)
-def admin_reply(ticket_id: int, data: ReplyCreate, db: Session = Depends(get_db)):
+def admin_reply(ticket_id: int, data: ReplyCreate, db: Session = Depends(get_db),
+                _admin=Depends(require_admin)):
     ticket = (db.query(SupportTicket)
               .options(joinedload(SupportTicket.messages))
               .filter(SupportTicket.id == ticket_id).first())
@@ -142,22 +162,26 @@ def admin_reply(ticket_id: int, data: ReplyCreate, db: Session = Depends(get_db)
     return _out(ticket, user)
 
 @router.patch("/{ticket_id}/user-read")
-def user_read_reply(ticket_id: int, db: Session = Depends(get_db)):
+def user_read_reply(ticket_id: int, db: Session = Depends(get_db),
+                    current=Depends(require_user)):
     ticket = db.query(SupportTicket).filter(SupportTicket.id == ticket_id).first()
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    _assert_ticket_owner(current, ticket)
     ticket.has_unread_reply = False
     db.commit()
     return {"ok": True}
 
 @router.post("/{ticket_id}/message", response_model=TicketOut)
-def user_message(ticket_id: int, data: ReplyCreate, db: Session = Depends(get_db)):
+def user_message(ticket_id: int, data: ReplyCreate, db: Session = Depends(get_db),
+                 current=Depends(require_user)):
     """User sends a follow-up message in an existing ticket."""
     ticket = (db.query(SupportTicket)
               .options(joinedload(SupportTicket.messages))
               .filter(SupportTicket.id == ticket_id).first())
     if not ticket:
         raise HTTPException(status_code=404, detail="Ticket not found")
+    _assert_ticket_owner(current, ticket)
     msg = TicketMessage(ticket_id=ticket_id, sender="user", body=data.body)
     db.add(msg)
     ticket.read_by_admin = False

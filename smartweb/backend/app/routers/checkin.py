@@ -6,6 +6,8 @@ from typing import List, Optional
 from app.database import get_db
 from app.models.checkin import WorkCheckin
 from app.models.team import TeamMember
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
 
@@ -26,7 +28,11 @@ class CheckinOut(PydanticBase):
 
 
 @router.post("/arrive", response_model=CheckinOut)
-def arrive(data: CheckinAction, db: Session = Depends(get_db)):
+def arrive(data: CheckinAction, db: Session = Depends(get_db),
+           current=Depends(require_user)):
+    # Отмечать приход можно только за себя.
+    if tenancy.enforced():
+        data.user_id = current.id
     today = date.today()
     checkin = db.query(WorkCheckin).filter(
         WorkCheckin.user_id == data.user_id, WorkCheckin.date == today
@@ -43,7 +49,10 @@ def arrive(data: CheckinAction, db: Session = Depends(get_db)):
 
 
 @router.post("/leave", response_model=CheckinOut)
-def leave(data: CheckinAction, db: Session = Depends(get_db)):
+def leave(data: CheckinAction, db: Session = Depends(get_db),
+          current=Depends(require_user)):
+    if tenancy.enforced():
+        data.user_id = current.id
     today = date.today()
     checkin = db.query(WorkCheckin).filter(
         WorkCheckin.user_id == data.user_id, WorkCheckin.date == today
@@ -57,14 +66,19 @@ def leave(data: CheckinAction, db: Session = Depends(get_db)):
 
 
 @router.get("/today/{user_id}", response_model=Optional[CheckinOut])
-def today_checkin(user_id: int, db: Session = Depends(get_db)):
+def today_checkin(user_id: int, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    tenancy.assert_user_access(db, current, user_id)
     return db.query(WorkCheckin).filter(
         WorkCheckin.user_id == user_id, WorkCheckin.date == date.today()
     ).first()
 
 
 @router.get("/team/{team_id}", response_model=List[CheckinOut])
-def team_checkins(team_id: int, days: int = 7, db: Session = Depends(get_db)):
+def team_checkins(team_id: int, days: int = 7, db: Session = Depends(get_db),
+                  current=Depends(require_user)):
+    # Табель по команде — только своей организации.
+    tenancy.assert_team_access(db, current, team_id)
     since = date.today() - timedelta(days=days - 1)
     member_ids = [
         tm.user_id for tm in db.query(TeamMember).filter(TeamMember.team_id == team_id).all()
