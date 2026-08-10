@@ -15,8 +15,14 @@
 <!-- /Yandex.Metrika counter -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>OneOnOne — задачи в AI-платформе для команд</title>
-<meta name="description" content="Модуль задач в платформе OneOnOne: постановка на встрече, AI-декомпозиция, совместные задачи и связь с целями сотрудника.">
+<title>Документация OneOnOne</title>
+<meta name="description" content="Документация продукта OneOnOne: быстрый старт, команды и роли, встречи 1-on-1, задачи, цели и OKR, развитие, аналитика, AI-помощники, интеграции, тарифы, безопасность.">
+<link rel="canonical" href="https://oneononehq.com/docs">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Документация OneOnOne">
+<meta property="og:description" content="Документация продукта OneOnOne: быстрый старт, команды и роли, встречи 1-on-1, задачи, цели и OKR, развитие, аналитика, AI-помощники, интеграции, тарифы, безопасность.">
+<meta property="og:url" content="https://oneononehq.com/docs">
+<meta property="og:image" content="https://oneononehq.com/favicon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700;1,800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -25,48 +31,45 @@
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="apple-touch-icon" sizes="180x180" href="/favicon.png">
 <link rel="stylesheet" href="/styles.css">
+<style>
+.docs-wrap{max-width:1120px;margin:0 auto;display:grid;grid-template-columns:250px 1fr;gap:44px;align-items:start}
+.docs-nav{position:sticky;top:100px;display:flex;flex-direction:column;gap:2px;border-right:1px solid var(--brd);padding-right:18px}
+.docs-nav a{font-size:14px;color:var(--txt2);padding:8px 12px;border-radius:9px;text-decoration:none;transition:background .15s,color .15s}
+.docs-nav a:hover{background:var(--bg2);color:var(--txt)}
+.docs-body h2{font-family:'Playfair Display',serif;font-size:clamp(24px,3vw,34px);font-weight:700;letter-spacing:-.02em;margin:0 0 14px;scroll-margin-top:96px}
+.docs-body section{padding:22px 0 34px;border-bottom:1px solid var(--brd)}
+.docs-body section:last-child{border-bottom:none}
+.docs-body p{font-size:15.5px;color:var(--txt2);line-height:1.8;margin-bottom:14px}
+.docs-body ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin:16px 0}
+.docs-body ul li{display:flex;gap:12px;font-size:15px;color:var(--txt2);line-height:1.7}
+.docs-body ul li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:9px}
+.docs-body strong{color:var(--txt);font-weight:600}
+@media(max-width:820px){.docs-wrap{grid-template-columns:1fr}.docs-nav{position:static;flex-direction:row;flex-wrap:wrap;border-right:none;border-bottom:1px solid var(--brd);padding:0 0 14px;margin-bottom:10px}}
+</style>
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "OneOnOne",
-  "legalName": "ООО «ОДИН НА ОДИН»",
-  "url": "https://oneononehq.com",
-  "logo": "https://oneononehq.com/favicon.png",
-  "image": "https://oneononehq.com/favicon.png",
-  "description": "AI-платформа для управления, развития и повышения эффективности команд: встречи 1-на-1, задачи, цели и OKR, развитие сотрудников, аналитика и AI-помощники ONE AI и Пит.",
-  "email": "support@oneononehq.com",
-  "foundingDate": "2025-12-15",
-  "founder": {
-    "@type": "Person",
-    "name": "Дмитрий Пятаков"
+  "@type": "TechArticle",
+  "headline": "Документация OneOnOne",
+  "description": "Документация продукта OneOnOne: встречи 1-on-1, задачи, цели и OKR, развитие, аналитика, AI-помощники, интеграции, тарифы, безопасность.",
+  "url": "https://oneononehq.com/docs",
+  "inLanguage": "ru",
+  "author": {
+    "@type": "Organization",
+    "name": "OneOnOne"
   },
-  "areaServed": [
-    "RU",
-    "KZ",
-    "BY"
-  ],
-  "contactPoint": [
-    {
-      "@type": "ContactPoint",
-      "contactType": "press",
-      "email": "press@oneononehq.com"
-    },
-    {
-      "@type": "ContactPoint",
-      "contactType": "customer support",
-      "email": "support@oneononehq.com"
+  "publisher": {
+    "@type": "Organization",
+    "name": "OneOnOne",
+    "logo": {
+      "@type": "ImageObject",
+      "url": "https://oneononehq.com/favicon.png"
     }
-  ],
-  "sameAs": [
-    "https://t.me/company_oneonone",
-    "https://www.rustore.ru/catalog/app/com.oneonone.app"
-  ]
+  }
 }
 </script>
 </head>
 <body>
-<!-- NAV -->
 <!-- MOBILE MENU -->
 <div class="mobile-menu" id="mobileMenu">
   <a href="/#platform" onclick="closeMM()">Платформа</a>
@@ -78,10 +81,8 @@
     <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc" onclick="closeMM()">Начать →</a>
   </div>
 </div>
-
-<!-- NAV -->
 <nav>
-  <a href="/" class="logo"><img src="/favicon.png" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
+  <a href="/" class="logo"><img src="/favicon.svg" class="logo-mark" alt="OneOnOne"><span class="logo-txt">OneOn<span class="logo-acc">One</span></span></a>
   <div class="nav-links">
     <a href="/#platform">Платформа</a>
     <a href="/#roles">Кому подходит</a>
@@ -96,49 +97,47 @@
     <span></span><span></span><span></span>
   </button>
 </nav>
-
 <script>
 function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
 function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
 </script>
 <section class="page-hero block-card" style="margin-top:20px">
-  <div class="page-eyebrow">02 — Задачи</div>
-  <h1 class="page-h1">Задачи, которые <em>двигаются</em></h1>
-  <p class="page-lead">Ставьте задачи прямо во время 1-on-1, разбивайте их на шаги с помощью ИИ и отслеживайте прогресс без переключения контекста.</p>
+  <div class="page-eyebrow">Документация</div>
+  <h1 class="page-h1">Документация <em>продукта</em></h1>
+  <p class="page-lead">Как устроен OneOnOne и как пользоваться его разделами — встречами, задачами, целями, аналитикой и AI-помощниками.</p>
 </section>
-<section class="section block-card bg-green">
-  <div class="wrap">
-<div class="page-cards reveal">
-  <div class="pgcard"><div class="pgcard-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div><h3>Создание на встрече</h3><p>Договорились о чём-то на 1-on-1 — тут же оформили задачу. Ничего не теряется между разговором и трекером.</p></div>
-  <div class="pgcard"><div class="pgcard-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg></div><h3>AI-декомпозиция</h3><p>Большую задачу Пит разбивает на 4 конкретных шага. Нажали иконку AI — получили готовый чек-лист.</p></div>
-  <div class="pgcard"><div class="pgcard-ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>Статусы и поиск</h3><p>В работе, блокер, на ревью, готово. Поиск по всем открытым и выполненным задачам команды в одном месте.</p></div>
-</div>
-<div class="prose">
-  <div class="prose-section reveal">
-    <h2>От разговора к результату</h2>
-    <p>Классическая проблема 1-on-1: проговорили десяток договорённостей, а через неделю никто не помнит, кто что должен был сделать. OneOnOne связывает задачи со встречами напрямую — каждая задача знает, на каком разговоре она появилась.</p>
+<section class="section block-card">
+  <div class="docs-wrap">
+  <nav class="docs-nav">
+    <a href="#intro">Введение</a>
+    <a href="#start">Быстрый старт</a>
+    <a href="#teams">Команды и роли</a>
+    <a href="#meetings">Встречи 1-on-1</a>
+    <a href="#tasks">Задачи</a>
+    <a href="#goals">Цели и OKR</a>
+    <a href="#development">Развитие сотрудников</a>
+    <a href="#analytics">Аналитика</a>
+    <a href="#ai">AI-помощники: ONE AI и Пит</a>
+    <a href="#integrations">Интеграции</a>
+    <a href="#mobile">Мобильное приложение</a>
+    <a href="#pricing">Тарифы</a>
+    <a href="#security">Безопасность и данные</a>
+  </nav>
+  <div class="docs-body">
+    <section id="intro"><h2>Введение</h2><p><strong>OneOnOne</strong> — AI-платформа для управления, развития и повышения эффективности команд. Эта документация описывает основные разделы продукта и то, как ими пользоваться. Продукт доступен в вебе (<a href='https://app.oneononehq.com' target='_blank' rel='noopener'>app.oneononehq.com</a>) и в мобильном приложении.</p></section>
+    <section id="start"><h2>Быстрый старт</h2><p>Регистрация занимает пару минут:</p><ul><li>Создайте аккаунт по email или через Яндекс&nbsp;ID, Telegram или VK&nbsp;ID.</li><li>Создайте команду и пригласите коллег по ссылке.</li><li>Назначьте первую встречу 1-on-1 и добавьте задачи.</li></ul><p>Первые 14 дней — бесплатно, без карты.</p></section>
+    <section id="teams"><h2>Команды и роли</h2><p>В основе — команда и её участники. Поддерживаются роли руководителя и сотрудника; один человек может состоять в нескольких командах. Права доступа определяются ролью.</p></section>
+    <section id="meetings"><h2>Встречи 1-on-1</h2><p>Регулярные встречи один на один с историей разговоров, повесткой и договорённостями. ONE AI помогает подобрать удобное время, есть встроенные видеозвонки. Вся история встреч хранится без ограничений по срокам.</p></section>
+    <section id="tasks"><h2>Задачи</h2><p>Задачи с назначением исполнителей, статусами и подзадачами. ИИ декомпозирует крупную задачу на конкретные шаги, помогая быстрее начать.</p></section>
+    <section id="goals"><h2>Цели и OKR</h2><p>Прозрачные цели команды и отдельных сотрудников в формате OKR: ключевые результаты, прогресс и связь целей с задачами.</p></section>
+    <section id="development"><h2>Развитие сотрудников</h2><p>Индивидуальные планы развития: навыки, шаги роста и регулярное возвращение к ним на встречах 1-on-1.</p></section>
+    <section id="analytics"><h2>Аналитика</h2><p>Состояние команды одним взглядом: вовлечённость, тренды настроения (mood-трекинг), активность и учёт рабочего времени. Алерты подсказывают, где нужно внимание.</p></section>
+    <section id="ai"><h2>AI-помощники: ONE AI и Пит</h2><p><strong>ONE AI</strong> помогает по всей платформе — подбор времени встреч, декомпозиция задач, формулировки целей, саммари. <strong>Пит</strong> — персональный ассистент руководителя, который помнит контекст каждого сотрудника и подсказывает, с кем и о чём поговорить.</p></section>
+    <section id="integrations"><h2>Интеграции</h2><p>Подключение внешних сервисов (календари и др.) через безопасный серверный обмен — ключи провайдеров не хранятся на клиенте.</p></section>
+    <section id="mobile"><h2>Мобильное приложение</h2><p>Приложение для iOS и Android (в т.ч. RuStore): встречи, задачи, уведомления, вход по email или через Яндекс&nbsp;ID, Telegram и VK&nbsp;ID.</p></section>
+    <section id="pricing"><h2>Тарифы</h2><p>Доступны тарифы Start, Team и Business. Пробный период — 14 дней бесплатно, без карты. Актуальные цены — на странице <a href='/pricing'>тарифов</a>.</p></section>
+    <section id="security"><h2>Безопасность и данные</h2><p>Единая база — PostgreSQL на стороне сервера; клиенты не хранят ключей провайдеров. Данные принадлежат команде: экспорт без ограничений, никакого вендор-лока. Личный кабинет закрыт авторизацией и отдельным robots.txt.</p></section>
   </div>
-  <div class="prose-section reveal">
-    <h2>AI-подзадачи</h2>
-    <p>Не каждый знает, с чего начать большую задачу. Нажмите на иконку <strong>AI</strong> рядом с задачей — Пит предложит конкретные шаги с учётом дедлайна. Отмечайте подшаги по мере выполнения, а когда все готовы — задача закрывается автоматически.</p>
-    <ul>
-      <li><strong>Личные и командные задачи</strong> — ведите свои и назначайте участникам.</li>
-      <li><strong>Смена статуса в один тап</strong> — прозрачный прогресс для всей команды.</li>
-      <li><strong>Дедлайны и просрочки</strong> — просроченные задачи подсвечиваются.</li>
-    </ul>
-  </div>
-</div></div>
-</section>
-<!-- CTA -->
-<section class="cta-section block-card" id="ctaSection">
-  <div class="lift-door lift-l"></div>
-  <div class="lift-door lift-r"></div>
-  <div class="hero-badge cta-child" style="display:inline-flex;margin-bottom:28px;opacity:0"><div class="bdot"></div>14 дней бесплатно, без карты</div>
-  <h2 class="cta-h df cta-child" style="opacity:0">Соберите команду<br>за пять минут.</h2>
-  <p class="cta-sub cta-child" style="opacity:0">Создайте команду, пригласите коллег и работайте со встречами, задачами, целями и развитием в одном месте. Настройка не требуется.</p>
-  <div class="cta-btns cta-child" style="opacity:0">
-    <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-acc btn-xl">Создать аккаунт →</a>
-    <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com" class="btn btn-ghost btn-lg">Войти</a>
   </div>
 </section>
 <footer class="site-footer">
@@ -192,9 +191,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </a>
     </div>
   </div>
-
   <hr class="footer-divider">
-
   <div class="footer-bottom">
     <div class="footer-contacts">
       <span>OneOnOne — AI-платформа для управления и развития команд</span>
@@ -212,7 +209,6 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </span>
     </div>
   </div>
-
   <div class="footer-copy">© 2026 «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
@@ -222,7 +218,6 @@ const rio=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){x.targ
 document.querySelectorAll('.reveal,.reveal-l,.reveal-r').forEach(el=>rio.observe(el));
 const ctaSec=document.getElementById('ctaSection');
 if(ctaSec){const ctaObs=new IntersectionObserver(entries=>{entries.forEach(entry=>{if(!entry.isIntersecting)return;ctaObs.unobserve(ctaSec);ctaSec.classList.add('elevator-open');setTimeout(()=>{const kids=ctaSec.querySelectorAll('.cta-child');if(typeof anime!=='undefined'){anime({targets:kids,opacity:[0,1],translateY:[28,0],duration:700,delay:anime.stagger(100),easing:'easeOutExpo'})}else{kids.forEach(k=>{k.style.opacity='1'})}},1200)})},{threshold:0.08});ctaObs.observe(ctaSec)}
-document.querySelectorAll('.faq-q').forEach(q=>q.addEventListener('click',()=>q.parentElement.classList.toggle('open')));
 </script>
 <script src="/store.js"></script>
 <script>(function(){var n=document.querySelector("nav");if(!n)return;var s=function(){n.classList.toggle("scrolled",window.scrollY>12)};window.addEventListener("scroll",s,{passive:true});s();})();</script>

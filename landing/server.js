@@ -12,7 +12,15 @@ const routes = {
   '/tasks': 'tasks.html',
   '/analytics': 'analytics.html',
   '/faq': 'faq.html',
-  '/about': 'about.html',
+  // /about теперь ведёт на страницу компании; старый about.html («О продукте»)
+  // оставлен в репозитории, но скрыт (без ссылок и без чистого маршрута).
+  '/about': 'about-company.html',
+  '/blog': 'blog.html',
+  '/blog/what-is-oneonone': 'blog-what-is-oneonone.html',
+  '/blog/effective-1-on-1': 'blog-effective-1-on-1.html',
+  '/blog/ai-in-management': 'blog-ai-in-management.html',
+  '/press': 'press.html',
+  '/docs': 'docs.html',
   '/pricing': 'pricing.html',
   '/documents': 'documents.html',
 }

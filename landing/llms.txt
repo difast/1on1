@@ -92,8 +92,24 @@
 - https://oneononehq.com/analytics — аналитика команды
 - https://oneononehq.com/pricing — тарифы и сравнение функций
 - https://oneononehq.com/faq — частые вопросы
-- https://oneononehq.com/about — о продукте
+- https://oneononehq.com/about — о компании: основатель, дата основания, факты, продукт
+- https://oneononehq.com/blog — блог о 1-on-1, управлении и AI
+- https://oneononehq.com/blog/what-is-oneonone — статья: что такое OneOnOne и зачем он команде
+- https://oneononehq.com/blog/effective-1-on-1 — статья: как проводить эффективные 1-on-1 встречи
+- https://oneononehq.com/blog/ai-in-management — статья: AI в управлении командой (ONE AI и Пит)
+- https://oneononehq.com/press — пресс-кит: описание, факты, логотип, фирменные цвета
+- https://oneononehq.com/docs — документация продукта
 - https://oneononehq.com/documents — пользовательское соглашение, публичная оферта, политика конфиденциальности, согласие на обработку персональных данных, политика cookie
+
+## Компания
+
+- Продукт: OneOnOne — AI-платформа для управления, развития и повышения эффективности команд
+- Юридическое лицо: ООО «ОДИН НА ОДИН»
+- Основатель: Дмитрий Пятаков
+- Дата основания: 15 декабря 2025
+- Рынок: Россия, Казахстан, Беларусь
+- Сегмент: IT, SaaS для управления командами
+- Контакт для прессы: press@oneononehq.com
 
 ## Контакты
 
