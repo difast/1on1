@@ -10,13 +10,17 @@ from app.services import tenancy
 router = APIRouter()
 
 
+def _assert_note_owner(current, user_id: int) -> None:
+    """Заметки — личные записи автора: доступ только владельцу (Блок 2). Тимлид
+    не читает личные заметки участника — это не командные данные."""
+    if tenancy.enforced() and current.id != user_id:
+        raise HTTPException(status_code=403, detail="Доступ только к своим заметкам")
+
+
 @router.get("/", response_model=List[NoteOut])
 def list_notes(user_id: int = Query(...), db: Session = Depends(get_db),
                current=Depends(require_user)):
-    # Изоляция организации: заметки — личная сущность (у таблицы нет team_id),
-    # поэтому доступ разрешён к своим заметкам или заметкам пользователя своей
-    # организации (Блок 3). Разграничение по ролям внутри организации — Блок 2.
-    tenancy.assert_user_access(db, current, user_id)
+    _assert_note_owner(current, user_id)
     return (
         db.query(Note)
         .filter(Note.user_id == user_id)
@@ -47,7 +51,8 @@ def update_note(note_id: int, data: NoteUpdate, db: Session = Depends(get_db),
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
-    tenancy.assert_owner_or_org(db, current, note.user_id, not_found="Note not found")
+    if tenancy.enforced() and current.id != note.user_id:
+        raise HTTPException(status_code=404, detail="Note not found")
     note.content = data.content
     db.commit()
     db.refresh(note)
@@ -60,7 +65,8 @@ def delete_note(note_id: int, db: Session = Depends(get_db),
     note = db.query(Note).filter(Note.id == note_id).first()
     if not note:
         raise HTTPException(status_code=404, detail="Note not found")
-    tenancy.assert_owner_or_org(db, current, note.user_id, not_found="Note not found")
+    if tenancy.enforced() and current.id != note.user_id:
+        raise HTTPException(status_code=404, detail="Note not found")
     db.delete(note)
     db.commit()
     return {"ok": True}

@@ -12,24 +12,26 @@ from app.schemas.meeting import MeetingCreate, MeetingOut, MeetingUpdate, Meetin
 from app.services.notification_service import NotificationService
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
 
 def _load_meeting_for_actor(db: Session, meeting_id: int, current) -> Meeting:
-    """Достать встречу и проверить, что она принадлежит организации актора.
+    """Достать встречу и проверить право доступа к ней по РОЛИ (Блок 2 + Блок 3).
 
-    Единая точка изоляции для всех операций со встречей по id: доступ есть у
-    участника (member_id), тимлида (team_lead_id) или любого пользователя той же
-    организации (по team_id). Иначе 404 — не подтверждаем существование чужой
-    встречи (защита от IDOR на уровне организации, Блок 3)."""
+    Встреча — это 1-на-1 (или групповой созвон). Доступ есть только у:
+      - участника встречи (member_id или team_lead_id), и
+      - тимлида команды встречи (leads_team).
+    Другой участник той же команды встречу НЕ видит (в отличие от доступа на
+    уровне организации). Иначе 404 — не подтверждаем существование чужой встречи."""
     meeting = db.query(Meeting).filter(Meeting.id == meeting_id).first()
     if not meeting:
         raise HTTPException(status_code=404, detail="Meeting not found")
     if tenancy.enforced():
         uid = current.id
         allowed = uid in (meeting.member_id, meeting.team_lead_id) or \
-            tenancy.can_access_team(db, uid, meeting.team_id)
+            rbac.leads_team(db, current, meeting.team_id)
         if not allowed:
             raise HTTPException(status_code=404, detail="Meeting not found")
     return meeting
@@ -38,8 +40,10 @@ def _load_meeting_for_actor(db: Session, meeting_id: int, current) -> Meeting:
 @router.post("/group", response_model=List[MeetingOut])
 def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db),
                          current=Depends(require_user)):
-    # Изоляция: создавать встречи можно только в своей организации (по team_id).
+    # Изоляция организации + роль: групповой созвон назначает только тимлид
+    # своей команды.
     tenancy.assert_team_access(db, current, data.team_id)
+    rbac.assert_team_lead(db, current, data.team_id)
     """Групповой созвон (Задача 4): назначить встречу нескольким участникам или
     всей команде. Создаём по одной строке Meeting на участника с общим group_id —
     формат 1-на-1 не затрагивается. Каждый участник получает уведомление.
@@ -106,7 +110,9 @@ def create_meeting(data: MeetingCreate, db: Session = Depends(get_db),
     tenancy.assert_team_access(db, current, data.team_id)
     # Права (быстрое действие «Создать встречу» из карточки): прямое назначение
     # встречи доступно только тимлиду команды. Участник вместо этого пользуется
-    # предложением встречи (с согласием) — /api/proposals.
+    # предложением встречи (с согласием) — /api/proposals. Проверяем, что ДЕЙСТВУЕТ
+    # именно тимлид (по токену), а не просто совпадает переданный team_lead_id.
+    rbac.assert_team_lead(db, current, data.team_id)
     _team = db.query(Team).filter(Team.id == data.team_id).first()
     if _team and _team.team_lead_id and data.team_lead_id != _team.team_lead_id:
         raise HTTPException(status_code=403, detail="Прямое создание встречи доступно только тимлиду команды")
@@ -195,10 +201,17 @@ def list_meetings(
         query = query.filter(Meeting.team_lead_id == team_lead_id)
     if status:
         query = query.filter(Meeting.status == status)
-    # Изоляция организации: даже без фильтров клиент видит только встречи своих
-    # команд. Ограничение применяется поверх любых переданных query-параметров,
-    # поэтому подстановка чужого team_id/member_id не раскрывает чужие встречи.
-    query = tenancy.scope_by_team(query, Meeting.team_id, db, current)
+    # Изоляция по роли (Блок 2): участник видит только СВОИ встречи (где он
+    # тимлид или участник), тимлид — все встречи своих команд. Поверх любых
+    # query-параметров, поэтому чужой team_id/member_id ничего не раскрывает.
+    if tenancy.enforced():
+        from sqlalchemy import or_ as _or
+        uid = current.id
+        led = rbac.led_team_ids(db, current)
+        cond = _or(Meeting.member_id == uid, Meeting.team_lead_id == uid)
+        if led:
+            cond = _or(cond, Meeting.team_id.in_(led))
+        query = query.filter(cond)
     return query.order_by(Meeting.scheduled_date.desc()).all()
 
 @router.get("/{meeting_id}", response_model=MeetingOut)

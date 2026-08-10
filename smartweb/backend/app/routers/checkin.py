@@ -8,6 +8,7 @@ from app.models.checkin import WorkCheckin
 from app.models.team import TeamMember
 from app.utils.auth import require_user
 from app.services import tenancy
+from app.services import rbac
 
 router = APIRouter()
 
@@ -68,7 +69,8 @@ def leave(data: CheckinAction, db: Session = Depends(get_db),
 @router.get("/today/{user_id}", response_model=Optional[CheckinOut])
 def today_checkin(user_id: int, db: Session = Depends(get_db),
                   current=Depends(require_user)):
-    tenancy.assert_user_access(db, current, user_id)
+    # Свой чек-ин видит участник; чек-ин участника — его тимлид (Блок 2).
+    rbac.assert_can_view_member(db, current, user_id)
     return db.query(WorkCheckin).filter(
         WorkCheckin.user_id == user_id, WorkCheckin.date == date.today()
     ).first()
@@ -77,8 +79,9 @@ def today_checkin(user_id: int, db: Session = Depends(get_db),
 @router.get("/team/{team_id}", response_model=List[CheckinOut])
 def team_checkins(team_id: int, days: int = 7, db: Session = Depends(get_db),
                   current=Depends(require_user)):
-    # Табель по команде — только своей организации.
+    # Табель по всей команде — управленческий обзор: только тимлид этой команды.
     tenancy.assert_team_access(db, current, team_id)
+    rbac.assert_team_lead(db, current, team_id)
     since = date.today() - timedelta(days=days - 1)
     member_ids = [
         tm.user_id for tm in db.query(TeamMember).filter(TeamMember.team_id == team_id).all()
