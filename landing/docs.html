@@ -41,8 +41,8 @@
 .docs-body section:last-child{border-bottom:none}
 .docs-body p{font-size:15.5px;color:var(--txt2);line-height:1.8;margin-bottom:14px}
 .docs-body ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin:16px 0}
-.docs-body ul li{display:flex;gap:12px;font-size:15px;color:var(--txt2);line-height:1.7}
-.docs-body ul li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--acc);flex-shrink:0;margin-top:9px}
+.docs-body ul li{position:relative;padding-left:20px;font-size:15px;color:var(--txt2);line-height:1.7}
+.docs-body ul li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;background:var(--acc)}
 .docs-body strong{color:var(--txt);font-weight:600}
 @media(max-width:820px){.docs-wrap{grid-template-columns:1fr}.docs-nav{position:static;flex-direction:row;flex-wrap:wrap;border:1px solid var(--brd);border-radius:14px;padding:12px;margin-bottom:10px}}
 </style>

@@ -364,8 +364,8 @@ html,body{overflow-x:clip}
 .prose h3{font-size:19px;font-weight:600;margin:32px 0 10px;color:var(--txt)}
 .prose p{font-size:16px;color:var(--txt2);line-height:1.8;margin-bottom:16px}
 .prose ul{list-style:none;margin:20px 0;display:flex;flex-direction:column;gap:14px}
-.prose ul li{display:flex;gap:14px;align-items:flex-start;font-size:15px;color:var(--txt2);line-height:1.7}
-.prose ul li::before{content:'';width:7px;height:7px;border-radius:50%;background:#0A6CFF;flex-shrink:0;margin-top:9px}
+.prose ul li{position:relative;padding-left:22px;font-size:15px;color:var(--txt2);line-height:1.7}
+.prose ul li::before{content:'';position:absolute;left:0;top:9px;width:7px;height:7px;border-radius:50%;background:#0A6CFF}
 .prose strong{color:var(--txt);font-weight:600}
 .page-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin:0 auto 8px;max-width:1100px;padding:0}
 .pgcard{background:var(--bg1);border:1px solid var(--brd);border-radius:14px;padding:28px;transition:border-color .2s}
