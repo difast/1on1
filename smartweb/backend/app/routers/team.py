@@ -11,6 +11,8 @@ from app.models.user import User
 from app.models.meeting import Meeting
 from app import online as online_cache
 from app.schemas.team import TeamCreate, TeamOut, TeamDetailOut, TeamMemberOut, JoinByCode
+from app.utils.auth import require_user
+from app.services import tenancy
 
 router = APIRouter()
 
@@ -150,14 +152,21 @@ def create_team(data: TeamCreate, db: Session = Depends(get_db)):
 
 
 @router.get("/", response_model=List[TeamOut])
-def list_teams(db: Session = Depends(get_db)):
-    return db.query(Team).all()
+def list_teams(db: Session = Depends(get_db), current=Depends(require_user)):
+    # Изоляция: список команд ограничен организацией пользователя (свои команды).
+    q = db.query(Team)
+    if tenancy.enforced():
+        ids = tenancy.user_team_ids(db, current.id)
+        q = q.filter(Team.id.in_(ids)) if ids else q.filter(Team.id.in_([-1]))
+    return q.all()
 
 
 # Must come before /{team_id} to avoid route conflict
 @router.get("/by-member/{user_id}", response_model=TeamDetailOut)
-def get_team_for_member(user_id: int, db: Session = Depends(get_db)):
+def get_team_for_member(user_id: int, db: Session = Depends(get_db),
+                        current=Depends(require_user)):
     """Return the team detail for a regular member (non-lead role)."""
+    tenancy.assert_user_access(db, current, user_id)
     membership = (
         db.query(TeamMember)
         .filter(TeamMember.user_id == user_id, TeamMember.role != "lead")
@@ -174,9 +183,13 @@ def get_team_for_member(user_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/{team_id}", response_model=TeamDetailOut)
-def get_team(team_id: int, db: Session = Depends(get_db)):
+def get_team(team_id: int, db: Session = Depends(get_db),
+             current=Depends(require_user)):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    # Изоляция: карточка команды (список сотрудников, контакты) — только своя орг.
+    if tenancy.enforced() and not tenancy.can_access_team(db, current.id, team_id):
         raise HTTPException(status_code=404, detail="Team not found")
     return build_team_detail(team, team_id, db)
 
@@ -228,9 +241,12 @@ def join_team(data: JoinByCode, db: Session = Depends(get_db)):
 
 
 @router.post("/{team_id}/regenerate-invite")
-def regenerate_invite_code(team_id: int, db: Session = Depends(get_db)):
+def regenerate_invite_code(team_id: int, db: Session = Depends(get_db),
+                           current=Depends(require_user)):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    if tenancy.enforced() and not tenancy.can_access_team(db, current.id, team_id):
         raise HTTPException(status_code=404, detail="Team not found")
 
     team.invite_code = generate_invite_code()
@@ -240,9 +256,12 @@ def regenerate_invite_code(team_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/{team_id}/members", response_model=TeamMemberOut)
-def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Session = Depends(get_db)):
+def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Session = Depends(get_db),
+                        current=Depends(require_user)):
     team = db.query(Team).filter(Team.id == team_id).first()
     if not team:
+        raise HTTPException(status_code=404, detail="Team not found")
+    if tenancy.enforced() and not tenancy.can_access_team(db, current.id, team_id):
         raise HTTPException(status_code=404, detail="Team not found")
 
     user = db.query(User).filter(User.id == user_id).first()
