@@ -18,12 +18,14 @@ export function describeVkError(e) {
   if (!e) return ''
   if (typeof e === 'string') return e
   const parts = []
-  const push = (v) => { if (v && typeof v === 'string') parts.push(v) }
+  const push = (v) => { if ((typeof v === 'string' && v) || typeof v === 'number') parts.push(String(v)) }
   push(e.error_description); push(e.error_reason); push(e.error)
-  push(e.code); push(e.text); push(e.type); push(e.message)
+  push(e.text); push(e.type); push(e.message)
+  if (e.code !== undefined) push(`code=${e.code}`)
   if (e.error && typeof e.error === 'object') { push(e.error.error_description); push(e.error.error) }
+  if (e.details) { try { push(JSON.stringify(e.details).slice(0, 120)) } catch { /* no-op */ } }
   if (!parts.length) { try { parts.push(JSON.stringify(e)) } catch { /* no-op */ } }
-  return parts.filter(Boolean).slice(0, 2).join(': ')
+  return parts.filter(Boolean).slice(0, 3).join(' · ')
 }
 
 /*

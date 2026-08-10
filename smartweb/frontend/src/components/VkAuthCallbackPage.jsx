@@ -36,6 +36,16 @@ export default function VkAuthCallbackPage() {
   const urlDeviceId = params.get('device_id')
   const providerError = params.get('error')
 
+  // ВАЖНО. В веб-потоке One Tap (responseMode Callback) VK ID SDK сам грузит наш
+  // redirectUrl (/auth/vk/callback?code=...) в СВОЁМ iframe и читает код прямо
+  // из его URL (адрес того же домена). Если бы наш SPA в этом iframe отработал
+  // как обычно — сделал POST на бэкенд (израсходовав одноразовый код) и ушёл на
+  // '/', — SDK не успел бы прочитать код и падал бы с «timeout / не загрузился
+  // iframe». Поэтому внутри iframe НИЧЕГО не делаем: пусть родительское окно
+  // (его SDK) само завершит вход. Наша логика нужна только на верхнем уровне —
+  // это мостовой поток приложения и резервный редирект.
+  const inFrame = (() => { try { return window.self !== window.top } catch { return true } })()
+
   // Отправка code/device_id на бэкенд и обработка ответа (общий код для обоих
   // сценариев). Для мобильного — переброс в приложение по deep-link с токеном.
   const finish = async (code, deviceId, extra = {}) => {
@@ -63,6 +73,7 @@ export default function VkAuthCallbackPage() {
   }
 
   useEffect(() => {
+    if (inFrame) return  // внутри iframe VK ID SDK — не мешаем ему читать код
     if (doneRef.current) return
     if (providerError) { doneRef.current = true; setStatus('error'); setMessage(t('auth.vkFailed')); return }
 
@@ -94,6 +105,10 @@ export default function VkAuthCallbackPage() {
     // Ни кода, ни мобильной метки — открыли адрес напрямую. Возвращаем на вход.
     setStatus('error'); setMessage(t('auth.missingParams'))
   }, [])
+
+  // Внутри iframe VK ID SDK не рисуем свой UI и ничего не делаем — отдаём
+  // управление родительскому окну, которое само прочитает код и завершит вход.
+  if (inFrame) return null
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--color-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'var(--font-sans)' }}>
