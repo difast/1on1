@@ -12,10 +12,10 @@ CSRF-state отдельно не выпускаем: VK ID SDK защищает 
 (code_challenge/code_verifier) — дублировать не нужно (Этап 1 задачи).
 """
 import logging
-from typing import Optional
+from typing import Annotated, Optional, Union
 
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
+from pydantic import BaseModel, StringConstraints
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -27,6 +27,11 @@ from app.config import settings
 
 router = APIRouter()
 log = logging.getLogger("auth_vk")
+
+# Токены VK ID длиннее наших: access_token может быть в несколько килобайт,
+# поэтому обычный TokenStr (512) сюда не годится — из-за него запрос отлетал
+# на валидации с 422 ещё до обработчика.
+VkTokenStr = Annotated[str, StringConstraints(max_length=8192)]
 
 
 @router.get("/config")
@@ -48,12 +53,14 @@ class CallbackReq(BaseModel):
     # Основной путь: фронт УЖЕ обменял код на токен официальным методом SDK
     # (VKID.Auth.exchangeCode — публичный клиент + PKCE, секрет не участвует) и
     # прислал access_token. По нему мы сами сходим в user_info и выдадим JWT.
-    access_token: Optional[TokenStr] = None
-    user_id: OptShortStr = None
+    access_token: Optional[VkTokenStr] = None
+    # user_id VK ID SDK отдаёт ЧИСЛОМ — принимаем и число, и строку. На бэкенде
+    # он не используется (профиль берём из user_info), поэтому валидируем мягко.
+    user_id: Optional[Union[int, str]] = None
     # Запасной путь (конфиденциальные приложения): обмен кода на бэкенде.
-    code: Optional[TokenStr] = None
+    code: Optional[VkTokenStr] = None
     device_id: Optional[TokenStr] = None
-    code_verifier: Optional[TokenStr] = None
+    code_verifier: Optional[VkTokenStr] = None
     state: OptShortStr = None
     # "web" — вернуть JWT в JSON; "mobile" — вернуть ещё и адрес возврата в
     # приложение, чтобы веб-страница-мост перебросила результат по схеме.
