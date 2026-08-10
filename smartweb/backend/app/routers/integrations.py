@@ -46,6 +46,13 @@ COMING_SOON = [
 # Сам механизм живёт в services/oauth_state.py — общий для календарей и входа
 # через Yandex ID. Формат state не менялся.
 
+# Срок жизни state OAuth-подключения календаря. Ограничиваем окно, в течение
+# которого подписанный state принимается на колбэке: перехваченный или
+# «застрявший» state не должен оставаться валидным бессрочно (как во входе через
+# Yandex ID, где ограничение уже стоит). 15 минут с запасом покрывают экран
+# согласия OAuth.
+STATE_MAX_AGE = 15 * 60
+
 _make_state = oauth_state.make_state
 _read_state = oauth_state.read_state
 
@@ -127,7 +134,7 @@ def callback(provider: str, data: CallbackReq, db: Session = Depends(get_db)):
     user_id берётся из подписанного state (не с клиента) — защита от CSRF."""
     if provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(404, "Неизвестный провайдер")
-    user_id = _read_state(data.state, provider)
+    user_id = _read_state(data.state, provider, max_age=STATE_MAX_AGE)
     if user_id is None:
         raise HTTPException(400, "Недействительный state")
     cp = get_calendar_provider(provider)
