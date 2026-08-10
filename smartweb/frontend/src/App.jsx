@@ -12,6 +12,7 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import IntegrationCallbackPage from './components/IntegrationCallbackPage'
 import YandexAuthCallbackPage from './components/YandexAuthCallbackPage'
 import VkAuthCallbackPage from './components/VkAuthCallbackPage'
+import TelegramAuthCallbackPage from './components/TelegramAuthCallbackPage'
 import { authMe, getUser } from './api/client'
 import i18n, { setExplicitLang } from './i18n'
 
@@ -32,6 +33,10 @@ function App() {
   // redirect URI VK ID; в вебе основной поток идёт в модалке, эта страница —
   // мост для приложения и резервный редирект-поток).
   const isVkAuthCallback = path.startsWith('/auth/vk/callback')
+  // Веб-мост входа через Telegram для приложения: /auth/telegram/callback
+  // (Login Widget работает только в браузере). На вебе основной вход через
+  // Telegram — прямо на странице входа.
+  const isTelegramAuthCallback = path.startsWith('/auth/telegram/callback')
 
   const [appUser, setAppUser] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -88,7 +93,7 @@ function App() {
   // Восстановление сессии при загрузке: сначала свой JWT (/auth/me), при его
   // отсутствии/невалидности — Telegram-сессия.
   useEffect(() => {
-    if (isTelegramRoute || isConfirmRoute || isResetRoute || isIntegrationCallback || isYandexAuthCallback || isVkAuthCallback) { setLoading(false); return }
+    if (isTelegramRoute || isConfirmRoute || isResetRoute || isIntegrationCallback || isYandexAuthCallback || isVkAuthCallback || isTelegramAuthCallback) { setLoading(false); return }
     // Активная сессия администратора — показываем админку сразу, без ожидания
     // восстановления пользовательской сессии (задача 3).
     if (getAdminSession()) { setLoading(false); return }
@@ -189,6 +194,7 @@ function App() {
   if (isIntegrationCallback) return <IntegrationCallbackPage />
   if (isYandexAuthCallback) return <YandexAuthCallbackPage />
   if (isVkAuthCallback) return <VkAuthCallbackPage />
+  if (isTelegramAuthCallback) return <TelegramAuthCallbackPage />
 
   if (loading) return (
     <div style={{

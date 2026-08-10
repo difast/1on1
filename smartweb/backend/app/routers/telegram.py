@@ -44,10 +44,15 @@ def tg_config():
     """
     token = settings.telegram_bot_token or ""
     bot_id = token.split(":", 1)[0] if ":" in token else ""
+    web = _web_url()
     return {
         "bot_username": settings.telegram_bot_username or "",
         "bot_id": bot_id,
         "enabled": bool(settings.telegram_bot_username),
+        # Веб-страница-мост для входа из мобильного приложения (Login Widget
+        # работает только в браузере) и схема возврата в приложение.
+        "login_url": f"{web}/auth/telegram/callback" if web else "",
+        "mobile_redirect": settings.telegram_mobile_redirect_uri or "",
     }
 
 
