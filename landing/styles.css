@@ -254,7 +254,7 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .footer-cols{display:flex;gap:36px;flex-wrap:wrap}
 .footer-col{display:flex;flex-direction:column;gap:14px;min-width:130px}
 .footer-col-h{font-size:12px;font-weight:700;letter-spacing:.04em;color:#fff;opacity:.92;margin-bottom:2px}
-.footer-col:not(:first-child){border-left:1px solid var(--brd2);padding-left:36px}
+.footer-col:not(:first-child){border-left:1px solid rgba(255,255,255,.22);padding-left:36px}
 .footer-col a{font-size:14px;color:rgba(255,255,255,.65);text-decoration:none;transition:color .15s;font-weight:400;line-height:1.4}
 .footer-col a:hover{color:#fff}
 .footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
