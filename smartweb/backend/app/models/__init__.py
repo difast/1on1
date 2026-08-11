@@ -27,6 +27,7 @@ from app.models.telegram import TelegramLinkRequest, TelegramBotState
 from app.models.onboarding_survey import OnboardingSurveyResponse
 from app.models.audit_log import AuditLog
 from app.models.auth_security import UserSession, UserDevice, TotpBackupCode
+from app.models.sso import SsoConnection
 from app.models.integration import (
     CalendarIntegration, CalendarEventLink, WebhookSubscription, WebhookDelivery,
 )

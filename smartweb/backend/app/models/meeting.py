@@ -1,6 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text, Boolean, func
 from sqlalchemy.orm import relationship
 from app.database import Base
+from app.utils.encrypted_type import EncryptedText
 
 class Meeting(Base):
     __tablename__ = "meetings"
@@ -16,13 +17,16 @@ class Meeting(Base):
     # продолжает работать без изменений.
     group_id = Column(String(64), nullable=True, index=True)
     mood = Column(String(20), nullable=True)  # great, good, neutral, bad
-    notes = Column(Text, nullable=True)
+    # Шифруются в состоянии покоя (Блок 9): приватные заметки 1-на-1, расшифровка
+    # разговора и AI-резюме — самое чувствительное свободное содержимое встречи.
+    # Читаются поштучно, по содержимому не фильтруются — шифрование оправдано.
+    notes = Column(EncryptedText, nullable=True)
     agenda = Column(Text, nullable=True)
     context_from_last = Column(Text, nullable=True)
     jitsi_room_url = Column(String(500), nullable=True)
     jitsi_room_name = Column(String(200), nullable=True)
-    call_transcript = Column(Text, nullable=True)
-    ai_summary = Column(Text, nullable=True)
+    call_transcript = Column(EncryptedText, nullable=True)
+    ai_summary = Column(EncryptedText, nullable=True)
     call_duration_seconds = Column(Integer, nullable=True)
     call_analytics = Column(Text, nullable=True)  # JSON
     is_rescheduled = Column(Boolean, nullable=False, default=False, server_default='false')

@@ -12,7 +12,7 @@ _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
 from app.utils import ratelimit
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex, auth_vk, admin_audit
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex, auth_vk, admin_audit, auth_sso
 
 
 def _seed_billing():
@@ -447,7 +447,9 @@ _AUTH_PUBLIC_EXACT = {
     "/api/telegram/miniapp-auth", "/api/telegram/callback", "/api/telegram/link",
     "/api/billing/plans", "/api/billing/webhooks/cloudpayments",
 }
-_AUTH_PUBLIC_PREFIX = ("/api/health",)
+# SSO-вход (authorize/callback/metadata) — точка входа, токена ещё нет. Админские
+# SSO-эндпоинты лежат под /api/admin/sso и в публичный список НЕ входят.
+_AUTH_PUBLIC_PREFIX = ("/api/health", "/api/auth/sso/")
 
 
 def _auth_is_public(path: str) -> bool:
@@ -560,6 +562,8 @@ app.include_router(support.router, prefix="/api/support", tags=["support"])
 app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
 app.include_router(admin_billing.router, prefix="/api/admin/billing", tags=["admin-billing"])
 app.include_router(admin_audit.router, prefix="/api/admin/audit", tags=["admin-audit"])
+app.include_router(auth_sso.router, prefix="/api/auth/sso", tags=["auth-sso"])
+app.include_router(auth_sso.admin_router, prefix="/api/admin/sso", tags=["admin-sso"])
 app.include_router(company.router, prefix="/api/companies", tags=["companies"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
