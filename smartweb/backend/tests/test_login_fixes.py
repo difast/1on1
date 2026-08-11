@@ -91,10 +91,11 @@ has_notice = db.query(AuditLog).filter(AuditLog.user_id if False else AuditLog.a
                                        AuditLog.action_type == "auth.new_device_login").count() > 0
 db.close()
 check("параллельно отправлено уведомление о новом устройстве", has_notice)
+# Задача 2: на шаге ввода кода капча НЕ требуется (без captcha_token -> проходит).
 r = client.post("/api/auth/login", json={"email": "cap@a.com", "password": "Parol12345",
-                                         "captcha_token": "good", "device_code": code},
+                                         "device_code": code},
                 headers={"X-Device-Id": "dev-1"})
-check("верный код -> выдан токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code} {r.text[:80]}")
+check("шаг ввода кода не требует капчи -> выдан токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code} {r.text[:80]}")
 # Повторный вход с ИЗВЕСТНОГО устройства ТОЖЕ требует код (код всегда).
 fresh_limits()
 r = client.post("/api/auth/login", json={"email": "cap@a.com", "password": "Parol12345", "captcha_token": "good"},
@@ -188,6 +189,21 @@ db = SessionLocal()
 n = db.query(UserSession).filter(UserSession.user_id == uid4, UserSession.revoked_at.is_(None)).count()
 db.close()
 check("после входа исторические дубли отозваны -> одна активная сессия", n == 1, f"сессий {n}")
+
+
+print("\n== Задача 1/5: шифрование секрета TOTP работает и без SECRET_KEY (откат на JWT_SECRET) ==")
+# На бою обычно задан JWT_SECRET, а SECRET_KEY пуст -> раньше crypto.encrypt в
+# 2fa/setup падал (ConfigError -> 500 без CORS -> «нет ответа сервера»).
+from app.services import crypto as _crypto
+from app.config import settings as _s2
+_orig_secret = _s2.secret_key
+_s2.secret_key = ""
+try:
+    enc = _crypto.encrypt("JBSWY3DPEHPK3PXP")
+    check("encrypt без SECRET_KEY (есть JWT_SECRET) -> не падает", isinstance(enc, str) and enc)
+    check("decrypt возвращает исходный секрет", _crypto.decrypt(enc) == "JBSWY3DPEHPK3PXP")
+finally:
+    _s2.secret_key = _orig_secret
 
 
 print("\n" + "=" * 60)
