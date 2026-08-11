@@ -52,17 +52,18 @@ def verify(token: str | None, ip: str | None = None) -> bool:
 
 
 def ensure(token: str | None, ip: str | None = None) -> None:
-    """Проверить капчу с учётом флага обязательности. Бросает 400 при провале.
+    """Обязательная серверная проверка капчи. Бросает 400 при отсутствии или
+    провале токена.
 
-    При captcha_enforce=0 отсутствие токена допускается (мягкий раскат), но
-    ПРИСЛАННЫЙ токен всё равно проверяется. При captcha_enforce=1 токен обязателен.
-    """
+    Если капча настроена (задан server_key) — токен ОБЯЗАТЕЛЕН и должен пройти
+    проверку: нет токена или он не прошёл -> запрос отклоняется, независимо от
+    фронтенда. Если капча не настроена (dev/без ключа) — проверка пропускается,
+    чтобы не блокировать разработку и тесты. Флаг captcha_enforce больше не
+    ослабляет проверку: настроенная капча всегда обязательна."""
     from fastapi import HTTPException
     if not configured():
         return
     if not token:
-        if settings.captcha_enforce:
-            raise HTTPException(status_code=400, detail="Подтвердите, что вы не робот")
-        return
+        raise HTTPException(status_code=400, detail="Подтвердите, что вы не робот")
     if not verify(token, ip):
         raise HTTPException(status_code=400, detail="Проверка капчи не пройдена. Попробуйте ещё раз")

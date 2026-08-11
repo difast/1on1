@@ -51,8 +51,33 @@ def new_jti() -> str:
 
 
 def create_session(db: Session, user_id: int, jti: str, *,
-                   user_agent: Optional[str] = None, ip: Optional[str] = None) -> UserSession:
-    s = UserSession(user_id=user_id, jti=jti, device_label=device_label(user_agent), ip=ip)
+                   user_agent: Optional[str] = None, ip: Optional[str] = None,
+                   device_hash: Optional[str] = None) -> UserSession:
+    """Создать сессию ИЛИ обновить существующую активную сессию того же устройства.
+
+    Дедупликация (Задача 4): если для пользователя уже есть неотозванная сессия с
+    тем же device_hash — обновляем её (новый jti, время активности, ip), а не
+    создаём новую запись. Так список активных сессий не заполняется дублями при
+    повторных входах с одного устройства, а прежний токен этого устройства
+    (со старым jti) становится недействительным."""
+    label = device_label(user_agent)
+    if device_hash:
+        existing = (db.query(UserSession)
+                    .filter(UserSession.user_id == user_id,
+                            UserSession.device_hash == device_hash,
+                            UserSession.revoked_at.is_(None))
+                    .order_by(UserSession.id.desc())
+                    .first())
+        if existing:
+            existing.jti = jti
+            existing.device_label = label
+            existing.ip = ip
+            existing.last_active_at = datetime.utcnow()
+            db.commit()
+            db.refresh(existing)
+            return existing
+    s = UserSession(user_id=user_id, jti=jti, device_hash=device_hash,
+                    device_label=label, ip=ip)
     db.add(s)
     db.commit()
     db.refresh(s)

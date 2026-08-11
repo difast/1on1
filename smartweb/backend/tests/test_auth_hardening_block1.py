@@ -15,7 +15,8 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-for-assertions")
 os.environ["DATABASE_URL"] = f"sqlite:///{_db_path}"
 os.environ["ADMIN_PASSWORD"] = "test-admin-password"
 os.environ["SESSION_ENFORCE"] = "1"
-os.environ["NEW_DEVICE_VERIFY"] = "1"
+# Код по email при каждом входе (актуальная логика после исправлений).
+os.environ["LOGIN_EMAIL_CODE"] = "1"
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -82,27 +83,41 @@ check("после серии попыток появляется 429", 429 in co
 print("\n== Новое устройство: код по email перед доступом ==")
 fresh_limits()
 uid = mk_user("dev@a.com")
-# Первый вход с устройства dev-1 -> требуется подтверждение (код по email).
+
+
+def _login_code(user_id):
+    db = SessionLocal()
+    row = (db.query(AuthToken).filter(AuthToken.user_id == user_id, AuthToken.purpose == "login_code",
+                                      AuthToken.used_at.is_(None)).order_by(AuthToken.id.desc()).first())
+    c = row.token.split(":")[-1] if row else None
+    db.close()
+    return c
+
+
+def complete_login(email, user_id, dev, totp=None):
+    """Полный вход с учётом кода по email (и TOTP при наличии)."""
+    body = {"email": email, "password": "Parol12345"}
+    if totp:
+        body["totp_code"] = totp
+    r = client.post("/api/auth/login", json=body, headers={"X-Device-Id": dev})
+    if r.status_code == 200 and r.json().get("status") == "email_code_required":
+        body["device_code"] = _login_code(user_id)
+        r = client.post("/api/auth/login", json=body, headers={"X-Device-Id": dev})
+    return r
+
+
+# Первый вход -> сначала код по email, токен не выдаётся до ввода кода.
 r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345"},
                 headers={"X-Device-Id": "device-one"})
-check("новое устройство -> device_verification_required", r.status_code == 200 and r.json().get("status") == "device_verification_required",
+check("вход -> email_code_required", r.status_code == 200 and r.json().get("status") == "email_code_required",
       f"{r.status_code} {r.text[:80]}")
-check("токен НЕ выдан до подтверждения", "token" not in (r.json() or {}))
-# Достаём код из БД (в тестах письмо не уходит) и подтверждаем.
-db = SessionLocal()
-row = db.query(AuthToken).filter(AuthToken.user_id == uid, AuthToken.purpose == "device_verify",
-                                 AuthToken.used_at.is_(None)).first()
-code = row.token.split(":")[-1] if row else None
-db.close()
-check("код подтверждения устройства выпущен", code is not None and code.isdigit())
+check("токен НЕ выдан до ввода кода", "token" not in (r.json() or {}))
+code = _login_code(uid)
+check("код входа выпущен", code is not None and code.isdigit())
 r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "device_code": code},
                 headers={"X-Device-Id": "device-one"})
 check("верный код -> выдан токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code} {r.text[:80]}")
 token1 = r.json().get("token")
-# Повторный вход с ТОГО ЖЕ устройства -> без подтверждения.
-r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345"},
-                headers={"X-Device-Id": "device-one"})
-check("известное устройство -> сразу токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code}")
 
 print("\n== 2FA (TOTP): включение, вход с кодом, резервный код, отключение ==")
 fresh_limits()
@@ -113,28 +128,28 @@ secret = r.json()["secret"]
 r = client.post("/api/auth/2fa/enable", json={"code": pyotp.TOTP(secret).now()}, headers=auth1)
 check("2fa/enable c верным кодом -> резервные коды", r.status_code == 200 and len(r.json().get("backup_codes", [])) == 10, f"{r.status_code} {r.text[:80]}")
 backup = r.json()["backup_codes"][0]
-# Теперь вход требует TOTP.
+# Теперь вход требует TOTP (до кода по email).
+fresh_limits()
 r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345"},
                 headers={"X-Device-Id": "device-one"})
 check("вход при включённой 2FA -> totp_required", r.status_code == 200 and r.json().get("status") == "totp_required", f"{r.status_code} {r.text[:80]}")
 r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "totp_code": "000000"},
                 headers={"X-Device-Id": "device-one"})
 check("неверный TOTP -> 401", r.status_code == 401, f"{r.status_code}")
-r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "totp_code": pyotp.TOTP(secret).now()},
-                headers={"X-Device-Id": "device-one"})
-check("верный TOTP -> токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code}")
+r = complete_login("dev@a.com", uid, "device-one", totp=pyotp.TOTP(secret).now())
+check("верный TOTP + код -> токен", r.status_code == 200 and r.json().get("token"), f"{r.status_code}")
 # Резервный код работает как второй фактор.
-r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "totp_code": backup},
-                headers={"X-Device-Id": "device-one"})
+fresh_limits()
+r = complete_login("dev@a.com", uid, "device-one", totp=backup)
 check("резервный код проходит как 2FA", r.status_code == 200 and r.json().get("token"), f"{r.status_code}")
 # Повторное использование того же резервного кода не проходит.
+fresh_limits()
 r = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "totp_code": backup},
                 headers={"X-Device-Id": "device-one"})
 check("резервный код одноразовый -> 401 при повторе", r.status_code == 401, f"{r.status_code}")
 # Отключение 2FA требует пароль.
 fresh_limits()
-tok = client.post("/api/auth/login", json={"email": "dev@a.com", "password": "Parol12345", "totp_code": pyotp.TOTP(secret).now()},
-                  headers={"X-Device-Id": "device-one"}).json()["token"]
+tok = complete_login("dev@a.com", uid, "device-one", totp=pyotp.TOTP(secret).now()).json()["token"]
 authX = {"Authorization": f"Bearer {tok}"}
 r = client.post("/api/auth/2fa/disable", json={"password": "wrong"}, headers=authX)
 check("2fa/disable с неверным паролем -> 400", r.status_code == 400, f"{r.status_code}")
@@ -144,20 +159,8 @@ check("2fa/disable с верным паролем -> выключено", r.stat
 print("\n== Управление сессиями: список, завершить чужие, ревокация ==")
 fresh_limits()
 uid2 = mk_user("sess@a.com")
-def login_dev(dev):
-    return client.post("/api/auth/login", json={"email": "sess@a.com", "password": "Parol12345", "device_code": _confirm(uid2, dev)},
-                       headers={"X-Device-Id": dev})
-def _confirm(uid, dev):
-    # инициируем и достаём код
-    client.post("/api/auth/login", json={"email": "sess@a.com", "password": "Parol12345"}, headers={"X-Device-Id": dev})
-    db = SessionLocal()
-    row = db.query(AuthToken).filter(AuthToken.user_id == uid, AuthToken.purpose == "device_verify",
-                                     AuthToken.used_at.is_(None)).order_by(AuthToken.id.desc()).first()
-    code = row.token.split(":")[-1] if row else ""
-    db.close()
-    return code
-t_a = login_dev("dev-a").json().get("token")
-t_b = login_dev("dev-b").json().get("token")
+t_a = complete_login("sess@a.com", uid2, "dev-a").json().get("token")
+t_b = complete_login("sess@a.com", uid2, "dev-b").json().get("token")
 authA = {"Authorization": f"Bearer {t_a}"}
 authB = {"Authorization": f"Bearer {t_b}"}
 r = client.get("/api/auth/sessions", headers=authB)

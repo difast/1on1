@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import QRCode from 'qrcode'
 import {
   twoFaStatus, twoFaSetup, twoFaEnable, twoFaDisable,
   listSessions, revokeSession, revokeOtherSessions,
@@ -49,10 +50,21 @@ export default function SecuritySettings({ open, onClose }) {
 
   // Мастер включения 2FA.
   const [setupData, setSetupData] = useState(null) // { otpauth_uri, secret }
+  const [qrDataUrl, setQrDataUrl] = useState('')
   const [enableCode, setEnableCode] = useState('')
   const [backupCodes, setBackupCodes] = useState(null)
   const [disablePwd, setDisablePwd] = useState('')
   const [busy, setBusy] = useState(false)
+
+  // Рисуем QR из otpauth-URI (сканируется аутентификатором).
+  useEffect(() => {
+    if (setupData?.otpauth_uri) {
+      QRCode.toDataURL(setupData.otpauth_uri, { width: 200, margin: 1 })
+        .then(setQrDataUrl).catch(() => setQrDataUrl(''))
+    } else {
+      setQrDataUrl('')
+    }
+  }, [setupData])
 
   const reload = () => {
     setLoading(true)
@@ -136,8 +148,14 @@ export default function SecuritySettings({ open, onClose }) {
                   Установите приложение-аутентификатор на телефон, если у вас его ещё нет, затем отсканируйте QR-код ниже (или введите ключ вручную) и подтвердите кодом.
                 </p>
                 <AuthenticatorLinks />
+                {qrDataUrl && (
+                  <div style={{ display: 'flex', justifyContent: 'center', margin: '4px 0 10px' }}>
+                    <img src={qrDataUrl} alt="QR-код для 2FA" width={196} height={196}
+                      style={{ background: '#fff', borderRadius: 8, padding: 8, border: '1px solid var(--color-border)' }} />
+                  </div>
+                )}
                 <div style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '4px 0 8px' }}>
-                  QR-код показывает приложение — отсканируйте его камерой в аутентификаторе.
+                  Отсканируйте QR-код камерой в аутентификаторе или введите ключ вручную.
                 </div>
                 <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
                   Ключ: {setupData.secret}
