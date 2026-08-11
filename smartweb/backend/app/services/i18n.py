@@ -19,14 +19,14 @@ SUPPORTED_LANGS = ("ru", "en", "kz")
 TEXTS: dict[str, dict[str, str]] = {
     # ── Письмо: подтверждение почты ───────────────────────────────────────────
     "email.confirm.subject": {
-        "ru": "Подтвердите почту для OneOnOne",
-        "en": "Confirm your email for OneOnOne",
-        "kz": "OneOnOne үшін поштаңызды растаңыз",
+        "ru": "Подтвердите почту — и добро пожаловать в OneOnOne 🎉",
+        "en": "Confirm your email — welcome to OneOnOne 🎉",
+        "kz": "Поштаңызды растаңыз — OneOnOne-ге қош келдіңіз 🎉",
     },
     "email.confirm.intro": {
-        "ru": "Чтобы завершить регистрацию в OneOnOne, подтвердите свою почту — нажмите на кнопку ниже.",
-        "en": "To finish signing up for OneOnOne, confirm your email address using the button below.",
-        "kz": "OneOnOne қызметінде тіркелуді аяқтау үшін поштаңызды растаңыз — төмендегі түймені басыңыз.",
+        "ru": "Рады видеть вас в OneOnOne! Остался один шаг: подтвердите свою почту, нажав на кнопку ниже, — и можно начинать.",
+        "en": "Great to have you at OneOnOne! Just one step left: confirm your email with the button below and you are all set.",
+        "kz": "Сізді OneOnOne-де көргенімізге қуаныштымыз! Бір ғана қадам қалды: төмендегі түймені басып, поштаңызды растаңыз — бастауға болады.",
     },
     "email.confirm.button": {
         "ru": "Подтвердить почту",
@@ -34,20 +34,20 @@ TEXTS: dict[str, dict[str, str]] = {
         "kz": "Поштаны растау",
     },
     "email.confirm.note": {
-        "ru": "Ссылка действительна 24 часа. Если вы не регистрировались в OneOnOne, просто проигнорируйте это письмо.",
-        "en": "The link is valid for 24 hours. If you did not sign up for OneOnOne, you can safely ignore this email.",
-        "kz": "Сілтеме 24 сағат бойы жарамды. Егер сіз OneOnOne қызметінде тіркелмеген болсаңыз, бұл хатты елемей қоюыңызға болады.",
+        "ru": "Ссылка действует 24 часа. Если вы не регистрировались в OneOnOne — просто не обращайте внимания на это письмо, ничего не произойдёт. 🙂",
+        "en": "The link works for 24 hours. If you did not sign up for OneOnOne, just ignore this email — nothing will happen. 🙂",
+        "kz": "Сілтеме 24 сағат жарамды. Егер OneOnOne-ге тіркелмеген болсаңыз, бұл хатты елемей қойыңыз — ешнәрсе болмайды. 🙂",
     },
     # ── Письмо: сброс пароля ──────────────────────────────────────────────────
     "email.reset.subject": {
-        "ru": "Восстановление пароля OneOnOne",
-        "en": "Reset your OneOnOne password",
-        "kz": "OneOnOne құпиясөзін қалпына келтіру",
+        "ru": "Восстановление пароля OneOnOne 🔑",
+        "en": "Reset your OneOnOne password 🔑",
+        "kz": "OneOnOne құпиясөзін қалпына келтіру 🔑",
     },
     "email.reset.intro": {
-        "ru": "Мы получили запрос на сброс пароля для вашего аккаунта в OneOnOne. Чтобы задать новый пароль, нажмите на кнопку ниже.",
-        "en": "We received a request to reset the password for your OneOnOne account. Use the button below to set a new one.",
-        "kz": "OneOnOne аккаунтыңыздың құпиясөзін қалпына келтіру сұрауын алдық. Жаңа құпиясөз орнату үшін төмендегі түймені басыңыз.",
+        "ru": "Ничего страшного, такое бывает! Мы получили запрос на сброс пароля для вашего аккаунта в OneOnOne. Чтобы задать новый пароль, нажмите на кнопку ниже.",
+        "en": "No worries, it happens! We received a request to reset the password for your OneOnOne account. Just tap the button below to set a new one.",
+        "kz": "Мұндай жағдай бола береді, уайымдамаңыз! OneOnOne аккаунтыңыздың құпиясөзін қалпына келтіру сұрауын алдық. Жаңа құпиясөз орнату үшін төмендегі түймені басыңыз.",
     },
     "email.reset.button": {
         "ru": "Сбросить пароль",
@@ -61,9 +61,9 @@ TEXTS: dict[str, dict[str, str]] = {
     },
     # ── Общие элементы письма ────────────────────────────────────────────────
     "email.greeting": {
-        "ru": "Здравствуйте!",
-        "en": "Hello,",
-        "kz": "Сәлеметсіз бе!",
+        "ru": "Здравствуйте! 👋",
+        "en": "Hello! 👋",
+        "kz": "Сәлеметсіз бе! 👋",
     },
     "email.fallbackLink": {
         "ru": "Если кнопка не работает, откройте ссылку: {link}",

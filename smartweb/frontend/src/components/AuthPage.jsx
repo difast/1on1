@@ -47,6 +47,42 @@ function SmartCaptcha({ sitekey, onToken }) {
   return <div ref={ref} style={{ margin: '10px 0' }} />
 }
 
+// Поле ввода пароля с кнопкой «показать/скрыть» (иконка-глаз), как у большинства
+// сервисов. type переключается между password и text; иконка меняется. Кнопка
+// type="button", чтобы не отправлять форму. Пароль остаётся под контролем React.
+function PasswordInput({ id, value, onChange, placeholder, autoComplete, required, autoFocus }) {
+  const [show, setShow] = useState(false)
+  return (
+    <div style={{ position: 'relative' }}>
+      <input
+        id={id} type={show ? 'text' : 'password'} value={value} onChange={onChange}
+        placeholder={placeholder} className="input" required={required}
+        autoComplete={autoComplete} autoFocus={autoFocus}
+        style={{ paddingRight: 42 }}
+      />
+      <button
+        type="button" onClick={() => setShow(s => !s)}
+        aria-label={show ? 'Скрыть пароль' : 'Показать пароль'} title={show ? 'Скрыть пароль' : 'Показать пароль'}
+        style={{ position: 'absolute', right: 6, top: 0, bottom: 0, display: 'flex',
+          alignItems: 'center', justifyContent: 'center', width: 34, background: 'none',
+          border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: 0 }}
+      >
+        {show ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        )}
+      </button>
+    </div>
+  )
+}
+
 // Пароль администратора в клиенте не хранится: проверку делает только бэкенд
 // (POST /auth/admin-login по переменной окружения ADMIN_PASSWORD). Любая
 // константа здесь попала бы в собранный бандл и была бы видна в браузере.
@@ -73,7 +109,17 @@ const Logo = () => {
 export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }) {
   const { t } = useTranslation()
   const [mode, setMode] = useState('login') // login | register | forgot | forgot_sent | admin
-  const [email, setEmail] = useState('')
+  // Введённую почту храним в sessionStorage и восстанавливаем при монтировании:
+  // так она НЕ пропадает из поля после прохождения капчи (виджет капчи может
+  // вызвать перемонтирование формы), при переключении вкладок «Вход/Регистрация»
+  // и переходах шагов входа. Пароль не сохраняем — только почту.
+  const [email, setEmailState] = useState(() => {
+    try { return sessionStorage.getItem('auth_email') || '' } catch { return '' }
+  })
+  const setEmail = (v) => {
+    setEmailState(v)
+    try { sessionStorage.setItem('auth_email', v || '') } catch { /* приватный режим */ }
+  }
   const [password, setPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
@@ -186,6 +232,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
       if (data?.status === 'email_code_required') {
         setAuthStep('email_code'); setMaskedEmail(data.email || ''); setLoading(false); return
       }
+      try { sessionStorage.removeItem('auth_email') } catch { /* приватный режим */ }
       setToken(data.token)
       onAuthSuccess?.(data.user)  // App поставит пользователя и решит про онбординг
     } catch (err) {
@@ -363,13 +410,12 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
             </div>
             <form onSubmit={handleAdminLogin}>
               <div className="form-group">
-                <label className="form-label">{t('auth.adminPassword')}</label>
-                <input
-                  type="password"
+                <label className="form-label" htmlFor="admin-password">{t('auth.adminPassword')}</label>
+                <PasswordInput
+                  id="admin-password"
                   value={adminPwd}
                   onChange={e => { setAdminPwd(e.target.value); setError('') }}
                   placeholder="••••••••••"
-                  className="input"
                   autoFocus
                   required
                 />
@@ -439,20 +485,21 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
 
               <div className="form-group">
                 <label className="form-label" htmlFor="auth-password">{t('auth.password')}</label>
-                <input
+                <PasswordInput
                   id="auth-password"
-                  type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••" className="input" required autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="••••••••" required
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
                 />
               </div>
 
               {mode === 'register' && (
                 <div className="form-group">
                   <label className="form-label" htmlFor="auth-confirm">{t('auth.repeatPassword')}</label>
-                  <input
+                  <PasswordInput
                     id="auth-confirm"
-                    type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
-                    placeholder="••••••••" className="input" required autoComplete="new-password"
+                    value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)}
+                    placeholder="••••••••" required autoComplete="new-password"
                   />
                 </div>
               )}

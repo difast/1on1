@@ -135,14 +135,23 @@ r = client.post("/api/auth/2fa/enable", json={"code": pyotp.TOTP(secret).now()},
 check("2fa/enable -> включено + 10 резервных кодов", r.status_code == 200 and len(r.json().get("backup_codes", [])) == 10, f"{r.status_code} {r.text[:80]}")
 r = client.get("/api/auth/2fa/status", headers=auth)
 check("2fa/status -> enabled=true", r.status_code == 200 and r.json().get("enabled") is True)
-# Вход с включённой 2FA: сначала totp, потом код по email.
+# Задача 3: при включённой 2FA код по email НЕ отправляется — после TOTP сразу
+# выдаётся токен (вторым фактором служит код из приложения).
 fresh_limits()
 r = client.post("/api/auth/login", json={"email": "sess@a.com", "password": "Parol12345", "captcha_token": "good"},
                 headers={"X-Device-Id": "dev-2fa"})
 check("2FA-вход -> сначала totp_required", r.status_code == 200 and r.json().get("status") == "totp_required", f"{r.status_code}")
 r = client.post("/api/auth/login", json={"email": "sess@a.com", "password": "Parol12345", "captcha_token": "good",
                                          "totp_code": pyotp.TOTP(secret).now()}, headers={"X-Device-Id": "dev-2fa"})
-check("после TOTP -> код по email", r.status_code == 200 and r.json().get("status") == "email_code_required", f"{r.status_code}")
+check("после TOTP -> сразу токен (код по email не нужен при 2FA)",
+      r.status_code == 200 and r.json().get("token"), f"{r.status_code} {r.text[:80]}")
+# Код по email при включённой 2FA не выпускается.
+db = SessionLocal()
+_uid_sess = db.query(User).filter(User.email == "sess@a.com").first().id
+_no_code = db.query(AuthToken).filter(AuthToken.user_id == _uid_sess, AuthToken.purpose == "login_code",
+                                      AuthToken.used_at.is_(None)).count()
+db.close()
+check("при 2FA новый код по email не выпущен", _no_code == 0, f"кодов {_no_code}")
 
 print("\n== Код по email включается АВТОМАТИЧЕСКИ при настроенном SMTP (без флага) ==")
 # Имитируем прод, где LOGIN_EMAIL_CODE не выставлен, но SMTP настроен.

@@ -131,7 +131,7 @@ export default function SecuritySettings({ open, onClose }) {
             {!status ? <div style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>Загрузка…</div> : status.enabled ? (
               <>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-                  2FA включена. Резервных кодов осталось: {status.backup_codes_left}.
+                  2FA включена. Резервных кодов осталось: {status.backup_codes_left}. При входе используется код из приложения; код на почту не отправляется.
                 </p>
                 <input type="password" className="input" placeholder="Пароль для отключения"
                   value={disablePwd} onChange={e => setDisablePwd(e.target.value)} style={{ marginBottom: 8 }} />
@@ -143,7 +143,7 @@ export default function SecuritySettings({ open, onClose }) {
             ) : backupCodes ? (
               <>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-                  2FA включена. Сохраните резервные коды — они показываются один раз. Каждый код одноразовый.
+                  2FA включена. Теперь при входе нужен код из приложения — код для входа на почту больше не отправляется. Сохраните резервные коды: они показываются один раз, каждый одноразовый.
                 </p>
                 <div style={{ fontFamily: 'monospace', fontSize: 14, columns: 2, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 12 }}>
                   {backupCodes.map(c => <div key={c}>{c}</div>)}
@@ -175,7 +175,10 @@ export default function SecuritySettings({ open, onClose }) {
             ) : (
               <>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-                  Дополнительный код при входе по email и паролю. Необязательно.
+                  Дополнительный код из приложения-аутентификатора при входе по email и паролю. Необязательно.
+                </p>
+                <p style={{ fontSize: 12.5, color: 'var(--color-text-muted)', marginBottom: 10, lineHeight: 1.45 }}>
+                  Когда 2FA включена, код для входа на почту больше не отправляется — вторым фактором служит одноразовый код из приложения. Так вход быстрее и безопаснее.
                 </p>
                 <button className="btn btn-accent" disabled={busy} onClick={startSetup} style={{ borderRadius: 8, padding: '8px 14px' }}>Включить 2FA</button>
               </>
