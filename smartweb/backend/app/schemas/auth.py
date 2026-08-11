@@ -11,6 +11,12 @@ from app.utils.validation import (
 # разбора и до похода в базу.
 
 
+# Токен капчи и идентификатор устройства — необязательные строки с верхней
+# границей длины (Блок 1). Пустые/None допускаются на время раската.
+from typing import Optional
+from pydantic import Field
+
+
 class RegisterReq(BaseModel):
     name: NameStr
     email: EmailStr
@@ -18,11 +24,20 @@ class RegisterReq(BaseModel):
     # Роль по умолчанию пустая — выбирается в онбординге (тимлид/участник).
     role: ShortStr = ""
     title: OptShortStr = None
+    captcha_token: Optional[str] = Field(default=None, max_length=4096)
 
 
 class LoginReq(BaseModel):
     email: EmailStr
     password: PasswordStr
+    captcha_token: Optional[str] = Field(default=None, max_length=4096)
+    # Код TOTP (если у пользователя включена 2FA) или резервный код.
+    totp_code: Optional[str] = Field(default=None, max_length=16)
+    # Идентификатор устройства с клиента (долгоживущий). Также может прийти в
+    # заголовке X-Device-Id — заголовок имеет приоритет.
+    device_id: Optional[str] = Field(default=None, max_length=128)
+    # Код подтверждения входа с нового устройства (Этап 4).
+    device_code: Optional[str] = Field(default=None, max_length=16)
 
 
 class TokenOut(BaseModel):
@@ -50,6 +65,7 @@ class ResendReq(BaseModel):
 
 class ForgotReq(BaseModel):
     email: EmailStr
+    captcha_token: Optional[str] = Field(default=None, max_length=4096)
 
 
 class ResetReq(BaseModel):

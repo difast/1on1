@@ -12,9 +12,25 @@ const api = axios.create({
 
 // Подставляем собственный JWT (если есть) на каждый запрос. Telegram-сессии
 // токена не имеют — тогда заголовок не добавляется, как и раньше.
+// Долгоживущий идентификатор устройства (Блок 1): генерируется один раз и
+// хранится локально. Сервер по нему различает известные/новые устройства и
+// показывает список сессий. Не секрет.
+function deviceId() {
+  try {
+    let d = localStorage.getItem('device_id')
+    if (!d) {
+      d = (crypto?.randomUUID?.() || String(Date.now()) + Math.random().toString(36).slice(2))
+      localStorage.setItem('device_id', d)
+    }
+    return d
+  } catch { return '' }
+}
+
 api.interceptors.request.use((config) => {
   const token = getToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
+  const d = deviceId()
+  if (d) config.headers['X-Device-Id'] = d
   return config
 })
 
@@ -269,10 +285,20 @@ export const authLogin = (data) => api.post('/auth/login', data)
 export const authMe = () => api.get('/auth/me')
 export const authConfirmEmail = (token) => api.post('/auth/confirm-email', { token })
 export const authResendConfirmation = (data) => api.post('/auth/resend-confirmation', data)
-export const authForgotPassword = (email) => api.post('/auth/forgot-password', { email })
+export const authForgotPassword = (email, captchaToken) => api.post('/auth/forgot-password', { email, captcha_token: captchaToken })
 export const authResetPassword = (token, new_password) => api.post('/auth/reset-password', { token, new_password })
 export const authChangePassword = (data) => api.post('/auth/change-password', data)
 export const authAddEmail = (userId, email) => api.post('/auth/add-email', { user_id: userId, email })
+
+// Блок 1: капча, 2FA (TOTP), управление сессиями.
+export const getCaptchaConfig = () => api.get('/auth/captcha-config')
+export const twoFaStatus = () => api.get('/auth/2fa/status')
+export const twoFaSetup = () => api.post('/auth/2fa/setup')
+export const twoFaEnable = (code) => api.post('/auth/2fa/enable', { code })
+export const twoFaDisable = (password) => api.post('/auth/2fa/disable', { password })
+export const listSessions = () => api.get('/auth/sessions')
+export const revokeSession = (id) => api.delete(`/auth/sessions/${id}`)
+export const revokeOtherSessions = () => api.post('/auth/sessions/revoke-others')
 
 // Вход через Yandex ID. Отдельный OAuth-поток входа (скоупы login:*), не
 // связанный с подключением Яндекс Календаря (интеграции ниже).

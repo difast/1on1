@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { setToken } from '../lib/auth'
 import LegalModal from './LegalModal'
@@ -10,7 +10,42 @@ import ConfirmEmailModal from './ConfirmEmailModal'
 import {
   getTelegramConfig, telegramCallback, getYandexAuthConfig, getVkAuthConfig,
   authLogin, authRegister, authForgotPassword, adminLogin, authResendConfirmation,
+  getCaptchaConfig,
 } from '../api/client'
+
+// Виджет Yandex SmartCaptcha (Блок 1). Скрипт грузится один раз; при отсутствии
+// client_key виджет не рендерится (dev/без ключа) и не мешает входу.
+function SmartCaptcha({ sitekey, onToken }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (!sitekey || !ref.current) return
+    let widgetId = null
+    const render = () => {
+      if (!window.smartCaptcha || !ref.current) return
+      ref.current.innerHTML = ''
+      widgetId = window.smartCaptcha.render(ref.current, {
+        sitekey,
+        callback: (token) => onToken(token),
+      })
+    }
+    if (window.smartCaptcha) {
+      render()
+    } else if (!document.getElementById('ya-smartcaptcha-js')) {
+      const s = document.createElement('script')
+      s.id = 'ya-smartcaptcha-js'
+      s.src = 'https://smartcaptcha.yandexcloud.net/captcha.js'
+      s.defer = true
+      s.onload = render
+      document.head.appendChild(s)
+    } else {
+      const iv = setInterval(() => { if (window.smartCaptcha) { clearInterval(iv); render() } }, 200)
+      return () => clearInterval(iv)
+    }
+    return () => { try { if (widgetId != null) window.smartCaptcha?.destroy?.(widgetId) } catch {} }
+  }, [sitekey])
+  if (!sitekey) return null
+  return <div ref={ref} style={{ margin: '10px 0' }} />
+}
 
 // Пароль администратора в клиенте не хранится: проверку делает только бэкенд
 // (POST /auth/admin-login по переменной окружения ADMIN_PASSWORD). Любая
@@ -65,6 +100,18 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const [needConfirm, setNeedConfirm] = useState(false)
   const [resendState, setResendState] = useState('')  // '' | 'sending' | 'sent'
 
+  // Блок 1: капча + двухшаговый вход (2FA / новое устройство).
+  const [captchaKey, setCaptchaKey] = useState('')
+  const [captchaToken, setCaptchaToken] = useState('')
+  const [authStep, setAuthStep] = useState('creds')  // creds | totp | device
+  const [totpCode, setTotpCode] = useState('')
+  const [deviceCode, setDeviceCode] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
+
+  useEffect(() => {
+    getCaptchaConfig().then(r => { if (r.data?.enabled) setCaptchaKey(r.data.client_key) }).catch(() => {})
+  }, [])
+
   useEffect(() => {
     getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
     getYandexAuthConfig().then(r => setYandexEnabled(!!r.data?.enabled)).catch(() => setYandexEnabled(false))
@@ -104,7 +151,16 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     setError(''); setNeedConfirm(false); setResendState('')
     setLoading(true)
     try {
-      const { data } = await authLogin({ email, password })
+      const payload = { email, password, captcha_token: captchaToken }
+      if (authStep === 'totp') payload.totp_code = totpCode
+      if (authStep === 'device') payload.device_code = deviceCode
+      const { data } = await authLogin(payload)
+      // Двухшаговый вход: сервер может запросить код 2FA или подтверждение
+      // нового устройства перед выдачей токена.
+      if (data?.status === 'totp_required') { setAuthStep('totp'); setLoading(false); return }
+      if (data?.status === 'device_verification_required') {
+        setAuthStep('device'); setMaskedEmail(data.email || ''); setLoading(false); return
+      }
       setToken(data.token)
       onAuthSuccess?.(data.user)  // App поставит пользователя и решит про онбординг
     } catch (err) {
@@ -141,7 +197,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
       // Регистрация без выбора роли — роль/профиль выбираются в онбординге.
       // Токен НЕ приходит: доступ в кабинет закрыт до подтверждения почты.
       // Вместо входа показываем модальное окно подтверждения (Задача 2.1).
-      await authRegister({ name: email.split('@')[0], email, password })
+      await authRegister({ name: email.split('@')[0], email, password, captcha_token: captchaToken })
       setConfirmEmail(email)
     } catch (err) {
       setError(translateError(err?.response?.data?.detail || t('errors.generic')))
@@ -153,7 +209,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     setError('')
     setLoading(true)
     try {
-      await authForgotPassword(email)
+      await authForgotPassword(email, captchaToken)
       setMode('forgot_sent')  // всегда успех — не раскрываем наличие аккаунта
     } catch {
       setMode('forgot_sent')
@@ -230,6 +286,7 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                   placeholder={t('auth.emailPlaceholder')} className="input" required autoComplete="email" autoFocus
                 />
               </div>
+              <SmartCaptcha sitekey={captchaKey} onToken={setCaptchaToken} />
               {error && (
                 <div style={{ background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14 }}>{error}</div>
               )}
@@ -347,6 +404,35 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                     placeholder="••••••••" className="input" required autoComplete="new-password"
                   />
                 </div>
+              )}
+
+              {/* Двухфакторный код (2FA) */}
+              {mode === 'login' && authStep === 'totp' && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="auth-totp">Код из приложения-аутентификатора</label>
+                  <input id="auth-totp" inputMode="numeric" autoComplete="one-time-code"
+                    value={totpCode} onChange={e => setTotpCode(e.target.value)}
+                    placeholder="123456 или резервный код" className="input" required />
+                </div>
+              )}
+              {/* Подтверждение входа с нового устройства */}
+              {mode === 'login' && authStep === 'device' && (
+                <div className="form-group">
+                  <label className="form-label" htmlFor="auth-devcode">Код подтверждения из письма</label>
+                  <input id="auth-devcode" inputMode="numeric" autoComplete="one-time-code"
+                    value={deviceCode} onChange={e => setDeviceCode(e.target.value)}
+                    placeholder="Код отправлен на почту" className="input" required />
+                  {maskedEmail && (
+                    <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>
+                      Мы отправили код на {maskedEmail}. Введите его, чтобы завершить вход с этого устройства.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Капча (Yandex SmartCaptcha): чекбокс на входе/регистрации */}
+              {authStep === 'creds' && (
+                <SmartCaptcha sitekey={captchaKey} onToken={setCaptchaToken} />
               )}
 
               {error && (

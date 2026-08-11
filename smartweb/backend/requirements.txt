@@ -27,3 +27,4 @@ pyjwt==2.13.0
 # срез в utils/passwords.py.
 bcrypt==4.3.0
 openai==2.52.0
+pyotp==2.9.0

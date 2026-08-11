@@ -440,6 +440,7 @@ _AUTH_PUBLIC_EXACT = {
     "/api/auth/register", "/api/auth/login", "/api/auth/admin-login",
     "/api/auth/forgot-password", "/api/auth/reset-password",
     "/api/auth/confirm-email", "/api/auth/resend-confirmation",
+    "/api/auth/captcha-config",
     "/api/telegram/config", "/api/telegram/webhook",
     "/api/auth/yandex/config", "/api/auth/yandex/authorize", "/api/auth/yandex/callback",
     "/api/auth/vk/config", "/api/auth/vk/callback",
