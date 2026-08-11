@@ -295,6 +295,12 @@ def add_member_manually(team_id: int, user_id: int, role: str = "member", db: Se
     db.commit()
     db.refresh(member)
 
+    from app.services import audit
+    audit.record(db, "team.member_added", actor_id=current.id, entity_type="team",
+                 entity_id=team_id, organization_id=team_id, category="general",
+                 summary=f"В команду добавлен участник (роль {role})",
+                 meta={"added_user_id": user_id, "role": role})
+
     return TeamMemberOut(
         id=member.id,
         user_id=user.id,

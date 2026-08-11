@@ -109,6 +109,12 @@ def broadcast(data: BroadcastBody, db: Session = Depends(get_db),
         created += 1
     db.commit()
 
+    from app.services import audit
+    audit.record(db, "admin.broadcast_sent", actor_id=None, entity_type="notification",
+                 entity_id=None, category="admin",
+                 summary=f"Рассылка уведомления ({data.target}): {created} получателей",
+                 meta={"target": data.target, "recipients": created, "title": data.title})
+
     # Also deliver as a system push (same as in-app notifications)
     try:
         from app.utils.push import send_push_bulk

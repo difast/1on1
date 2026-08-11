@@ -12,7 +12,7 @@ _app_start_time = time.time()
 from app.database import get_db
 from app.config import settings
 from app.utils import ratelimit
-from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex, auth_vk
+from app.routers import user, team, meeting, task, notification, scheduling, analytics, note, video, mood, knowledge, assistant, subtask, checkin, support, billing, admin_billing, company, telegram, auth, proposal, interaction, task_proposal, goal, development, oneai, survey, integrations, auth_yandex, auth_vk, admin_audit
 
 
 def _seed_billing():
@@ -500,6 +500,47 @@ async def _auth_enforce_gate(request, call_next):
                 )
     return await call_next(request)
 
+
+def _actor_id_from_auth(authorization: str | None):
+    """user_id из валидного Bearer-JWT или None (для мониторинга безопасности)."""
+    if not authorization or not authorization.lower().startswith("bearer "):
+        return None
+    token = authorization.split(" ", 1)[1].strip()
+    try:
+        claims = _jwt.decode(token, settings.jwt_signing_key, algorithms=["HS256"])
+        sub = claims.get("sub")
+        return int(sub) if sub is not None and str(sub).isdigit() else None
+    except Exception:
+        return None
+
+
+@app.middleware("http")
+async def _security_monitor(request, call_next):
+    """Базовый мониторинг подозрительной активности (Блок 8, Этап 4).
+
+    Считает неуспехи (401/403/429) в скользящем окне по пользователю/адресу и при
+    переходе порога пишет ОДНУ агрегированную security-запись в единый журнал.
+    Не влияет на ответ и никогда не роняет запрос."""
+    response = await call_next(request)
+    try:
+        path = request.url.path
+        if (request.method != "OPTIONS" and path.startswith("/api/")
+                and not path.startswith("/api/health")
+                and response.status_code in (401, 403, 429)):
+            from app.database import SessionLocal
+            from app.services import audit
+            actor_id = _actor_id_from_auth(request.headers.get("authorization"))
+            ip = audit.client_ip(request)
+            db = SessionLocal()
+            try:
+                audit.note_failure(db, status_code=response.status_code,
+                                   actor_id=actor_id, ip=ip, path=path)
+            finally:
+                db.close()
+    except Exception:
+        pass
+    return response
+
 app.include_router(user.router, prefix="/api/users", tags=["users"])
 app.include_router(team.router, prefix="/api/teams", tags=["teams"])
 app.include_router(meeting.router, prefix="/api/meetings", tags=["meetings"])
@@ -517,6 +558,7 @@ app.include_router(checkin.router, prefix="/api/checkins", tags=["checkins"])
 app.include_router(support.router, prefix="/api/support", tags=["support"])
 app.include_router(billing.router, prefix="/api/billing", tags=["billing"])
 app.include_router(admin_billing.router, prefix="/api/admin/billing", tags=["admin-billing"])
+app.include_router(admin_audit.router, prefix="/api/admin/audit", tags=["admin-audit"])
 app.include_router(company.router, prefix="/api/companies", tags=["companies"])
 app.include_router(telegram.router, prefix="/api/telegram", tags=["telegram"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])

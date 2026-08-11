@@ -100,6 +100,12 @@ def create_group_meeting(data: GroupMeetingCreate, db: Session = Depends(get_db)
         NotificationService(db).meeting_scheduled(meeting.member_id, meeting.id, lead_name, when)
         _emit_meeting_event(db, meeting, "meeting.created")
 
+    from app.services import audit
+    audit.record(db, "meeting.group_created", actor_id=current.id, entity_type="meeting",
+                 entity_id=(created[0].id if created else None), organization_id=data.team_id,
+                 category="general", summary=f"Групповой созвон назначен ({len(member_ids)} участников)",
+                 meta={"invitees": member_ids, "group_id": group_id})
+
     return created
 
 @router.post("/", response_model=MeetingOut)
@@ -363,6 +369,12 @@ def decline_meeting(meeting_id: int, db: Session = Depends(get_db),
     meeting.status = "declined"
     db.commit()
     db.refresh(meeting)
+
+    from app.services import audit
+    audit.record(db, "meeting.declined", actor_id=current.id, entity_type="meeting",
+                 entity_id=meeting.id, organization_id=meeting.team_id, category="general",
+                 summary="Встреча отклонена/отменена",
+                 meta={"member_id": meeting.member_id, "team_lead_id": meeting.team_lead_id})
 
     lead = db.query(User).filter(User.id == meeting.team_lead_id).first()
     lead_name = lead.name if lead else "Тимлид"

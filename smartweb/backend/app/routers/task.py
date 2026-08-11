@@ -413,6 +413,11 @@ def update_task(task_id: int, data: TaskUpdate, db: Session = Depends(get_db),
     # Вебхук по смене статуса: отдельное событие завершения + общее изменение.
     if status_touched and task.status != prev_status:
         _emit_task_webhook(db, task, "task.completed" if task.status == DONE else "task.status_changed")
+        from app.services import audit
+        audit.record(db, "task.status_changed", actor_id=current.id, entity_type="task",
+                     entity_id=task.id, organization_id=task.team_id, category="general",
+                     summary=f"Статус задачи «{(task.title or '')[:50]}»: {prev_status} -> {task.status}",
+                     meta={"from": prev_status, "to": task.status})
     return _serialize(task)
 
 
@@ -488,6 +493,11 @@ def add_task_assignee(task_id: int, data: AssigneeAddIn, db: Session = Depends(g
     task_collab.add_assignee(db, task, data.user_id, data.actor_id, part=data.part_description)
     db.commit()
     db.refresh(task)
+    from app.services import audit
+    audit.record(db, "task.assignee_added", actor_id=data.actor_id, entity_type="task",
+                 entity_id=task.id, organization_id=task.team_id, category="general",
+                 summary=f"В задачу «{(task.title or '')[:50]}» добавлен исполнитель",
+                 meta={"added_user_id": data.user_id})
     return _serialize(task)
 
 
@@ -505,6 +515,11 @@ def remove_task_assignee(task_id: int, assignee_id: int, actor_id: int = Query(.
     _recompute_task_from_assignees(task)
     db.commit()
     db.refresh(task)
+    from app.services import audit
+    audit.record(db, "task.assignee_removed", actor_id=actor_id, entity_type="task",
+                 entity_id=task.id, organization_id=task.team_id, category="general",
+                 summary=f"Из задачи «{(task.title or '')[:50]}» удалён исполнитель",
+                 meta={"assignee_id": assignee_id})
     return _serialize(task)
 
 
@@ -568,6 +583,11 @@ def add_comment(task_id: int, data: CommentIn, db: Session = Depends(get_db),
 def delete_task(task_id: int, db: Session = Depends(get_db),
                 current=Depends(require_user)):
     task = _load_task_for_actor(db, task_id, current)
+    from app.services import audit
+    audit.record(db, "task.deleted", actor_id=current.id, entity_type="task",
+                 entity_id=task.id, organization_id=task.team_id, category="general",
+                 summary=f"Удалена задача «{(task.title or '')[:50]}»",
+                 meta={"assigned_to": task.assigned_to})
     db.delete(task)
     db.commit()
     return {"ok": True}

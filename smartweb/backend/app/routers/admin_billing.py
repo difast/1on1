@@ -272,6 +272,12 @@ def assign_manager(user_id: int, data: AssignManagerReq, db: Session = Depends(g
         sub.manager_name = m.name
         sub.manager_contact = m.contact
     db.commit(); db.refresh(sub)
+    from app.services import audit
+    audit.record(db, "admin.manager_assigned", actor_id=None, entity_type="user",
+                 entity_id=user_id, organization_id=audit.org_of_user(db, user_id),
+                 category="admin",
+                 summary=("Снят менеджер" if data.manager_id is None else "Назначен менеджер") + f" (uid={user_id})",
+                 meta={"manager_id": data.manager_id})
     return _sub_dict(sub, db)
 
 
@@ -287,6 +293,11 @@ class ActivateReq(BaseModel):
 def activate_subscription(data: ActivateReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     s = subs.activate(db, data.subject_type, data.subject_id, data.plan_code,
                       period=data.period, seats=data.seats, provider="manual")
+    from app.services import audit
+    audit.record(db, "admin.subscription_activated", actor_id=None, entity_type="subscription",
+                 entity_id=s.id, organization_id=audit.org_of_user(db, data.subject_id),
+                 category="admin", summary=f"Админ вручную выдал тариф {data.plan_code} (uid={data.subject_id})",
+                 meta={"plan_code": data.plan_code, "period": data.period, "subject_id": data.subject_id})
     return _sub_dict(s)
 
 
@@ -336,6 +347,12 @@ def set_full_access_override(user_id: int, data: OverrideReq, db: Session = Depe
     user.billing_override_by = data.admin_id if data.enabled else None
     user.billing_override_at = datetime.utcnow() if data.enabled else None
     db.commit(); db.refresh(user)
+    from app.services import audit
+    audit.record(db, "admin.full_access_override", actor_id=None, entity_type="user",
+                 entity_id=user.id, organization_id=audit.org_of_user(db, user.id),
+                 category="admin",
+                 summary=f"Полный доступ (override) {'включён' if data.enabled else 'снят'} для uid={user.id}",
+                 meta={"enabled": data.enabled, "note": data.note})
     return {
         "id": user.id, "billing_override": user.billing_override,
         "billing_override_note": user.billing_override_note,
