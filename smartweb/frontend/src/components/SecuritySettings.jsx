@@ -81,7 +81,15 @@ export default function SecuritySettings({ open, onClose }) {
   const startSetup = async () => {
     setBusy(true)
     try { const r = await twoFaSetup(); setSetupData(r.data) }
-    catch (e) { toast(e?.response?.data?.detail || 'Не удалось начать настройку') }
+    catch (e) {
+      const detail = e?.response?.data?.detail
+      const status = e?.response?.status
+      // Показываем реальную причину (например, «сессия истекла»), а не общий
+      // текст: так проще понять, почему настройка не началась.
+      toast(detail || (status === 401 ? 'Сессия истекла, войдите заново'
+        : status ? `Не удалось начать настройку (код ${status})`
+        : 'Не удалось начать настройку (нет ответа сервера)'))
+    }
     finally { setBusy(false) }
   }
 

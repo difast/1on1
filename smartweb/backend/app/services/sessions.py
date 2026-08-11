@@ -62,26 +62,54 @@ def create_session(db: Session, user_id: int, jti: str, *,
     (со старым jti) становится недействительным."""
     label = device_label(user_agent)
     if device_hash:
-        existing = (db.query(UserSession)
-                    .filter(UserSession.user_id == user_id,
-                            UserSession.device_hash == device_hash,
-                            UserSession.revoked_at.is_(None))
-                    .order_by(UserSession.id.desc())
-                    .first())
-        if existing:
+        active = (db.query(UserSession)
+                  .filter(UserSession.user_id == user_id,
+                          UserSession.device_hash == device_hash,
+                          UserSession.revoked_at.is_(None))
+                  .order_by(UserSession.id.desc())
+                  .all())
+        if active:
+            existing = active[0]
             existing.jti = jti
             existing.device_label = label
             existing.ip = ip
             existing.last_active_at = datetime.utcnow()
+            # Схлопываем возможные дубли этого же устройства, накопившиеся ранее
+            # (напр. до появления дедупликации): оставляем одну активную запись.
+            for dup in active[1:]:
+                dup.revoked_at = datetime.utcnow()
+            _collapse_legacy_dupes(db, user_id, label, keep_id=existing.id)
             db.commit()
             db.refresh(existing)
             return existing
     s = UserSession(user_id=user_id, jti=jti, device_hash=device_hash,
                     device_label=label, ip=ip)
     db.add(s)
+    db.flush()
+    # Первый вход с этого устройства после включения дедупликации: подчищаем
+    # старые записи того же браузера (device_hash тогда ещё не проставлялся —
+    # NULL), чтобы исторические дубли не висели в списке активных сессий.
+    if device_hash:
+        _collapse_legacy_dupes(db, user_id, label, keep_id=s.id)
     db.commit()
     db.refresh(s)
     return s
+
+
+def _collapse_legacy_dupes(db: Session, user_id: int, label: str, keep_id: int) -> None:
+    """Отозвать старые активные сессии того же браузера БЕЗ device_hash (NULL),
+    оставшиеся с момента до дедупликации. Сопоставляем по человекочитаемой метке
+    устройства (тот же браузер/ОС) — узкий и безопасный критерий: сессии с уже
+    проставленным device_hash (другие устройства) и текущую запись не трогаем."""
+    stale = (db.query(UserSession)
+             .filter(UserSession.user_id == user_id,
+                     UserSession.id != keep_id,
+                     UserSession.revoked_at.is_(None),
+                     UserSession.device_hash.is_(None),
+                     UserSession.device_label == label)
+             .all())
+    for s in stale:
+        s.revoked_at = datetime.utcnow()
 
 
 def list_active(db: Session, user_id: int):
