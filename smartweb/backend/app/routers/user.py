@@ -18,6 +18,7 @@ from app.models.knowledge import KnowledgeArticle
 from app.schemas.user import UserCreate, UserOut, UserUpdate
 from app import online as online_cache
 from app.services import tenancy
+from app.utils import filetype
 
 from typing import Annotated
 from pydantic import Field
@@ -485,6 +486,14 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db),
     # только администратор. Иначе пользователь повысил бы себе роль сам.
     if tenancy.enforced() and "role" in fields and not is_admin:
         fields.pop("role")
+    # Аватар проверяем по РЕАЛЬНОМУ содержимому (magic bytes), а не по префиксу
+    # data URI: принимаем только растровые изображения в пределах размера,
+    # отклоняем SVG (может нести встроенный JS) и любые не-картинки (Блок 6).
+    if "avatar" in fields and fields["avatar"]:
+        try:
+            fields["avatar"] = filetype.validate_avatar_data_uri(fields["avatar"])
+        except filetype.AvatarError as e:
+            raise HTTPException(status_code=422, detail=str(e))
     for key, value in fields.items():
         setattr(user, key, value)
     # Токен устройства принадлежит устройству, а не аккаунту: он должен быть

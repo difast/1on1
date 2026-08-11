@@ -12,6 +12,7 @@ from app.utils.auth import require_user
 from app.utils import ratelimit
 from app.utils.validation import EntityId
 from app.services import tenancy
+from app.utils import filetype
 
 router = APIRouter()
 
@@ -184,6 +185,8 @@ async def _transcribe_async(audio_data: bytes, content_type: str, api_key: str) 
         config=Config(signature_version="s3v4"),
         region_name="ru-central1",
     )
+    # Имя объекта генерируем сами (uuid), оригинальное имя файла не используем —
+    # защита от path traversal / спецсимволов и сокрытие структуры хранилища.
     file_key = f"recordings/{uuid.uuid4().hex}.ogg"
     s3.put_object(
         Bucket=bucket_name,
@@ -193,58 +196,67 @@ async def _transcribe_async(audio_data: bytes, content_type: str, api_key: str) 
     )
     audio_uri = f"https://storage.yandexcloud.net/{bucket_name}/{file_key}"
 
-    # Submit async recognition job
-    async with httpx.AsyncClient(timeout=30) as client:
-        r = await client.post(
-            "https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize",
-            headers={
-                "Authorization": f"Api-Key {api_key}",
-                "Content-Type": "application/json",
-            },
-            json={
-                "config": {
-                    "specification": {
-                        "languageCode": "ru-RU",
-                        "model": "general",
-                        "audioChannelCount": 1,
-                        "enableSpeakerLabeling": True,
-                        "maxSpeakerCount": 2,
-                    }
+    # Запись — временный объект только для распознавания. В finally удаляем его из
+    # хранилища в ЛЮБОМ случае (успех, ошибка, таймаут), чтобы не оставлять
+    # осиротевшие файлы, занимающие место и доступные по старым ссылкам (Блок 6).
+    try:
+        # Submit async recognition job
+        async with httpx.AsyncClient(timeout=30) as client:
+            r = await client.post(
+                "https://transcribe.api.cloud.yandex.net/speech/stt/v2/longRunningRecognize",
+                headers={
+                    "Authorization": f"Api-Key {api_key}",
+                    "Content-Type": "application/json",
                 },
-                "audio": {"uri": audio_uri},
-            },
-        )
-    if r.status_code != 200:
-        print(f"[video] Yandex STT async submit error {r.status_code}: {r.text}")
-        return ""
-
-    operation_id = r.json().get("id", "")
-    if not operation_id:
-        return ""
-
-    # Poll for result (up to 10 minutes, every 10 seconds)
-    for _ in range(60):
-        await asyncio.sleep(10)
-        async with httpx.AsyncClient(timeout=15) as client:
-            r = await client.get(
-                f"https://operation.api.cloud.yandex.net/operations/{operation_id}",
-                headers={"Authorization": f"Api-Key {api_key}"},
+                json={
+                    "config": {
+                        "specification": {
+                            "languageCode": "ru-RU",
+                            "model": "general",
+                            "audioChannelCount": 1,
+                            "enableSpeakerLabeling": True,
+                            "maxSpeakerCount": 2,
+                        }
+                    },
+                    "audio": {"uri": audio_uri},
+                },
             )
-        result = r.json()
-        if not result.get("done"):
-            continue
+        if r.status_code != 200:
+            print(f"[video] Yandex STT async submit error {r.status_code}: {r.text}")
+            return ""
 
-        lines = []
-        for chunk in result.get("response", {}).get("chunks", []):
-            for alt in chunk.get("alternatives", []):
-                speaker = chunk.get("channelTag", "0")
-                text = alt.get("text", "").strip()
-                if text:
-                    lines.append(f"[Спикер {speaker}]: {text}")
-        return "\n".join(lines)
+        operation_id = r.json().get("id", "")
+        if not operation_id:
+            return ""
 
-    print(f"[video] Yandex STT async timeout for operation {operation_id}")
-    return ""
+        # Poll for result (up to 10 minutes, every 10 seconds)
+        for _ in range(60):
+            await asyncio.sleep(10)
+            async with httpx.AsyncClient(timeout=15) as client:
+                r = await client.get(
+                    f"https://operation.api.cloud.yandex.net/operations/{operation_id}",
+                    headers={"Authorization": f"Api-Key {api_key}"},
+                )
+            result = r.json()
+            if not result.get("done"):
+                continue
+
+            lines = []
+            for chunk in result.get("response", {}).get("chunks", []):
+                for alt in chunk.get("alternatives", []):
+                    speaker = chunk.get("channelTag", "0")
+                    text = alt.get("text", "").strip()
+                    if text:
+                        lines.append(f"[Спикер {speaker}]: {text}")
+            return "\n".join(lines)
+
+        print(f"[video] Yandex STT async timeout for operation {operation_id}")
+        return ""
+    finally:
+        try:
+            s3.delete_object(Bucket=bucket_name, Key=file_key)
+        except Exception as e:
+            print(f"[video] failed to delete recording object {file_key}: {type(e).__name__}")
 
 
 async def _analyze_and_create_tasks(meeting: Meeting, transcript: str, db: Session):
@@ -368,6 +380,15 @@ async def upload_recording(
     audio_data = b"".join(chunks)
     if not audio_data:
         raise HTTPException(status_code=400, detail="Пустой файл")
+
+    # Проверка РЕАЛЬНОГО содержимого по сигнатуре, а не только по заголовку
+    # Content-Type от клиента: заголовок подделывается, и без этой проверки под
+    # видом записи можно было бы прислать произвольный файл (Блок 6). Принимаем
+    # только распознанные аудио/видео-контейнеры.
+    sniffed = filetype.is_audio_video(audio_data)
+    if not sniffed:
+        raise HTTPException(status_code=415,
+                            detail="Содержимое файла не является поддерживаемой аудио- или видеозаписью.")
 
     background_tasks.add_task(_transcribe_and_analyze, meeting_id, audio_data, content_type)
 
