@@ -143,6 +143,52 @@ r = client.post("/api/auth/login", json={"email": "sess@a.com", "password": "Par
                                          "totp_code": pyotp.TOTP(secret).now()}, headers={"X-Device-Id": "dev-2fa"})
 check("после TOTP -> код по email", r.status_code == 200 and r.json().get("status") == "email_code_required", f"{r.status_code}")
 
+print("\n== Код по email включается АВТОМАТИЧЕСКИ при настроенном SMTP (без флага) ==")
+# Имитируем прод, где LOGIN_EMAIL_CODE не выставлен, но SMTP настроен.
+fresh_limits()
+from app.services import mailer as _mailer
+from app.config import settings as _settings
+_orig_flag, _orig_conf = _settings.login_email_code, _mailer.configured
+_settings.login_email_code = False
+_mailer.configured = lambda: True
+try:
+    uid3 = mk_user("auto@a.com")
+    r = client.post("/api/auth/login", json={"email": "auto@a.com", "password": "Parol12345",
+                                             "captcha_token": "good"}, headers={"X-Device-Id": "dev-auto"})
+    check("SMTP настроен -> код по email требуется без флага",
+          r.status_code == 200 and r.json().get("status") == "email_code_required", f"{r.status_code} {r.text[:80]}")
+    _mailer.configured = lambda: False
+    fresh_limits()
+    r = client.post("/api/auth/login", json={"email": "auto@a.com", "password": "Parol12345",
+                                             "captcha_token": "good"}, headers={"X-Device-Id": "dev-auto"})
+    check("SMTP не настроен и флаг off -> код не требуется (нет блокировки входа)",
+          r.status_code == 200 and r.json().get("token"), f"{r.status_code} {r.text[:80]}")
+finally:
+    _settings.login_email_code, _mailer.configured = _orig_flag, _orig_conf
+
+print("\n== Задача 4: исторические дубли (device_hash=NULL) схлопываются при входе ==")
+fresh_limits()
+uid4 = mk_user("hist@a.com")
+# Три «старые» сессии того же браузера БЕЗ device_hash (как до дедупликации).
+from app.services import sessions as _sess
+_lbl = _sess.device_label("testclient")
+db = SessionLocal()
+for _ in range(3):
+    db.add(UserSession(user_id=uid4, jti=_sess.new_jti(), device_hash=None, device_label=_lbl))
+db.commit(); db.close()
+def full_login4(dev):
+    client.post("/api/auth/login", json={"email": "hist@a.com", "password": "Parol12345", "captcha_token": "good"},
+                headers={"X-Device-Id": dev})
+    c = login_code_for(uid4)
+    return client.post("/api/auth/login", json={"email": "hist@a.com", "password": "Parol12345",
+                                                "captcha_token": "good", "device_code": c},
+                       headers={"X-Device-Id": dev})
+full_login4("dev-hist")
+db = SessionLocal()
+n = db.query(UserSession).filter(UserSession.user_id == uid4, UserSession.revoked_at.is_(None)).count()
+db.close()
+check("после входа исторические дубли отозваны -> одна активная сессия", n == 1, f"сессий {n}")
+
 
 print("\n" + "=" * 60)
 if FAILS:

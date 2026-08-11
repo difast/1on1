@@ -341,8 +341,12 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
                          summary=f"Вход с нового устройства: {label}")
 
     # Код по email при КАЖДОМ входе (Задача 7): после верного пароля (и TOTP)
-    # всегда требуется код из письма, независимо от устройства.
-    if settings.login_email_code and user.email:
+    # всегда требуется код из письма, независимо от устройства. Активен, если
+    # включён явным флагом ИЛИ если настроена доставка почты (иначе код нельзя
+    # доставить и требовать его нельзя — иначе вход заблокируется). Так поведение
+    # работает в проде «из коробки», без ручной установки переменной окружения.
+    login_code_active = (settings.login_email_code or mailer.configured())
+    if login_code_active and user.email:
         if data.device_code:
             tok = _consume_token(db, _login_code_token(user.id, data.device_code.strip()), "login_code")
             if not tok:

@@ -18,6 +18,14 @@ from app.services import i18n
 logger = logging.getLogger(__name__)
 
 
+def configured() -> bool:
+    """Настроена ли отправка писем (есть SMTP_HOST и адрес отправителя).
+
+    По этому признаку код по email при входе включается автоматически: если
+    почта работает — код можно доставить, значит его можно требовать."""
+    return bool(settings.smtp_host and settings.smtp_sender)
+
+
 def _try_send(to_email: str, subject: str, body: str, html: str | None = None) -> str | None:
     """Отправить письмо. Возвращает None при успехе или строку с ошибкой —
     чтобы диагностический эндпоинт мог показать реальную причину сбоя SMTP.
