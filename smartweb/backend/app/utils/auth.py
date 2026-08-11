@@ -23,14 +23,20 @@ from app.models.user import User
 from app.config import settings
 
 
-def create_access_token(user_id: int) -> str:
-    """Выдать JWT для пользователя. Секрет — только из окружения."""
+def create_access_token(user_id: int, jti: str | None = None) -> str:
+    """Выдать JWT для пользователя. Секрет — только из окружения.
+
+    jti (Блок 1) — идентификатор серверной сессии: по нему работает ревокация и
+    автовыход по бездействию. Токены без jti (выданные ранее) остаются валидными.
+    """
     now = datetime.now(timezone.utc)
     payload = {
         "sub": str(user_id),
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(days=settings.jwt_expire_days)).timestamp()),
     }
+    if jti:
+        payload["jti"] = jti
     return jwt.encode(payload, settings.jwt_signing_key, algorithm="HS256")
 
 
@@ -86,12 +92,29 @@ def get_current_user(authorization: str = Header(None), db: Session = Depends(ge
     return db.query(User).filter(User.id == uid).first()
 
 
-def require_user(user=Depends(get_current_user)):
-    """Строгая проверка. 401, если нет валидного токена (Этап 8)."""
+def require_user(authorization: str = Header(None), user=Depends(get_current_user),
+                 db: Session = Depends(get_db)):
+    """Строгая проверка. 401, если нет валидного токена (Этап 8).
+
+    Блок 1: если токен несёт session-id (jti), проверяем, что сессия существует,
+    не отозвана и не «протухла» по бездействию (автовыход, Этап 7). Токены без jti
+    (выданные до внедрения сессий) продолжают работать без этой проверки —
+    обратная совместимость на время раската.
+    """
     if user is None:
         raise HTTPException(status_code=401, detail="Не авторизовано")
     if getattr(user, "is_blocked", False):
         raise HTTPException(status_code=403, detail="Аккаунт заблокирован")
+    if settings.session_enforce:
+        token = _token_from_header(authorization)
+        claims = _decode(token) if token else None
+        jti = claims.get("jti") if claims else None
+        if jti:
+            from app.services import sessions as _sessions
+            sess = _sessions.get_by_jti(db, jti)
+            if not _sessions.is_active(sess):
+                raise HTTPException(status_code=401, detail="Сессия завершена. Войдите снова")
+            _sessions.touch(db, sess)
     return user
 
 

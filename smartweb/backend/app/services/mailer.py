@@ -126,6 +126,37 @@ def send_confirmation_email(to_email: str, name: str, token: str, lang: str | No
     return _try_send(to_email, i18n.t("email.confirm.subject", lang), body, html) is None
 
 
+def send_new_device_code(to_email: str, name: str, code: str, device: str,
+                         lang: str | None = None) -> bool:
+    """Код подтверждения входа с нового устройства (Блок 1, Этап 4). Без ссылок —
+    только короткий код, который пользователь вводит на форме входа."""
+    subject = "Код подтверждения входа OneOnOne"
+    body = (
+        f"Здравствуйте!\n\n"
+        f"Выполняется вход в OneOnOne с нового устройства: {device}.\n"
+        f"Код подтверждения: {code}\n\n"
+        f"Введите его на странице входа. Код действует 15 минут.\n\n"
+        f"Если это были не вы, не вводите код и смените пароль в настройках профиля."
+    )
+    return _try_send(to_email, subject, body) is None
+
+
+def send_new_device_notice(to_email: str, name: str, device: str, when: str,
+                           lang: str | None = None) -> bool:
+    """Уведомление о входе с нового устройства (Блок 1, Этап 4)."""
+    subject = "Новый вход в аккаунт OneOnOne"
+    body = (
+        f"Здравствуйте!\n\n"
+        f"В ваш аккаунт OneOnOne выполнен вход с нового устройства.\n"
+        f"Устройство: {device}\n"
+        f"Примерное время: {when}\n\n"
+        f"Если это были вы — всё в порядке, ничего делать не нужно.\n"
+        f"Если это были не вы — как можно скорее смените пароль в настройках профиля "
+        f"и завершите чужие сессии в разделе безопасности."
+    )
+    return _try_send(to_email, subject, body) is None
+
+
 def send_reset_email(to_email: str, name: str, token: str, lang: str | None = None) -> bool:
     """Письмо сброса пароля на языке пользователя (ru/en/kz)."""
     lang = i18n.normalize_lang(lang)

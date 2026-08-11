@@ -51,6 +51,11 @@ class User(Base):
     # в обоих случаях повторно не показываем. Сами ответы — в отдельной таблице
     # onboarding_survey_responses. Флаг здесь для быстрой проверки без join.
     onboarding_survey_done = Column(Boolean, nullable=False, default=False, server_default="false")
+    # Блок 1: опциональная 2FA (TOTP). Секрет хранится ТОЛЬКО в зашифрованном виде
+    # (crypto), в открытом — никогда. totp_enabled=false, пока пользователь не
+    # подтвердил код при включении (секрет во время настройки — «ожидающий»).
+    totp_secret_enc = Column(Text, nullable=True)
+    totp_enabled = Column(Boolean, nullable=False, default=False, server_default="false")
     created_at = Column(DateTime, server_default=func.now())
 
     @property

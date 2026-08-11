@@ -23,9 +23,10 @@ from app.schemas.auth import (
 )
 from app.schemas.user import UserOut
 from app.utils.passwords import hash_password, verify_password
-from app.utils.auth import create_access_token, create_admin_token, get_current_user, require_admin
+from app.utils.auth import create_access_token, create_admin_token, get_current_user, require_admin, require_user
 from app.services import mailer, i18n
 from app.utils import ratelimit
+from app.config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -74,6 +75,34 @@ def _validate_password(pw: str) -> None:
         raise HTTPException(422, "Пароль должен содержать буквы и цифры")
 
 
+def _check_pwned(pw: str) -> None:
+    """Проверка пароля по базе утечек (Этап 2). По умолчанию — предупреждение без
+    блокировки; при pwned_block=1 — жёсткий отказ. Сетевой сбой HIBP не блокирует.
+    """
+    try:
+        if settings.pwned_block:
+            from app.services import pwned
+            if pwned.is_pwned(pw):
+                raise HTTPException(status_code=422, detail={
+                    "code": "pwned_password",
+                    "message": "Этот пароль встречается в известных утечках. Выберите другой пароль.",
+                })
+    except HTTPException:
+        raise
+    except Exception:
+        pass
+
+
+@router.get("/captcha-config")
+def captcha_config():
+    """Публичные данные для рендера виджета капчи на фронте (без секретов)."""
+    return {
+        "client_key": settings.captcha_client_key or "",
+        "enabled": bool(settings.captcha_client_key),
+        "enforced": bool(settings.captcha_enforce),
+    }
+
+
 _EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 
 
@@ -106,6 +135,18 @@ def _issue_token(db: Session, user_id: int, purpose: str, ttl: timedelta) -> str
     return tok
 
 
+def _issue_token_value(db: Session, user_id: int, token_value: str, purpose: str, ttl: timedelta) -> None:
+    """Выдать токен с ЗАДАННЫМ значением (для числовых кодов, привязанных к
+    пользователю/устройству). Прежние неиспользованные того же назначения гасим."""
+    db.query(AuthToken).filter(
+        AuthToken.user_id == user_id, AuthToken.purpose == purpose,
+        AuthToken.used_at.is_(None),
+    ).update({AuthToken.used_at: datetime.utcnow()}, synchronize_session=False)
+    db.add(AuthToken(user_id=user_id, token=token_value, purpose=purpose,
+                     expires_at=datetime.utcnow() + ttl))
+    db.commit()
+
+
 def _consume_token(db: Session, token: str, purpose: str) -> AuthToken | None:
     row = db.query(AuthToken).filter(
         AuthToken.token == token, AuthToken.purpose == purpose,
@@ -134,8 +175,13 @@ def register(data: RegisterReq, background_tasks: BackgroundTasks, request: Requ
              db: Session = Depends(get_db)):
     # Массовая регистрация с одного адреса: пять аккаунтов в час.
     ratelimit.check_request(ratelimit.REGISTER, request)
+    # Капча (на регистрации — самая частая точка атаки ботов; SmartCaptcha
+    # адаптивно даёт задание, а не только чекбокс, при подозрительном поведении).
+    from app.services import captcha
+    captcha.ensure(data.captcha_token, ratelimit.client_ip(request))
     email = _validate_email(data.email)
     _validate_password(data.password)
+    _check_pwned(data.password)
     if db.query(User).filter(User.email == email).first():
         raise HTTPException(400, "Этот email уже зарегистрирован")
 
@@ -176,41 +222,141 @@ def _email_unconfirmed_detail(email: str) -> dict:
     }
 
 
-@router.post("/login", response_model=TokenOut)
+def _device_code_token(user_id: int, device_hash: str, code: str) -> str:
+    """Композитный ключ кода подтверждения устройства: привязывает код к
+    конкретному пользователю и устройству (Этап 4)."""
+    return f"dev:{user_id}:{(device_hash or '')[:16]}:{code}"
+
+
+def _issue_and_grant(db: Session, user: User, request: Request,
+                     device_hash: str | None, remember_new: bool = True) -> dict:
+    """Финал успешного входа: создать сессию, запомнить устройство, выдать токен."""
+    from app.services import sessions as sess, audit
+    ua = request.headers.get("user-agent")
+    ip = ratelimit.client_ip(request)
+    jti = sess.new_jti()
+    sess.create_session(db, user.id, jti, user_agent=ua, ip=ip)
+    if remember_new and device_hash:
+        sess.remember_device(db, user.id, device_hash, user_agent=ua, ip=ip, trusted=True)
+    audit.record(db, "auth.login_success", actor_id=user.id, entity_type="user",
+                 entity_id=user.id, organization_id=audit.org_of_user(db, user.id),
+                 category="auth", ip=ip, summary=f"Успешный вход: {user.email}")
+    return {"token": create_access_token(user.id, jti=jti), "user": UserOut.model_validate(user)}
+
+
+def _verify_totp(db: Session, user: User, code: str | None) -> bool:
+    """Проверить TOTP-код или одноразовый резервный код."""
+    if not code:
+        return False
+    code = code.strip().replace(" ", "")
+    from app.services import crypto
+    secret = crypto.decrypt(user.totp_secret_enc)
+    if secret:
+        import pyotp
+        if pyotp.TOTP(secret).verify(code, valid_window=1):
+            return True
+    # Резервный код (одноразовый).
+    from app.models.auth_security import TotpBackupCode
+    for bc in db.query(TotpBackupCode).filter(
+            TotpBackupCode.user_id == user.id, TotpBackupCode.used_at.is_(None)).all():
+        if verify_password(code, bc.code_hash):
+            bc.used_at = datetime.utcnow()
+            db.commit()
+            return True
+    return False
+
+
+@router.post("/login")
 def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
           db: Session = Depends(get_db)):
+    from app.services import captcha, sessions as sess, audit
     email = _norm_email(data.email)
-    # Два лимита сразу: по адресу клиента (перебор паролей одного аккаунта) и
-    # по самому аккаунту (перебор одного аккаунта с разных адресов).
+    ip = ratelimit.client_ip(request)
+    # Лимиты: по IP, по аккаунту и по комбинации IP+email (Блок 1) — слой поверх
+    # капчи, не вместо неё.
     ratelimit.check_request(ratelimit.LOGIN_IP, request)
     ratelimit.check(ratelimit.LOGIN_ACCOUNT, email)
+    ratelimit.check(ratelimit.LOGIN_COMBO, f"{ip}|{email}")
+    # Капча (простой чекбокс всегда; сложность выбирает SmartCaptcha адаптивно).
+    captcha.ensure(data.captcha_token, ip)
+
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(data.password, user.password_hash):
-        # Аудит неуспешного входа (категория auth). Пароль в журнал НЕ попадает.
-        from app.services import audit
         audit.record(db, "auth.login_failed", actor_id=(user.id if user else None),
                      entity_type="user", entity_id=(user.id if user else None),
-                     category="auth", ip=audit.client_ip(request),
-                     summary=f"Неуспешный вход: {email}")
+                     category="auth", ip=ip, summary=f"Неуспешный вход: {email}")
         raise HTTPException(401, "Неверный email или пароль")
-    # Вход удался — счётчик неудачных попыток по аккаунту сбрасываем, чтобы
-    # человек, вспомнивший пароль с четвёртого раза, не ждал пять минут.
     ratelimit.reset(ratelimit.LOGIN_ACCOUNT, email)
+    ratelimit.reset(ratelimit.LOGIN_COMBO, f"{ip}|{email}")
     if user.is_blocked:
         raise HTTPException(403, "Аккаунт заблокирован")
-    # Жёсткая блокировка входа до подтверждения почты (Задача 2.4). Проверка —
-    # на бэкенде, обойти скрытием элементов UI нельзя. Пользователи без email
-    # (вход только через Telegram) этой проверке не подлежат. Заодно повторно
-    # отправляем письмо, чтобы кнопка «войти» после регистрации была полезной.
     if user.email and not user.email_confirmed:
         _send_confirmation(background_tasks, db, user)
         raise HTTPException(status_code=403, detail=_email_unconfirmed_detail(user.email))
-    from app.services import audit
-    audit.record(db, "auth.login_success", actor_id=user.id, entity_type="user",
-                 entity_id=user.id, organization_id=audit.org_of_user(db, user.id),
-                 category="auth", ip=audit.client_ip(request),
-                 summary=f"Успешный вход: {email}")
-    return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
+
+    # Прозрачная миграция bcrypt на актуальную стоимость (Этап 1): если хэш
+    # выдан со старым cost-фактором, перехэшируем при верном пароле, без сброса.
+    try:
+        from app.utils.passwords import needs_rehash
+        if needs_rehash(user.password_hash):
+            user.password_hash = hash_password(data.password)
+            db.commit()
+    except Exception:
+        db.rollback()
+
+    # 2FA (TOTP): после верного пароля, до выдачи доступа.
+    if user.totp_enabled:
+        if not data.totp_code:
+            return {"status": "totp_required"}
+        if not _verify_totp(db, user, data.totp_code):
+            audit.record(db, "auth.totp_failed", actor_id=user.id, entity_type="user",
+                         entity_id=user.id, category="auth", ip=ip, summary="Неверный код 2FA")
+            raise HTTPException(status_code=401, detail="Неверный код подтверждения")
+
+    # Новое устройство (Этап 4).
+    device_raw = request.headers.get("x-device-id") or data.device_id
+    device_hash = sess.hash_device(device_raw)
+    is_known = sess.known_device(db, user.id, device_hash) is not None
+    ua = request.headers.get("user-agent")
+    label = sess.device_label(ua)
+
+    if not is_known and settings.new_device_verify and user.email and device_hash:
+        # Если пришёл код — проверяем; иначе высылаем код и просим подтвердить.
+        if data.device_code:
+            tok = _consume_token(db, _device_code_token(user.id, device_hash, data.device_code.strip()), "device_verify")
+            if not tok:
+                raise HTTPException(status_code=401, detail="Неверный или просроченный код подтверждения")
+            sess.remember_device(db, user.id, device_hash, user_agent=ua, ip=ip, trusted=True)
+            audit.record(db, "auth.new_device_confirmed", actor_id=user.id, entity_type="user",
+                         entity_id=user.id, category="security", ip=ip,
+                         summary=f"Подтверждён вход с нового устройства: {label}")
+            return _issue_and_grant(db, user, request, device_hash, remember_new=False)
+        code = f"{secrets.randbelow(1000000):06d}"
+        _issue_token_value(db, user.id, _device_code_token(user.id, device_hash, code), "device_verify", timedelta(minutes=15))
+        background_tasks.add_task(mailer.send_new_device_code, user.email, user.name or "", code, label, user.preferred_language)
+        audit.record(db, "auth.new_device_challenge", actor_id=user.id, entity_type="user",
+                     entity_id=user.id, category="security", ip=ip,
+                     summary=f"Запрошено подтверждение входа с нового устройства: {label}")
+        return {"status": "device_verification_required", "email": _mask_email(user.email)}
+
+    # Известное устройство ИЛИ подтверждение выключено: если устройство новое —
+    # запоминаем и шлём уведомление (best-effort), но вход не блокируем.
+    if not is_known and device_hash:
+        if user.email:
+            when = datetime.utcnow().strftime("%d.%m.%Y %H:%M UTC")
+            background_tasks.add_task(mailer.send_new_device_notice, user.email, user.name or "", label, when, user.preferred_language)
+        audit.record(db, "auth.new_device_login", actor_id=user.id, entity_type="user",
+                     entity_id=user.id, category="security", ip=ip,
+                     summary=f"Вход с нового устройства: {label}")
+    return _issue_and_grant(db, user, request, device_hash, remember_new=True)
+
+
+def _mask_email(email: str | None) -> str:
+    if not email or "@" not in email:
+        return ""
+    name, dom = email.split("@", 1)
+    head = name[0] if name else ""
+    return f"{head}***@{dom}"
 
 
 @router.get("/me", response_model=UserOut)
@@ -306,6 +452,9 @@ def forgot_password(data: ForgotReq, background_tasks: BackgroundTasks, request:
     # «забыл пароль» превращается в средство спама на любой адрес.
     ratelimit.check_request(ratelimit.EMAIL_IP, request)
     ratelimit.check(ratelimit.EMAIL_TARGET, email)
+    # Капча на форме сброса: защита от автоматизированного спама письмами.
+    from app.services import captcha
+    captcha.ensure(data.captcha_token, ratelimit.client_ip(request))
     user = db.query(User).filter(User.email == email).first()
     # Не раскрываем, есть ли аккаунт. Письмо уходит только если есть пароль.
     # Логируем причину (без утечки наружу — ответ всегда {ok: true}), чтобы в
@@ -344,6 +493,7 @@ def reset_password(data: ResetReq, request: Request, db: Session = Depends(get_d
             reason = "срок действия истёк"
         logger.info("reset-password: отклонён — %s", reason)
         raise HTTPException(400, "Ссылка недействительна или устарела")
+    _check_pwned(data.new_password)
     user = db.query(User).filter(User.id == row.user_id).first()
     if user is None:
         raise HTTPException(404, "Пользователь не найден")
@@ -351,26 +501,52 @@ def reset_password(data: ResetReq, request: Request, db: Session = Depends(get_d
     user.password_hash = hash_password(data.new_password)
     db.commit()
     db.refresh(user)
+    # Сброс пароля завершает ВСЕ прежние сессии (Этап 6): если пароль
+    # компрометирован, старые токены больше не действуют. Выдаём новую сессию.
+    from app.services import sessions as sess, audit
+    sess.revoke_others(db, user.id, keep_jti=None)
+    audit.record(db, "auth.password_reset", actor_id=user.id, entity_type="user",
+                 entity_id=user.id, category="security", ip=ratelimit.client_ip(request),
+                 summary="Пароль сброшен; все прежние сессии завершены")
     # Сразу авторизуем — пользователь уже доказал владение почтой.
-    return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
+    return _issue_and_grant(db, user, request, sess.hash_device(request.headers.get("x-device-id")), remember_new=True)
 
 
 # ── смена пароля из профиля ──────────────────────────────────────────────────
 
 @router.post("/change-password")
-def change_password(data: ChangePasswordReq, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.id == data.user_id).first()
-    if user is None:
-        raise HTTPException(404, "Пользователь не найден")
+def change_password(data: ChangePasswordReq, request: Request,
+                    db: Session = Depends(get_db), current=Depends(require_user)):
+    # Менять пароль можно только СВОЙ (личность из токена, не из тела запроса).
+    if current.id != data.user_id:
+        raise HTTPException(status_code=403, detail="Можно менять только свой пароль")
+    user = current
     if not user.password_hash:
         # Пользователь без пароля (вход только через Telegram).
         raise HTTPException(400, "У аккаунта нет пароля — вход через Telegram")
     if not verify_password(data.current_password, user.password_hash):
         raise HTTPException(400, "Текущий пароль неверен")
     _validate_password(data.new_password)
+    _check_pwned(data.new_password)
     user.password_hash = hash_password(data.new_password)
     db.commit()
-    return {"ok": True}
+    # Смена пароля завершает все сессии, КРОМЕ текущей (Этап 6).
+    from app.services import sessions as sess, audit
+    claims = _decode_jti(request)
+    revoked = sess.revoke_others(db, user.id, keep_jti=claims)
+    audit.record(db, "auth.password_changed", actor_id=user.id, entity_type="user",
+                 entity_id=user.id, category="security", ip=ratelimit.client_ip(request),
+                 summary=f"Пароль изменён; завершено прочих сессий: {revoked}")
+    return {"ok": True, "sessions_revoked": revoked}
+
+
+def _decode_jti(request: Request) -> str | None:
+    """jti текущей сессии из заголовка Authorization (для «завершить все, кроме
+    текущей»)."""
+    from app.utils.auth import _token_from_header, _decode
+    tok = _token_from_header(request.headers.get("authorization"))
+    claims = _decode(tok) if tok else None
+    return claims.get("jti") if claims else None
 
 
 # ── добавление email пользователем без почты (Telegram-only, Этап 6) ─────────
@@ -390,3 +566,129 @@ def add_email(data: AddEmailReq, background_tasks: BackgroundTasks, db: Session 
     db.refresh(user)
     _send_confirmation(background_tasks, db, user)
     return user
+
+
+# ── 2FA (TOTP) — опционально, включается пользователем (Этап 3) ───────────────
+
+class TotpEnableReq(BaseModel):
+    code: str
+
+
+class TotpDisableReq(BaseModel):
+    password: str
+
+
+def _gen_backup_codes(n: int = 10) -> list[str]:
+    """Читаемые одноразовые коды вида XXXX-XXXX (без похожих символов)."""
+    import secrets as _s
+    alpha = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    codes = []
+    for _ in range(n):
+        raw = "".join(_s.choice(alpha) for _ in range(8))
+        codes.append(f"{raw[:4]}-{raw[4:]}")
+    return codes
+
+
+@router.get("/2fa/status")
+def totp_status(current=Depends(require_user), db: Session = Depends(get_db)):
+    from app.models.auth_security import TotpBackupCode
+    unused = db.query(TotpBackupCode).filter(
+        TotpBackupCode.user_id == current.id, TotpBackupCode.used_at.is_(None)).count()
+    return {"enabled": bool(current.totp_enabled), "backup_codes_left": unused}
+
+
+@router.post("/2fa/setup")
+def totp_setup(current=Depends(require_user), db: Session = Depends(get_db)):
+    """Сгенерировать секрет и вернуть otpauth-URI для QR. 2FA пока НЕ включается —
+    только после подтверждения кодом в /2fa/enable."""
+    if current.totp_enabled:
+        raise HTTPException(400, "2FA уже включена")
+    import pyotp
+    from app.services import crypto
+    secret = pyotp.random_base32()
+    current.totp_secret_enc = crypto.encrypt(secret)
+    db.commit()
+    label = current.email or f"user{current.id}"
+    uri = pyotp.TOTP(secret).provisioning_uri(name=label, issuer_name="OneOnOne")
+    # secret отдаём для ручного ввода, uri — для QR (QR рисует клиент).
+    return {"otpauth_uri": uri, "secret": secret}
+
+
+@router.post("/2fa/enable")
+def totp_enable(data: TotpEnableReq, current=Depends(require_user), db: Session = Depends(get_db)):
+    if current.totp_enabled:
+        raise HTTPException(400, "2FA уже включена")
+    from app.services import crypto, audit
+    from app.models.auth_security import TotpBackupCode
+    secret = crypto.decrypt(current.totp_secret_enc)
+    if not secret:
+        raise HTTPException(400, "Сначала выполните настройку 2FA")
+    import pyotp
+    if not pyotp.TOTP(secret).verify((data.code or "").strip(), valid_window=1):
+        raise HTTPException(400, "Неверный код. Проверьте время на устройстве")
+    current.totp_enabled = True
+    # Резервные коды: генерируем, храним хэши, показываем один раз.
+    db.query(TotpBackupCode).filter(TotpBackupCode.user_id == current.id).delete()
+    codes = _gen_backup_codes(10)
+    for c in codes:
+        db.add(TotpBackupCode(user_id=current.id, code_hash=hash_password(c)))
+    db.commit()
+    audit.record(db, "auth.2fa_enabled", actor_id=current.id, entity_type="user",
+                 entity_id=current.id, category="security", summary="Включена 2FA (TOTP)")
+    return {"enabled": True, "backup_codes": codes}
+
+
+@router.post("/2fa/disable")
+def totp_disable(data: TotpDisableReq, current=Depends(require_user), db: Session = Depends(get_db)):
+    """Отключение 2FA — с подтверждением паролем."""
+    if not current.password_hash or not verify_password(data.password, current.password_hash):
+        raise HTTPException(400, "Неверный пароль")
+    from app.services import audit
+    from app.models.auth_security import TotpBackupCode
+    current.totp_enabled = False
+    current.totp_secret_enc = None
+    db.query(TotpBackupCode).filter(TotpBackupCode.user_id == current.id).delete()
+    db.commit()
+    audit.record(db, "auth.2fa_disabled", actor_id=current.id, entity_type="user",
+                 entity_id=current.id, category="security", summary="Отключена 2FA")
+    return {"enabled": False}
+
+
+# ── управление сессиями (Этап 6) ──────────────────────────────────────────────
+
+@router.get("/sessions")
+def list_sessions(request: Request, current=Depends(require_user), db: Session = Depends(get_db)):
+    from app.services import sessions as sess
+    cur_jti = _decode_jti(request)
+    out = []
+    for s in sess.list_active(db, current.id):
+        out.append({
+            "id": s.id,
+            "device": s.device_label,
+            "ip": s.ip,
+            "created_at": s.created_at.isoformat() if s.created_at else None,
+            "last_active_at": s.last_active_at.isoformat() if s.last_active_at else None,
+            "current": bool(cur_jti and s.jti == cur_jti),
+        })
+    return {"sessions": out}
+
+
+@router.delete("/sessions/{session_id}")
+def revoke_one_session(session_id: int, current=Depends(require_user), db: Session = Depends(get_db)):
+    from app.services import sessions as sess, audit
+    ok = sess.revoke_session(db, current.id, session_id)
+    if not ok:
+        raise HTTPException(404, "Сессия не найдена")
+    audit.record(db, "auth.session_revoked", actor_id=current.id, entity_type="user_session",
+                 entity_id=session_id, category="security", summary="Завершена сессия")
+    return {"ok": True}
+
+
+@router.post("/sessions/revoke-others")
+def revoke_other_sessions(request: Request, current=Depends(require_user), db: Session = Depends(get_db)):
+    from app.services import sessions as sess, audit
+    cur_jti = _decode_jti(request)
+    n = sess.revoke_others(db, current.id, keep_jti=cur_jti)
+    audit.record(db, "auth.sessions_revoked_others", actor_id=current.id, entity_type="user",
+                 entity_id=current.id, category="security", summary=f"Завершено чужих сессий: {n}")
+    return {"ok": True, "revoked": n}

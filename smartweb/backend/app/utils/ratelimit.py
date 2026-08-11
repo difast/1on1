@@ -216,6 +216,9 @@ def reset(rule: Rule, ident: str) -> None:
 # одного аккаунта с разных адресов тоже упирался в лимит.
 LOGIN_IP = Rule("login-ip", limit=10, window=60)
 LOGIN_ACCOUNT = Rule("login-acct", limit=5, window=300)
+# Блок 1: комбинация IP+email — 5 неудачных попыток за 15 минут на пару.
+# Слой поверх капчи (не вместо): capча и rate limit работают вместе.
+LOGIN_COMBO = Rule("login-combo", limit=5, window=900)
 
 # Регистрация: массовое создание аккаунтов с одного адреса.
 REGISTER = Rule("register", limit=5, window=3600)

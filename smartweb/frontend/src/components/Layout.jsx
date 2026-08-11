@@ -8,6 +8,7 @@ import LegalModal from './LegalModal'
 import Billing from './Billing'
 import WelcomeTour from './WelcomeTour'
 import AvatarCropModal from './AvatarCropModal'
+import SecuritySettings from './SecuritySettings'
 import { coachingEnabled, setCoaching } from '../lib/coaching'
 import { useExclusiveOverlay } from '../lib/overlay'
 import { toast } from '../lib/ui'
@@ -109,6 +110,7 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
 
   // Password change modal
   const [showPasswordModal, setShowPasswordModal] = useState(false)
+  const [showSecurity, setShowSecurity] = useState(false)
   const [pwdCurrent, setPwdCurrent] = useState('')
   const [pwdNew, setPwdNew] = useState('')
   const [pwdConfirm, setPwdConfirm] = useState('')
@@ -757,6 +759,10 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
                 {currentUser?.has_password && (
                   <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowPasswordModal(true); setPwdError(''); setPwdSuccess(''); setPwdCurrent(''); setPwdNew(''); setPwdConfirm('') }}>{t('ui.smenit_parol')}</MenuItemBtn>
                 )}
+                {/* Безопасность: 2FA и активные сессии (только при наличии пароля). */}
+                {currentUser?.has_password && (
+                  <MenuItemBtn icon={<IconLock />} onClick={() => { setShowUserMenu(false); setShowSecurity(true) }}>Безопасность</MenuItemBtn>
+                )}
                 {/* Добавить email — ненавязчивое предложение для тех, кто вошёл
                     только через Telegram и не указывал почту. */}
                 {!currentUser?.email && (
@@ -884,6 +890,8 @@ export default function Layout({ children, currentUser, onLogout, onUserUpdate, 
       )}
 
       {/* Password change modal */}
+      <SecuritySettings open={showSecurity} onClose={() => setShowSecurity(false)} />
+
       {showPasswordModal && (
         <div className="overlay-center" onClick={() => setShowPasswordModal(false)}>
           <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 400 }}>
