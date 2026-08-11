@@ -9,6 +9,7 @@ import {
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
   getAdminMetrics, assignManager, getManagers, createManager, deleteManager,
   getEnforcementAudit,
+  getAuditLog, getAuditEntry, getAuditSecuritySummary,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
 import { toast, confirmDialog } from '../lib/ui'
@@ -84,6 +85,14 @@ export default function AdminDashboard({ onLogout }) {
   const [managers, setManagers] = useState([])
   const [newMgr, setNewMgr] = useState({ name: '', contact: '' })
   const [audit, setAudit] = useState(null)  // аудит превышений лимитов (Этап 1)
+
+  // Вкладка «Логи» (Блок 8): единый журнал аудита.
+  const [logs, setLogs] = useState({ items: [], total: 0, limit: 50, offset: 0, categories: [] })
+  const [logsLoading, setLogsLoading] = useState(false)
+  const [logFilters, setLogFilters] = useState({ category: '', action_type: '', actor_id: '', organization_id: '', date_from: '', date_to: '' })
+  const [logOffset, setLogOffset] = useState(0)
+  const [logDetail, setLogDetail] = useState(null)
+  const [logSecurity, setLogSecurity] = useState(null)
   const loadManagers = () => getManagers().then(r => setManagers(r.data)).catch(() => {})
 
   // Investor metrics
@@ -162,7 +171,21 @@ export default function AdminDashboard({ onLogout }) {
       setHealthLoading(true)
       getServiceHealth().then(r => setHealth(r.data)).catch(() => setHealth({ error: true })).finally(() => setHealthLoading(false))
     }
+    if (tab === 'logs') {
+      loadLogs(0)
+      getAuditSecuritySummary().then(r => setLogSecurity(r.data)).catch(() => {})
+    }
   }, [tab])
+
+  const loadLogs = (offset = logOffset) => {
+    setLogsLoading(true)
+    const params = { limit: logs.limit, offset }
+    Object.entries(logFilters).forEach(([k, v]) => { if (v !== '' && v != null) params[k] = v })
+    getAuditLog(params)
+      .then(r => { setLogs(r.data); setLogOffset(offset) })
+      .catch(() => {})
+      .finally(() => setLogsLoading(false))
+  }
 
   // Реестр менеджеров нужен и во вкладке «Пользователи» (кнопка «Менеджер»),
   // поэтому грузим один раз при монтировании.
@@ -318,6 +341,7 @@ export default function AdminDashboard({ onLogout }) {
           <TabBtn id="monetize"   label={t('ui.monetizaciya')} />
           <TabBtn id="billing"    label={t('ui.billing')} />
           <TabBtn id="metrics"    label={t('ui.invest_metriki')} />
+          <TabBtn id="logs"       label="Логи" />
         </div>
 
         {loading && tab !== 'tickets' && tab !== 'analytics' && tab !== 'kb' && tab !== 'employees' ? (
@@ -1037,9 +1061,149 @@ export default function AdminDashboard({ onLogout }) {
                 </div>
               </div>
             )}
+
+            {tab === 'logs' && (
+              <div>
+                {logSecurity && logSecurity.flagged && logSecurity.flagged.length > 0 && (
+                  <div style={{ marginBottom: 12, padding: '10px 14px', borderRadius: 10,
+                    background: 'rgba(220,60,60,0.08)', border: '1px solid rgba(220,60,60,0.35)',
+                    color: 'var(--color-text-secondary)', fontSize: 13 }}>
+                    Мониторинг безопасности: активных подозрительных ключей за окно {Math.round((logSecurity.window_sec || 0) / 60)} мин: {logSecurity.flagged.length}
+                  </div>
+                )}
+
+                {/* Фильтры */}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+                  <select value={logFilters.category}
+                    onChange={e => setLogFilters(f => ({ ...f, category: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)' }}>
+                    <option value="">Все категории</option>
+                    {(logs.categories || ['general', 'security', 'admin', 'auth']).map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <input placeholder="Тип действия" value={logFilters.action_type}
+                    onChange={e => setLogFilters(f => ({ ...f, action_type: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', width: 180 }} />
+                  <input placeholder="Actor ID" value={logFilters.actor_id}
+                    onChange={e => setLogFilters(f => ({ ...f, actor_id: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', width: 110 }} />
+                  <input placeholder="Организация (team_id)" value={logFilters.organization_id}
+                    onChange={e => setLogFilters(f => ({ ...f, organization_id: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)', width: 170 }} />
+                  <input type="date" value={logFilters.date_from}
+                    onChange={e => setLogFilters(f => ({ ...f, date_from: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)' }} />
+                  <input type="date" value={logFilters.date_to}
+                    onChange={e => setLogFilters(f => ({ ...f, date_to: e.target.value }))}
+                    style={{ padding: '7px 10px', borderRadius: 8, border: '1px solid var(--color-border)' }} />
+                  <button onClick={() => loadLogs(0)}
+                    style={{ padding: '7px 16px', borderRadius: 8, border: 'none', background: 'var(--color-accent)', color: '#fff', cursor: 'pointer' }}>
+                    Применить
+                  </button>
+                </div>
+
+                {logsLoading ? (
+                  <div style={{ display: 'flex', justifyContent: 'center', padding: 32 }}><div className="spinner" /></div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 8 }}>
+                      Всего записей: {logs.total}
+                    </div>
+                    <div style={{ overflowX: 'auto', border: '1px solid var(--color-border)', borderRadius: 12 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--color-bg)', textAlign: 'left' }}>
+                            <th style={{ padding: '8px 10px' }}>Время</th>
+                            <th style={{ padding: '8px 10px' }}>Категория</th>
+                            <th style={{ padding: '8px 10px' }}>Действие</th>
+                            <th style={{ padding: '8px 10px' }}>Актор</th>
+                            <th style={{ padding: '8px 10px' }}>Сущность</th>
+                            <th style={{ padding: '8px 10px' }}>Орг.</th>
+                            <th style={{ padding: '8px 10px' }}>Описание</th>
+                            <th style={{ padding: '8px 10px' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {logs.items.map(r => (
+                            <tr key={r.id} style={{ borderTop: '1px solid var(--color-border)',
+                              background: r.category === 'security' ? 'rgba(220,60,60,0.06)' : 'transparent' }}>
+                              <td style={{ padding: '8px 10px', whiteSpace: 'nowrap' }}>{r.created_at ? r.created_at.replace('T', ' ').slice(0, 19) : ''}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <span style={{ padding: '2px 8px', borderRadius: 6, fontSize: 12,
+                                  background: r.category === 'security' ? 'rgba(220,60,60,0.16)' : 'var(--color-bg)' }}>{r.category}</span>
+                              </td>
+                              <td style={{ padding: '8px 10px' }}>{r.action_type}</td>
+                              <td style={{ padding: '8px 10px' }}>{r.actor_name || (r.actor_id ? `#${r.actor_id}` : 'система')}</td>
+                              <td style={{ padding: '8px 10px' }}>{r.entity_type ? `${r.entity_type}#${r.entity_id ?? ''}` : ''}</td>
+                              <td style={{ padding: '8px 10px' }}>{r.organization_id ?? ''}</td>
+                              <td style={{ padding: '8px 10px', maxWidth: 320 }}>{r.summary}</td>
+                              <td style={{ padding: '8px 10px' }}>
+                                <button onClick={() => getAuditEntry(r.id).then(d => setLogDetail(d.data)).catch(() => {})}
+                                  style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid var(--color-border)', background: 'var(--color-surface)', cursor: 'pointer' }}>
+                                  Детали
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                          {logs.items.length === 0 && (
+                            <tr><td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--color-text-muted)' }}>Записей нет</td></tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Пагинация */}
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginTop: 12 }}>
+                      <button disabled={logOffset <= 0} onClick={() => loadLogs(Math.max(0, logOffset - logs.limit))}
+                        style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--color-border)',
+                          background: 'var(--color-surface)', cursor: logOffset <= 0 ? 'default' : 'pointer', opacity: logOffset <= 0 ? 0.5 : 1 }}>
+                        Назад
+                      </button>
+                      <span style={{ fontSize: 13, color: 'var(--color-text-muted)' }}>
+                        {logs.total === 0 ? 0 : logOffset + 1}–{Math.min(logOffset + logs.limit, logs.total)} из {logs.total}
+                      </span>
+                      <button disabled={logOffset + logs.limit >= logs.total} onClick={() => loadLogs(logOffset + logs.limit)}
+                        style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--color-border)',
+                          background: 'var(--color-surface)', cursor: (logOffset + logs.limit >= logs.total) ? 'default' : 'pointer',
+                          opacity: (logOffset + logs.limit >= logs.total) ? 0.5 : 1 }}>
+                        Вперёд
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
           </>
         )}
       </main>
+
+      {/* Детальный просмотр записи журнала с полным diff (meta) */}
+      {logDetail && (
+        <div className="overlay-center" onClick={() => setLogDetail(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 560 }}>
+            <div className="modal-header">
+              <span className="modal-title">Запись журнала #{logDetail.id}</span>
+              <button className="modal-close" onClick={() => setLogDetail(null)}>×</button>
+            </div>
+            <div style={{ padding: 16, fontSize: 13, lineHeight: 1.7 }}>
+              <div><b>Время:</b> {logDetail.created_at}</div>
+              <div><b>Категория:</b> {logDetail.category}</div>
+              <div><b>Действие:</b> {logDetail.action_type}</div>
+              <div><b>Актор:</b> {logDetail.actor_name || (logDetail.actor_id ? `#${logDetail.actor_id}` : 'система')}</div>
+              <div><b>Сущность:</b> {logDetail.entity_type ? `${logDetail.entity_type} #${logDetail.entity_id ?? ''}` : '—'}</div>
+              <div><b>Организация:</b> {logDetail.organization_id ?? '—'}</div>
+              <div><b>IP:</b> {logDetail.ip || '—'}</div>
+              <div><b>Описание:</b> {logDetail.summary || '—'}</div>
+              <div style={{ marginTop: 10 }}><b>Детали (diff):</b></div>
+              <pre style={{ background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 8,
+                padding: 12, overflowX: 'auto', fontSize: 12, whiteSpace: 'pre-wrap' }}>
+{logDetail.meta ? JSON.stringify(logDetail.meta, null, 2) : '—'}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
 
       {detailUser && (
         <AdminUserDetail

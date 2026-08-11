@@ -240,6 +240,11 @@ def cancel_subscription(data: CancelReq, db: Session = Depends(get_db), current=
     if not sub or sub.status not in ("active", "trialing", "past_due"):
         return {"ok": True, "status": sub.status if sub else "free", "note": "Активной подписки нет."}
     subs.cancel(db, sub, at_period_end=True)
+    from app.services import audit
+    audit.record(db, "billing.subscription_cancelled", actor_id=user.id, entity_type="subscription",
+                 entity_id=sub.id, organization_id=audit.org_of_user(db, user.id), category="general",
+                 summary="Пользователь отменил подписку (до конца периода)",
+                 meta={"plan_code": sub.plan_code})
     return {"ok": True, "status": sub.status, "cancel_at_period_end": True,
             "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None}
 
@@ -337,4 +342,10 @@ async def cloudpayments_webhook(
     db.commit()
     wh_log.info("payment webhook: subscription activated (invoice_id=%s, uid=%s, plan=%s)",
                 pay.id, pay.subject_id, info.get("plan_code", "start"))
+    from app.services import audit
+    audit.record(db, "billing.subscription_activated", actor_id=pay.subject_id,
+                 entity_type="subscription", entity_id=sub.id if sub else None,
+                 organization_id=audit.org_of_user(db, pay.subject_id), category="general",
+                 summary=f"Подписка активирована/продлена: тариф {info.get('plan_code', 'start')}",
+                 meta={"plan_code": info.get("plan_code", "start"), "period": info.get("period", "month")})
     return {"code": 0}

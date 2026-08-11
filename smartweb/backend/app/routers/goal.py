@@ -394,6 +394,12 @@ def add_comment(goal_id: int, data: GoalCommentCreate, db: Session = Depends(get
     db.commit()
     db.refresh(goal)
 
+    from app.services import audit
+    audit.record(db, f"goal.{kind}_added", actor_id=data.actor_id, entity_type="goal",
+                 entity_id=goal.id, organization_id=goal.team_id, category="general",
+                 summary=f"{'Обратная связь' if kind == 'feedback' else 'Комментарий'} к цели «{(goal.title or '')[:60]}»",
+                 meta={"kind": kind, "rating": rating})
+
     # Уведомление другой стороне (существующая система: веб + push + Telegram).
     actor_name = _name(db, data.actor_id) or "Участник"
     snippet = data.body.strip()[:80]

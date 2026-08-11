@@ -235,6 +235,11 @@ def upsert_company(team_id: int, payload: CompanyIn, db: Session = Depends(get_d
     c.data = raw
     team.has_company = True
     db.commit(); db.refresh(c)
+    from app.services import audit
+    audit.record(db, "company.updated", actor_id=user.id, entity_type="company",
+                 entity_id=c.id, organization_id=team_id, category="general",
+                 summary=f"Изменены реквизиты компании «{(c.name or '')[:60]}»",
+                 meta={"country": c.country, "inn": c.inn})
     return {"has_company": True, "company": _company_dict(c)}
 
 
@@ -248,4 +253,8 @@ def delete_company(team_id: int, db: Session = Depends(get_db), user=Depends(req
         db.delete(c)
     team.has_company = False
     db.commit()
+    from app.services import audit
+    audit.record(db, "company.deleted", actor_id=user.id, entity_type="company",
+                 entity_id=team_id, organization_id=team_id, category="general",
+                 summary="Удалены реквизиты компании")
     return {"has_company": False, "company": None}

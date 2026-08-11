@@ -186,6 +186,12 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
     ratelimit.check(ratelimit.LOGIN_ACCOUNT, email)
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(data.password, user.password_hash):
+        # Аудит неуспешного входа (категория auth). Пароль в журнал НЕ попадает.
+        from app.services import audit
+        audit.record(db, "auth.login_failed", actor_id=(user.id if user else None),
+                     entity_type="user", entity_id=(user.id if user else None),
+                     category="auth", ip=audit.client_ip(request),
+                     summary=f"Неуспешный вход: {email}")
         raise HTTPException(401, "Неверный email или пароль")
     # Вход удался — счётчик неудачных попыток по аккаунту сбрасываем, чтобы
     # человек, вспомнивший пароль с четвёртого раза, не ждал пять минут.
@@ -199,6 +205,11 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
     if user.email and not user.email_confirmed:
         _send_confirmation(background_tasks, db, user)
         raise HTTPException(status_code=403, detail=_email_unconfirmed_detail(user.email))
+    from app.services import audit
+    audit.record(db, "auth.login_success", actor_id=user.id, entity_type="user",
+                 entity_id=user.id, organization_id=audit.org_of_user(db, user.id),
+                 category="auth", ip=audit.client_ip(request),
+                 summary=f"Успешный вход: {email}")
     return {"token": create_access_token(user.id), "user": UserOut.model_validate(user)}
 
 

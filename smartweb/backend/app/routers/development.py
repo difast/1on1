@@ -306,9 +306,12 @@ def update_user_skill(us_id: int, data: UserSkillUpdate, db: Session = Depends(g
         raise HTTPException(status_code=403, detail="Редактировать навык может только его владелец")
 
     reached = False
+    _prev_level = us.current_level
+    _level_changed = False
     if data.current_level is not None:
         new_level = _clamp_level(data.current_level)
         if new_level != us.current_level:
+            _level_changed = True
             us.current_level = new_level
             db.add(SkillLevelHistory(user_skill_id=us.id, level=new_level,
                                      changed_by=data.actor_id, note=(data.note or None)))
@@ -321,6 +324,15 @@ def update_user_skill(us_id: int, data: UserSkillUpdate, db: Session = Depends(g
     db.commit(); db.refresh(us)
 
     skill = db.query(Skill).filter(Skill.id == us.skill_id).first()
+    if _level_changed:
+        from app.services import audit
+        audit.record(db, "development.skill_level_changed", actor_id=data.actor_id,
+                     entity_type="user_skill", entity_id=us.id,
+                     organization_id=us.team_id or audit.org_of_user(db, us.user_id),
+                     category="general",
+                     summary=f"Уровень навыка «{(skill.name if skill else '')[:40]}» изменён: {_prev_level} -> {us.current_level}",
+                     meta={"user_id": us.user_id, "skill_id": us.skill_id,
+                           "from": _prev_level, "to": us.current_level})
     if reached:
         sname = skill.name if skill else "навык"
         for lead_id in _leads_of_user(db, us.user_id):
@@ -484,6 +496,13 @@ def add_step_comment(step_id: int, data: GoalCommentCreate, db: Session = Depend
 
     db.add(GoalComment(step_id=step.id, author_id=data.actor_id, body=data.body.strip(), kind=kind, rating=rating))
     db.commit()
+
+    from app.services import audit
+    audit.record(db, f"development.step_{kind}_added", actor_id=data.actor_id,
+                 entity_type="development_step", entity_id=step.id,
+                 organization_id=audit.org_of_user(db, step.user_id), category="general",
+                 summary=f"{'Обратная связь' if kind == 'feedback' else 'Комментарий'} к шагу развития",
+                 meta={"kind": kind, "rating": rating, "user_id": step.user_id})
 
     actor_name = _name(db, data.actor_id) or "Участник"
     snippet = data.body.strip()[:80]
