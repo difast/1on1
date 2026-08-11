@@ -23,6 +23,7 @@ const routes = {
   '/docs': 'docs.html',
   '/pricing': 'pricing.html',
   '/documents': 'documents.html',
+  '/security': 'security.html',
 }
 
 // Абсолютный origin публичного сайта (без личного кабинета app.oneononehq.com).
@@ -44,6 +45,7 @@ const sitemapMeta = {
   '/faq': { changefreq: 'monthly', priority: '0.6' },
   '/press': { changefreq: 'monthly', priority: '0.5' },
   '/documents': { changefreq: 'monthly', priority: '0.4' },
+  '/security': { changefreq: 'monthly', priority: '0.5' },
 }
 const sitemapDefaultMeta = { changefreq: 'monthly', priority: '0.5' }
 

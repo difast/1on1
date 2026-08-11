@@ -5,6 +5,41 @@ import {
 } from '../api/client'
 import { toast } from '../lib/ui'
 
+// Ссылки на приложения-аутентификаторы (подсказка для тех, у кого приложения
+// ещё нет). Не заменяют сканирование QR — только дополняют его. Открываются в
+// новой вкладке. Без эмодзи; компактные кнопки-магазины.
+function StoreLink({ href, store }) {
+  return (
+    <a href={href} target="_blank" rel="noopener noreferrer" style={{
+      display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none',
+      border: '1px solid var(--color-border)', background: 'var(--color-surface)',
+      color: 'var(--color-text-primary)', borderRadius: 8, padding: '6px 10px',
+      fontSize: 12, fontWeight: 600, whiteSpace: 'nowrap',
+    }}>
+      <span aria-hidden="true" style={{ width: 6, height: 6, borderRadius: 2, background: 'var(--color-accent)' }} />
+      {store}
+    </a>
+  )
+}
+
+function AuthenticatorLinks() {
+  const row = { display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }
+  return (
+    <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 10, padding: 12, marginBottom: 10 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Яндекс Ключ</div>
+      <div style={row}>
+        <StoreLink href="https://www.rustore.ru/catalog/app/ru.yandex.key" store="RuStore" />
+        <StoreLink href="https://apps.apple.com/ru/app/id6449998184" store="App Store" />
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 600, margin: '10px 0 6px' }}>Google Authenticator</div>
+      <div style={row}>
+        <StoreLink href="https://play.google.com/store/apps/details?id=com.google.android.apps.authenticator2" store="Google Play" />
+        <StoreLink href="https://apps.apple.com/app/google-authenticator/id388497605" store="App Store" />
+      </div>
+    </div>
+  )
+}
+
 // Раздел «Безопасность» (Блок 1): опциональная 2FA (TOTP) и управление активными
 // сессиями/устройствами. Открывается из меню настроек. Без эмодзи.
 export default function SecuritySettings({ open, onClose }) {
@@ -98,8 +133,12 @@ export default function SecuritySettings({ open, onClose }) {
             ) : setupData ? (
               <>
                 <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', marginBottom: 8 }}>
-                  Отсканируйте QR в приложении-аутентификаторе (Google Authenticator, Яндекс Ключ) или введите ключ вручную, затем подтвердите кодом.
+                  Установите приложение-аутентификатор на телефон, если у вас его ещё нет, затем отсканируйте QR-код ниже (или введите ключ вручную) и подтвердите кодом.
                 </p>
+                <AuthenticatorLinks />
+                <div style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '4px 0 8px' }}>
+                  QR-код показывает приложение — отсканируйте его камерой в аутентификаторе.
+                </div>
                 <div style={{ wordBreak: 'break-all', fontFamily: 'monospace', fontSize: 12, background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 8, padding: 10, marginBottom: 8 }}>
                   Ключ: {setupData.secret}
                 </div>
