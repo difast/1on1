@@ -69,6 +69,25 @@ def encrypt(plaintext: str | None) -> str | None:
     return base64.urlsafe_b64encode(blob).decode("ascii")
 
 
+def encrypt_field(plaintext: str | None) -> str | None:
+    """Псевдоним encrypt для прикладного шифрования полей БД (Блок 9)."""
+    return encrypt(plaintext)
+
+
+def decrypt_field(value: str | None) -> str | None:
+    """Расшифровать поле БД с ПРОЗРАЧНОЙ поддержкой legacy-открытого текста.
+
+    Если значение — наш шифртекст (v1 + верный MAC), возвращаем расшифровку.
+    Иначе (строка, записанная до внедрения шифрования, — обычный текст) возвращаем
+    её как есть. Это позволяет включить шифрование без миграции данных: новые
+    записи шифруются, старые читаются по-прежнему и шифруются при следующем
+    сохранении. None остаётся None."""
+    if value is None:
+        return None
+    dec = decrypt(value)
+    return dec if dec is not None else value
+
+
 def decrypt(token: str | None) -> str | None:
     """Расшифровать. Возвращает None при пустом входе или нарушении целостности."""
     if not token:
