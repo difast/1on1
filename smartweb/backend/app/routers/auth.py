@@ -222,20 +222,23 @@ def _email_unconfirmed_detail(email: str) -> dict:
     }
 
 
-def _device_code_token(user_id: int, device_hash: str, code: str) -> str:
-    """Композитный ключ кода подтверждения устройства: привязывает код к
-    конкретному пользователю и устройству (Этап 4)."""
-    return f"dev:{user_id}:{(device_hash or '')[:16]}:{code}"
+def _login_code_token(user_id: int, code: str) -> str:
+    """Ключ кода подтверждения входа, привязанный к пользователю (код по email
+    запрашивается при каждом входе — Задача 7)."""
+    return f"lc:{user_id}:{code}"
 
 
 def _issue_and_grant(db: Session, user: User, request: Request,
                      device_hash: str | None, remember_new: bool = True) -> dict:
-    """Финал успешного входа: создать сессию, запомнить устройство, выдать токен."""
+    """Финал успешного входа: создать/обновить сессию устройства, запомнить
+    устройство, выдать токен. Сессия дедуплицируется по устройству (Задача 4)."""
     from app.services import sessions as sess, audit
     ua = request.headers.get("user-agent")
     ip = ratelimit.client_ip(request)
     jti = sess.new_jti()
-    sess.create_session(db, user.id, jti, user_agent=ua, ip=ip)
+    # Одна активная сессия на устройство: если для этого устройства уже есть
+    # сессия — обновляем её (новый jti, время), а не плодим дубли.
+    sess.create_session(db, user.id, jti, user_agent=ua, ip=ip, device_hash=device_hash)
     if remember_new and device_hash:
         sess.remember_device(db, user.id, device_hash, user_agent=ua, ip=ip, trusted=True)
     audit.record(db, "auth.login_success", actor_id=user.id, entity_type="user",
@@ -304,8 +307,12 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
     except Exception:
         db.rollback()
 
-    # 2FA (TOTP): после верного пароля, до выдачи доступа.
-    if user.totp_enabled:
+    # 2FA (TOTP): после верного пароля, до кода по email и до выдачи доступа.
+    # На шаге ввода кода из письма (device_code присутствует) TOTP повторно НЕ
+    # проверяем: код письма выпускается только ПОСЛЕ успешного TOTP, поэтому его
+    # наличие уже подтверждает второй фактор. Иначе одноразовый резервный код
+    # «сгорал» бы на первом шаге и не проходил на шаге ввода кода из письма.
+    if user.totp_enabled and not data.device_code:
         if not data.totp_code:
             return {"status": "totp_required"}
         if not _verify_totp(db, user, data.totp_code):
@@ -313,41 +320,49 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
                          entity_id=user.id, category="auth", ip=ip, summary="Неверный код 2FA")
             raise HTTPException(status_code=401, detail="Неверный код подтверждения")
 
-    # Новое устройство (Этап 4).
+    # Определяем устройство: для уведомления о новом входе и для дедупликации
+    # сессий (одна активная сессия на устройство).
     device_raw = request.headers.get("x-device-id") or data.device_id
     device_hash = sess.hash_device(device_raw)
     is_known = sess.known_device(db, user.id, device_hash) is not None
     ua = request.headers.get("user-agent")
     label = sess.device_label(ua)
+    new_device = (not is_known) and bool(device_hash)
 
-    if not is_known and settings.new_device_verify and user.email and device_hash:
-        # Если пришёл код — проверяем; иначе высылаем код и просим подтвердить.
+    def _notify_new_device():
+        """Отдельное уведомление-предупреждение о входе с нового устройства.
+        Работает ПАРАЛЛЕЛЬНО с кодом подтверждения, не заменяется им."""
+        if new_device and user.email:
+            when = datetime.utcnow().strftime("%d.%m.%Y %H:%M UTC")
+            background_tasks.add_task(mailer.send_new_device_notice, user.email,
+                                      user.name or "", label, when, user.preferred_language)
+            audit.record(db, "auth.new_device_login", actor_id=user.id, entity_type="user",
+                         entity_id=user.id, category="security", ip=ip,
+                         summary=f"Вход с нового устройства: {label}")
+
+    # Код по email при КАЖДОМ входе (Задача 7): после верного пароля (и TOTP)
+    # всегда требуется код из письма, независимо от устройства.
+    if settings.login_email_code and user.email:
         if data.device_code:
-            tok = _consume_token(db, _device_code_token(user.id, device_hash, data.device_code.strip()), "device_verify")
+            tok = _consume_token(db, _login_code_token(user.id, data.device_code.strip()), "login_code")
             if not tok:
                 raise HTTPException(status_code=401, detail="Неверный или просроченный код подтверждения")
-            sess.remember_device(db, user.id, device_hash, user_agent=ua, ip=ip, trusted=True)
-            audit.record(db, "auth.new_device_confirmed", actor_id=user.id, entity_type="user",
-                         entity_id=user.id, category="security", ip=ip,
-                         summary=f"Подтверждён вход с нового устройства: {label}")
-            return _issue_and_grant(db, user, request, device_hash, remember_new=False)
+            # Код верен -> завершаем вход (уведомление о новом устройстве уже
+            # отправлено на первом шаге).
+            return _issue_and_grant(db, user, request, device_hash, remember_new=True)
+        # Первый шаг: высылаем код входа и, если устройство новое, ОТДЕЛЬНОЕ
+        # уведомление-предупреждение (параллельно коду).
         code = f"{secrets.randbelow(1000000):06d}"
-        _issue_token_value(db, user.id, _device_code_token(user.id, device_hash, code), "device_verify", timedelta(minutes=15))
-        background_tasks.add_task(mailer.send_new_device_code, user.email, user.name or "", code, label, user.preferred_language)
-        audit.record(db, "auth.new_device_challenge", actor_id=user.id, entity_type="user",
-                     entity_id=user.id, category="security", ip=ip,
-                     summary=f"Запрошено подтверждение входа с нового устройства: {label}")
-        return {"status": "device_verification_required", "email": _mask_email(user.email)}
+        _issue_token_value(db, user.id, _login_code_token(user.id, code), "login_code", timedelta(minutes=15))
+        background_tasks.add_task(mailer.send_login_code, user.email, user.name or "", code, user.preferred_language)
+        _notify_new_device()
+        audit.record(db, "auth.login_code_sent", actor_id=user.id, entity_type="user",
+                     entity_id=user.id, category="auth", ip=ip,
+                     summary="Отправлен код подтверждения входа")
+        return {"status": "email_code_required", "email": _mask_email(user.email)}
 
-    # Известное устройство ИЛИ подтверждение выключено: если устройство новое —
-    # запоминаем и шлём уведомление (best-effort), но вход не блокируем.
-    if not is_known and device_hash:
-        if user.email:
-            when = datetime.utcnow().strftime("%d.%m.%Y %H:%M UTC")
-            background_tasks.add_task(mailer.send_new_device_notice, user.email, user.name or "", label, when, user.preferred_language)
-        audit.record(db, "auth.new_device_login", actor_id=user.id, entity_type="user",
-                     entity_id=user.id, category="security", ip=ip,
-                     summary=f"Вход с нового устройства: {label}")
+    # Код по email выключен: новое устройство -> только уведомление (не блокирует).
+    _notify_new_device()
     return _issue_and_grant(db, user, request, device_hash, remember_new=True)
 
 

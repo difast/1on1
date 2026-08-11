@@ -100,17 +100,30 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const [needConfirm, setNeedConfirm] = useState(false)
   const [resendState, setResendState] = useState('')  // '' | 'sending' | 'sent'
 
-  // Блок 1: капча + двухшаговый вход (2FA / новое устройство).
+  // Капча (по требованию, модально) + многошаговый вход (2FA / код по email).
   const [captchaKey, setCaptchaKey] = useState('')
-  const [captchaToken, setCaptchaToken] = useState('')
-  const [authStep, setAuthStep] = useState('creds')  // creds | totp | device
+  const [captchaAction, setCaptchaAction] = useState(null)  // отложенное действие после капчи
+  const [authStep, setAuthStep] = useState('creds')  // creds | totp | email_code
   const [totpCode, setTotpCode] = useState('')
-  const [deviceCode, setDeviceCode] = useState('')
+  const [emailCode, setEmailCode] = useState('')
   const [maskedEmail, setMaskedEmail] = useState('')
 
   useEffect(() => {
     getCaptchaConfig().then(r => { if (r.data?.enabled) setCaptchaKey(r.data.client_key) }).catch(() => {})
   }, [])
+
+  // Запустить действие, требующее капчи. Если капча настроена — открываем
+  // модальное окно капчи и запускаем действие только после её прохождения
+  // (с полученным токеном). Если капча не настроена — запускаем сразу.
+  const runWithCaptcha = (action) => {
+    if (!captchaKey) { action(''); return }
+    setCaptchaAction(() => action)
+  }
+  const onCaptchaToken = (token) => {
+    const action = captchaAction
+    setCaptchaAction(null)
+    if (action) action(token)
+  }
 
   useEffect(() => {
     getTelegramConfig().then(r => setTgConfig(r.data)).catch(() => setTgConfig(null))
@@ -146,20 +159,26 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     return ''
   }
 
-  const handleLogin = async (e) => {
+  const handleLogin = (e) => {
     e.preventDefault()
     setError(''); setNeedConfirm(false); setResendState('')
+    // Капча обязательна и запрашивается ПО КЛИКУ: сначала пройти капчу (модально),
+    // затем отправляется запрос на вход с полученным токеном.
+    runWithCaptcha(submitLogin)
+  }
+
+  const submitLogin = async (captchaTok) => {
     setLoading(true)
     try {
-      const payload = { email, password, captcha_token: captchaToken }
+      const payload = { email, password, captcha_token: captchaTok }
       if (authStep === 'totp') payload.totp_code = totpCode
-      if (authStep === 'device') payload.device_code = deviceCode
+      if (authStep === 'email_code') payload.device_code = emailCode
       const { data } = await authLogin(payload)
-      // Двухшаговый вход: сервер может запросить код 2FA или подтверждение
-      // нового устройства перед выдачей токена.
+      // Многошаговый вход: сервер может запросить код 2FA или код из письма перед
+      // выдачей токена.
       if (data?.status === 'totp_required') { setAuthStep('totp'); setLoading(false); return }
-      if (data?.status === 'device_verification_required') {
-        setAuthStep('device'); setMaskedEmail(data.email || ''); setLoading(false); return
+      if (data?.status === 'email_code_required') {
+        setAuthStep('email_code'); setMaskedEmail(data.email || ''); setLoading(false); return
       }
       setToken(data.token)
       onAuthSuccess?.(data.user)  // App поставит пользователя и решит про онбординг
@@ -186,30 +205,38 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
     } catch { setResendState('') }
   }
 
-  const handleRegister = async (e) => {
+  const handleRegister = (e) => {
     e.preventDefault()
     setError('')
     if (password !== confirmPassword) { setError(t('validation.passwordMismatch')); return }
     const pw = passwordProblem(password)
     if (pw) { setError(pw); return }
+    runWithCaptcha(submitRegister)
+  }
+
+  const submitRegister = async (captchaTok) => {
     setLoading(true)
     try {
       // Регистрация без выбора роли — роль/профиль выбираются в онбординге.
       // Токен НЕ приходит: доступ в кабинет закрыт до подтверждения почты.
       // Вместо входа показываем модальное окно подтверждения (Задача 2.1).
-      await authRegister({ name: email.split('@')[0], email, password, captcha_token: captchaToken })
+      await authRegister({ name: email.split('@')[0], email, password, captcha_token: captchaTok })
       setConfirmEmail(email)
     } catch (err) {
       setError(translateError(err?.response?.data?.detail || t('errors.generic')))
     } finally { setLoading(false) }
   }
 
-  const handleForgot = async (e) => {
+  const handleForgot = (e) => {
     e.preventDefault()
     setError('')
+    runWithCaptcha(submitForgot)
+  }
+
+  const submitForgot = async (captchaTok) => {
     setLoading(true)
     try {
-      await authForgotPassword(email, captchaToken)
+      await authForgotPassword(email, captchaTok)
       setMode('forgot_sent')  // всегда успех — не раскрываем наличие аккаунта
     } catch {
       setMode('forgot_sent')
@@ -243,6 +270,25 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: '16px 20px', fontFamily: 'var(--font-sans)',
     }}>
+      {/* Капча по требованию: появляется поверх контента после клика, не висит
+          на странице постоянно и не раздвигает форму (не вызывает скролл). */}
+      {captchaAction && (
+        <div className="overlay-center" onClick={() => setCaptchaAction(null)}
+          style={{ position: 'fixed', inset: 0, zIndex: 1000, display: 'flex',
+            alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.45)' }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: 'var(--color-surface)',
+            borderRadius: 14, padding: 20, maxWidth: 380, boxShadow: '0 10px 40px rgba(0,0,0,0.25)' }}>
+            <p style={{ fontSize: 14, fontWeight: 600, marginBottom: 12, color: 'var(--color-text-primary)' }}>
+              Подтвердите, что вы не робот
+            </p>
+            <SmartCaptcha sitekey={captchaKey} onToken={onCaptchaToken} />
+            <button type="button" onClick={() => setCaptchaAction(null)}
+              style={{ marginTop: 10, background: 'none', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: 13 }}>
+              Отмена
+            </button>
+          </div>
+        </div>
+      )}
       <div style={{ width: '100%', maxWidth: 420 }} className="anim-fade">
         <Logo />
 
@@ -286,7 +332,6 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                   placeholder={t('auth.emailPlaceholder')} className="input" required autoComplete="email" autoFocus
                 />
               </div>
-              <SmartCaptcha sitekey={captchaKey} onToken={setCaptchaToken} />
               {error && (
                 <div style={{ background: 'var(--color-danger-bg)', border: '1px solid #FCA5A5', color: 'var(--color-danger)', borderRadius: 'var(--radius-md)', padding: '11px 14px', fontSize: 14, marginBottom: 14 }}>{error}</div>
               )}
@@ -416,23 +461,18 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
                 </div>
               )}
               {/* Подтверждение входа с нового устройства */}
-              {mode === 'login' && authStep === 'device' && (
+              {mode === 'login' && authStep === 'email_code' && (
                 <div className="form-group">
-                  <label className="form-label" htmlFor="auth-devcode">Код подтверждения из письма</label>
-                  <input id="auth-devcode" inputMode="numeric" autoComplete="one-time-code"
-                    value={deviceCode} onChange={e => setDeviceCode(e.target.value)}
+                  <label className="form-label" htmlFor="auth-emailcode">Код из письма</label>
+                  <input id="auth-emailcode" inputMode="numeric" autoComplete="one-time-code"
+                    value={emailCode} onChange={e => setEmailCode(e.target.value)}
                     placeholder="Код отправлен на почту" className="input" required />
                   {maskedEmail && (
                     <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 6 }}>
-                      Мы отправили код на {maskedEmail}. Введите его, чтобы завершить вход с этого устройства.
+                      Мы отправили код для входа на {maskedEmail}. Введите его, чтобы завершить вход.
                     </p>
                   )}
                 </div>
-              )}
-
-              {/* Капча (Yandex SmartCaptcha): чекбокс на входе/регистрации */}
-              {authStep === 'creds' && (
-                <SmartCaptcha sitekey={captchaKey} onToken={setCaptchaToken} />
               )}
 
               {error && (

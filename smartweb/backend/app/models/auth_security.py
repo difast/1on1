@@ -18,6 +18,9 @@ class UserSession(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     # Идентификатор сессии = claim jti в JWT. Ревокация помечает revoked_at.
     jti = Column(String(64), unique=True, nullable=False, index=True)
+    # Стабильный идентификатор устройства (хэш) — ключ дедупликации: одна активная
+    # сессия на устройство, чтобы список сессий не заполнялся дублями (Задача 4).
+    device_hash = Column(String(64), nullable=True, index=True)
     device_label = Column(String(255), nullable=True)   # из user-agent (не секрет)
     ip = Column(String(64), nullable=True)
     created_at = Column(DateTime, server_default=func.now())

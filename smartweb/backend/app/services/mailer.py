@@ -126,19 +126,25 @@ def send_confirmation_email(to_email: str, name: str, token: str, lang: str | No
     return _try_send(to_email, i18n.t("email.confirm.subject", lang), body, html) is None
 
 
-def send_new_device_code(to_email: str, name: str, code: str, device: str,
-                         lang: str | None = None) -> bool:
-    """Код подтверждения входа с нового устройства (Блок 1, Этап 4). Без ссылок —
-    только короткий код, который пользователь вводит на форме входа."""
-    subject = "Код подтверждения входа OneOnOne"
+def send_login_code(to_email: str, name: str, code: str,
+                    lang: str | None = None) -> bool:
+    """Код для завершения входа в OneOnOne. Отправляется при каждом входе по
+    email/паролю. Текст нейтральный, не привязан к «новому устройству» — код
+    запрашивается всегда, независимо от устройства."""
+    subject = "Код для входа в OneOnOne"
     body = (
         f"Здравствуйте!\n\n"
-        f"Выполняется вход в OneOnOne с нового устройства: {device}.\n"
-        f"Код подтверждения: {code}\n\n"
-        f"Введите его на странице входа. Код действует 15 минут.\n\n"
-        f"Если это были не вы, не вводите код и смените пароль в настройках профиля."
+        f"Ваш код для входа в OneOnOne: {code}\n\n"
+        f"Введите его на странице входа, чтобы завершить вход. Код действует 15 минут.\n\n"
+        f"Если вы не выполняли вход, не вводите код и смените пароль в настройках профиля."
     )
     return _try_send(to_email, subject, body) is None
+
+
+# Обратная совместимость: прежнее имя ссылается на нейтральную функцию.
+def send_new_device_code(to_email: str, name: str, code: str, device: str = "",
+                         lang: str | None = None) -> bool:
+    return send_login_code(to_email, name, code, lang)
 
 
 def send_new_device_notice(to_email: str, name: str, device: str, when: str,
