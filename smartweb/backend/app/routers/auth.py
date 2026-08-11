@@ -280,8 +280,14 @@ def login(data: LoginReq, background_tasks: BackgroundTasks, request: Request,
     ratelimit.check_request(ratelimit.LOGIN_IP, request)
     ratelimit.check(ratelimit.LOGIN_ACCOUNT, email)
     ratelimit.check(ratelimit.LOGIN_COMBO, f"{ip}|{email}")
-    # Капча (простой чекбокс всегда; сложность выбирает SmartCaptcha адаптивно).
-    captcha.ensure(data.captcha_token, ip)
+    # Капча — только на ПЕРВОМ шаге входа (ввод email/пароля). Продолжения того же
+    # входа (шаг TOTP и шаг ввода кода из письма) капчу не требуют: пользователь
+    # уже прошёл её при нажатии «Войти», а на этих шагах вводится код. От перебора
+    # паролей эти шаги защищены отдельно — они возможны только после верного
+    # пароля, плюс действуют лимиты частоты по IP/аккаунту выше.
+    first_step = not data.totp_code and not data.device_code
+    if first_step:
+        captcha.ensure(data.captcha_token, ip)
 
     user = db.query(User).filter(User.email == email).first()
     if user is None or not verify_password(data.password, user.password_hash):

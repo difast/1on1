@@ -435,6 +435,22 @@ app.add_middleware(
 from starlette.responses import JSONResponse as _JSONResponse
 import jwt as _jwt
 
+from app.config import ConfigError as _ConfigError
+
+
+@app.exception_handler(_ConfigError)
+async def _config_error_handler(request, exc):
+    """Ошибки конфигурации (например, отсутствующий секрет шифрования) отдаём как
+    503 с понятным текстом. Обработчик проходит через ExceptionMiddleware, то есть
+    ВНУТРИ CORS-мидлвари — ответ получает CORS-заголовки. Без обработчика такое
+    исключение всплывало бы до внешнего ServerErrorMiddleware (снаружи CORS), и в
+    браузере это выглядело как «нет ответа сервера» вместо внятной ошибки."""
+    return _JSONResponse(
+        {"detail": "Сервис временно недоступен из-за настройки сервера. "
+                   "Обратитесь к администратору."},
+        status_code=503,
+    )
+
 _AUTH_PUBLIC_EXACT = {
     "/", "/healthz",
     "/api/auth/register", "/api/auth/login", "/api/auth/admin-login",

@@ -162,9 +162,15 @@ export default function AuthPage({ onAdminLogin, onTelegramAuth, onAuthSuccess }
   const handleLogin = (e) => {
     e.preventDefault()
     setError(''); setNeedConfirm(false); setResendState('')
-    // Капча обязательна и запрашивается ПО КЛИКУ: сначала пройти капчу (модально),
-    // затем отправляется запрос на вход с полученным токеном.
-    runWithCaptcha(submitLogin)
+    // Капча — только на ПЕРВОМ шаге (ввод email/пароля): по клику «Войти»
+    // сначала проходим капчу (модально), затем уходит запрос с токеном.
+    // Продолжения того же входа (ввод кода 2FA или кода из письма) капчу НЕ
+    // запрашивают — бэкенд её на этих шагах не требует.
+    if (authStep === 'creds') {
+      runWithCaptcha(submitLogin)
+    } else {
+      submitLogin('')
+    }
   }
 
   const submitLogin = async (captchaTok) => {
