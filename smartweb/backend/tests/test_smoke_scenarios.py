@@ -70,10 +70,15 @@ for path_, name in [("/api/teams/", "список команд"), (f"/api/tasks/
     r = c.get(path_, headers=H)
     step(name, r.status_code == 200, f"{r.status_code} {r.text[:100]}")
 
-# Профиль: обновление и аватар обычного размера
+# Профиль: обновление и аватар обычного размера. Аватар — НАСТОЯЩЕЕ изображение
+# (валидные magic bytes PNG), как присылают реальные клиенты после кадрирования;
+# Блок 6 проверяет содержимое по сигнатуре, а не по префиксу data URI.
+import base64 as _b64
+_png = b"\x89PNG\r\n\x1a\n" + b"\x00" * 40000
 r = c.patch(f"/api/users/{uid}", json={"name": "Мария Иванова", "title": "Продакт-менеджер",
-                                       "avatar": "data:image/png;base64," + "A" * 60000}, headers=H)
-step("обновление профиля с аватаром (60 КБ)", r.status_code == 200, f"{r.status_code} {r.text[:120]}")
+                                       "avatar": "data:image/png;base64," + _b64.b64encode(_png).decode()},
+            headers=H)
+step("обновление профиля с аватаром (реальный PNG)", r.status_code == 200, f"{r.status_code} {r.text[:120]}")
 
 # Смена пароля
 r = c.post("/api/auth/change-password", json={"user_id": uid, "current_password": "Parol12345",
