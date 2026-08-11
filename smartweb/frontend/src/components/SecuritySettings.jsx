@@ -30,7 +30,7 @@ function AuthenticatorLinks() {
       <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Яндекс Ключ</div>
       <div style={row}>
         <StoreLink href="https://www.rustore.ru/catalog/app/ru.yandex.key" store="RuStore" />
-        <StoreLink href="https://apps.apple.com/ru/app/id6449998184" store="App Store" />
+        <StoreLink href="https://apps.apple.com/ru/app/id957324816" store="App Store" />
       </div>
       <div style={{ fontSize: 13, fontWeight: 600, margin: '10px 0 6px' }}>Google Authenticator</div>
       <div style={row}>
