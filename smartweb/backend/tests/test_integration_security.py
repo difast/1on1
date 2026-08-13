@@ -91,7 +91,7 @@ u = User(name="Плательщик", email="pay@a.com", role="team_lead",
          password_hash=hash_password("Parol12345"), email_confirmed=True)
 db.add(u); db.commit(); db.refresh(u)
 uid = u.id
-pay = Payment(subject_type="user", subject_id=uid, amount=149000, currency="RUB",
+pay = Payment(subject_type="user", subject_id=uid, amount=199000, currency="RUB",
               status="pending", provider="cloudpayments",
               payload={"plan_code": "start", "period": "month", "seats": 1})
 db.add(pay); db.commit(); db.refresh(pay)
@@ -102,7 +102,7 @@ db.close()
 print("\n== CloudPayments: проверка подписи вебхука ==")
 fresh_limits()
 form = {"Event": "Pay", "TransactionId": "TX1001", "InvoiceId": str(pay_id),
-        "AccountId": str(uid), "Amount": "1490.00", "Currency": "RUB", "Status": "Completed"}
+        "AccountId": str(uid), "Amount": "1990.00", "Currency": "RUB", "Status": "Completed"}
 r = cp_post(form, sign_ok=False)
 check("вебхук с неверной подписью -> 401", r.status_code == 401, f"код {r.status_code}")
 # Подписка не должна активироваться при неверной подписи.

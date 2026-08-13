@@ -16,7 +16,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Тарифы — OneOnOne</title>
-<meta name="description" content="Тарифы AI-платформы OneOnOne: Start 1 490 руб в месяц, Team 49 990 руб в год, Enterprise — цена по запросу.">
+<meta name="description" content="Тарифы AI-платформы OneOnOne: Start 1 990 руб/мес, Team 4 990 руб/мес или 49 990 руб/год, Business 9 990 руб/мес, Enterprise — цена по запросу.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;0,900;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -34,7 +34,7 @@
 .pr-save{display:inline-block;font-size:11px;font-weight:700;color:#4ADE80;background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.25);border-radius:99px;padding:3px 10px;margin-left:8px;vertical-align:middle}
 
 /* Plan cards */
-.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin-top:56px}
+.plans-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:20px;overflow:hidden;margin-top:56px}
 /* Выравнивание карточек по единой сетке.
    Раньше карточки были независимыми блоками: у тарифов разное число пунктов в
    списках, поэтому заголовок «Функции» и сноска внизу оказывались на разной
@@ -262,7 +262,7 @@
   <div class="sec-badge badge-purple" style="margin:0 auto 16px">Тарифы</div>
   <h1 class="sh df" style="font-size:clamp(36px,5vw,64px);text-align:center;max-width:640px;margin:0 auto">Простые и честные<br>тарифы</h1>
   <p class="sh-sub" style="text-align:center;margin:20px auto 0">Начните с пробного периода. Масштабируйтесь по мере роста команды.</p>
-  <p class="sh-sub" style="text-align:center;margin:14px auto 0;font-size:14px;opacity:.75">Start — 1 490 ₽ в месяц. Team — 49 990 ₽ в год, единовременно. Enterprise — по договору.</p>
+  <p class="sh-sub" style="text-align:center;margin:14px auto 0;font-size:14px;opacity:.75">Start — 1 990 ₽/мес. Team — 4 990 ₽/мес или 49 990 ₽/год. Business — 9 990 ₽/мес. Enterprise — по договору.</p>
 </div>
 
 <!-- PLAN CARDS -->
@@ -275,7 +275,7 @@
         <span class="plan-badge">&nbsp;</span>
         <div class="plan-name">Start</div>
         <div class="plan-price">
-          <span class="monthly">1 490₽</span>
+          <span class="monthly">1 990₽</span>
           <small> /мес</small>
         </div>
         <div class="plan-desc">Небольшой команде.<br>Встречи 1-на-1, задачи, базовый Пит.</div>
@@ -283,7 +283,7 @@
         <div class="plan-divider"></div>
         <div class="plan-section-label">Команда</div>
         <ul class="plan-features">
-          <li>До <strong>5</strong> пользователей</li>
+          <li>До <strong>8</strong> пользователей</li>
           <li><strong>1</strong> команда</li>
           <li><strong>Без лимита</strong> встреч</li>
           <li>История <strong>без ограничений</strong></li>
@@ -311,9 +311,10 @@
         <span class="plan-badge">Популярный</span>
         <div class="plan-name acc">Team</div>
         <div class="plan-price">
-          <span class="monthly">49 990₽</span>
-          <small> /год</small>
+          <span class="monthly">4 990₽</span>
+          <small> /мес</small>
         </div>
+        <div class="plan-price-alt" style="font-size:13px;color:rgba(255,255,255,.5);margin-top:4px">или <strong style="color:rgba(255,255,255,.75)">49 990₽</strong> /год — экономия 16,5%</div>
         <div class="plan-desc">Растущей команде.<br>Аналитика, цели, развитие и ONE AI.</div>
         <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com/?upgrade=1&plan=team" class="plan-btn prim">Выбрать Team</a>
         <div class="plan-divider"></div>
@@ -339,17 +340,48 @@
           <li>Админ-панель</li>
           <li class="soon">Автотранскрипция встреч — скоро</li>
         </ul>
-        <div class="plan-note">Пробный период: 14 дней с ограничением — ONE AI и Развитие на триале недоступны, остальное открыто полностью. Оплата — раз в год полной суммой, без рассрочки.</div>
+        <div class="plan-note">Пробный период: 14 дней с ограничением — ONE AI и Развитие на триале недоступны, остальное открыто полностью. Оплата — помесячно или раз в год со скидкой 16,5%.</div>
       </div>
 
-      <!-- ENTERPRISE (тарифы Business и Enterprise объединены) -->
+      <!-- BUSINESS -->
+      <div class="plan">
+        <span class="plan-badge">&nbsp;</span>
+        <div class="plan-name">Business</div>
+        <div class="plan-price">
+          <span class="monthly">9 990₽</span>
+          <small> /мес</small>
+        </div>
+        <div class="plan-desc">Нескольким командам.<br>Кросс-командная аналитика и расширенный ONE AI.</div>
+        <a target="_blank" rel="noopener noreferrer" href="https://app.oneononehq.com/?upgrade=1&plan=business" class="plan-btn">Выбрать Business</a>
+        <div class="plan-divider"></div>
+        <div class="plan-section-label">Команда</div>
+        <ul class="plan-features">
+          <li>До <strong>80</strong> пользователей</li>
+          <li><strong>Несколько команд</strong> в организации</li>
+          <li><strong>Без лимита</strong> встреч</li>
+          <li>История <strong>без ограничений</strong></li>
+        </ul>
+        <div class="plan-section-label">Функции</div>
+        <ul class="plan-features">
+          <li><strong>Всё из Team</strong></li>
+          <li>Несколько команд внутри одной организации</li>
+          <li><strong>Расширенный ONE AI</strong>: кросс-командная аналитика</li>
+          <li>HR-аналитика уровня организации</li>
+          <li>Расширенные настройки</li>
+          <li>Приоритетная поддержка</li>
+          <li class="soon">Автотранскрипция встреч — скоро</li>
+        </ul>
+        <div class="plan-note">Пробный период: 14 дней бесплатно, полный доступ к функциям Business.</div>
+      </div>
+
+      <!-- ENTERPRISE -->
       <div class="plan">
         <span class="plan-badge">&nbsp;</span>
         <div class="plan-name" style="color:rgba(90,160,255,.6)">Enterprise</div>
         <div class="plan-price" style="font-size:26px">
           <span class="monthly">Цена по запросу</span>
         </div>
-        <div class="plan-desc">Организациям из нескольких команд.<br>Кросс-командная аналитика, SSO/SAML, SLA.</div>
+        <div class="plan-desc">Крупным организациям.<br>SSO/SAML, кастомные интеграции, SLA.</div>
         <a href="mailto:enterprise@oneononehq.com?subject=Тариф Enterprise OneOnOne" class="plan-btn ent">Связаться с нами</a>
         <div class="plan-divider"></div>
         <div class="plan-section-label">Команда</div>
@@ -361,14 +393,11 @@
         </ul>
         <div class="plan-section-label">Функции</div>
         <ul class="plan-features">
-          <li><strong>Всё из Team</strong></li>
-          <li>Несколько команд внутри одной организации</li>
-          <li><strong>Расширенный ONE AI</strong>: кросс-командная аналитика по организации</li>
-          <li>HR-аналитика уровня организации</li>
-          <li>Расширенные настройки</li>
+          <li><strong>Всё из Business</strong></li>
           <li>Кастомные интеграции (по запросу)</li>
           <li>SSO / SAML</li>
           <li>SLA</li>
+          <li>Размещение в контуре заказчика (по договору)</li>
           <li>Индивидуальные условия договора</li>
           <li>Приоритетная поддержка 24/7, персональный менеджер</li>
           <li class="soon">Автотранскрипция встреч — скоро</li>
@@ -414,63 +443,64 @@
     <table class="comp-table">
       <thead>
         <tr>
-          <th style="width:30%">Функция</th>
+          <th style="width:26%">Функция</th>
           <th>Start</th>
           <th class="pop-col">Team</th>
+          <th>Business</th>
           <th>Enterprise</th>
         </tr>
       </thead>
       <tbody>
-        <tr class="cat-row"><td colspan="4">Тариф</td></tr>
-        <tr><td>Стоимость</td><td>1 490 ₽/мес</td><td class="pop-col">49 990 ₽/год</td><td>Цена по запросу</td></tr>
-        <tr><td>Пользователей</td><td>до 5</td><td class="pop-col">до 30</td><td>без ограничений</td></tr>
-        <tr><td>Команд</td><td>1</td><td class="pop-col">1</td><td>без ограничений</td></tr>
-        <tr><td>Пробный период</td><td>14 дней, полный доступ</td><td class="pop-col">14 дней, без ONE AI и Развития</td><td>—</td></tr>
-        <tr class="cat-row"><td colspan="4">Платформа</td></tr>
-        <tr><td>Мобильное приложение (iOS/Android)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>База знаний (просмотр)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Профиль компании (поиск по ИНН/БИН)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Поддержка</td><td>Email</td><td class="pop-col">Email</td><td>24/7</td></tr>
-        <tr class="cat-row"><td colspan="4">Встречи</td></tr>
-        <tr><td>Встречи 1-на-1</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Предложения встреч (между двумя участниками)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Групповые и командные встречи</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Спонтанные созвоны с несколькими людьми</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Автотранскрипция встреч</td><td><span class="soon-x">Скоро</span></td><td class="pop-col"><span class="soon-x">Скоро</span></td><td><span class="soon-x">Скоро</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Задачи</td></tr>
-        <tr><td>Задачи</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Предложения задач (между двумя участниками)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Совместные задачи: несколько исполнителей, части, прогресс</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>AI-декомпозиция задач</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Заметки и настроение</td></tr>
-        <tr><td>Заметки</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Личное настроение: чек-ин и личный тренд</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Командные тренды настроения</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Сводка тимлиду и алерт о риске</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Аналитика</td></tr>
-        <tr><td>Личная аналитика (только своя)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Командная аналитика</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Расширенная аналитика тимлида и участника, блок «Развитие»</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Экспорт данных (Excel)</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>HR-аналитика уровня организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Цели и развитие</td></tr>
-        <tr><td>Цели и OKR: личные и командные</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Развитие: навыки, планы, рекомендации, обзор команды</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">AI</td></tr>
-        <tr><td>Базовый Пит: диалог, поиск по базе знаний, действия из чата</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>ONE AI — все разделы</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Расширенный ONE AI: кросс-командная аналитика по организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Организация и администрирование</td></tr>
-        <tr><td>Админ-панель</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Несколько команд внутри одной организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Расширенные настройки</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Персональный менеджер</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr class="cat-row"><td colspan="4">Безопасность и договор</td></tr>
-        <tr><td>Шифрование данных</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Кастомные интеграции (по запросу)</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>SSO / SAML</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>SLA</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
-        <tr><td>Индивидуальные условия договора</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Тариф</td></tr>
+        <tr><td>Стоимость</td><td>1 990 ₽/мес</td><td class="pop-col">4 990 ₽/мес</td><td>9 990 ₽/мес</td><td>Цена по запросу</td></tr>
+        <tr><td>Пользователей</td><td>до 8</td><td class="pop-col">до 30</td><td>до 80</td><td>без ограничений</td></tr>
+        <tr><td>Команд</td><td>1</td><td class="pop-col">1</td><td>несколько</td><td>без ограничений</td></tr>
+        <tr><td>Пробный период</td><td>14 дней, полный доступ</td><td class="pop-col">14 дней, без ONE AI и Развития</td><td>14 дней, полный доступ</td><td>—</td></tr>
+        <tr class="cat-row"><td colspan="5">Платформа</td></tr>
+        <tr><td>Мобильное приложение (iOS/Android)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>База знаний (просмотр)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Профиль компании (поиск по ИНН/БИН)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Поддержка</td><td>Email</td><td class="pop-col">Email</td><td>Приоритетная</td><td>24/7</td></tr>
+        <tr class="cat-row"><td colspan="5">Встречи</td></tr>
+        <tr><td>Встречи 1-на-1</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Предложения встреч (между двумя участниками)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Групповые и командные встречи</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Спонтанные созвоны с несколькими людьми</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Автотранскрипция встреч</td><td><span class="soon-x">Скоро</span></td><td class="pop-col"><span class="soon-x">Скоро</span></td><td><span class="soon-x">Скоро</span></td><td><span class="soon-x">Скоро</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Задачи</td></tr>
+        <tr><td>Задачи</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Предложения задач (между двумя участниками)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Совместные задачи: несколько исполнителей, части, прогресс</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>AI-декомпозиция задач</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Заметки и настроение</td></tr>
+        <tr><td>Заметки</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Личное настроение: чек-ин и личный тренд</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Командные тренды настроения</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Сводка тимлиду и алерт о риске</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Аналитика</td></tr>
+        <tr><td>Личная аналитика (только своя)</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Командная аналитика</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Расширенная аналитика тимлида и участника, блок «Развитие»</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Экспорт данных (Excel)</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>HR-аналитика уровня организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Цели и развитие</td></tr>
+        <tr><td>Цели и OKR: личные и командные</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Развитие: навыки, планы, рекомендации, обзор команды</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">AI</td></tr>
+        <tr><td>Базовый Пит: диалог, поиск по базе знаний, действия из чата</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>ONE AI — все разделы</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Расширенный ONE AI: кросс-командная аналитика по организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Организация и администрирование</td></tr>
+        <tr><td>Админ-панель</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Несколько команд внутри одной организации</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Расширенные настройки</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Персональный менеджер</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr class="cat-row"><td colspan="5">Безопасность и договор</td></tr>
+        <tr><td>Шифрование данных</td><td><span class="yes">✓</span></td><td class="pop-col"><span class="yes">✓</span></td><td><span class="yes">✓</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Кастомные интеграции (по запросу)</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>SSO / SAML</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>SLA</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
+        <tr><td>Индивидуальные условия договора</td><td><span class="no-x">—</span></td><td class="pop-col"><span class="no-x">—</span></td><td><span class="no-x">—</span></td><td><span class="yes">✓</span></td></tr>
       </tbody>
     </table>
     </div>
@@ -489,7 +519,7 @@
           <span>Как считается стоимость тарифов Start и Team?</span>
           <span class="pfaq-icon">+</span>
         </div>
-        <div class="pfaq-a">Цена фиксированная за тариф, а не за каждого человека. Start — 1 490 ₽ в месяц при команде до 5 пользователей. Team — 49 990 ₽ в год при команде до 30 пользователей. Пока вы в пределах лимита, сумма не меняется от числа людей. Enterprise — договорной: стоимость рассчитывается под задачи организации.</div>
+        <div class="pfaq-a">Цена фиксированная за тариф, а не за каждого человека. Start — 1 990 ₽ в месяц при команде до 8 пользователей. Team — 4 990 ₽ в месяц или 49 990 ₽ в год при команде до 30 пользователей. Business — 9 990 ₽ в месяц при команде до 80 пользователей. Пока вы в пределах лимита, сумма не меняется от числа людей. Enterprise — договорной: стоимость рассчитывается под задачи организации.</div>
       </div>
       <div class="pfaq-item">
         <div class="pfaq-q" onclick="this.parentElement.classList.toggle('open')">
@@ -639,15 +669,18 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
 (function(){
   const LATTICE = 1000; // ₽/чел·мес — ориентир западного аналога (per-seat)
   const PLANS = [
-    { code:'start', name:'Start', max:5,   amount:1490,  period:'мес',
-      priceText:'1 490 ₽ в месяц', yearly:1490*12,
-      why:'До 5 пользователей, 1 команда: встречи 1-на-1, задачи, заметки, личная аналитика и базовый Пит.' },
-    { code:'team', name:'Team', max:30,  amount:49990, period:'год',
-      priceText:'49 990 ₽ в год, единовременно', yearly:49990,
+    { code:'start', name:'Start', max:8,   amount:1990,  period:'мес',
+      priceText:'1 990 ₽ в месяц', yearly:1990*12,
+      why:'До 8 пользователей, 1 команда: встречи 1-на-1, задачи, заметки, личная аналитика и базовый Пит.' },
+    { code:'team', name:'Team', max:30,  amount:4990, period:'мес',
+      priceText:'4 990 ₽ в месяц или 49 990 ₽ в год', yearly:49990,
       why:'До 30 пользователей, 1 команда: групповые встречи, совместные задачи, командная аналитика, Цели, Развитие и ONE AI.' },
+    { code:'business', name:'Business', max:80, amount:9990, period:'мес',
+      priceText:'9 990 ₽ в месяц', yearly:9990*12,
+      why:'До 80 пользователей, несколько команд: кросс-командный ONE AI, HR-аналитика, расширенные настройки, приоритетная поддержка.' },
     { code:'enterprise', name:'Enterprise', max:Infinity, amount:null, period:null,
       priceText:'Цена по запросу', yearly:null,
-      why:'От 30 пользователей и несколько команд: кросс-командный ONE AI, HR-аналитика, SSO/SAML, SLA и индивидуальные условия договора.' },
+      why:'Без ограничений по пользователям: SSO/SAML, кастомные интеграции, SLA и индивидуальные условия договора.' },
   ];
   let people = 12;
   const fmt = n => Math.round(n).toLocaleString('ru-RU');

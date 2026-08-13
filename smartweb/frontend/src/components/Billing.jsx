@@ -69,6 +69,9 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
   const [plans, setPlans] = useState([])
   const [busy, setBusy] = useState('')
   const [msg, setMsg] = useState('')
+  // Период оплаты для тарифов с выбором (Team): месяц | год. У остальных тарифов
+  // период фиксирован самим тарифом, переключатель на них не влияет.
+  const [period, setPeriod] = useState('month')
 
   useEscapeKey(onClose, open)  // Esc closes the dialog (keyboard escape hatch)
 
@@ -86,10 +89,14 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
   // Карточные данные идут только в виджет, на наш сервер не попадают.
   // Период оплаты определяет сам тариф (Start — месяц, Team — год полной
   // суммой, без рассрочки), поэтому с клиента его не передаём.
+  // Тариф с выбором периода (Team): заданы обе цены — помесячная и годовая.
+  const offersChoice = (p) => !!(p && p.price_month && p.price_year)
+
   const openWidget = async (p) => {
     setBusy(p.code)
     try {
-      const { data } = await checkoutPlan({ plan_code: p.code, user_id: currentUser.id })
+      const pd = offersChoice(p) ? period : undefined
+      const { data } = await checkoutPlan({ plan_code: p.code, user_id: currentUser.id, period: pd })
       const cfg = data.checkout
       if (!cfg?.configured || !cfg.public_id) { setMsg(t('ui.platezhnaya_sistema_esche_ne_podklyuchena_admi')); setBusy(''); return }
       const cp = await loadCpWidget()
@@ -116,7 +123,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
     if (p.is_enterprise) { window.location.href = `mailto:oneonone.io@yandex.com?subject=Тариф ${p.name} OneOnOne`; return }
     let d
     try {
-      const res = await changePlanPreview({ plan_code: p.code, user_id: currentUser.id })
+      const res = await changePlanPreview({ plan_code: p.code, user_id: currentUser.id, period: offersChoice(p) ? period : undefined })
       d = res.data
     } catch { setMsg(t('ui.ne_udalos_proverit_tarif_poprobuyte_pozzhe')); return }
 
@@ -183,7 +190,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
           {readOnly && (
             <p className="bill-msg" style={{ marginTop: 0 }}>{t('ui.zdes_mozhno_posmotret_tarif_i_limity')}</p>
           )}
-          <p className="bill-hero">Выберите тариф под размер команды. Start — 1 490 ₽ в месяц, Team — 49 990 ₽ в год единовременно. Business и Enterprise подключаются индивидуально. Повышение действует сразу.</p>
+          <p className="bill-hero">Выберите тариф под размер команды. Start — 1 990 ₽/мес, Team — 4 990 ₽/мес или 49 990 ₽/год, Business — 9 990 ₽/мес. Enterprise подключается индивидуально. Повышение действует сразу.</p>
 
           {/* Current plan + usage */}
           <div className="bill-current">
@@ -246,8 +253,22 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
                   <div className={`bill-price${p.is_enterprise ? ' ent' : ''}`}>
                     {p.is_enterprise || isFreeState
                       ? (l.price_label || t('ui.po_zaprosu'))
-                      : <>{(p.price_year || p.price_month).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? t('ui.god') : t('ui.mes')}</small></>}
+                      : offersChoice(p)
+                        ? <>{(period === 'year' ? p.price_year : p.price_month).toLocaleString('ru-RU')}₽<small>{period === 'year' ? t('ui.god') : t('ui.mes')}</small></>
+                        : <>{(p.price_month || p.price_year).toLocaleString('ru-RU')}₽<small>{l.billing_period === 'year' ? t('ui.god') : t('ui.mes')}</small></>}
                   </div>
+                  {offersChoice(p) && (
+                    <div className="bill-period-toggle" style={{ display: 'inline-flex', gap: 4, margin: '2px 0 8px', padding: 3, borderRadius: 999, background: 'var(--color-surface-2, #eef1f6)' }}>
+                      <button type="button" onClick={() => setPeriod('month')}
+                        style={{ border: 'none', cursor: 'pointer', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, background: period === 'month' ? 'var(--color-surface, #fff)' : 'transparent', color: period === 'month' ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                        {t('ui.mes')}
+                      </button>
+                      <button type="button" onClick={() => setPeriod('year')}
+                        style={{ border: 'none', cursor: 'pointer', borderRadius: 999, padding: '4px 12px', fontSize: 12, fontWeight: 600, background: period === 'year' ? 'var(--color-surface, #fff)' : 'transparent', color: period === 'year' ? 'var(--color-text-primary)' : 'var(--color-text-muted)' }}>
+                        {t('ui.god')} −16,5%
+                      </button>
+                    </div>
+                  )}
                   <div className="bill-desc">{DESC[p.code] || ''}</div>
                   <ul className="bill-feats">
                     {planBullets(t, p).map((b, i) => (<li key={i}><Check />{b}</li>))}
@@ -276,7 +297,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
           </div>
 
           {msg && <p className="bill-msg">{msg}</p>}
-          <p className="bill-foot">Start списывается раз в месяц, Team — раз в год полной суммой (рассрочки нет). Business и Enterprise оформляются по договору, без автоматического списания. Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
+          <p className="bill-foot">Start и Business списываются раз в месяц, Team — раз в месяц или раз в год полной суммой (годовой выгоднее на 16,5%). Enterprise оформляется по договору, без автоматического списания. Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
         </div>
       </div>
     </div>

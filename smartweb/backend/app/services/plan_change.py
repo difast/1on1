@@ -35,18 +35,28 @@ def _rank_map(db: Session) -> dict:
     return {p.code: p.sort_order for p in list_plans(db)}
 
 
-def plan_period(plan) -> str:
-    """Как оплачивается тариф: month | year | contract. Берём из каталога
-    (limits.billing_period), а не из выбора пользователя: в новой сетке
-    Start — только помесячно, Team — только годовой суммой."""
+def offers_period_choice(plan) -> bool:
+    """Тариф даёт выбор периода оплаты (помесячно ИЛИ годовой). Сейчас это
+    только Team: заданы обе цены — price_month и price_year."""
+    return bool(plan and plan.price_month and plan.price_year)
+
+
+def plan_period(plan, requested: str | None = None) -> str:
+    """Как оплачивается тариф: month | year | contract.
+
+    Если тариф даёт выбор периода (Team), уважаем выбор пользователя
+    (requested month|year). Иначе берём из каталога (limits.billing_period):
+    Start — только помесячно, Business — помесячно, Enterprise — договор."""
+    if offers_period_choice(plan) and requested in ("month", "year"):
+        return requested
     return (plan.limits or {}).get("billing_period") or ("year" if plan.price_year and not plan.price_month else "month")
 
 
-def charge_amount(plan) -> int:
+def charge_amount(plan, period: str | None = None) -> int:
     """Сумма списания в рублях за один расчётный период тарифа.
-    Start — 1 490 ₽ за месяц, Team — 49 990 ₽ за год единовременно
-    (рассрочки нет). Договорные тарифы не списываются автоматически."""
-    p = plan_period(plan)
+    Start — 1 990 ₽/мес, Team — 4 990 ₽/мес ИЛИ 49 990 ₽/год (по выбору),
+    Business — 9 990 ₽/мес. Договорные тарифы автоматически не списываются."""
+    p = plan_period(plan, period)
     if p == "year":
         return int(plan.price_year or 0)
     if p == "month":
@@ -59,7 +69,7 @@ def _charge_month(plan, period: str = None, seats: int = 1) -> int:
     между собой и показа доплаты при апгрейде. Годовой тариф делим на 12."""
     if plan is None:
         return 0
-    p = plan_period(plan)
+    p = plan_period(plan, period)
     if p == "year":
         return int(round((plan.price_year or 0) / 12))
     if p == "month":
@@ -115,14 +125,14 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
                 "message": f"Тариф {target.name} подключается индивидуально. "
                            f"Напишите нам, и мы подберём условия и всё настроим."}
 
-    # Период оплаты определяет каталог, а не пользователь: Start — месяц,
-    # Team — год (полной суммой, без рассрочки).
-    period = plan_period(target)
+    # Период оплаты: для тарифа с выбором (Team) уважаем выбор пользователя
+    # (month|year), иначе берём из каталога (Start/Business — месяц).
+    period = plan_period(target, period)
 
     # Нет пользователя — путь регистрации (для лендинга; 5.1/5.6).
     if user is None:
         return {"action": "register", "plan": target.code, "period": period,
-                "amount": charge_amount(target),
+                "amount": charge_amount(target, period),
                 "requires_payment": target.code != "free"}
 
     ranks = _rank_map(db)
@@ -144,7 +154,7 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
             return {"action": "downgrade_free", "plan": "free", "effective": "now",
                     "message": "Прекратить пробный период и остаться без подписки? Платные функции станут недоступны сразу."}
         return {"action": "subscribe", "plan": target.code, "period": period, "seats": seats,
-                "amount": charge_amount(target),
+                "amount": charge_amount(target, period),
                 "message": f"Оформить платную подписку сейчас: {(target.limits or {}).get('price_label') or ''}. "
                            f"Пробный период завершится, спишется оплата за выбранный тариф.".replace("  ", " ")}
 
@@ -191,7 +201,7 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
                 "immediate": True,
                 "current_month_price": cur_m, "target_month_price": tgt_m,
                 "diff_month": max(tgt_m - cur_m, 0),
-                "amount": charge_amount(target),
+                "amount": charge_amount(target, period),
                 "price_label": (target.limits or {}).get("price_label"),
                 "message": "Новые лимиты станут доступны сразу. Спишется стоимость нового тарифа "
                            f"({(target.limits or {}).get('price_label') or ''}) за расчётный период, "
@@ -199,7 +209,7 @@ def decide(db: Session, user, target_code: str, period: str = "month", seats: in
 
     # Даунгрейд на более дешёвый платный — с начала следующего периода (5.4).
     return {"action": "downgrade", "plan": target.code, "period": period, "seats": seats,
-            "amount": charge_amount(target),
+            "amount": charge_amount(target, period),
             "price_label": (target.limits or {}).get("price_label"),
             "effective": "period_end",
             "period_end": sub.current_period_end.isoformat() if sub and sub.current_period_end else None,

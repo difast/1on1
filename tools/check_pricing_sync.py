@@ -50,9 +50,9 @@ def main():
 
     # ── 1. Цены и лимиты каталога — то, от чего пляшут остальные проверки ────
     expected = {
-        "start": ("Start", 1490, 0, "month", 5, 1, "1 490 ₽/мес"),
-        "team": ("Team", 0, 49990, "year", 30, 1, "49 990 ₽/год"),
-        "business": ("Business", 0, 0, "contract", None, None, "Цена договорная"),
+        "start": ("Start", 1990, 0, "month", 8, 1, "1 990 ₽/мес"),
+        "team": ("Team", 4990, 49990, "month", 30, 1, "4 990 ₽/мес"),
+        "business": ("Business", 9990, 0, "month", 80, None, "9 990 ₽/мес"),
         "enterprise": ("Enterprise", 0, 0, "contract", None, None,
                        "Цена по запросу"),
     }
@@ -72,13 +72,20 @@ def main():
         expect(lim["max_users"] == lim["max_members_per_team"],
                f"plans.py: max_users и max_members_per_team у {code} разошлись")
 
-    # Договорные тарифы не должны продаваться самообслуживанием.
-    for code in ("business", "enterprise"):
-        expect(plans[code]["is_enterprise"] is True,
-               f"plans.py: {code} должен быть договорным (is_enterprise=True), иначе включится оплата картой")
-    for code in ("start", "team"):
-        expect(plans[code]["is_enterprise"] is False, f"plans.py: {code} не договорной тариф")
+    # Договорной — только Enterprise. Start/Team/Business — самообслуживание.
+    expect(plans["enterprise"]["is_enterprise"] is True,
+           "plans.py: enterprise должен быть договорным (is_enterprise=True)")
+    for code in ("start", "team", "business"):
+        expect(plans[code]["is_enterprise"] is False,
+               f"plans.py: {code} — самостоятельная оплата, не договорной тариф")
         expect(plans[code]["per_seat"] is False, f"plans.py: {code} не должен считаться за место (per_seat)")
+
+    # AI-бюджеты по тарифам (внутренний лимит себестоимости AI в рублях).
+    for code, budget in (("start", 300), ("team", 1000), ("business", 2000)):
+        expect(plans[code]["limits"].get("ai_budget_rub") == budget,
+               f"plans.py: AI-бюджет {code} = {plans[code]['limits'].get('ai_budget_rub')}, ожидалось {budget}")
+    expect(plans["enterprise"]["limits"].get("ai_budget_rub") is None,
+           "plans.py: у Enterprise AI-бюджет индивидуальный (None), без жёсткого лимита")
 
     # Автотранскрипция нигде не включена.
     for code, p in plans.items():
@@ -111,27 +118,26 @@ def main():
 
     # ── 3. Лендинг ──────────────────────────────────────────────────────────
     pricing = read("landing/pricing.html")
-    for needle in ("1 490₽", "49 990₽", "Цена договорная", "Цена по запросу",
-                   "До <strong>5</strong> пользователей", "До <strong>30</strong> пользователей",
-                   "30–100+</strong> пользователей"):
+    for needle in ("1 990₽", "4 990₽", "49 990₽", "9 990₽", "Цена по запросу",
+                   "До <strong>8</strong> пользователей", "До <strong>30</strong> пользователей",
+                   "До <strong>80</strong> пользователей"):
         expect(needle in pricing, f"landing/pricing.html: не найдено «{needle}»")
-    # Проверяем именно витринные строки старой сетки, а не любое вхождение цифр:
-    # «1 490₽» законно содержит «490₽», а комментарий про Lattice — «₽/чел·мес».
-    for stale in ('<span class="monthly">490₽</span>', '349₽', '1 млн', '1 000 000',
-                  '<small> /чел·мес</small>', '>Компания</div>', '>Старт</div>'):
+    # Строки старой сетки не должны оставаться.
+    for stale in ('<span class="monthly">490₽</span>', '349₽', '1 490', '1 млн', '1 000 000',
+                  '<small> /чел·мес</small>', 'plan-name">Компания', 'plan-name">Старт',
+                  '30–100+', 'Цена договорная'):
         expect(stale not in pricing, f"landing/pricing.html: осталась старая сетка — «{stale}»")
     expect(pricing.count("Скоро") >= 4 or pricing.count("скоро") >= 4,
            "landing/pricing.html: автотранскрипция должна быть помечена «Скоро» во всех тарифах")
-    expect("49990" in pricing, "landing/pricing.html: калькулятор не знает годовую цену Team")
+    expect("49990" in pricing and "4990" in pricing,
+           "landing/pricing.html: калькулятор не знает обе цены Team (мес и год)")
     expect("perPerson:" not in pricing and "unit * people" not in pricing,
            "landing/pricing.html: калькулятор всё ещё умножает цену на число людей")
 
     # ── 4. Личный кабинет ───────────────────────────────────────────────────
     billing = read("smartweb/frontend/src/components/Billing.jsx")
-    expect("Start — 1 490 ₽ в месяц, Team — 49 990 ₽ в год единовременно" in billing,
+    expect("Start — 1 990 ₽/мес, Team — 4 990 ₽/мес или 49 990 ₽/год, Business — 9 990 ₽/мес" in billing,
            "Billing.jsx: текст с ценами разошёлся с каталогом")
-    expect("setPeriod" not in billing,
-           "Billing.jsx: переключатель периода вернулся, хотя период задаёт тариф")
 
     # ── 5. Мобильное приложение ─────────────────────────────────────────────
     tariff = read("mobile/src/screens/TariffScreen.tsx")
@@ -139,10 +145,12 @@ def main():
     # а не литералы в .tsx: иначе перевод интерфейса ломает проверку тарифов.
     import json as _json
     ru = _json.loads(read("mobile/src/i18n/locales/ru.json"))["ui"]
-    for key, value in (("1_490_mes", "1 490 ₽/мес"), ("49_990_god", "49 990 ₽/год"),
-                       ("cena_dogovornaya", "Цена договорная"), ("cena_po_zaprosu", "Цена по запросу"),
-                       ("do_5_polzovateley_1_komanda", "до 5 пользователей, 1 команда"),
-                       ("do_30_polzovateley_1_komanda", "до 30 пользователей, 1 команда")):
+    for key, value in (("1_990_mes", "1 990 ₽/мес"), ("4_990_mes", "4 990 ₽/мес"),
+                       ("49_990_god", "49 990 ₽/год"), ("9_990_mes", "9 990 ₽/мес"),
+                       ("cena_po_zaprosu", "Цена по запросу"),
+                       ("do_8_polzovateley_1_komanda", "до 8 пользователей, 1 команда"),
+                       ("do_30_polzovateley_1_komanda", "до 30 пользователей, 1 команда"),
+                       ("do_80_polzovateley", "до 80 пользователей")):
         expect(f"ui.{key}" in tariff, f"TariffScreen.tsx: не используется ключ ui.{key}")
         expect(ru.get(key) == value, f"ru.json: ui.{key} = {ru.get(key)!r}, ожидалось {value!r}")
     for stale in ("'Старт'", "'Команда'", "'Компания'"):
@@ -160,24 +168,26 @@ def main():
         rows = {r[0]: r for r in table["rows"]}
         expect(list(rows) == ["Start", "Team", "Business", "Enterprise"],
                f"legal_docs.json ({key}): состав тарифов {list(rows)}")
-        expect(rows.get("Start", [None, None])[1] == "1 490 ₽/мес",
+        expect(rows.get("Start", [None, None])[1] == "1 990 ₽/мес",
                f"legal_docs.json ({key}): цена Start разошлась")
-        expect(rows.get("Team", [None, None])[1] == "49 990 ₽/год",
+        expect(rows.get("Team", [None, None])[1] == "4 990 ₽/мес или 49 990 ₽/год",
                f"legal_docs.json ({key}): цена Team разошлась")
-        expect(rows.get("Business", [None, None])[1] == "Цена договорная",
+        expect(rows.get("Business", [None, None])[1] == "9 990 ₽/мес",
                f"legal_docs.json ({key}): цена Business разошлась")
         expect(rows.get("Enterprise", [None, None])[1] == "цена по запросу",
                f"legal_docs.json ({key}): цена Enterprise разошлась")
-        expect(rows.get("Start", [None, None, None])[2] == "до 5",
+        expect(rows.get("Start", [None, None, None])[2] == "до 8",
                f"legal_docs.json ({key}): лимит пользователей Start разошёлся")
         expect(rows.get("Team", [None, None, None])[2] == "до 30",
                f"legal_docs.json ({key}): лимит пользователей Team разошёлся")
+        expect(rows.get("Business", [None, None, None])[2] == "до 80",
+               f"legal_docs.json ({key}): лимит пользователей Business разошёлся")
 
     # Сгенерированные документы должны быть свежими относительно источника.
     for path, needle in (
-        ("landing/documents.html", "49 990 ₽/год"),
-        ("smartweb/frontend/src/lib/legalDocs.js", "49 990 ₽/год"),
-        ("mobile/src/lib/legalDocs.ts", "49 990 ₽/год"),
+        ("landing/documents.html", "9 990 ₽/мес"),
+        ("smartweb/frontend/src/lib/legalDocs.js", "9 990 ₽/мес"),
+        ("mobile/src/lib/legalDocs.ts", "9 990 ₽/мес"),
     ):
         expect(needle in read(path),
                f"{path}: документы не пересобраны — запустите node legal/generate.mjs")

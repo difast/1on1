@@ -1957,7 +1957,12 @@
     "priglasit": "Invite",
     "priglasit_v_komandu": "Invite to the team",
     "novyy_kod_sdelaet_staryy_nedeystvitelnym": "A new code invalidates the previous one — anyone holding the old code will not be able to join.",
-    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Notifications about meetings, tasks and goals will appear here."
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Notifications about meetings, tasks and goals will appear here.",
+    "1_990_mes": "1,990 ₽/mo",
+    "4_990_mes": "4,990 ₽/mo",
+    "9_990_mes": "9,990 ₽/mo",
+    "do_8_polzovateley_1_komanda": "up to 8 users, 1 team",
+    "do_80_polzovateley": "up to 80 users"
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",

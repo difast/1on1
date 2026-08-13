@@ -1965,7 +1965,12 @@
     "priglasit": "Пригласить",
     "priglasit_v_komandu": "Пригласить в команду",
     "novyy_kod_sdelaet_staryy_nedeystvitelnym": "Новый код сделает прежний недействительным — участники со старым кодом присоединиться не смогут.",
-    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Уведомления о встречах, задачах и целях появятся здесь."
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Уведомления о встречах, задачах и целях появятся здесь.",
+    "1_990_mes": "1 990 ₽/мес",
+    "4_990_mes": "4 990 ₽/мес",
+    "9_990_mes": "9 990 ₽/мес",
+    "do_8_polzovateley_1_komanda": "до 8 пользователей, 1 команда",
+    "do_80_polzovateley": "до 80 пользователей"
   },
   "survey": {
     "q.usage.title": "Как вы планируете использовать OneOnOne?",

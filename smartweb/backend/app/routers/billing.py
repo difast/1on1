@@ -139,16 +139,18 @@ def billing_me(
     }
 
 
-def _amount_kopecks(plan) -> int:
+def _amount_kopecks(plan, period: str | None = None) -> int:
     """Сумма списания в копейках за расчётный период тарифа.
-    Start — 1 490 ₽ за месяц, Team — 49 990 ₽ за год ЕДИНОВРЕМЕННО
-    (рассрочки нет). Тариф сам определяет период — см. plan_change.plan_period."""
-    return int(round(plan_change.charge_amount(plan) * 100))
+    Start — 1 990 ₽/мес, Team — 4 990 ₽/мес ИЛИ 49 990 ₽/год (по выбору),
+    Business — 9 990 ₽/мес. Период тарифа — см. plan_change.plan_period."""
+    return int(round(plan_change.charge_amount(plan, period) * 100))
 
 
 class CheckoutReq(BaseModel):
     plan_code: ShortStr
-    period: ShortStr = "month"     # игнорируется: период задаёт сам тариф
+    # month | year — учитывается только для тарифов с выбором периода (Team);
+    # у остальных период задаёт сам тариф.
+    period: ShortStr = "month"
     # Число мест влияет на сумму списания — верхняя граница обязательна.
     seats: Annotated[int, Field(ge=1, le=10000)] = 1
     user_id: OptEntityId = None
@@ -188,8 +190,8 @@ def checkout(data: CheckoutReq, db: Session = Depends(get_db), current=Depends(g
                        f"и мы подберём условия. Оплатить его картой в личном кабинете нельзя.",
         })
 
-    period = plan_change.plan_period(plan)          # month (Start) | year (Team)
-    amount = _amount_kopecks(plan)
+    period = plan_change.plan_period(plan, data.period)   # Team: month|year по выбору
+    amount = _amount_kopecks(plan, period)
     period_ru = "год" if period == "year" else "месяц"
     pay = Payment(
         subject_type="user", subject_id=user.id, amount=amount, currency=plan.currency,
