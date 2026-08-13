@@ -22,8 +22,8 @@ const PLAN_NAMES: Record<string, string> = {
   company: 'Business', enterprise: 'Enterprise', unlimited: 'Полный доступ',
 };
 const PLAN_PRICES: Record<string, string> = {
-  start: '1 490 ₽/мес', team: '49 990 ₽/год',
-  business: 'Цена договорная', enterprise: 'цена по запросу',
+  start: '1 990 ₽/мес', team: '4 990 ₽/мес или 49 990 ₽/год',
+  business: '9 990 ₽/мес', enterprise: 'цена по запросу',
 };
 const SUB_STATUS: Record<string, string> = {
   free: 'Без подписки', trialing: 'Пробный период', active: 'Активна',

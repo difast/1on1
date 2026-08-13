@@ -54,7 +54,7 @@ from app.models.plan import Plan
 # Версия сетки. Увеличивается при любом изменении состава/цен — по ней
 # seed_plans пересинхронизирует строки в БД (иначе прод остался бы на старой
 # сетке, т.к. раньше seed никогда не перезаписывал существующие планы).
-CATALOG_VERSION = 3
+CATALOG_VERSION = 4
 
 # Полный реестр фич. Порядок = порядок показа в сравнительной таблице.
 # Значение — человекочитаемая подпись (используется и в мягких тарифных
@@ -69,12 +69,14 @@ FEATURE_LABELS = {
     "mood_personal": "Личное настроение (чек-ин и личный тренд)",
     "personal_analytics": "Личная аналитика",
     "pit": "AI-ассистент Пит (базовый)",
+    "ai_decomposition": "AI-декомпозиция задач",
     "ai_slots": "AI-подбор слотов для встреч",
     "ru_queries": "Запросы на русском",
     "knowledge_base": "База знаний (просмотр)",
     "company_profile": "Профиль компании (поиск по ИНН/БИН)",
     "video_calls": "Созвоны",
     "support": "Поддержка",
+    "social_login": "Соц-логины (Yandex ID, VK ID, Telegram), 2FA",
     # Team и выше
     "group_meetings": "Групповые и командные встречи",
     "collab_tasks": "Совместные задачи (несколько исполнителей)",
@@ -84,9 +86,12 @@ FEATURE_LABELS = {
     "csv_export": "Экспорт данных (Excel)",
     "goals": "Цели и OKR",
     "development": "Развитие (навыки, планы, рекомендации)",
-    "ai_decomposition": "AI-декомпозиция задач",
     "one_ai": "ONE AI",
-    "admin_panel": "Админ-панель",
+    # «Управление командой» (не «Админ-панель» — чтобы не путать с внутренней
+    # владельческой админкой): раздел тимлида для управления составом команды и
+    # просмотра лимитов.
+    "admin_panel": "Управление командой",
+    "integrations": "Интеграции (Google Calendar, Яндекс Календарь, вебхуки)",
     # Business и выше
     "multi_team": "Несколько команд в организации",
     "one_ai_org": "Расширенный ONE AI (кросс-командная аналитика)",
@@ -114,13 +119,14 @@ COMING_SOON_LABEL = "Скоро"
 # предыдущий), чтобы состав нельзя было случайно рассинхронизировать.
 _START_FEATURES = [
     "one_on_one", "meeting_proposals", "tasks", "task_proposals", "notes",
-    "mood_personal", "personal_analytics", "pit", "ai_slots", "ru_queries",
-    "knowledge_base", "company_profile", "video_calls", "support",
+    "mood_personal", "personal_analytics", "pit", "ai_decomposition",
+    "ai_slots", "ru_queries", "knowledge_base", "company_profile",
+    "video_calls", "support", "social_login",
 ]
 _TEAM_FEATURES = _START_FEATURES + [
     "group_meetings", "collab_tasks", "mood", "risk_alerts", "analytics",
-    "csv_export", "goals", "development", "ai_decomposition", "one_ai",
-    "admin_panel",
+    "csv_export", "goals", "development", "one_ai",
+    "admin_panel", "integrations",
 ]
 _BUSINESS_FEATURES = _TEAM_FEATURES + [
     "multi_team", "one_ai_org", "hr_analytics", "advanced_settings",

@@ -112,6 +112,9 @@ def authorize(provider: str, user_id: int = Query(...),
     """Вернуть URL страницы согласия OAuth. Клиент делает по нему переход."""
     if user_id != current.id:
         raise HTTPException(403, "Можно подключать только свой календарь")
+    # Тарифное ограничение: интеграции (календари, вебхуки) — с тарифа Team.
+    from app.services import entitlements
+    entitlements.require_feature(db, current, "integrations")
     if provider not in SUPPORTED_PROVIDERS:
         raise HTTPException(404, "Неизвестный провайдер")
     cp = get_calendar_provider(provider)
@@ -231,6 +234,9 @@ def create_webhook(data: WebhookCreateReq, db: Session = Depends(get_db),
                    current=Depends(require_user)):
     """Добавить исходящий вебхук (только тимлид команды). Секрет генерируется."""
     _require_team_lead(db, data.team_id, current)
+    # Тарифное ограничение: интеграции (в т.ч. вебхуки) — с тарифа Team.
+    from app.services import entitlements
+    entitlements.require_feature(db, current, "integrations")
     # Проверка не только схемы, но и того, что адрес ведёт наружу: иначе сервер
     # можно заставить ходить по внутренним адресам от своего имени (SSRF).
     try:

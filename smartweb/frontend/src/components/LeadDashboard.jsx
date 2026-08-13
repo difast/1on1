@@ -583,13 +583,14 @@ export default function LeadDashboard({ user, onLogout, onUserUpdate }) {
   }
 
   // Этап 5: мягкая рекомендация тарифа один раз, по размеру компании.
-  // Границы — из тарифной сетки: Start до 5 человек, Team до 30, дальше
-  // Business (договорной). До 6 человек или уже показано — ничего.
+  // Границы — из тарифной сетки: Start до 8 человек, Team до 30, Business до 80.
+  // В пределах лимита Start (<=8) или уже показано — ничего.
   const maybeShowPricingHint = (size) => {
     const n = Number(size)
     if (!n || user?.pricing_hint_shown) return
-    if (n > 30) setPricingHint({ plan: 'business', label: 'Business' })
-    else if (n > 5) setPricingHint({ plan: 'team', label: 'Team' })
+    if (n > 80) setPricingHint({ plan: 'enterprise', label: 'Enterprise' })
+    else if (n > 30) setPricingHint({ plan: 'business', label: 'Business' })
+    else if (n > 8) setPricingHint({ plan: 'team', label: 'Team' })
   }
 
   const dismissPricingHint = async () => {

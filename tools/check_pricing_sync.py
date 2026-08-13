@@ -103,10 +103,12 @@ def main():
     for feature, plan_name in {
         "pit": "Start", "personal_analytics": "Start", "mood_personal": "Start",
         "knowledge_base": "Start", "company_profile": "Start",
+        # AI-декомпозиция и соц-логины/2FA — базовые (со Start).
+        "ai_decomposition": "Start", "social_login": "Start",
         "group_meetings": "Team", "collab_tasks": "Team", "analytics": "Team",
         "goals": "Team", "development": "Team", "one_ai": "Team",
         "csv_export": "Team", "admin_panel": "Team", "mood": "Team",
-        "risk_alerts": "Team", "ai_decomposition": "Team",
+        "risk_alerts": "Team", "integrations": "Team",
         "multi_team": "Business", "one_ai_org": "Business", "hr_analytics": "Business",
         "sso": "Enterprise", "sla": "Enterprise", "custom_integrations": "Enterprise",
     }.items():
@@ -122,11 +124,14 @@ def main():
                    "До <strong>8</strong> пользователей", "До <strong>30</strong> пользователей",
                    "До <strong>80</strong> пользователей"):
         expect(needle in pricing, f"landing/pricing.html: не найдено «{needle}»")
-    # Строки старой сетки не должны оставаться.
+    # Строки старой сетки/терминологии не должны оставаться.
     for stale in ('<span class="monthly">490₽</span>', '349₽', '1 490', '1 млн', '1 000 000',
                   '<small> /чел·мес</small>', 'plan-name">Компания', 'plan-name">Старт',
-                  '30–100+', 'Цена договорная'):
-        expect(stale not in pricing, f"landing/pricing.html: осталась старая сетка — «{stale}»")
+                  '30–100+', 'Цена договорная', 'Админ-панель', 'AI-бюджет'):
+        expect(stale not in pricing, f"landing/pricing.html: осталась старая сетка/термин — «{stale}»")
+    # Терминология финальной сетки на лендинге.
+    for needle in ("Управление командой", "Интеграции", "AI-декомпозиция задач"):
+        expect(needle in pricing, f"landing/pricing.html: не найдено «{needle}»")
     expect(pricing.count("Скоро") >= 4 or pricing.count("скоро") >= 4,
            "landing/pricing.html: автотранскрипция должна быть помечена «Скоро» во всех тарифах")
     expect("49990" in pricing and "4990" in pricing,
