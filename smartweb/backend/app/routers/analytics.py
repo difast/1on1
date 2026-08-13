@@ -89,6 +89,9 @@ def get_lead_analytics(user_id: int, db: Session = Depends(get_db), current=Depe
     # Права (27.5): аналитику тимлида отдаём только ему самому.
     if current and current.id != user_id:
         raise HTTPException(status_code=403, detail="Доступ только к своей аналитике")
+    # Тарифное ограничение: командная аналитика — с тарифа Team.
+    from app.services import entitlements
+    entitlements.require_feature(db, current, "analytics")
     now = datetime.utcnow()
     teams = db.query(Team).filter(Team.team_lead_id == user_id).all()
 
