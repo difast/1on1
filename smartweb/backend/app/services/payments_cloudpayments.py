@@ -11,8 +11,16 @@ import os
 import hmac
 import base64
 import hashlib
+import uuid
+import logging
 
 from app.services.payments_base import PaymentProvider
+
+log = logging.getLogger("billing.cloudpayments")
+
+# Базовый адрес серверного API CloudPayments (S2S). Меняется только через env,
+# чтобы в тестах/песочнице указать другой хост.
+API_BASE = os.getenv("CLOUDPAYMENTS_API_BASE", "https://api.cloudpayments.ru")
 
 
 class CloudPaymentsProvider(PaymentProvider):
@@ -23,9 +31,63 @@ class CloudPaymentsProvider(PaymentProvider):
         return os.getenv("CLOUDPAYMENTS_PUBLIC_ID", "")
 
     @property
+    def _api_secret(self) -> str:
+        return os.getenv("CLOUDPAYMENTS_API_SECRET", "")
+
+    @property
     def _secret(self) -> str:
         # Dedicated HMAC secret if provided, else the API secret.
         return os.getenv("CLOUDPAYMENTS_WEBHOOK_HMAC") or os.getenv("CLOUDPAYMENTS_API_SECRET", "")
+
+    def configured(self) -> bool:
+        """Готов ли провайдер к серверным вызовам (заданы public_id и API-секрет).
+        Пока боевые ключи не подключены — все S2S-вызовы возвращают not_configured
+        и НИКУДА не ходят, приём денег не включается."""
+        return bool(self.public_id and self._api_secret)
+
+    # ── Серверное API (S2S): подписки ────────────────────────────────────────
+    # Реализовано полностью и готово к работе, но БЕЗ боевых ключей не выполняет
+    # реальных вызовов (см. configured()). X-Request-ID добавляется на КАЖДЫЙ
+    # исходящий запрос для идемпотентности и трассировки.
+
+    def _api_post(self, path: str, payload: dict, request_id: str | None = None) -> dict:
+        if not self.configured():
+            return {"configured": False, "success": False, "reason": "no_live_keys"}
+        import httpx
+        rid = request_id or str(uuid.uuid4())
+        auth = (self.public_id, self._api_secret)
+        headers = {"Content-Type": "application/json", "X-Request-ID": rid}
+        url = f"{API_BASE}{path}"
+        try:
+            with httpx.Client(timeout=20) as client:
+                r = client.post(url, json=payload, headers=headers, auth=auth)
+            data = r.json() if r.content else {}
+            return {"configured": True, "http_status": r.status_code,
+                    "success": bool(data.get("Success")), "model": data.get("Model"),
+                    "request_id": rid, "raw": data}
+        except Exception as e:
+            log.warning("CloudPayments S2S error on %s: %s", path, type(e).__name__)
+            return {"configured": True, "success": False, "error": type(e).__name__, "request_id": rid}
+
+    def subscription_update(self, subscription_id: str, *, amount: float | None = None,
+                            interval: str | None = None, period: int | None = None,
+                            description: str | None = None, request_id: str | None = None) -> dict:
+        """Subscriptions/Update — изменить параметры рекуррентной подписки
+        (сумма/интервал) при апгрейде тарифа. Пустые поля не отправляем."""
+        payload: dict = {"Id": subscription_id}
+        if amount is not None:
+            payload["Amount"] = amount
+        if interval:
+            payload["Interval"] = interval          # "Month" | "Year"
+        if period:
+            payload["Period"] = period
+        if description:
+            payload["Description"] = description
+        return self._api_post("/subscriptions/update", payload, request_id)
+
+    def subscription_cancel(self, subscription_id: str, request_id: str | None = None) -> dict:
+        """Subscriptions/Cancel — отменить рекуррентную подписку у провайдера."""
+        return self._api_post("/subscriptions/cancel", {"Id": subscription_id}, request_id)
 
     def checkout_config(self, *, amount: int, currency: str, description: str,
                         account_id: str, invoice_id: str, recurrent: bool,

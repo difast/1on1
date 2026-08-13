@@ -244,6 +244,8 @@ export const checkoutPlan = (data) => api.post('/billing/checkout', data)
 // Единая точка решения о смене тарифа (лендинг и ЛК) и отмена подписки.
 export const changePlanPreview = (data) => api.post('/billing/change/preview', data)
 export const cancelMySubscription = (userId) => api.post('/billing/cancel', { user_id: userId })
+// Отложенный даунгрейд платный->платный: вступает в силу со следующего периода.
+export const scheduleDowngrade = (data) => api.post('/billing/schedule-downgrade', data)
 // AI-квота (себестоимость): состояние + разбивка по участникам (для тимлида).
 export const getAiQuota = (userId) => api.get('/billing/ai-quota', { params: userId ? { user_id: userId } : {} })
 // Admin billing

@@ -27,6 +27,12 @@ celery_app.conf.update(
             "task": "app.tasks.reminders.check_overdue_meetings",
             "schedule": crontab(hour=9, minute=0),
         },
+        # Обслуживание подписок: истёкшие триалы, отложенные даунгрейды, отмена в
+        # конце периода. Раз в час — этого достаточно для суточных переходов.
+        "subscription-maintenance": {
+            "task": "app.tasks.billing_tasks.run_subscription_maintenance",
+            "schedule": crontab(minute=15),  # каждый час в :15
+        },
     },
 )
 
