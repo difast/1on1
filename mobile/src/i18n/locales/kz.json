@@ -1957,7 +1957,12 @@
     "priglasit": "Шақыру",
     "priglasit_v_komandu": "Командаға шақыру",
     "novyy_kod_sdelaet_staryy_nedeystvitelnym": "Жаңа код бұрынғысын жарамсыз етеді — ескі коды барлар қосыла алмайды.",
-    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Кездесулер, тапсырмалар және мақсаттар туралы хабарламалар осында пайда болады."
+    "uvedomleniya_o_vstrechah_zadachah_i_celyah_poya": "Кездесулер, тапсырмалар және мақсаттар туралы хабарламалар осында пайда болады.",
+    "1_990_mes": "1 990 ₽/ай",
+    "4_990_mes": "4 990 ₽/ай",
+    "9_990_mes": "9 990 ₽/ай",
+    "do_8_polzovateley_1_komanda": "8 пайдаланушыға дейін, 1 команда",
+    "do_80_polzovateley": "80 пайдаланушыға дейін"
   },
   "survey": {
     "q.usage.title": "OneOnOne қызметін қалай пайдаланбақсыз?",

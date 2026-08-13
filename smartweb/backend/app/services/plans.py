@@ -25,10 +25,19 @@ catalog and re-syncs it on startup when CATALOG_VERSION changes (см. seed_plan
   catalog_version — версия сетки, по ней seed_plans понимает, что строку в БД
                    нужно пересинхронизировать
 
-Оплата: Start — 1 490 ₽/мес (интервал Month), Team — 49 990 ₽/год (интервал
-Year, полной суммой единовременно; рассрочки нет). Business и Enterprise —
-договорные: автоматической подписки через CloudPayments у них нет, только
-«Связаться с нами» (флаг is_enterprise = «договорной тариф»).
+Оплата: Start — 1 990 ₽/мес (интервал Month). Team — 4 990 ₽/мес (интервал
+Month) ЛИБО 49 990 ₽/год (интервал Year, полной суммой единовременно; выбор
+периода делает пользователь при оформлении; годовой = экономия 16,5% против
+59 880 ₽ при помесячной оплате). Business — 9 990 ₽/мес (интервал Month,
+самостоятельная оплата). Enterprise — договорной: автоматической подписки через
+CloudPayments нет, только «Связаться с нами» (флаг is_enterprise = «договорной
+тариф»).
+
+AI-бюджет (внутренний лимит СЕБЕСТОИМОСТИ AI в рублях, не цена для клиента;
+считается по фактической стоимости запросов, см. services/ai_billing.py):
+Start — 300 ₽/мес, Team — 1 000 ₽/мес, Business — 2 000 ₽/мес, Enterprise — без
+жёсткого лимита (настраивается индивидуально). Значение лежит в limits.ai_budget_rub
+и переопределяется на организацию полем subscriptions.ai_budget_rub_override.
 
 Заметки по формулировкам (обязаны совпадать с /pricing и экраном тарифа):
   - "csv_export" — внутреннее имя флага (сохранено ради совместимости с уже
@@ -45,7 +54,7 @@ from app.models.plan import Plan
 # Версия сетки. Увеличивается при любом изменении состава/цен — по ней
 # seed_plans пересинхронизирует строки в БД (иначе прод остался бы на старой
 # сетке, т.к. раньше seed никогда не перезаписывал существующие планы).
-CATALOG_VERSION = 2
+CATALOG_VERSION = 3
 
 # Полный реестр фич. Порядок = порядок показа в сравнительной таблице.
 # Значение — человекочитаемая подпись (используется и в мягких тарифных
@@ -147,29 +156,35 @@ PLAN_SEED = [
             "max_meetings_per_month": 5, "history_days": 14,
             "features": _features([]),
             "support": "email",
+            "ai_budget_rub": 0,
         },
     },
     {
         "code": "start", "name": "Start",
-        "price_month": 1490, "price_year": 0, "per_seat": False, "is_enterprise": False,
+        "price_month": 1990, "price_year": 0, "per_seat": False, "is_enterprise": False,
         "sort_order": 2,
         "limits": {
             "public": True, "billing_period": "month",
-            "price_label": "1 490 ₽/мес", "users_label": "до 5 пользователей",
-            "max_teams": 1, "max_users": 5, "max_members_per_team": 5, "min_seats": 1,
+            "price_label": "1 990 ₽/мес", "users_label": "до 8 пользователей",
+            "max_teams": 1, "max_users": 8, "max_members_per_team": 8, "min_seats": 1,
             "max_meetings_per_month": None, "history_days": None,
             "trial_days": 14, "trial_restricted_features": [],
             "features": _features(_START_FEATURES),
             "support": "email",
+            "ai_budget_rub": 300,
         },
     },
     {
+        # Team — единственный тариф с ВЫБОРОМ периода: помесячно (4 990 ₽/мес)
+        # или годовой (49 990 ₽/год, экономия 16,5% против 59 880 ₽). price_month
+        # и price_year заданы оба; период выбирает пользователь при оформлении.
         "code": "team", "name": "Team",
-        "price_month": 0, "price_year": 49990, "per_seat": False, "is_enterprise": False,
+        "price_month": 4990, "price_year": 49990, "per_seat": False, "is_enterprise": False,
         "sort_order": 3,
         "limits": {
-            "public": True, "billing_period": "year",
-            "price_label": "49 990 ₽/год", "users_label": "до 30 пользователей",
+            "public": True, "billing_period": "month",
+            "price_label": "4 990 ₽/мес", "price_label_year": "49 990 ₽/год",
+            "year_discount_percent": 16.5, "users_label": "до 30 пользователей",
             "max_teams": 1, "max_users": 30, "max_members_per_team": 30, "min_seats": 1,
             "max_meetings_per_month": None, "history_days": None,
             # Пробный период Team — ограниченный: ONE AI и Развитие на триале
@@ -177,21 +192,24 @@ PLAN_SEED = [
             "trial_days": 14, "trial_restricted_features": ["one_ai", "development"],
             "features": _features(_TEAM_FEATURES),
             "support": "email",
+            "ai_budget_rub": 1000,
         },
     },
     {
-        # Договорной тариф: is_enterprise=True означает «без самостоятельной
-        # оплаты» — checkout запрещён, plan_change отдаёт contact_sales.
+        # Business — самостоятельная помесячная оплата (9 990 ₽/мес, до 80
+        # пользователей). is_enterprise=False -> checkout разрешён.
         "code": "business", "name": "Business",
-        "price_month": 0, "price_year": 0, "per_seat": False, "is_enterprise": True,
+        "price_month": 9990, "price_year": 0, "per_seat": False, "is_enterprise": False,
         "sort_order": 4,
         "limits": {
-            "public": True, "billing_period": "contract",
-            "price_label": "Цена договорная", "users_label": "30–100+ пользователей",
-            "max_teams": None, "max_users": None, "max_members_per_team": None, "min_seats": 30,
+            "public": True, "billing_period": "month",
+            "price_label": "9 990 ₽/мес", "users_label": "до 80 пользователей",
+            "max_teams": None, "max_users": 80, "max_members_per_team": 80, "min_seats": 1,
             "max_meetings_per_month": None, "history_days": None,
+            "trial_days": 14, "trial_restricted_features": [],
             "features": _features(_BUSINESS_FEATURES),
             "support": "priority",
+            "ai_budget_rub": 2000,
         },
     },
     {
@@ -206,6 +224,9 @@ PLAN_SEED = [
             "max_meetings_per_month": None, "history_days": None,
             "features": _features(_ENTERPRISE_FEATURES),
             "support": "24/7",
+            # None = без жёсткого лимита; фактический лимит для конкретной
+            # организации задаётся индивидуально (ai_budget_rub_override).
+            "ai_budget_rub": None,
         },
     },
 ]
@@ -223,6 +244,7 @@ LOCKED_LIMITS = {
     "max_meetings_per_month": 0, "history_days": 0,
     "features": {k: False for k in _ALL_FEATURES},
     "support": "email",
+    "ai_budget_rub": 0,
 }
 
 # Limits granted when an account is flagged with full access (no subscription).
@@ -232,6 +254,7 @@ UNLIMITED_LIMITS = {
     # Даже при полном доступе неработающая функция остаётся выключенной.
     "features": {k: k not in COMING_SOON_FEATURES for k in _ALL_FEATURES},
     "support": "24/7",
+    "ai_budget_rub": None,
 }
 
 
