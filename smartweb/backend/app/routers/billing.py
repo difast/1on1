@@ -146,6 +146,37 @@ def _amount_kopecks(plan, period: str | None = None) -> int:
     return int(round(plan_change.charge_amount(plan, period) * 100))
 
 
+@router.get("/ai-quota")
+def ai_quota(user_id: int = Query(None), db: Session = Depends(get_db),
+             current=Depends(get_current_user)):
+    """AI-квота владельца бюджета (2.3/2.6): использовано/бюджет, процент, дата
+    сброса, разбивка на input/output и стоимость. Для тимлида — ещё разбивка по
+    участникам команды. Плюс мягкое уведомление по порогам 80/90/100.
+
+    Кнопка «Увеличить AI-квоту» на фронте ведёт на заготовку (increase_quota):
+    покупка доп. квоты пока не подключена — показываем «Скоро», не чекаут."""
+    from app.services import ai_billing
+    user = current
+    if user is None and user_id is not None:
+        user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(401, "User required")
+    state = ai_billing.quota_state(db, user)
+    notice = ai_billing.quota_notice(state)
+    owner_id = state["owner_user_id"]
+    is_owner = owner_id == user.id
+    # Разбивку по участникам показываем только владельцу бюджета (тимлиду).
+    breakdown = ai_billing.per_member_breakdown(db, owner_id) if is_owner else []
+    return {
+        **state,
+        "is_budget_owner": is_owner,
+        "notice": notice,
+        "members": breakdown,
+        # Заготовка допродажи квоты — без реального чекаута (оплата не включена).
+        "increase_quota": {"available": False, "message": "Скоро будет доступно"},
+    }
+
+
 class CheckoutReq(BaseModel):
     plan_code: ShortStr
     # month | year — учитывается только для тарифов с выбором периода (Team);

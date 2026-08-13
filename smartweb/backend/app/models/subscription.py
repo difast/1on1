@@ -23,6 +23,14 @@ class Subscription(Base):
     manager_id = Column(Integer, nullable=True)
     manager_name = Column(String(255), nullable=True)
     manager_contact = Column(String(255), nullable=True)
+    # Индивидуальный лимит AI-себестоимости (в рублях) на организацию: если
+    # задан, переопределяет ai_budget_rub тарифа. Нужен для Enterprise и ручных
+    # корректировок. None -> берётся бюджет тарифа.
+    ai_budget_rub_override = Column(Integer, nullable=True)
+    # Отложенный даунгрейд платный->платный (Этап 4): код тарифа, на который
+    # перейти в начале следующего периода, и целевой период оплаты.
+    pending_plan_code = Column(String(50), nullable=True)
+    pending_period = Column(String(10), nullable=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now())
 

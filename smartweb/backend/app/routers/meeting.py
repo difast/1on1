@@ -414,6 +414,7 @@ def get_ai_slots(data: SlotRequest, db: Session = Depends(get_db),
     try:
         text = ai_service.complete(
             [{"role": "user", "content": prompt}], max_tokens=150, timeout=15,
+            meter={"db": db, "user": _lead, "feature": "meeting_slots"},
         ).strip()
         if "```" in text:
             text = text.split("```")[1].lstrip("json").strip()
