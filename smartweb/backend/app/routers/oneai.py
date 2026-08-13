@@ -77,7 +77,8 @@ def query(data: OneAiQuery, db: Session = Depends(get_db), current=Depends(get_c
     user_msg += f"\n\n=== ДАННЫЕ (только на них основывай ответ) ===\n{context}\n=== КОНЕЦ ДАННЫХ ==="
 
     # Ответ короче прежнего: модель отдаёт выводы, а не пересказ данных.
-    reply = call_llm(ai_context.ONEAI_SYSTEM, [{"role": "user", "content": user_msg}], max_tokens=700)
+    reply = call_llm(ai_context.ONEAI_SYSTEM, [{"role": "user", "content": user_msg}], max_tokens=700,
+                     meter={"db": db, "user": actor, "feature": "one_ai"})
     if reply is None:
         raise HTTPException(status_code=503, detail="ONE AI временно недоступен, попробуйте ещё раз")
     structured = ai_text.parse_oneai(reply)

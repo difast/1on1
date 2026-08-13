@@ -8,7 +8,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '../context/auth';
 import { useTheme } from '../context/theme';
 import type { AppColors } from '../constants/colors';
-import { getBillingMe } from '../lib/api';
+import { getBillingMe, getAiQuota } from '../lib/api';
 
 import { useI18n } from '../lib/i18n';
 import { KeyboardAwareScroll } from '../components/KeyboardAvoider';
@@ -46,6 +46,7 @@ export default function TariffScreen() {
   const router = useRouter();
   const [status, setStatus] = useState<Status>('loading');
   const [data, setData] = useState<any>(null);
+  const [quota, setQuota] = useState<any>(null);
 
   useEffect(() => {
     let alive = true;
@@ -58,6 +59,11 @@ export default function TariffScreen() {
       } catch {
         if (alive) setStatus('error');
       }
+      // AI-квота — best-effort, не блокирует экран тарифа.
+      try {
+        const q = await getAiQuota(user.id);
+        if (alive) setQuota(q);
+      } catch { /* без квоты экран остаётся рабочим */ }
     })();
     return () => { alive = false; };
   }, [user?.id]);
@@ -131,6 +137,32 @@ export default function TariffScreen() {
               </View>
             ))}
           </View>
+
+          {quota && (
+            <>
+              <Text style={styles.sectionLabel}>{t('ui.ai_kvota')}</Text>
+              <View style={styles.card}>
+                <View style={styles.row}>
+                  <Text style={styles.rowLabel}>{t('ui.ispolzovano')}</Text>
+                  <Text style={styles.rowValue}>
+                    {quota.unlimited ? t('ui.bez_ogranicheniya')
+                      : `${Number(quota.used_rub).toLocaleString('ru-RU')} / ${Number(quota.budget_rub).toLocaleString('ru-RU')} ₽ (${quota.percent}%)`}
+                  </Text>
+                </View>
+                {!quota.unlimited && (
+                  <View style={[styles.row, styles.rowBorder]}>
+                    <Text style={styles.rowLabel}>{t('ui.sbros_limita')}</Text>
+                    <Text style={styles.rowValue}>{quota.reset_date}</Text>
+                  </View>
+                )}
+                {quota.notice && (
+                  <View style={[styles.noticeCard, { marginTop: 10 }]}>
+                    <Text style={styles.noticeText}>{quota.notice.message}</Text>
+                  </View>
+                )}
+              </View>
+            </>
+          )}
 
           {data?.usage?.meetings_this_month !== undefined && (
             <>

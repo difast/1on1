@@ -1962,7 +1962,11 @@
     "4_990_mes": "4,990 ₽/mo",
     "9_990_mes": "9,990 ₽/mo",
     "do_8_polzovateley_1_komanda": "up to 8 users, 1 team",
-    "do_80_polzovateley": "up to 80 users"
+    "do_80_polzovateley": "up to 80 users",
+    "ai_kvota": "AI quota",
+    "ispolzovano": "Used",
+    "bez_ogranicheniya": "No limit",
+    "sbros_limita": "Limit resets"
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",

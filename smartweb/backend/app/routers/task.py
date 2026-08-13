@@ -159,6 +159,7 @@ def get_task_ai_advice(data: TaskAIRequest, db: Session = Depends(get_db),
     try:
         raw = ai_service.complete(
             [{"role": "user", "content": prompt}], max_tokens=500, timeout=25,
+            meter={"db": db, "user": current, "feature": "task_decomposition"},
         )
 
         # Strategy 1: find balanced JSON object

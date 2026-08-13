@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription } from '../api/client'
+import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription, getAiQuota } from '../api/client'
 import { confirmDialog } from '../lib/ui'
 import useEscapeKey from '../lib/useEscapeKey'
 
@@ -11,9 +11,9 @@ const CP_WIDGET = 'https://widget.cloudpayments.ru/bundles/cloudpayments.js'
 
 const DESC = {
   free: 'Без подписки: доступ к платным функциям закрыт.',
-  start: 'Одна команда до 5 человек: встречи 1-на-1, задачи, заметки, базовый Пит.',
+  start: 'Одна команда до 8 человек: встречи 1-на-1, задачи, заметки, базовый Пит.',
   team: 'Команде до 30 человек: групповые встречи, аналитика, Цели, Развитие, ONE AI.',
-  business: 'Организации: несколько команд, кросс-командный ONE AI, HR-аналитика.',
+  business: 'Организации до 80 человек: несколько команд, кросс-командный ONE AI, HR-аналитика.',
   enterprise: 'Индивидуально: интеграции, SSO/SAML, SLA, условия договора.',
 }
 const POPULAR = 'team'
@@ -59,6 +59,77 @@ function planBullets(t, p) {
     if (out.length >= 7) break
   }
   return out
+}
+
+// Виджет AI-квоты (себестоимость): использовано из бюджета, прогресс, дата
+// сброса, разбивка input/output и по участникам (для тимлида), уведомления
+// 80/90/100, заготовка «Увеличить AI-квоту» (без оплаты — «Скоро»).
+function AiQuotaWidget({ userId }) {
+  const [q, setQ] = useState(null)
+  const [showBuy, setShowBuy] = useState(false)
+  useEffect(() => { getAiQuota(userId).then(r => setQ(r.data)).catch(() => setQ(null)) }, [userId])
+  if (!q) return null
+  const fmt = n => (n == null ? '—' : Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 }))
+  const pct = q.unlimited ? 0 : Math.min(100, q.percent || 0)
+  const barColor = q.unlimited ? 'var(--color-accent)' : pct >= 100 ? 'var(--color-danger, #dc2626)' : pct >= 90 ? '#f59e0b' : pct >= 80 ? '#eab308' : 'var(--color-accent)'
+  const box = { background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 12, padding: 14, margin: '0 0 16px' }
+  return (
+    <div style={box}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 8, flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ fontWeight: 700 }}>AI-квота</div>
+        <div style={{ fontSize: 13, color: 'var(--color-text-secondary)' }}>
+          {q.unlimited ? 'Без ограничения (индивидуальный бюджет)'
+            : <>Использовано <strong>{fmt(q.used_rub)} ₽</strong> из <strong>{fmt(q.budget_rub)} ₽</strong></>}
+        </div>
+      </div>
+      {!q.unlimited && (
+        <div style={{ height: 10, borderRadius: 999, background: 'var(--color-surface-2, #eef1f6)', overflow: 'hidden', marginBottom: 6 }}>
+          <div style={{ width: `${pct}%`, height: '100%', background: barColor, transition: 'width .3s' }} />
+        </div>
+      )}
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--color-text-muted)', flexWrap: 'wrap', gap: 6 }}>
+        <span>{q.unlimited ? '' : `${pct}% использовано`}</span>
+        <span>Сброс лимита: {q.reset_date}</span>
+      </div>
+      {q.notice && (
+        <div style={{ marginTop: 10, padding: '9px 12px', borderRadius: 10, fontSize: 13,
+          background: q.notice.level === 'exhausted' ? 'var(--color-danger-bg, #fdecec)' : '#fff8ed',
+          border: `1px solid ${q.notice.level === 'exhausted' ? 'var(--color-danger, #dc2626)55' : '#fcd9a5'}`,
+          color: q.notice.level === 'exhausted' ? 'var(--color-danger, #dc2626)' : '#7c4a03' }}>
+          {q.notice.message}
+        </div>
+      )}
+      <div style={{ display: 'flex', gap: 16, marginTop: 10, fontSize: 12, color: 'var(--color-text-secondary)', flexWrap: 'wrap' }}>
+        <span>Input: {fmt(q.input_tokens)} ток. ({fmt(q.input_cost_rub)} ₽)</span>
+        <span>Output: {fmt(q.output_tokens)} ток. ({fmt(q.output_cost_rub)} ₽)</span>
+        <span>Запросов: {q.requests}</span>
+      </div>
+      {q.is_budget_owner && q.members && q.members.length > 0 && (
+        <div style={{ marginTop: 12 }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6 }}>Расход по участникам команды</div>
+          {q.members.map(m => (
+            <div key={m.user_id || m.name} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, padding: '4px 0', borderTop: '1px solid var(--color-border)' }}>
+              <span>{m.name}</span>
+              <span style={{ color: 'var(--color-text-muted)' }}>{fmt(m.input_tokens)} in / {fmt(m.output_tokens)} out · <strong>{fmt(m.ai_cost_rub)} ₽</strong></span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!q.unlimited && (
+        <div style={{ marginTop: 12 }}>
+          <button type="button" onClick={() => setShowBuy(true)} className="bill-cta"
+            style={{ fontSize: 13, padding: '7px 14px', borderRadius: 8, border: '1px solid var(--color-border)', background: 'transparent', color: 'var(--color-text-primary)', cursor: 'pointer' }}>
+            Увеличить AI-квоту
+          </button>
+          {showBuy && (
+            <div style={{ marginTop: 8, fontSize: 12, color: 'var(--color-text-muted)' }}>
+              {q.increase_quota?.message || 'Скоро будет доступно'}. AI продолжает работать в базовом режиме и после исчерпания квоты.
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 // readOnly — режим Mini App: тариф можно посмотреть, но оплатить и сменить
@@ -238,8 +309,11 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
             </div>
           )}
 
-          {/* Plans. Периода-переключателя нет: у каждого тарифа один период
-              оплаты (Start — месяц, Team — год), договорные тарифы — по запросу. */}
+          {/* AI-квота (себестоимость): использовано/бюджет, прогресс, разбивка,
+              уведомления по порогам, заготовка допродажи квоты. */}
+          {currentUser?.id && <AiQuotaWidget userId={currentUser.id} />}
+
+          {/* Тарифы. Для Team доступен выбор периода оплаты (месяц/год). */}
           <div className="bill-grid">
             {plans.map(p => {
               const isCurrent = currentCode === p.code

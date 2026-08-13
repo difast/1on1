@@ -42,6 +42,15 @@ def investor_metrics(db: Session = Depends(get_db), _admin=Depends(require_admin
     return {"current": current, "history": history}
 
 
+@router.get("/ai-economics")
+def ai_economics(period: str = None, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Раздел «AI Economics» (2.7): себестоимость AI по тарифам/клиентам/
+    пользователям/функциям, средняя стоимость запроса и клиента, AI Cost/Revenue,
+    валовая маржа после AI, самые затратные клиенты и функции."""
+    from app.services import ai_billing
+    return ai_billing.admin_economics(db, period=period)
+
+
 @router.get("/enforcement-audit")
 def enforcement_audit(db: Session = Depends(get_db), _admin=Depends(require_admin)):
     """Аудит перед включением ENTITLEMENTS_ENFORCE (Этап 1): аккаунты, чьё

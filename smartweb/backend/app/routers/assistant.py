@@ -117,7 +117,8 @@ def pit_chat(data: ChatRequest, request: Request,
     messages = [{"role": m.role, "content": m.content} for m in data.messages[-REPLY_WINDOW:]]
 
     from app.services.ai_service import call_llm
-    reply = call_llm(system, messages, max_tokens=600)
+    reply = call_llm(system, messages, max_tokens=600,
+                     meter={"db": db, "user": current, "feature": "pit"})
     # Промпт запрещает разметку, но модель не всегда следует инструкции —
     # подчищаем остатки, чтобы символы * и # не попали в интерфейс.
     if reply is not None:

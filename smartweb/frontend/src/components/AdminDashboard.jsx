@@ -8,7 +8,7 @@ import {
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
   getAdminMetrics, assignManager, getManagers, createManager, deleteManager,
-  getEnforcementAudit,
+  getEnforcementAudit, getAdminAiEconomics,
   getAuditLog, getAuditEntry, getAuditSecuritySummary,
 } from '../api/client'
 import AdminUserDetail from './AdminUserDetail'
@@ -20,6 +20,66 @@ import AdminEmployees from './AdminEmployees'
 
 const ROLE_LABEL = { team_lead: 'Тимлид', member: 'Участник' }
 const ROLE_BADGE  = { team_lead: 'badge-blue', member: 'badge-gray' }
+
+// Раздел «AI Economics» (Этап 2.7): себестоимость AI по тарифам/клиентам/
+// функциям, средняя стоимость, AI Cost/Revenue, валовая маржа после AI.
+function AiEconomicsPanel({ eco }) {
+  const f = n => (n == null ? '—' : Number(n).toLocaleString('ru-RU', { maximumFractionDigits: 2 }))
+  const t = eco.totals || {}, rev = eco.revenue || {}
+  const cell = { background: 'var(--color-bg)', border: '1px solid var(--color-border)', borderRadius: 10, padding: '12px 14px' }
+  const lbl = { fontSize: 11, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '.04em' }
+  const val = { fontSize: 20, fontWeight: 700, marginTop: 4 }
+  const Stat = ({ label, value, accent }) => (
+    <div style={cell}><div style={lbl}>{label}</div><div style={{ ...val, color: accent || 'var(--color-text-primary)' }}>{value}</div></div>
+  )
+  return (
+    <div className="card" style={{ padding: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
+        <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>AI Economics</p>
+        <span style={{ fontSize: 12, color: 'var(--color-text-muted)' }}>Период {eco.period} · модель {eco.prices?.model} · сброс {eco.reset_date}</span>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10 }}>
+        <Stat label="Всего AI Cost" value={`${f(t.total_ai_cost_rub)} ₽`} />
+        <Stat label="Выручка (мес)" value={`${f(rev.monthly_revenue_rub)} ₽`} />
+        <Stat label="AI Cost / Revenue" value={rev.ai_cost_to_revenue_percent == null ? '—' : `${f(rev.ai_cost_to_revenue_percent)}%`}
+          accent={rev.ai_cost_to_revenue_percent > 30 ? 'var(--color-danger, #dc2626)' : undefined} />
+        <Stat label="Валовая маржа после AI" value={rev.gross_margin_after_ai_percent == null ? '—' : `${f(rev.gross_margin_after_ai_percent)}%`}
+          accent={rev.gross_margin_after_ai_percent < 60 ? '#f59e0b' : 'var(--color-accent)'} />
+        <Stat label="Средн. на запрос" value={`${f(t.avg_cost_per_request_rub)} ₽`} />
+        <Stat label="Средн. на клиента" value={`${f(t.avg_cost_per_client_rub)} ₽`} />
+        <Stat label="Input токены" value={f(t.input_tokens)} />
+        <Stat label="Output токены" value={f(t.output_tokens)} />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 16, marginTop: 16 }}>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Себестоимость по тарифам</div>
+          {(eco.by_tier || []).map(r => (
+            <div key={r.plan_code} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '5px 0', borderTop: '1px solid var(--color-border)' }}>
+              <span style={{ textTransform: 'capitalize' }}>{r.plan_code}</span><strong>{f(r.ai_cost_rub)} ₽</strong>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Самые затратные функции</div>
+          {(eco.by_feature || []).map(r => (
+            <div key={r.feature} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '5px 0', borderTop: '1px solid var(--color-border)' }}>
+              <span>{r.label}</span><span style={{ color: 'var(--color-text-muted)' }}>{r.requests} зпр · <strong style={{ color: 'var(--color-text-primary)' }}>{f(r.ai_cost_rub)} ₽</strong></span>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 6 }}>Самые затратные клиенты</div>
+          {(eco.top_clients || []).map(r => (
+            <div key={r.owner_user_id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '5px 0', borderTop: '1px solid var(--color-border)' }}>
+              <span>{r.name}</span><span style={{ color: 'var(--color-text-muted)' }}>{r.requests} зпр · <strong style={{ color: 'var(--color-text-primary)' }}>{f(r.ai_cost_rub)} ₽</strong></span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Td({ children, muted, mono, center }) {
   return (
@@ -85,6 +145,7 @@ export default function AdminDashboard({ onLogout }) {
   const [managers, setManagers] = useState([])
   const [newMgr, setNewMgr] = useState({ name: '', contact: '' })
   const [audit, setAudit] = useState(null)  // аудит превышений лимитов (Этап 1)
+  const [aiEco, setAiEco] = useState(null)  // AI Economics (Этап 2.7)
 
   // Вкладка «Логи» (Блок 8): единый журнал аудита.
   const [logs, setLogs] = useState({ items: [], total: 0, limit: 50, offset: 0, categories: [] })
@@ -159,6 +220,7 @@ export default function AdminDashboard({ onLogout }) {
       setBillingLoading(true)
       loadManagers()
       getEnforcementAudit().then(r => setAudit(r.data)).catch(() => {})
+      getAdminAiEconomics().then(r => setAiEco(r.data)).catch(() => {})
       Promise.all([
         getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}),
         getAdminPayments().then(r => setPaymentsList(r.data)).catch(() => {}),
@@ -790,6 +852,7 @@ export default function AdminDashboard({ onLogout }) {
             {/* ── БИЛЛИНГ ── */}
             {tab === 'billing' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+                {aiEco && <AiEconomicsPanel eco={aiEco} />}
                 <p style={{ fontWeight: 700, fontSize: 16, margin: 0 }}>{t('ui.podpiski')}</p>
                 {billingLoading ? (
                   <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><div className="spinner" /></div>

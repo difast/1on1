@@ -570,7 +570,7 @@ def ai_recommendation(user_id: int = Query(...), actor_id: int = Query(...),
     us = gaps[0]
     skill = db.query(Skill).filter(Skill.id == us.skill_id).first()
     sname = skill.name if skill else "навык"
-    body = _pit_advice(sname, _level_label(us.current_level), _level_label(us.desired_level))
+    body = _pit_advice(sname, _level_label(us.current_level), _level_label(us.desired_level), db=db, user=user)
     rec = DevelopmentRecommendation(
         user_id=user_id, skill_id=us.skill_id, source="ai",
         title=f"Пит: как развивать «{sname}»", body=body, status="new",
@@ -579,7 +579,7 @@ def ai_recommendation(user_id: int = Query(...), actor_id: int = Query(...),
     return _serialize_rec(db, rec)
 
 
-def _pit_advice(skill_name: str, cur: Optional[str], des: Optional[str]) -> str:
+def _pit_advice(skill_name: str, cur: Optional[str], des: Optional[str], db=None, user=None) -> str:
     """Персональный совет ассистента Пит. Best-effort вызов; при недоступности сети
     — короткая структурированная подсказка (эндпоинт остаётся рабочим)."""
     try:
@@ -587,7 +587,8 @@ def _pit_advice(skill_name: str, cur: Optional[str], des: Optional[str]) -> str:
         from app.services import ai_service
         prompt = (f"Дай короткий план развития навыка «{skill_name}» с уровня «{cur}» до «{des}». "
                   f"3-4 конкретных шага, без воды, без эмодзи.")
-        reply = ai_service.call_llm(PIT_SYSTEM_PROMPT, [{"role": "user", "content": prompt}], max_tokens=400)
+        meter = {"db": db, "user": user, "feature": "development"} if (db is not None and user is not None) else None
+        reply = ai_service.call_llm(PIT_SYSTEM_PROMPT, [{"role": "user", "content": prompt}], max_tokens=400, meter=meter)
         if reply:
             return reply
         raise RuntimeError("ai unavailable")
