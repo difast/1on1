@@ -440,6 +440,11 @@ export const getKnowledgeArticles = () => req<any[]>('/knowledge/admin/all');
 export const getBillingMe = (userId: number) =>
   req<any>(`/billing/me?user_id=${userId}`);
 
+// AI-квота (себестоимость): использовано/бюджет, разбивка, для тимлида — по
+// участникам. Тот же эндпоинт, что и в вебе (общая логика на бэкенде).
+export const getAiQuota = (userId: number) =>
+  req<any>(`/billing/ai-quota?user_id=${userId}`);
+
 // Admin
 export const getAdminStats = () => req<any>('/users/admin/stats');
 export const getAdminAnalytics = () => req<any>('/users/admin/analytics');

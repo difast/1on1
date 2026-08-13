@@ -1962,7 +1962,11 @@
     "4_990_mes": "4 990 ₽/ай",
     "9_990_mes": "9 990 ₽/ай",
     "do_8_polzovateley_1_komanda": "8 пайдаланушыға дейін, 1 команда",
-    "do_80_polzovateley": "80 пайдаланушыға дейін"
+    "do_80_polzovateley": "80 пайдаланушыға дейін",
+    "ai_kvota": "AI-квота",
+    "ispolzovano": "Пайдаланылды",
+    "bez_ogranicheniya": "Шектеусіз",
+    "sbros_limita": "Лимит қалпына келеді"
   },
   "survey": {
     "q.usage.title": "OneOnOne қызметін қалай пайдаланбақсыз?",

@@ -244,7 +244,10 @@ export const checkoutPlan = (data) => api.post('/billing/checkout', data)
 // Единая точка решения о смене тарифа (лендинг и ЛК) и отмена подписки.
 export const changePlanPreview = (data) => api.post('/billing/change/preview', data)
 export const cancelMySubscription = (userId) => api.post('/billing/cancel', { user_id: userId })
+// AI-квота (себестоимость): состояние + разбивка по участникам (для тимлида).
+export const getAiQuota = (userId) => api.get('/billing/ai-quota', { params: userId ? { user_id: userId } : {} })
 // Admin billing
+export const getAdminAiEconomics = (period) => api.get('/admin/billing/ai-economics', { params: period ? { period } : {} })
 export const getAdminSubscriptions = () => api.get('/admin/billing/subscriptions')
 export const getAdminPayments = () => api.get('/admin/billing/payments')
 export const activateSubscription = (data) => api.post('/admin/billing/subscriptions/activate', data)

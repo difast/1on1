@@ -1970,7 +1970,11 @@
     "4_990_mes": "4 990 ₽/мес",
     "9_990_mes": "9 990 ₽/мес",
     "do_8_polzovateley_1_komanda": "до 8 пользователей, 1 команда",
-    "do_80_polzovateley": "до 80 пользователей"
+    "do_80_polzovateley": "до 80 пользователей",
+    "ai_kvota": "AI-квота",
+    "ispolzovano": "Использовано",
+    "bez_ogranicheniya": "Без ограничения",
+    "sbros_limita": "Сброс лимита"
   },
   "survey": {
     "q.usage.title": "Как вы планируете использовать OneOnOne?",
