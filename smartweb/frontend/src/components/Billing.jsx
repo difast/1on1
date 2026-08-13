@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
-import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription, getAiQuota } from '../api/client'
+import { getBillingMe, getBillingPlans, checkoutPlan, changePlanPreview, cancelMySubscription, getAiQuota, scheduleDowngrade } from '../api/client'
 import { confirmDialog } from '../lib/ui'
 import useEscapeKey from '../lib/useEscapeKey'
 
@@ -228,10 +228,13 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
         const warn = (d.over_limit || []).map(v => v.message).join(' ')
         const full = d.message + (warn ? `\n\nВнимание: ${warn}` : '')
         if (await confirmDialog({ title: t('ui.ponizit_tarif_do', { v1: p.name }), message: full, confirmText: t('ui.zaplanirovat_ponizhenie') })) {
-          // Планируемый переход на более дешёвый ПЛАТНЫЙ тариф применяется со
-          // следующего периода. Серверное применение требует хранения
-          // отложенного плана — см. отчёт; пока оформляется через поддержку.
-          setMsg('Запрос на понижение принят. Оно вступит в силу со следующего расчётного периода. Если оно не отобразится в течение суток — напишите в поддержку.')
+          // Отложенный переход на более дешёвый ПЛАТНЫЙ тариф: применяется со
+          // следующего расчётного периода (pending_plan_code + крон на бэкенде).
+          try {
+            await scheduleDowngrade({ plan_code: p.code, period: offersChoice(p) ? period : undefined, user_id: currentUser.id })
+            setMsg('Понижение запланировано. Оно вступит в силу с начала следующего расчётного периода; до этого текущие лимиты сохраняются.')
+            setTimeout(refresh, 1200)
+          } catch { setMsg(t('ui.ne_udalos_vypolnit_deystvie_2')) }
         }
         return
       }

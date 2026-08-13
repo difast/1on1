@@ -179,6 +179,76 @@ def downgrade_to_free(db: Session, sub: Subscription) -> Subscription:
     sub.plan_code = "free"
     sub.status = "free"
     sub.cancel_at_period_end = False
+    sub.pending_plan_code = None
+    sub.pending_period = None
     sub.updated_at = datetime.utcnow()
     db.commit(); db.refresh(sub)
     return sub
+
+
+# ── Отложенный даунгрейд платный->платный (Этап 4) ───────────────────────────
+
+def schedule_downgrade(db: Session, sub: Subscription, plan_code: str,
+                       period: str = "month") -> Subscription:
+    """Запланировать переход на более дешёвый ПЛАТНЫЙ тариф с начала следующего
+    расчётного периода: текущие лимиты сохраняются до конца оплаченного периода,
+    затем крон применит новый тариф (apply_pending_downgrade)."""
+    sub.pending_plan_code = plan_code
+    sub.pending_period = period
+    sub.updated_at = datetime.utcnow()
+    db.commit(); db.refresh(sub)
+    return sub
+
+
+def apply_pending_downgrade(db: Session, sub: Subscription) -> Subscription:
+    """Применить отложенный даунгрейд: активировать запланированный тариф на новый
+    период и очистить pending. Вызывается кроном по окончании оплаченного периода."""
+    code = sub.pending_plan_code
+    period = sub.pending_period or "month"
+    sub.pending_plan_code = None
+    sub.pending_period = None
+    if not code:
+        db.commit(); db.refresh(sub)
+        return sub
+    if code == "free":
+        return downgrade_to_free(db, sub)
+    return activate(db, "user", sub.subject_id, code, period=period,
+                    provider=sub.provider, external_id=sub.external_id)
+
+
+def run_maintenance(db: Session, now: datetime | None = None) -> dict:
+    """Крон обслуживания подписок (Этап 4). Идемпотентно, безопасно к повторному
+    запуску:
+      1. Пробный период истёк -> перевод на Free (доступ к платным функциям
+         закрывается, автосписаний нет — карты на триале не было).
+      2. Отложенный даунгрейд платный->платный: период закончился -> применить
+         запланированный тариф.
+      3. Отмена в конце периода (cancel_at_period_end): период закончился ->
+         перевод на Free.
+    Реальных списаний здесь нет: продление оплаченных подписок делает провайдер
+    рекуррентными платежами (webhook), а не этот крон.
+    """
+    now = now or datetime.utcnow()
+    stats = {"trials_expired": 0, "downgrades_applied": 0, "canceled": 0}
+
+    # 1. Истёкшие триалы.
+    for sub in (db.query(Subscription)
+                .filter(Subscription.status == "trialing",
+                        Subscription.trial_end.isnot(None),
+                        Subscription.trial_end <= now).all()):
+        downgrade_to_free(db, sub)
+        stats["trials_expired"] += 1
+
+    # 2/3. Активные подписки, у которых закончился оплаченный период.
+    for sub in (db.query(Subscription)
+                .filter(Subscription.status == "active",
+                        Subscription.current_period_end.isnot(None),
+                        Subscription.current_period_end <= now).all()):
+        if sub.pending_plan_code:
+            apply_pending_downgrade(db, sub)
+            stats["downgrades_applied"] += 1
+        elif sub.cancel_at_period_end:
+            downgrade_to_free(db, sub)
+            stats["canceled"] += 1
+        # Иначе (обычная активная подписка) продление делает провайдер — не трогаем.
+    return stats

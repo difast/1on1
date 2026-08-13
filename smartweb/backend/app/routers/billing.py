@@ -256,6 +256,36 @@ def change_preview(data: ChangeReq, db: Session = Depends(get_db), current=Depen
     return plan_change.decide(db, user, data.plan_code, data.period, data.seats)
 
 
+class ScheduleDowngradeReq(BaseModel):
+    plan_code: ShortStr
+    period: ShortStr = "month"
+    user_id: OptEntityId = None
+
+
+@router.post("/schedule-downgrade")
+def schedule_downgrade(data: ScheduleDowngradeReq, db: Session = Depends(get_db),
+                       current=Depends(get_current_user)):
+    """Запланировать отложенный даунгрейд платный->платный (Этап 4/5.4): новый
+    тариф вступит в силу с начала следующего расчётного периода, крон применит
+    его (subscriptions.run_maintenance). До этого текущие лимиты сохраняются.
+
+    Валидируем через ту же decide(): действие должно быть именно 'downgrade'."""
+    user = current or (db.query(User).filter(User.id == data.user_id).first() if data.user_id else None)
+    if user is None:
+        raise HTTPException(401, "User required")
+    decision = plan_change.decide(db, user, data.plan_code, data.period)
+    if decision.get("action") != "downgrade":
+        # Апгрейд/же-тариф/договор обрабатываются другими путями.
+        return {"ok": False, "decision": decision}
+    sub = subs.get_subscription(db, "user", user.id)
+    if not sub:
+        raise HTTPException(400, "Нет активной подписки для понижения")
+    subs.schedule_downgrade(db, sub, data.plan_code, decision.get("period", data.period))
+    return {"ok": True, "pending_plan_code": data.plan_code,
+            "effective": "period_end",
+            "current_period_end": sub.current_period_end.isoformat() if sub.current_period_end else None}
+
+
 class CancelReq(BaseModel):
     user_id: OptEntityId = None
 
@@ -273,6 +303,15 @@ def cancel_subscription(data: CancelReq, db: Session = Depends(get_db), current=
     if not sub or sub.status not in ("active", "trialing", "past_due"):
         return {"ok": True, "status": sub.status if sub else "free", "note": "Активной подписки нет."}
     subs.cancel(db, sub, at_period_end=True)
+    # С боевыми ключами здесь же отменяем рекуррентную подписку у провайдера
+    # (Subscriptions/Cancel с X-Request-ID). Без ключей вызов inert (not_configured).
+    if sub.external_id:
+        try:
+            provider = get_provider()
+            if hasattr(provider, "subscription_cancel"):
+                provider.subscription_cancel(sub.external_id)
+        except Exception:
+            pass
     from app.services import audit
     audit.record(db, "billing.subscription_cancelled", actor_id=user.id, entity_type="subscription",
                  entity_id=sub.id, organization_id=audit.org_of_user(db, user.id), category="general",
@@ -372,6 +411,21 @@ async def cloudpayments_webhook(
     pay.status = "succeeded"
     pay.external_id = ext or pay.external_id
     pay.subscription_id = sub.id if sub else None
+    # Апгрейд: приводим сумму/интервал рекуррентной подписки у провайдера к новому
+    # тарифу (Subscriptions/Update с X-Request-ID, доплату списывает виджет на
+    # первом платеже). Без боевых ключей вызов inert (not_configured).
+    if sub and sub.external_id:
+        try:
+            provider = get_provider()
+            if hasattr(provider, "subscription_update"):
+                plan = get_plan(db, info.get("plan_code", "start"))
+                period = info.get("period", "month")
+                amount = plan_change.charge_amount(plan, period) if plan else None
+                provider.subscription_update(
+                    sub.external_id, amount=float(amount) if amount else None,
+                    interval="Year" if period == "year" else "Month", period=1)
+        except Exception:
+            pass
     db.commit()
     wh_log.info("payment webhook: subscription activated (invoice_id=%s, uid=%s, plan=%s)",
                 pay.id, pay.subject_id, info.get("plan_code", "start"))
