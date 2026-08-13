@@ -153,6 +153,8 @@
 <script>
 function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
 function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
+document.addEventListener('click',function(e){var m=document.getElementById('mobileMenu'),b=document.getElementById('burger');if(!m||!b||!m.classList.contains('open'))return;if(m.contains(e.target)||b.contains(e.target))return;closeMM();});
+document.addEventListener('keydown',function(e){if(e.key==='Escape'||e.key==='Esc')closeMM();});
 </script>
 <section class="page-hero block-card" style="margin-top:20px">
   <div class="page-eyebrow">Компания</div>
@@ -274,7 +276,9 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </a>
     </div>
   </div>
+
   <hr class="footer-divider">
+
   <div class="footer-bottom">
     <div class="footer-contacts">
       <span>OneOnOne — AI-платформа для управления, развития и повышения эффективности команд</span>
@@ -292,6 +296,7 @@ function closeMM(){document.getElementById('burger').classList.remove('open');do
       </span>
     </div>
   </div>
+
   <div class="footer-copy">© 2026 ООО «ОДИН НА ОДИН». Все права защищены.</div>
 </footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
