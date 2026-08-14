@@ -248,6 +248,11 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
   const meetUsed = me?.usage?.meetings_this_month ?? 0
   const currentCode = me?.full_access_override ? 'unlimited' : (me?.plan_code || 'free')
   const currentIsPaid = currentCode !== 'free' && currentCode !== 'unlimited'
+  // Реальная ОПЛАЧЕННАЯ подписка (не пробный период): только у неё есть что
+  // отменять, поэтому карточку Free («Отказаться от подписки») показываем лишь
+  // таким пользователям. На пробном периоде (status=trialing) подписки-оплаты
+  // нет — Free-карточку не показываем.
+  const hasActivePaidSub = currentIsPaid && me?.subscription?.status === 'active'
   const currentName = me?.full_access_override ? t('billing.fullAccess') : (me?.plan_name || currentCode)
   const inTrial = me?.subscription?.status === 'trialing'
   const trialLocked = me?.trial_restricted_features || []
@@ -327,8 +332,9 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
             {/* Free (limits.public=false) — это состояние «нет подписки», а не
                 продаваемый тариф. В сетке показываем его ТОЛЬКО платному
                 пользователю как кнопку «Отказаться от подписки». Остальным он не
-                нужен: текущий статус и так виден выше в блоке «Текущий тариф». */}
-            {plans.filter(p => p.code !== 'free' || currentIsPaid).map(p => {
+                нужен: текущий статус и так виден выше в блоке «Текущий тариф».
+                На пробном периоде отменять нечего -> Free тоже скрыт. */}
+            {plans.filter(p => p.code !== 'free' || hasActivePaidSub).map(p => {
               const isCurrent = currentCode === p.code
               const popular = p.code === POPULAR
               const l = p.limits || {}
