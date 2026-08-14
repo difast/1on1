@@ -65,8 +65,8 @@ def create_user(data: UserCreate, db: Session = Depends(get_db)):
     db.add(user)
     db.commit()
     db.refresh(user)
-    # Пробный период тарифа Start: 14 дней полного доступа к функциям Start,
-    # без карты. Ошибка не должна ломать регистрацию.
+    # Пробный период тарифа Start: 14 дней полного доступа к функциям Start.
+    # Ошибка не должна ломать регистрацию.
     try:
         from app.services import subscriptions as subs
         subs.start_signup_trial(db, "user", user.id)
