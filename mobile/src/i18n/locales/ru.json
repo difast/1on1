@@ -1974,7 +1974,8 @@
     "ai_kvota": "AI-квота",
     "ispolzovano": "Использовано",
     "bez_ogranicheniya": "Без ограничения",
-    "sbros_limita": "Сброс лимита"
+    "sbros_limita": "Сброс лимита",
+    "99_990_god": "99 990 ₽/год"
   },
   "survey": {
     "q.usage.title": "Как вы планируете использовать OneOnOne?",

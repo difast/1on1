@@ -52,7 +52,7 @@ def main():
     expected = {
         "start": ("Start", 1990, 0, "month", 8, 1, "1 990 ₽/мес"),
         "team": ("Team", 4990, 49990, "month", 30, 1, "4 990 ₽/мес"),
-        "business": ("Business", 9990, 0, "month", 80, None, "9 990 ₽/мес"),
+        "business": ("Business", 9990, 99990, "month", 80, None, "9 990 ₽/мес"),
         "enterprise": ("Enterprise", 0, 0, "contract", None, None,
                        "Цена по запросу"),
     }
@@ -120,7 +120,7 @@ def main():
 
     # ── 3. Лендинг ──────────────────────────────────────────────────────────
     pricing = read("landing/pricing.html")
-    for needle in ("1 990₽", "4 990₽", "49 990₽", "9 990₽", "Цена по запросу",
+    for needle in ("1 990₽", "4 990₽", "49 990₽", "9 990₽", "99 990₽", "Цена по запросу",
                    "До <strong>8</strong> пользователей", "До <strong>30</strong> пользователей",
                    "До <strong>80</strong> пользователей"):
         expect(needle in pricing, f"landing/pricing.html: не найдено «{needle}»")
@@ -136,6 +136,8 @@ def main():
            "landing/pricing.html: автотранскрипция должна быть помечена «Скоро» во всех тарифах")
     expect("49990" in pricing and "4990" in pricing,
            "landing/pricing.html: калькулятор не знает обе цены Team (мес и год)")
+    expect("99990" in pricing and "9990" in pricing,
+           "landing/pricing.html: калькулятор не знает обе цены Business (мес и год)")
     expect("perPerson:" not in pricing and "unit * people" not in pricing,
            "landing/pricing.html: калькулятор всё ещё умножает цену на число людей")
 
@@ -152,6 +154,7 @@ def main():
     ru = _json.loads(read("mobile/src/i18n/locales/ru.json"))["ui"]
     for key, value in (("1_990_mes", "1 990 ₽/мес"), ("4_990_mes", "4 990 ₽/мес"),
                        ("49_990_god", "49 990 ₽/год"), ("9_990_mes", "9 990 ₽/мес"),
+                       ("99_990_god", "99 990 ₽/год"),
                        ("cena_po_zaprosu", "Цена по запросу"),
                        ("do_8_polzovateley_1_komanda", "до 8 пользователей, 1 команда"),
                        ("do_30_polzovateley_1_komanda", "до 30 пользователей, 1 команда"),
@@ -177,7 +180,7 @@ def main():
                f"legal_docs.json ({key}): цена Start разошлась")
         expect(rows.get("Team", [None, None])[1] == "4 990 ₽/мес или 49 990 ₽/год",
                f"legal_docs.json ({key}): цена Team разошлась")
-        expect(rows.get("Business", [None, None])[1] == "9 990 ₽/мес",
+        expect(rows.get("Business", [None, None])[1] == "9 990 ₽/мес или 99 990 ₽/год",
                f"legal_docs.json ({key}): цена Business разошлась")
         expect(rows.get("Enterprise", [None, None])[1] == "цена по запросу",
                f"legal_docs.json ({key}): цена Enterprise разошлась")
