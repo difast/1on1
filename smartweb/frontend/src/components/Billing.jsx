@@ -324,7 +324,11 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
 
           {/* Тарифы. Для Team доступен выбор периода оплаты (месяц/год). */}
           <div className="bill-grid">
-            {plans.map(p => {
+            {/* Free (limits.public=false) — это состояние «нет подписки», а не
+                продаваемый тариф. В сетке показываем его ТОЛЬКО платному
+                пользователю как кнопку «Отказаться от подписки». Остальным он не
+                нужен: текущий статус и так виден выше в блоке «Текущий тариф». */}
+            {plans.filter(p => p.code !== 'free' || currentIsPaid).map(p => {
               const isCurrent = currentCode === p.code
               const popular = p.code === POPULAR
               const l = p.limits || {}
