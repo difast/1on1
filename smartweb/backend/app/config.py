@@ -125,17 +125,19 @@ class Settings(BaseSettings):
     # молча на встроенном ключе. Ключ нигде не логируется и не отдаётся клиенту.
     ai_gateway_key: str = ""
     ai_gateway_base_url: str = "https://api.timeweb.ai/v1"
-    ai_gateway_model: str = "anthropic/claude-sonnet-5"
+    # Активная модель для всех AI-функций. Timeweb AI Gateway: ключ и base_url не
+    # меняются при смене модели — меняется только имя модели и цены за токен ниже.
+    ai_gateway_model: str = "xai/grok-4.3"
 
     # --- Стоимость AI-запросов (учёт себестоимости, services/ai_billing.py). ---
     # Цена за 1 млн токенов в рублях у ИСПОЛЬЗУЕМОГО провайдера/модели. Хранится в
     # конфигурации (env AI_PRICE_INPUT_RUB_PER_MTOK / AI_PRICE_OUTPUT_RUB_PER_MTOK),
     # НЕ в логике расчёта — при смене модели/цен провайдера обновляется без релиза.
-    # Значения по умолчанию соответствуют Grok (Timeweb AI Gateway):
-    # input 168,75 ₽/млн, output 337,50 ₽/млн. Система учёта provider-agnostic:
+    # Значения по умолчанию соответствуют Grok 4.3 (Timeweb AI Gateway):
+    # input 169 ₽/млн, output 338 ₽/млн. Система учёта provider-agnostic:
     # формула одна, меняются только эти числа и ai_gateway_model.
-    ai_price_input_rub_per_mtok: float = 168.75
-    ai_price_output_rub_per_mtok: float = 337.50
+    ai_price_input_rub_per_mtok: float = 169.0
+    ai_price_output_rub_per_mtok: float = 338.0
     # Урезанный («базовый») режим AI после исчерпания бюджета себестоимости:
     # меньший потолок ответа и обрезанный контекст, чтобы снизить стоимость
     # запроса, не отключая функцию полностью.
