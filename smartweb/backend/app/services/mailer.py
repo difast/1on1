@@ -135,6 +135,36 @@ def send_confirmation_email(to_email: str, name: str, token: str, lang: str | No
     return _try_send(to_email, i18n.t("email.confirm.subject", lang), body, html) is None
 
 
+def send_trial_ending(to_email: str, name: str, days_left: int,
+                      plan_name: str = "", lang: str | None = None) -> bool:
+    """Напоминание за несколько дней до конца пробного периода со ссылкой на
+    оформление подписки. Текст дружелюбный (немного эмодзи допустимо), ссылка
+    ведёт сразу на экран «Мой тариф» (?upgrade=1)."""
+    link = f"{_web_base()}/?upgrade=1"
+    when = ("сегодня" if days_left <= 0
+            else "завтра" if days_left == 1
+            else f"через {days_left} дн.")
+    plan_txt = f" тарифа {plan_name}" if plan_name else ""
+    subject = "Пробный период OneOnOne скоро закончится ⏳"
+    intro = (
+        f"Ваш пробный период{plan_txt} заканчивается {when}. "
+        f"Чтобы сохранить доступ к платным функциям без перерыва, оформите "
+        f"подписку — это займёт пару минут."
+    )
+    note = (
+        "Если ничего не делать, после окончания пробного периода аккаунт "
+        "останется без активной подписки, а платные функции станут недоступны. "
+        "Автосписаний во время пробного периода не было."
+    )
+    button = "Выбрать тариф"
+    body = (
+        f"Здравствуйте! 👋\n\n{intro}\n\n{button}: {link}\n\n{note}\n\n"
+        f"Команда OneOnOne 💙"
+    )
+    html = _html_email(intro, button, link, note, i18n.normalize_lang(lang))
+    return _try_send(to_email, subject, body, html) is None
+
+
 def send_login_code(to_email: str, name: str, code: str,
                     lang: str | None = None) -> bool:
     """Код для завершения входа в OneOnOne. Отправляется при каждом входе по

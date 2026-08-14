@@ -256,6 +256,9 @@ export const activateSubscription = (data) => api.post('/admin/billing/subscript
 export const startTrialSubscription = (data) => api.post('/admin/billing/subscriptions/trial', data)
 export const extendSubscription = (id) => api.post(`/admin/billing/subscriptions/${id}/extend`)
 export const cancelSubscription = (id) => api.post(`/admin/billing/subscriptions/${id}/cancel`)
+// Вручную задать дату окончания подписки/пробного периода (ISO). Применяется к
+// EntitlementService сразу.
+export const setSubscriptionPeriod = (id, until) => api.post(`/admin/billing/subscriptions/${id}/set-period`, { until })
 export const setUserOverride = (id, data) => api.patch(`/admin/billing/users/${id}/override`, data)
 export const getAdminMetrics = () => api.get('/admin/billing/metrics')
 // Аудит превышений лимитов перед включением ENTITLEMENTS_ENFORCE (Этап 1).

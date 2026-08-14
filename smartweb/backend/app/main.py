@@ -160,6 +160,84 @@ def _billing_sweep():
         pass
     finally:
         db.close()
+    # Напоминание об окончании пробного периода — отдельной сессией, чтобы сбой
+    # рассылки не влиял на dunning-обход выше.
+    try:
+        _send_trial_reminders()
+    except Exception:
+        pass
+
+
+def _send_trial_reminders():
+    """Напоминание за N дней до конца пробного периода (TRIAL_REMINDER_DAYS,
+    по умолчанию 3). Ровно один раз на каждый триал: внутреннее уведомление
+    (со ссылкой на оформление подписки) + письмо best-effort.
+
+    Дедуп: если для пользователя уже есть уведомление типа trial_ending,
+    созданное в окне текущего триала, повторно не шлём. Идемпотентно к
+    повторным запускам обхода (каждые 6 часов).
+    """
+    from datetime import timedelta
+    from app.database import SessionLocal
+    from app.models.subscription import Subscription
+    from app.models.notification import Notification
+    from app.models.user import User
+    from app.services.notification_service import NotificationService
+    from app.services.plans import get_plan
+    from app.services import mailer
+    days = int(os.getenv("TRIAL_REMINDER_DAYS", "3"))
+    db = SessionLocal()
+    try:
+        now = datetime.utcnow()
+        horizon = now + timedelta(days=days)
+        rows = db.query(Subscription).filter(
+            Subscription.status == "trialing",
+            Subscription.subject_type == "user",
+        ).all()
+        for s in rows:
+            end = s.trial_end or s.current_period_end
+            # Ещё рано (конец дальше, чем за N дней) или уже истёк — пропускаем.
+            if not end or end <= now or end > horizon:
+                continue
+            # Одно напоминание на триал: ищем уже отправленное в окне этого триала.
+            already = db.query(Notification).filter(
+                Notification.user_id == s.subject_id,
+                Notification.type == "trial_ending",
+                Notification.created_at >= end - timedelta(days=days + 1),
+            ).first()
+            if already:
+                continue
+            user = db.query(User).filter(User.id == s.subject_id).first()
+            if not user:
+                continue
+            days_left = max((end - now).days, 0)
+            plan = get_plan(db, s.plan_code)
+            plan_name = plan.name if plan else s.plan_code
+            when = ("сегодня" if days_left <= 0 else "завтра" if days_left == 1
+                    else f"через {days_left} дн.")
+            try:
+                NotificationService(db).create_notification(
+                    user_id=s.subject_id, type="trial_ending",
+                    title="Пробный период заканчивается",
+                    body=(f"Пробный период тарифа {plan_name} заканчивается {when}. "
+                          f"Оформите подписку, чтобы сохранить доступ к платным функциям."),
+                    data={"trial_end": end.isoformat(), "days_left": days_left,
+                          "plan_code": s.plan_code, "upgrade_url": "/?upgrade=1"},
+                )
+            except Exception:
+                db.rollback()
+                continue
+            # Письмо — best-effort, не блокирует и не ломает рассылку.
+            try:
+                if user.email:
+                    mailer.send_trial_ending(user.email, user.name or "", days_left,
+                                             plan_name, getattr(user, "preferred_language", None))
+            except Exception:
+                pass
+    except Exception:
+        pass
+    finally:
+        db.close()
 
 
 async def _billing_sweep_loop():

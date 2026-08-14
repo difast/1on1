@@ -7,6 +7,7 @@ import {
   getAdminArticles, createAdminArticle, updateAdminArticle, deleteAdminArticle,
   broadcastNotification, getServiceHealth, getUsers,
   setUserOverride, getAdminSubscriptions, getAdminPayments, extendSubscription, cancelSubscription,
+  activateSubscription, startTrialSubscription, setSubscriptionPeriod,
   getAdminMetrics, assignManager, getManagers, createManager, deleteManager,
   getEnforcementAudit, getAdminAiEconomics,
   getAuditLog, getAuditEntry, getAuditSecuritySummary,
@@ -142,6 +143,7 @@ export default function AdminDashboard({ onLogout }) {
   const [paymentsList, setPaymentsList] = useState([])
   const [billingLoading, setBillingLoading] = useState(false)
   const [mgrEdit, setMgrEdit] = useState(null)  // назначение менеджера: {userId, managerId, saving}
+  const [planEdit, setPlanEdit] = useState(null)  // ручное управление тарифом: {sub, mode, plan, period, days, until, saving}
   const [managers, setManagers] = useState([])
   const [newMgr, setNewMgr] = useState({ name: '', contact: '' })
   const [audit, setAudit] = useState(null)  // аудит превышений лимитов (Этап 1)
@@ -886,6 +888,7 @@ export default function AdminDashboard({ onLogout }) {
                               </Td>
                               <Td>
                                 <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+                                  <button onClick={() => setPlanEdit({ sub: s, mode: 'plan', plan: s.plan_code && s.plan_code !== 'free' ? s.plan_code : 'team', period: s.billing_period || 'month', days: 14, until: s.current_period_end ? new Date(s.current_period_end).toISOString().slice(0, 10) : '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>{t('ui.tarif')}</button>
                                   <button onClick={() => setMgrEdit({ userId: s.subject_id, managerId: s.manager_id || '', saving: false })} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>{t('ui.menedzher')}</button>
                                   <button onClick={async () => { await extendSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid var(--color-border)', cursor: 'pointer', fontWeight: 600, background: 'var(--color-bg)' }}>{t('ui.prodlit')}</button>
                                   <button onClick={async () => { if (!await confirmDialog({ title: t('ui.otmenit_podpisku'), confirmText: t('ui.otmenit'), danger: true })) return; await cancelSubscription(s.id).catch(() => {}); getAdminSubscriptions().then(r => setSubs(r.data)).catch(() => {}) }} style={{ fontSize: 11, padding: '3px 8px', borderRadius: 6, border: '1px solid #fecdd3', cursor: 'pointer', fontWeight: 600, background: '#fff1f2', color: '#be123c' }}>{t('ui.otmenit')}</button>
@@ -1330,6 +1333,95 @@ export default function AdminDashboard({ onLogout }) {
           </div>
         </div>
       )}
+
+      {/* Ручное управление тарифом клиента (владелец): сменить тариф, запустить
+          пробный период, задать дату окончания. Каждое действие пишется в
+          журнал аудита на бэкенде и сразу применяется к EntitlementService. */}
+      {planEdit && (() => {
+        const s = planEdit.sub
+        const PLAN_OPTS = [['start', 'Start'], ['team', 'Team'], ['business', 'Business'], ['enterprise', 'Enterprise']]
+        const seg = (mode, label) => (
+          <button type="button" onClick={() => setPlanEdit(p => ({ ...p, mode }))}
+            style={{ flex: 1, border: 'none', cursor: 'pointer', borderRadius: 8, padding: '7px 6px', fontSize: 12, fontWeight: 600,
+              background: planEdit.mode === mode ? 'var(--color-accent)' : 'transparent', color: planEdit.mode === mode ? '#fff' : 'var(--color-text-muted)' }}>{label}</button>
+        )
+        const reload = async () => { const r = await getAdminSubscriptions(); setSubs(r.data) }
+        const done = () => { toast('Тариф обновлён', 'success'); setPlanEdit(null) }
+        const fail = () => { toast('Не удалось применить изменение', 'error'); setPlanEdit(p => ({ ...p, saving: false })) }
+        const apply = async () => {
+          setPlanEdit(p => ({ ...p, saving: true }))
+          try {
+            if (planEdit.mode === 'plan') {
+              await activateSubscription({ subject_type: s.subject_type, subject_id: s.subject_id, plan_code: planEdit.plan, period: planEdit.period })
+            } else if (planEdit.mode === 'trial') {
+              await startTrialSubscription({ subject_type: s.subject_type, subject_id: s.subject_id, plan_code: planEdit.plan, days: Number(planEdit.days) || 14 })
+            } else {
+              if (!planEdit.until) { fail(); return }
+              await setSubscriptionPeriod(s.id, `${planEdit.until}T23:59:59`)
+            }
+            await reload(); done()
+          } catch { fail() }
+        }
+        return (
+          <div className="overlay-center" onClick={() => !planEdit.saving && setPlanEdit(null)}>
+            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 440 }}>
+              <div className="modal-header">
+                <span className="modal-title">Управление тарифом</span>
+                <button className="modal-close" aria-label={t('ui.zakryt')} onClick={() => setPlanEdit(null)} disabled={planEdit.saving}><svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/></svg></button>
+              </div>
+              <p style={{ fontSize: 13, color: 'var(--color-text-secondary)', margin: '0 0 6px' }}>
+                {s.user_name || `${s.subject_type}#${s.subject_id}`}{s.user_email ? ` · ${s.user_email}` : ''}
+              </p>
+              <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '0 0 14px' }}>
+                Текущий: <strong>{s.plan_code}</strong> · {s.status}{s.current_period_end ? ` · до ${new Date(s.current_period_end).toLocaleDateString('ru-RU')}` : ''}
+              </p>
+              <div style={{ display: 'flex', gap: 4, padding: 3, borderRadius: 10, background: 'var(--color-bg)', border: '1px solid var(--color-border)', marginBottom: 16 }}>
+                {seg('plan', 'Сменить тариф')}{seg('trial', 'Пробный период')}{seg('until', 'Дата окончания')}
+              </div>
+
+              {(planEdit.mode === 'plan' || planEdit.mode === 'trial') && (
+                <div className="form-group">
+                  <label className="form-label">Тариф</label>
+                  <select className="input" value={planEdit.plan} onChange={e => setPlanEdit(p => ({ ...p, plan: e.target.value }))}>
+                    {PLAN_OPTS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                  </select>
+                </div>
+              )}
+              {planEdit.mode === 'plan' && (
+                <div className="form-group">
+                  <label className="form-label">Период оплаты</label>
+                  <select className="input" value={planEdit.period} onChange={e => setPlanEdit(p => ({ ...p, period: e.target.value }))}>
+                    <option value="month">Помесячно</option>
+                    <option value="year">Годовой</option>
+                  </select>
+                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Тариф активируется как active (provider=manual), доступ откроется сразу.</p>
+                </div>
+              )}
+              {planEdit.mode === 'trial' && (
+                <div className="form-group">
+                  <label className="form-label">Длительность (дней)</label>
+                  <input className="input" type="number" min={1} max={365} value={planEdit.days} onChange={e => setPlanEdit(p => ({ ...p, days: e.target.value }))} />
+                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Запустит/перезапустит пробный период выбранного тарифа.</p>
+                </div>
+              )}
+              {planEdit.mode === 'until' && (
+                <div className="form-group">
+                  <label className="form-label">Дата окончания</label>
+                  <input className="input" type="date" value={planEdit.until} onChange={e => setPlanEdit(p => ({ ...p, until: e.target.value }))} />
+                  <p style={{ fontSize: 12, color: 'var(--color-text-muted)', margin: '8px 0 0' }}>Задаёт дату окончания текущей подписки{s.status === 'trialing' ? ' / пробного периода' : ''}. Применяется к доступу сразу.</p>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+                <button className="btn btn-accent" style={{ flex: 2, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8 }} disabled={planEdit.saving} onClick={apply}>
+                  {planEdit.saving ? <><Spinner size={15} />Применение</> : 'Применить'}
+                </button>
+                <button className="btn btn-secondary" style={{ flex: 1 }} disabled={planEdit.saving} onClick={() => setPlanEdit(null)}>{t('ui.otmena')}</button>
+              </div>
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
