@@ -290,23 +290,41 @@ def assign_manager(user_id: int, data: AssignManagerReq, db: Session = Depends(g
     return _sub_dict(sub, db)
 
 
+def _parse_dt(value: str | None):
+    """ISO-строка -> naive UTC datetime (в БД время храним без tz). None -> None."""
+    if not value:
+        return None
+    try:
+        dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        if dt.tzinfo is not None:
+            dt = dt.astimezone().replace(tzinfo=None)
+        return dt
+    except Exception:
+        raise HTTPException(400, "Некорректная дата (ожидается ISO 8601)")
+
+
 class ActivateReq(BaseModel):
     subject_type: str = "user"
     subject_id: int
     plan_code: str
     period: str = "month"
     seats: int = 1
+    # Явная дата окончания оплаченного периода (ISO). Если не задана — берётся
+    # стандартный период тарифа (30/365 дней) от текущего момента.
+    period_end: str | None = None
 
 
 @router.post("/subscriptions/activate")
 def activate_subscription(data: ActivateReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     s = subs.activate(db, data.subject_type, data.subject_id, data.plan_code,
-                      period=data.period, seats=data.seats, provider="manual")
+                      period=data.period, seats=data.seats, provider="manual",
+                      period_end=_parse_dt(data.period_end))
     from app.services import audit
     audit.record(db, "admin.subscription_activated", actor_id=None, entity_type="subscription",
                  entity_id=s.id, organization_id=audit.org_of_user(db, data.subject_id),
                  category="admin", summary=f"Админ вручную выдал тариф {data.plan_code} (uid={data.subject_id})",
-                 meta={"plan_code": data.plan_code, "period": data.period, "subject_id": data.subject_id})
+                 meta={"plan_code": data.plan_code, "period": data.period, "subject_id": data.subject_id,
+                       "period_end": data.period_end})
     return _sub_dict(s)
 
 
@@ -320,6 +338,12 @@ class TrialReq(BaseModel):
 @router.post("/subscriptions/trial")
 def start_trial(data: TrialReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
     s = subs.start_trial(db, data.subject_type, data.subject_id, data.plan_code, days=data.days)
+    from app.services import audit
+    audit.record(db, "admin.trial_started", actor_id=None, entity_type="subscription",
+                 entity_id=s.id, organization_id=audit.org_of_user(db, data.subject_id),
+                 category="admin",
+                 summary=f"Админ вручную запустил пробный период {data.plan_code} на {data.days} дн. (uid={data.subject_id})",
+                 meta={"plan_code": data.plan_code, "days": data.days, "subject_id": data.subject_id})
     return _sub_dict(s)
 
 
@@ -328,7 +352,45 @@ def extend_subscription(sub_id: int, db: Session = Depends(get_db), _admin=Depen
     s = db.query(Subscription).filter(Subscription.id == sub_id).first()
     if not s:
         raise HTTPException(404, "Subscription not found")
-    return _sub_dict(subs.extend(db, s))
+    s = subs.extend(db, s)
+    from app.services import audit
+    audit.record(db, "admin.subscription_extended", actor_id=None, entity_type="subscription",
+                 entity_id=s.id, organization_id=audit.org_of_user(db, s.subject_id),
+                 category="admin",
+                 summary=f"Админ продлил подписку {s.plan_code} (sub={s.id}, uid={s.subject_id})",
+                 meta={"plan_code": s.plan_code, "subject_id": s.subject_id,
+                       "current_period_end": s.current_period_end.isoformat() if s.current_period_end else None})
+    return _sub_dict(s)
+
+
+class SetPeriodReq(BaseModel):
+    # Явная дата окончания (ISO). Для триала меняем trial_end, иначе — оплаченный
+    # период current_period_end.
+    until: str
+
+
+@router.post("/subscriptions/{sub_id}/set-period")
+def set_subscription_period(sub_id: int, data: SetPeriodReq, db: Session = Depends(get_db), _admin=Depends(require_admin)):
+    """Вручную задать дату окончания подписки/пробного периода. Применяется к
+    EntitlementService сразу: доступ считается по дате окончания."""
+    s = db.query(Subscription).filter(Subscription.id == sub_id).first()
+    if not s:
+        raise HTTPException(404, "Subscription not found")
+    until = _parse_dt(data.until)
+    if until is None:
+        raise HTTPException(400, "Дата окончания обязательна")
+    if s.status == "trialing":
+        s.trial_end = until
+    s.current_period_end = until
+    s.updated_at = datetime.utcnow()
+    db.commit(); db.refresh(s)
+    from app.services import audit
+    audit.record(db, "admin.subscription_period_set", actor_id=None, entity_type="subscription",
+                 entity_id=s.id, organization_id=audit.org_of_user(db, s.subject_id),
+                 category="admin",
+                 summary=f"Админ изменил дату окончания подписки {s.plan_code} на {until.isoformat()} (sub={s.id}, uid={s.subject_id})",
+                 meta={"plan_code": s.plan_code, "subject_id": s.subject_id, "until": until.isoformat(), "status": s.status})
+    return _sub_dict(s)
 
 
 @router.post("/subscriptions/{sub_id}/cancel")
@@ -336,7 +398,14 @@ def cancel_subscription(sub_id: int, db: Session = Depends(get_db), _admin=Depen
     s = db.query(Subscription).filter(Subscription.id == sub_id).first()
     if not s:
         raise HTTPException(404, "Subscription not found")
-    return _sub_dict(subs.cancel(db, s, at_period_end=False))
+    s = subs.cancel(db, s, at_period_end=False)
+    from app.services import audit
+    audit.record(db, "admin.subscription_canceled", actor_id=None, entity_type="subscription",
+                 entity_id=s.id, organization_id=audit.org_of_user(db, s.subject_id),
+                 category="admin",
+                 summary=f"Админ отменил подписку (sub={s.id}, uid={s.subject_id})",
+                 meta={"subject_id": s.subject_id, "plan_code": s.plan_code})
+    return _sub_dict(s)
 
 
 class OverrideReq(BaseModel):
