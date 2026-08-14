@@ -1966,7 +1966,8 @@
     "ai_kvota": "AI-квота",
     "ispolzovano": "Пайдаланылды",
     "bez_ogranicheniya": "Шектеусіз",
-    "sbros_limita": "Лимит қалпына келеді"
+    "sbros_limita": "Лимит қалпына келеді",
+    "99_990_god": "99 990 ₽/жыл"
   },
   "survey": {
     "q.usage.title": "OneOnOne қызметін қалай пайдаланбақсыз?",

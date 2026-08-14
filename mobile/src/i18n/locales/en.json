@@ -1966,7 +1966,8 @@
     "ai_kvota": "AI quota",
     "ispolzovano": "Used",
     "bez_ogranicheniya": "No limit",
-    "sbros_limita": "Limit resets"
+    "sbros_limita": "Limit resets",
+    "99_990_god": "99,990 ₽/yr"
   },
   "survey": {
     "q.usage.title": "How do you plan to use OneOnOne?",

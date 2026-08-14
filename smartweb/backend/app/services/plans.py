@@ -28,8 +28,9 @@ catalog and re-syncs it on startup when CATALOG_VERSION changes (см. seed_plan
 Оплата: Start — 1 990 ₽/мес (интервал Month). Team — 4 990 ₽/мес (интервал
 Month) ЛИБО 49 990 ₽/год (интервал Year, полной суммой единовременно; выбор
 периода делает пользователь при оформлении; годовой = экономия 16,5% против
-59 880 ₽ при помесячной оплате). Business — 9 990 ₽/мес (интервал Month,
-самостоятельная оплата). Enterprise — договорной: автоматической подписки через
+59 880 ₽ при помесячной оплате). Business — по выбору Заказчика: 9 990 ₽/мес
+(интервал Month) ЛИБО 99 990 ₽/год (интервал Year, экономия 16,5% против
+119 880 ₽). Enterprise — договорной: автоматической подписки через
 CloudPayments нет, только «Связаться с нами» (флаг is_enterprise = «договорной
 тариф»).
 
@@ -54,7 +55,7 @@ from app.models.plan import Plan
 # Версия сетки. Увеличивается при любом изменении состава/цен — по ней
 # seed_plans пересинхронизирует строки в БД (иначе прод остался бы на старой
 # сетке, т.к. раньше seed никогда не перезаписывал существующие планы).
-CATALOG_VERSION = 4
+CATALOG_VERSION = 5
 
 # Полный реестр фич. Порядок = порядок показа в сравнительной таблице.
 # Значение — человекочитаемая подпись (используется и в мягких тарифных
@@ -202,14 +203,17 @@ PLAN_SEED = [
         },
     },
     {
-        # Business — самостоятельная помесячная оплата (9 990 ₽/мес, до 80
-        # пользователей). is_enterprise=False -> checkout разрешён.
+        # Business — самостоятельная оплата, теперь с ВЫБОРОМ периода как у Team:
+        # 9 990 ₽/мес либо 99 990 ₽/год (экономия 16,5% против 119 880 ₽).
+        # price_month и price_year заданы оба -> offers_period_choice=True ->
+        # переключатель месяц/год работает и для Business. is_enterprise=False.
         "code": "business", "name": "Business",
-        "price_month": 9990, "price_year": 0, "per_seat": False, "is_enterprise": False,
+        "price_month": 9990, "price_year": 99990, "per_seat": False, "is_enterprise": False,
         "sort_order": 4,
         "limits": {
             "public": True, "billing_period": "month",
-            "price_label": "9 990 ₽/мес", "users_label": "до 80 пользователей",
+            "price_label": "9 990 ₽/мес", "price_label_year": "99 990 ₽/год",
+            "year_discount_percent": 16.5, "users_label": "до 80 пользователей",
             "max_teams": None, "max_users": 80, "max_members_per_team": 80, "min_seats": 1,
             "max_meetings_per_month": None, "history_days": None,
             "trial_days": 14, "trial_restricted_features": [],

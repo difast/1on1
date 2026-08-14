@@ -28,6 +28,11 @@ const SELECTABLE_STATUSES = ['not_started', 'in_progress', 'at_risk', 'achieved'
 const OPEN_STATUSES = ['not_started', 'in_progress', 'at_risk']
 
 function StatusBadge({ status }) {
+  // Компонент вызывает t() через goalStatusLabel — значит, ему нужен собственный
+  // useTranslation. Без него t не определён и рендер падал (ReferenceError:
+  // t is not defined) на любой цели со статусом — весь раздел «Цели» не
+  // открывался. Тот же дефект был в LeadGoalCard (ниже).
+  const { t } = useTranslation()
   const c = STATUS_COLOR[status] || STATUS_COLOR.not_started
   return (
     <span style={{
@@ -430,6 +435,7 @@ export function GoalsMember({ user, teamId }) {
 
 // ── карточка цели в сводном виде тимлида (только чтение + обсуждение) ─────────
 function LeadGoalCard({ goal, meId, onCommented }) {
+  const { t } = useTranslation()   // нужен для periodText(t, goal); без него рендер падал
   const [expanded, setExpanded] = useState(false)
   const [loaded, setLoaded] = useState(false)
   const c = STATUS_COLOR[goal.status] || STATUS_COLOR.not_started

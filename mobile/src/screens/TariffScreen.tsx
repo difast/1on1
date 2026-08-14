@@ -23,7 +23,7 @@ const PLAN_NAMES: Record<string, string> = {
 };
 const PLAN_PRICES: Record<string, string> = {
   start: '1 990 ₽/мес', team: '4 990 ₽/мес или 49 990 ₽/год',
-  business: '9 990 ₽/мес', enterprise: 'цена по запросу',
+  business: '9 990 ₽/мес или 99 990 ₽/год', enterprise: 'цена по запросу',
 };
 const SUB_STATUS: Record<string, string> = {
   free: 'Без подписки', trialing: 'Пробный период', active: 'Активна',
@@ -193,7 +193,7 @@ export default function TariffScreen() {
             {[
               { name: 'Start', price: t('ui.1_990_mes'), users: t('ui.do_8_polzovateley_1_komanda') },
               { name: 'Team', price: `${t('ui.4_990_mes')} / ${t('ui.49_990_god')}`, users: t('ui.do_30_polzovateley_1_komanda') },
-              { name: 'Business', price: t('ui.9_990_mes'), users: t('ui.do_80_polzovateley') },
+              { name: 'Business', price: `${t('ui.9_990_mes')} / ${t('ui.99_990_god')}`, users: t('ui.do_80_polzovateley') },
               { name: 'Enterprise', price: t('ui.cena_po_zaprosu'), users: t('ui.bez_ogranicheniy') },
             ].map((p, i) => (
               <View key={p.name} style={[styles.row, i > 0 && styles.rowBorder]}>
