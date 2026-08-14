@@ -278,8 +278,13 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   .site-footer{padding:40px 20px 24px}
   .footer-top{flex-direction:column;gap:32px}
   .footer-right{align-items:flex-start}
-  .footer-cols{gap:28px}
-  .footer-col:not(:first-child){border-left:none;padding-left:0}
+  .footer-cols{gap:0}
+  /* На мобильной колонки подвала складываются вертикально: вместо вертикальной
+     линии (border-left) разделяем их горизонтальными белыми линиями (border-top),
+     чтобы разделы/ссылки не сливались. Первая колонка без линии сверху. */
+  .footer-col{padding:18px 0}
+  .footer-col:not(:first-child){border-left:none;padding-left:0;border-top:1px solid rgba(255,255,255,.14)}
+  .footer-col:first-child{padding-top:0}
   .footer-bottom{flex-direction:column;align-items:flex-start}
 }
 

@@ -271,8 +271,13 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
 .footer-top{display:flex;gap:48px;justify-content:space-between;margin-bottom:48px;flex-wrap:wrap}
 .footer-logo{font-family:'Playfair Display',serif;font-size:22px;font-weight:800;letter-spacing:-.02em;margin-bottom:24px;display:flex;align-items:center;gap:10px}
 .footer-logo-mark{width:44px;height:44px;background:linear-gradient(135deg,#0A6CFF,#2563EB);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;line-height:1;font-weight:900;color:#fff;flex-shrink:0;letter-spacing:-.04em}
-.footer-cols{display:flex;gap:48px;flex-wrap:wrap}
+.footer-cols{display:flex;gap:36px;flex-wrap:wrap}
 .footer-col{display:flex;flex-direction:column;gap:14px;min-width:130px}
+.footer-col-h{font-size:12px;font-weight:700;letter-spacing:.04em;color:#fff;opacity:.92;margin-bottom:2px}
+/* Разделители столбцов подвала — как на остальных страницах (styles.css). Раньше
+   этого правила в инлайн-CSS главной не было, поэтому на главной линии-разделители
+   в подвале не отображались. */
+.footer-col:not(:first-child){border-left:1px solid rgba(255,255,255,.22);padding-left:36px}
 .footer-col a{font-size:14px;color:rgba(255,255,255,.65);text-decoration:none;transition:color .15s;font-weight:400;line-height:1.4}
 .footer-col a:hover{color:#fff}
 .footer-right{display:flex;flex-direction:column;align-items:flex-end;gap:12px}
@@ -296,7 +301,12 @@ h2.sh{font-family:'Playfair Display',serif;font-size:clamp(30px,4vw,52px);font-w
   .site-footer{padding:40px 20px 24px}
   .footer-top{flex-direction:column;gap:32px}
   .footer-right{align-items:flex-start}
-  .footer-cols{gap:28px}
+  .footer-cols{gap:0}
+  /* Мобильная: столбцы складываются вертикально, разделяем их горизонтальными
+     белыми линиями — единообразно с остальными страницами (styles.css). */
+  .footer-col{padding:18px 0}
+  .footer-col:not(:first-child){border-left:none;padding-left:0;border-top:1px solid rgba(255,255,255,.14)}
+  .footer-col:first-child{padding-top:0}
   .footer-bottom{flex-direction:column;align-items:flex-start}
 }
 
@@ -357,7 +367,7 @@ html,body{overflow-x:clip}
 .burger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
 .burger.open span:nth-child(2){opacity:0}
 .burger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
-.mobile-menu{display:none;position:fixed;inset:0;background:rgba(19,17,28,.97);backdrop-filter:blur(20px);z-index:250;flex-direction:column;align-items:center;justify-content:center;gap:32px}
+.mobile-menu{display:none;position:fixed;inset:0;background:rgba(19,17,28,.97);backdrop-filter:blur(20px);z-index:190;flex-direction:column;align-items:center;justify-content:center;gap:32px}
 .mobile-menu.open{display:flex}
 .mobile-menu a{font-size:24px;font-weight:600;color:var(--txt2);text-decoration:none;transition:color .15s}
 .mobile-menu a:hover{color:var(--txt)}
@@ -605,7 +615,7 @@ html,body{overflow-x:clip}
 <script>
 function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
 function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
-document.addEventListener('click',function(e){var m=document.getElementById('mobileMenu'),b=document.getElementById('burger');if(!m||!b||!m.classList.contains('open'))return;if(m.contains(e.target)||b.contains(e.target))return;closeMM();});
+document.addEventListener('click',function(e){var m=document.getElementById('mobileMenu'),b=document.getElementById('burger');if(!m||!b||!m.classList.contains('open'))return;if(b.contains(e.target))return;if(e.target===m||!m.contains(e.target))closeMM();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'||e.key==='Esc')closeMM();});
 </script>
 

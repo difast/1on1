@@ -149,7 +149,7 @@
 <script>
 function toggleMM(){const b=document.getElementById('burger'),m=document.getElementById('mobileMenu');b.classList.toggle('open');m.classList.toggle('open');document.body.style.overflow=m.classList.contains('open')?'hidden':''}
 function closeMM(){document.getElementById('burger').classList.remove('open');document.getElementById('mobileMenu').classList.remove('open');document.body.style.overflow=''}
-document.addEventListener('click',function(e){var m=document.getElementById('mobileMenu'),b=document.getElementById('burger');if(!m||!b||!m.classList.contains('open'))return;if(m.contains(e.target)||b.contains(e.target))return;closeMM();});
+document.addEventListener('click',function(e){var m=document.getElementById('mobileMenu'),b=document.getElementById('burger');if(!m||!b||!m.classList.contains('open'))return;if(b.contains(e.target))return;if(e.target===m||!m.contains(e.target))closeMM();});
 document.addEventListener('keydown',function(e){if(e.key==='Escape'||e.key==='Esc')closeMM();});
 </script>
 <section class="page-hero block-card" style="margin-top:20px">
