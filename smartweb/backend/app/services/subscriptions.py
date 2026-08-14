@@ -47,7 +47,7 @@ def _upsert(db: Session, subject_type: str, subject_id: int) -> Subscription:
 
 
 # Регистрация = 14-дневный пробный период тарифа Start с полным доступом к его
-# функциям (без карты). Так описан Start в тарифной сетке (plans.py).
+# функциям. Так описан Start в тарифной сетке (plans.py).
 SIGNUP_TRIAL_DAYS = 14
 SIGNUP_TRIAL_PLAN = "start"
 
@@ -55,7 +55,7 @@ SIGNUP_TRIAL_PLAN = "start"
 def start_signup_trial(db: Session, subject_type: str, subject_id: int,
                        days: int = SIGNUP_TRIAL_DAYS,
                        plan_code: str = SIGNUP_TRIAL_PLAN) -> Subscription:
-    """При регистрации — пробный период тарифа Start на 14 дней (без карты).
+    """При регистрации — пробный период тарифа Start на 14 дней.
     Не трогаем уже существующую подписку (напр. заведена админом)."""
     existing = get_subscription(db, subject_type, subject_id)
     if existing:

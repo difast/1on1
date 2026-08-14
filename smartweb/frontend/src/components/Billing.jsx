@@ -264,7 +264,13 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
           {readOnly && (
             <p className="bill-msg" style={{ marginTop: 0 }}>{t('ui.zdes_mozhno_posmotret_tarif_i_limity')}</p>
           )}
-          <p className="bill-hero">Выберите тариф под размер команды. Start — 1 990 ₽/мес, Team — 4 990 ₽/мес или 49 990 ₽/год, Business — 9 990 ₽/мес. Enterprise подключается индивидуально. Повышение действует сразу.</p>
+          <p className="bill-hero">Выберите тариф под размер команды. Start — 1 990 ₽/мес, Team — 4 990 ₽/мес или 49 990 ₽/год, Business — 9 990 ₽/мес или 99 990 ₽/год. Enterprise подключается индивидуально. Повышение действует сразу.</p>
+          <p style={{ margin: '-4px 0 4px', fontSize: 13 }}>
+            <a href="https://oneononehq.com/pricing" target="_blank" rel="noopener noreferrer"
+              style={{ color: 'var(--color-accent)', fontWeight: 600, textDecoration: 'none' }}>
+              Полное сравнение функций тарифов на странице тарифов →
+            </a>
+          </p>
 
           {/* Current plan + usage */}
           <div className="bill-current">
@@ -374,7 +380,7 @@ export default function Billing({ open, currentUser, initialPlan, readOnly = fal
           </div>
 
           {msg && <p className="bill-msg">{msg}</p>}
-          <p className="bill-foot">Start и Business списываются раз в месяц, Team — раз в месяц или раз в год полной суммой (годовой выгоднее на 16,5%). Enterprise оформляется по договору, без автоматического списания. Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
+          <p className="bill-foot">Start списывается раз в месяц; Team и Business — раз в месяц или раз в год полной суммой (годовой выгоднее на 16,5%). Enterprise оформляется по договору, без автоматического списания. Активация подписки подтверждается платёжной системой. Отменить или сменить тариф можно в любой момент — понижение вступит в силу с начала следующего периода.</p>
         </div>
       </div>
     </div>
